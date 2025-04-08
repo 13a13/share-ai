@@ -128,18 +128,18 @@ export function createTwoColumnLayout(doc: any, leftContent: string, rightConten
 }
 
 // Helper to format dates consistently
-export function formatDate(dateString: string): string {
-  if (!dateString) return "Not specified";
+export function formatDate(dateInput: string | Date): string {
+  if (!dateInput) return "Not specified";
   
   try {
-    const date = new Date(dateString);
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   } catch (e) {
-    return dateString;
+    return String(dateInput);
   }
 }
 
@@ -148,4 +148,48 @@ export function capitalizeWords(text: string): string {
   return text
     .replace(/_/g, ' ')
     .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+// Custom dashed line function for jsPDF v3
+export function drawDashedLine(
+  doc: any, 
+  xStart: number, 
+  yStart: number, 
+  xEnd: number, 
+  yEnd: number, 
+  dashLength: number = 2, 
+  spaceLength: number = 2
+): void {
+  // Calculate line length and angle
+  const lineLength = Math.sqrt(Math.pow(xEnd - xStart, 2) + Math.pow(yEnd - yStart, 2));
+  const angle = Math.atan2(yEnd - yStart, xEnd - xStart);
+  
+  // Calculate number of segments
+  const segmentLength = dashLength + spaceLength;
+  const segments = Math.floor(lineLength / segmentLength);
+  
+  // Draw dash segments
+  for (let i = 0; i < segments; i++) {
+    const startSegmentDistance = i * segmentLength;
+    const startX = xStart + Math.cos(angle) * startSegmentDistance;
+    const startY = yStart + Math.sin(angle) * startSegmentDistance;
+    
+    const endSegmentDistance = startSegmentDistance + dashLength;
+    const endX = xStart + Math.cos(angle) * endSegmentDistance;
+    const endY = yStart + Math.sin(angle) * endSegmentDistance;
+    
+    doc.line(startX, startY, endX, endY);
+  }
+  
+  // Draw the last segment if needed
+  const remainingLength = lineLength - (segments * segmentLength);
+  if (remainingLength > 0 && remainingLength <= dashLength) {
+    const startX = xStart + Math.cos(angle) * (segments * segmentLength);
+    const startY = yStart + Math.sin(angle) * (segments * segmentLength);
+    
+    const endX = startX + Math.cos(angle) * remainingLength;
+    const endY = startY + Math.sin(angle) * remainingLength;
+    
+    doc.line(startX, startY, endX, endY);
+  }
 }
