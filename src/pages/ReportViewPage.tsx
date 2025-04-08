@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
@@ -84,7 +85,7 @@ const ReportViewPage = () => {
   
   return (
     <div className="shareai-container">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold text-shareai-blue">
             {report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Report
@@ -94,7 +95,7 @@ const ReportViewPage = () => {
           </p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant="outline" 
             onClick={() => navigate("/reports")}
