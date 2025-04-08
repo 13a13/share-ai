@@ -1,4 +1,3 @@
-
 export type Property = {
   id: string;
   address: string;
@@ -66,7 +65,7 @@ export interface RoomComponent {
   type: string; // walls, ceiling, flooring, etc.
   description: string;
   condition: ConditionRating;
-  notes?: string;
+  notes: string; // Changed from optional to required
   images: {
     id: string;
     url: string;

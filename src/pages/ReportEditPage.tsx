@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
@@ -68,7 +67,6 @@ const ReportEditPage = () => {
     },
   });
   
-  // Get the current room from the report
   const currentRoom = report?.rooms.find(room => room.id === currentRoomId) || null;
   
   useEffect(() => {
@@ -87,7 +85,6 @@ const ReportEditPage = () => {
           return;
         }
         
-        // Initialize reportInfo form if data exists
         if (reportData.reportInfo) {
           reportInfoForm.reset({
             reportDate: new Date(reportData.reportInfo.reportDate).toISOString().substring(0, 10),
@@ -101,12 +98,10 @@ const ReportEditPage = () => {
         
         setReport(reportData);
         
-        // Set the current room to the first room if available
         if (reportData.rooms.length > 0 && !currentRoomId) {
           setCurrentRoomId(reportData.rooms[0].id);
         }
         
-        // Fetch property data
         const propertyData = await PropertiesAPI.getById(reportData.propertyId);
         setProperty(propertyData);
       } catch (error) {
@@ -137,7 +132,6 @@ const ReportEditPage = () => {
       );
       
       if (newRoom) {
-        // Initialize default components if type is bathroom or kitchen
         let initialComponents: RoomComponent[] = [];
         
         if (values.type === "bathroom") {
@@ -166,16 +160,13 @@ const ReportEditPage = () => {
           ];
         }
         
-        // Add components to the new room
         const updatedRoom = {
           ...newRoom,
           components: initialComponents,
         };
         
-        // Save the updated room
         await ReportsAPI.updateRoom(report.id, newRoom.id, updatedRoom);
         
-        // Update the report state
         setReport(prev => {
           if (!prev) return prev;
           return {
@@ -184,10 +175,8 @@ const ReportEditPage = () => {
           };
         });
         
-        // Set the current room to the new room
         setCurrentRoomId(newRoom.id);
         
-        // Reset the form
         roomForm.reset({
           name: "",
           type: "living_room",
@@ -227,7 +216,6 @@ const ReportEditPage = () => {
     if (!report || !currentRoom) return;
     
     try {
-      // Update the sections in the current room
       const updatedRoom = {
         ...currentRoom,
         sections: currentRoom.sections.map(section => 
@@ -235,11 +223,9 @@ const ReportEditPage = () => {
         ),
       };
       
-      // Save the updated room
       const savedRoom = await ReportsAPI.updateRoom(report.id, currentRoom.id, updatedRoom);
       
       if (savedRoom) {
-        // Update the report state
         setReport(prev => {
           if (!prev) return prev;
           return {
@@ -269,17 +255,14 @@ const ReportEditPage = () => {
     if (!report || !currentRoom) return;
     
     try {
-      // Update the components in the current room
       const updatedRoom = {
         ...currentRoom,
         components: updatedComponents,
       };
       
-      // Save the updated room
       const savedRoom = await ReportsAPI.updateRoom(report.id, currentRoom.id, updatedRoom);
       
       if (savedRoom) {
-        // Update the report state
         setReport(prev => {
           if (!prev) return prev;
           return {
@@ -343,15 +326,12 @@ const ReportEditPage = () => {
     setIsSaving(true);
     
     try {
-      // Update report status based on the current state
       let updatedStatus = report.status;
       
-      // If the report is a draft, move it to in_progress
       if (updatedStatus === "draft") {
         updatedStatus = "in_progress";
       }
       
-      // If there's at least one room with images, move to pending_review
       const hasRoomsWithImages = report.rooms.some(room => 
         room.images.length > 0 || (room.components && room.components.some(comp => comp.images.length > 0))
       );
@@ -371,7 +351,6 @@ const ReportEditPage = () => {
           description: "Your report has been saved successfully.",
         });
         
-        // Navigate to the report view page
         navigate(`/reports/${report.id}`);
       }
     } catch (error) {
@@ -405,7 +384,6 @@ const ReportEditPage = () => {
           description: "Your report has been marked as completed.",
         });
         
-        // Navigate to the report view page
         navigate(`/reports/${report.id}`);
       }
     } catch (error) {
@@ -421,7 +399,6 @@ const ReportEditPage = () => {
   };
   
   const handleImageProcessed = (updatedRoom: Room) => {
-    // Update the report state
     setReport(prev => {
       if (!prev) return prev;
       return {
@@ -535,7 +512,6 @@ const ReportEditPage = () => {
         </div>
       </div>
       
-      {/* Report Info Section */}
       <Card className="mb-6">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Report Information</CardTitle>
@@ -672,7 +648,6 @@ const ReportEditPage = () => {
       </Card>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar - Room List */}
         <div className="lg:col-span-1">
           <Card>
             <CardHeader className="pb-3">
@@ -705,7 +680,6 @@ const ReportEditPage = () => {
               )}
             </CardContent>
             <CardFooter className="pt-2">
-              {/* Add Room Form */}
               <Form {...roomForm}>
                 <form onSubmit={roomForm.handleSubmit(handleAddRoom)} className="w-full space-y-3">
                   <FormField
@@ -768,7 +742,6 @@ const ReportEditPage = () => {
           </Card>
         </div>
         
-        {/* Main Content */}
         <div className="lg:col-span-3">
           {currentRoom ? (
             <Card>
@@ -788,7 +761,6 @@ const ReportEditPage = () => {
                   
                   <TabsContent value="details" className="pt-2">
                     <div className="space-y-6">
-                      {/* General Condition */}
                       <div className="space-y-2">
                         <h3 className="text-lg font-medium">General Condition</h3>
                         <Textarea 
@@ -799,11 +771,9 @@ const ReportEditPage = () => {
                               generalCondition: e.target.value,
                             };
                             
-                            // Save the updated room
                             ReportsAPI.updateRoom(report.id, currentRoom.id, updatedRoom)
                               .then((savedRoom) => {
                                 if (savedRoom) {
-                                  // Update the report state
                                   setReport(prev => {
                                     if (!prev) return prev;
                                     return {
@@ -829,7 +799,6 @@ const ReportEditPage = () => {
                         />
                       </div>
                       
-                      {/* Room Sections */}
                       <div className="space-y-4">
                         <h3 className="text-lg font-medium">Detailed Sections</h3>
                         
@@ -849,7 +818,10 @@ const ReportEditPage = () => {
                       reportId={report.id}
                       roomId={currentRoom.id}
                       roomType={currentRoom.type}
-                      components={currentRoom.components || []}
+                      components={(currentRoom.components || []).map(comp => ({
+                        ...comp,
+                        notes: comp.notes || "",
+                      }))}
                       onChange={handleUpdateComponents}
                     />
                   </TabsContent>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,25 +7,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Trash2, Camera, Plus, Edit } from "lucide-react";
-import { ConditionRating, RoomType } from "@/types";
+import { ConditionRating, RoomType, RoomComponent } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { GeminiAPI } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
 
-interface ComponentItem {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  condition: ConditionRating;
-  notes: string;
-  images: {
-    id: string;
-    url: string;
-    timestamp: Date;
-  }[];
-  isOptional?: boolean; // Can this component be removed
-  isEditing?: boolean; // Is the component currently being edited
+interface ComponentItem extends RoomComponent {
+  isEditing?: boolean;
 }
 
 interface RoomComponentInspectionProps {
@@ -108,14 +95,12 @@ const RoomComponentInspection = ({
       setIsProcessing((prev) => ({ ...prev, [componentId]: true }));
       
       try {
-        // Find the component
         const component = components.find(c => c.id === componentId);
         
         if (!component) {
           throw new Error("Component not found");
         }
         
-        // Process image with the Gemini API using component type
         const response = await fetch(`${window.location.origin}/supabase-functions/process-room-image`, {
           method: 'POST',
           headers: {
@@ -135,17 +120,15 @@ const RoomComponentInspection = ({
         
         const result = await response.json();
         
-        // Generate a unique ID for the image
         const imageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Update the component with the results from Gemini
         const updatedComponents = components.map(comp => {
           if (comp.id === componentId) {
             return {
               ...comp,
               description: result.description || comp.description,
               condition: result.condition || comp.condition,
-              notes: result.notes ? (comp.notes ? `${comp.notes}\n\nAI Suggested: ${result.notes}` : result.notes) : comp.notes,
+              notes: result.notes ? (comp.notes ? `${comp.notes}\n\nAI Suggested: ${result.notes}` : result.notes) : (comp.notes || ""),
               images: [
                 ...comp.images,
                 {
@@ -154,16 +137,14 @@ const RoomComponentInspection = ({
                   timestamp: new Date(),
                 }
               ],
-              isEditing: true // Automatically open the editing panel
+              isEditing: true
             };
           }
           return comp;
         });
         
-        // Call the parent's onChange function
         onChange(updatedComponents);
         
-        // Open the component's accordion
         if (!expandedComponents.includes(componentId)) {
           setExpandedComponents([...expandedComponents, componentId]);
         }
@@ -188,7 +169,6 @@ const RoomComponentInspection = ({
   };
 
   const handleAddComponent = () => {
-    // Get available components for this room type that aren't already added
     const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
       comp => !components.some(c => c.type === comp.type)
     );
@@ -201,7 +181,6 @@ const RoomComponentInspection = ({
       return;
     }
     
-    // Add the first available component
     const newComponent = availableComponents[0];
     const newComponentId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -212,17 +191,16 @@ const RoomComponentInspection = ({
         name: newComponent.name,
         type: newComponent.type,
         description: "",
-        condition: "fair",
+        condition: "fair" as ConditionRating,
         notes: "",
         images: [],
         isOptional: newComponent.isOptional,
         isEditing: true,
-      }
+      } as ComponentItem
     ];
     
     onChange(updatedComponents);
     
-    // Open the new component's accordion
     setExpandedComponents([...expandedComponents, newComponentId]);
     
     toast({
@@ -236,7 +214,6 @@ const RoomComponentInspection = ({
     
     if (!component) return;
     
-    // Check if component is optional
     if (!component.isOptional) {
       toast({
         title: "Cannot remove component",
@@ -249,7 +226,6 @@ const RoomComponentInspection = ({
     const updatedComponents = components.filter(c => c.id !== componentId);
     onChange(updatedComponents);
     
-    // Remove from expanded components
     setExpandedComponents(expandedComponents.filter(id => id !== componentId));
     
     toast({
@@ -355,7 +331,6 @@ const RoomComponentInspection = ({
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4 pt-2">
                 <div className="space-y-4">
-                  {/* Image Upload/Capture Section */}
                   <div className="flex flex-col space-y-2">
                     <label className="text-sm font-medium">
                       Photos ({component.images.length})
@@ -438,11 +413,9 @@ const RoomComponentInspection = ({
                     </div>
                   </div>
                   
-                  {/* Collapsible Edit Section */}
                   <Collapsible open={component.isEditing} className="space-y-4">
                     <CollapsibleContent>
                       <div className="space-y-4 pt-2">
-                        {/* Description Field */}
                         <div>
                           <label className="block text-sm font-medium mb-1">
                             Description
@@ -456,7 +429,6 @@ const RoomComponentInspection = ({
                           />
                         </div>
                         
-                        {/* Condition Field */}
                         <div>
                           <label className="block text-sm font-medium mb-1">
                             Condition
@@ -481,7 +453,6 @@ const RoomComponentInspection = ({
                           </Select>
                         </div>
                         
-                        {/* Notes Field */}
                         <div>
                           <label className="block text-sm font-medium mb-1">
                             Additional Notes
@@ -495,7 +466,6 @@ const RoomComponentInspection = ({
                           />
                         </div>
                         
-                        {/* Done Button */}
                         <div className="flex justify-end">
                           <Button 
                             onClick={() => toggleEditMode(component.id)}
