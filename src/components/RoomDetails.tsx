@@ -1,0 +1,138 @@
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Room, RoomSection, RoomComponent } from "@/types";
+import { BookCheck, Edit } from "lucide-react";
+import RoomSectionEditor from "@/components/RoomSectionEditor";
+import RoomComponentInspection from "@/components/RoomComponentInspection";
+import RoomImageUploader from "@/components/RoomImageUploader";
+import { useState } from "react";
+
+interface RoomDetailsProps {
+  reportId: string;
+  room: Room | null;
+  onUpdateGeneralCondition: (roomId: string, condition: string) => Promise<void>;
+  onSaveSection: (updatedSection: RoomSection) => Promise<void>;
+  onUpdateComponents: (updatedComponents: RoomComponent[]) => Promise<void>;
+  onImageProcessed: (updatedRoom: Room) => void;
+}
+
+const RoomDetails = ({
+  reportId,
+  room,
+  onUpdateGeneralCondition,
+  onSaveSection,
+  onUpdateComponents,
+  onImageProcessed
+}: RoomDetailsProps) => {
+  const [activeTab, setActiveTab] = useState("details");
+
+  if (!room) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <BookCheck className="h-16 w-16 text-shareai-teal mb-4" />
+          <h3 className="text-xl font-medium mb-2">No Room Selected</h3>
+          <p className="text-gray-500 text-center mb-6 max-w-md">
+            Select a room from the list on the left to edit its details or add a new room.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-xl">{room.name}</CardTitle>
+        <p className="text-gray-600 text-sm">
+          {room.generalCondition}
+        </p>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="details">Room Details</TabsTrigger>
+            <TabsTrigger value="components">Components</TabsTrigger>
+            <TabsTrigger value="photos">Photos & AI Analysis</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="pt-2">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-lg font-medium">General Condition</h3>
+                <Textarea 
+                  value={room.generalCondition}
+                  onChange={(e) => onUpdateGeneralCondition(room.id, e.target.value)}
+                  placeholder="Describe the general condition of the room..."
+                  className="min-h-[100px]"
+                />
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Detailed Sections</h3>
+                
+                {room.sections.map((section) => (
+                  <RoomSectionEditor 
+                    key={section.id} 
+                    section={section}
+                    onSave={onSaveSection}
+                  />
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="components" className="pt-2">
+            <RoomComponentInspection
+              reportId={reportId}
+              roomId={room.id}
+              roomType={room.type}
+              components={(room.components || []).map(comp => ({
+                ...comp,
+                notes: comp.notes,
+              }))}
+              onChange={onUpdateComponents}
+            />
+          </TabsContent>
+          
+          <TabsContent value="photos" className="pt-2">
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium">Room Photos</h3>
+              
+              {room.images.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {room.images.map((image) => (
+                    <div key={image.id} className="relative rounded-lg overflow-hidden border">
+                      <img 
+                        src={image.url} 
+                        alt={`${room.name}`} 
+                        className="w-full h-64 object-cover"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <Badge className={image.aiProcessed ? "bg-green-500" : "bg-yellow-500"}>
+                          {image.aiProcessed ? "AI Processed" : "Not Processed"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <RoomImageUploader 
+                reportId={reportId}
+                roomId={room.id}
+                onImageProcessed={onImageProcessed}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default RoomDetails;
