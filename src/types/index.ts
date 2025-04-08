@@ -72,7 +72,7 @@ export interface RoomComponent {
     url: string;
     timestamp: Date;
   }[];
-  isOptional?: boolean;
+  isOptional: boolean; // This is now required
 }
 
 export interface RoomSection {

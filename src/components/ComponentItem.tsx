@@ -44,8 +44,6 @@ const ComponentItem = ({
 }: ComponentItemProps) => {
   
   const handleComponentImage = (componentId: string, imageUrl: string, result: any) => {
-    const imageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
     onImageProcessed(
       componentId, 
       imageUrl, 
@@ -67,7 +65,12 @@ const ComponentItem = ({
         onClick={() => onToggleExpand(component.id)}
       >
         <div className="flex items-center justify-between w-full pr-4">
-          <span>{component.name}</span>
+          <span className="flex items-center gap-2">
+            {component.name}
+            {!component.isOptional && (
+              <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">Required</Badge>
+            )}
+          </span>
           {component.condition && (
             <Badge className={
               conditionOptions.find(opt => opt.value === component.condition)?.color || 
@@ -107,7 +110,7 @@ const ComponentItem = ({
               </div>
             )}
             
-            <div className="flex">
+            <div className="flex flex-wrap gap-2">
               <ComponentImageCapture 
                 componentId={component.id}
                 roomType={roomType}
@@ -120,7 +123,6 @@ const ComponentItem = ({
               {!component.isEditing && (
                 <Button
                   variant="outline"
-                  className="ml-2"
                   onClick={() => onToggleEditMode(component.id)}
                 >
                   <Edit className="h-4 w-4 mr-2" />
@@ -131,7 +133,7 @@ const ComponentItem = ({
               {component.isOptional && (
                 <Button
                   variant="outline"
-                  className="ml-auto text-red-500 hover:text-red-700"
+                  className="text-red-500 hover:text-red-700 ml-auto"
                   onClick={() => onRemoveComponent(component.id)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />

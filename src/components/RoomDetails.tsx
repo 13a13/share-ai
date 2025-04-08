@@ -16,7 +16,7 @@ interface RoomDetailsProps {
   room: Room | null;
   onUpdateGeneralCondition: (roomId: string, condition: string) => Promise<void>;
   onSaveSection: (updatedSection: RoomSection) => Promise<void>;
-  onUpdateComponents: (updatedComponents: RoomComponent[]) => Promise<void>;
+  onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
   onImageProcessed: (updatedRoom: Room) => void;
 }
 
@@ -43,6 +43,10 @@ const RoomDetails = ({
       </Card>
     );
   }
+
+  const handleComponentUpdate = (updatedComponents: RoomComponent[]) => {
+    onUpdateComponents(room.id, updatedComponents);
+  };
 
   return (
     <Card>
@@ -95,7 +99,7 @@ const RoomDetails = ({
                 ...comp,
                 notes: comp.notes,
               }))}
-              onChange={onUpdateComponents}
+              onChange={handleComponentUpdate}
             />
           </TabsContent>
           

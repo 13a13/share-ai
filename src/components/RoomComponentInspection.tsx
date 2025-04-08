@@ -2,6 +2,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Accordion } from "@/components/ui/accordion";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { ConditionRating, RoomType, RoomComponent } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -31,34 +38,59 @@ const RoomComponentInspection = ({
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
   const [expandedComponents, setExpandedComponents] = useState<string[]>([]);
+  const [selectedComponentType, setSelectedComponentType] = useState<string>("");
 
   const handleAddComponent = () => {
-    const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
-      comp => !components.some(c => c.type === comp.type)
-    );
-    
-    if (availableComponents.length === 0) {
-      toast({
-        title: "No more components available",
-        description: "All possible components for this room type have been added.",
-      });
-      return;
+    if (!selectedComponentType) {
+      // If no component is selected from dropdown, show the first available
+      const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
+        comp => !components.some(c => c.type === comp.type)
+      );
+      
+      if (availableComponents.length === 0) {
+        toast({
+          title: "No more components available",
+          description: "All possible components for this room type have been added.",
+        });
+        return;
+      }
+      
+      const newComponent = availableComponents[0];
+      addComponentToRoom(newComponent);
+    } else {
+      // Add the selected component from dropdown
+      const componentToAdd = getDefaultComponentsByRoomType(roomType).find(
+        comp => comp.type === selectedComponentType
+      );
+      
+      if (!componentToAdd) {
+        toast({
+          title: "Component not found",
+          description: "The selected component type is not valid for this room.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      addComponentToRoom(componentToAdd);
+      setSelectedComponentType("");
     }
-    
-    const newComponent = availableComponents[0];
+  };
+
+  const addComponentToRoom = (componentToAdd: { name: string; type: string; isOptional: boolean }) => {
     const newComponentId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const updatedComponents = [
       ...components,
       {
         id: newComponentId,
-        name: newComponent.name,
-        type: newComponent.type,
+        name: componentToAdd.name,
+        type: componentToAdd.type,
         description: "",
         condition: "fair" as ConditionRating,
         notes: "",
         images: [],
-        isOptional: newComponent.isOptional,
+        isOptional: componentToAdd.isOptional,
         isEditing: true,
       } as ComponentItem
     ];
@@ -69,7 +101,7 @@ const RoomComponentInspection = ({
     
     toast({
       title: "Component added",
-      description: `${newComponent.name} has been added to the room inspection.`,
+      description: `${componentToAdd.name} has been added to the room inspection.`,
     });
   };
 
@@ -191,18 +223,44 @@ const RoomComponentInspection = ({
     );
   };
 
+  // Get available components that haven't been added yet
+  const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
+    comp => !components.some(c => c.type === comp.type)
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <h3 className="text-lg font-medium">Room Components</h3>
-        <Button 
-          onClick={handleAddComponent}
-          variant="outline" 
-          size="sm"
-          className="flex items-center gap-1"
-        >
-          <Plus className="h-4 w-4" /> Add Component
-        </Button>
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2">
+          {availableComponents.length > 0 && (
+            <div className="w-full sm:w-64">
+              <Select 
+                value={selectedComponentType} 
+                onValueChange={setSelectedComponentType}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select component to add" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableComponents.map((comp) => (
+                    <SelectItem key={comp.type} value={comp.type}>
+                      {comp.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <Button 
+            onClick={handleAddComponent}
+            variant="outline" 
+            className="flex items-center gap-1"
+            disabled={availableComponents.length === 0}
+          >
+            <Plus className="h-4 w-4" /> Add Component
+          </Button>
+        </div>
       </div>
       
       {components.length === 0 ? (
