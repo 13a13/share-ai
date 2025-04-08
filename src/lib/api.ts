@@ -1,5 +1,5 @@
-
-import { GeminiResponse, Property, Report, Room, RoomImage, RoomType } from '@/types';
+import { Property, Report, Room, RoomImage, RoomType } from '@/types';
+import { GeminiResponse } from '@/types/gemini';
 import { v4 as uuidv4 } from 'uuid';
 import { createNewReport, createNewRoom, mockGeminiResponse, mockProperties, mockReport } from './mockData';
 
@@ -182,7 +182,7 @@ export const GeminiAPI = {
     // For the mock, we'll simulate an API delay and return mock data
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(mockGeminiResponse);
+        resolve({...mockGeminiResponse});
       }, 2000);
     });
   },
