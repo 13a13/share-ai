@@ -3,6 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RoomComponent } from "@/types";
 import { conditionOptions } from "@/utils/roomComponentUtils";
+import { InfoIcon } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface RoomComponentViewProps {
   component: RoomComponent;
@@ -14,14 +21,23 @@ const RoomComponentView = ({ component }: RoomComponentViewProps) => {
   );
 
   return (
-    <Card className="mb-2">
+    <Card className="mb-2 transition-all duration-300 hover:shadow-md">
       <CardContent className="p-4">
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
               <h3 className="font-medium">{component.name}</h3>
               {!component.isOptional && (
-                <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">Required</Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">Required</Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">This component is required and cannot be removed</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
             {component.condition && (

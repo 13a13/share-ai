@@ -1,19 +1,28 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Room, RoomSection, RoomComponent } from "@/types";
-import { BookCheck, Edit } from "lucide-react";
+import { BookCheck, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import RoomSectionEditor from "@/components/RoomSectionEditor";
 import RoomComponentInspection from "@/components/RoomComponentInspection";
 import RoomImageUploader from "@/components/RoomImageUploader";
 import { useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface RoomDetailsProps {
   reportId: string;
   room: Room | null;
+  allRooms: Room[];
+  currentRoomIndex: number;
+  onChangeRoom: (index: number) => void;
   onUpdateGeneralCondition: (roomId: string, condition: string) => Promise<void>;
   onSaveSection: (updatedSection: RoomSection) => Promise<void>;
   onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
@@ -23,6 +32,9 @@ interface RoomDetailsProps {
 const RoomDetails = ({
   reportId,
   room,
+  allRooms,
+  currentRoomIndex,
+  onChangeRoom,
   onUpdateGeneralCondition,
   onSaveSection,
   onUpdateComponents,
@@ -44,6 +56,20 @@ const RoomDetails = ({
     );
   }
 
+  const roomsWithContent = allRooms.filter(r => 
+    r.components?.some(c => c.description && c.condition) || 
+    r.generalCondition
+  ).length;
+  const overallProgress = Math.round((roomsWithContent / allRooms.length) * 100);
+
+  const requiredComponents = room.components?.filter(c => !c.isOptional) || [];
+  const filledRequiredComponents = requiredComponents.filter(c => 
+    c.description && c.condition && (c.images.length > 0 || c.notes)
+  );
+  const roomCompletionPercentage = requiredComponents.length > 0 
+    ? Math.round((filledRequiredComponents.length / requiredComponents.length) * 100) 
+    : 100;
+
   const handleComponentUpdate = (updatedComponents: RoomComponent[]) => {
     onUpdateComponents(room.id, updatedComponents);
   };
@@ -51,10 +77,66 @@ const RoomDetails = ({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-xl">{room.name}</CardTitle>
-        <p className="text-gray-600 text-sm">
-          {room.generalCondition}
-        </p>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-xl">{room.name}</CardTitle>
+          <div className="flex items-center space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentRoomIndex === 0}
+                    onClick={() => onChangeRoom(currentRoomIndex - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="sr-only md:not-sr-only md:ml-1">Previous</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Go to previous room</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <span className="text-sm text-gray-500">
+              {currentRoomIndex + 1} of {allRooms.length} rooms
+            </span>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentRoomIndex === allRooms.length - 1}
+                    onClick={() => onChangeRoom(currentRoomIndex + 1)}
+                  >
+                    <span className="sr-only md:not-sr-only md:mr-1">Next</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Go to next room</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+        <div className="mt-2">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-xs text-gray-500">Room completion</span>
+            <span className="text-xs text-gray-500">{roomCompletionPercentage}%</span>
+          </div>
+          <Progress value={roomCompletionPercentage} className="h-2" />
+        </div>
+        <div className="mt-2">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-xs text-gray-500">Overall report progress</span>
+            <span className="text-xs text-gray-500">{overallProgress}%</span>
+          </div>
+          <Progress value={overallProgress} className="h-2" />
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
