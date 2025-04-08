@@ -49,6 +49,7 @@ export interface Room {
   generalCondition: string;
   images: RoomImage[];
   sections: RoomSection[];
+  components?: RoomComponent[]; // New field for detailed components
 }
 
 export interface RoomImage {
@@ -57,6 +58,21 @@ export interface RoomImage {
   aiProcessed: boolean;
   aiData?: any;
   timestamp: Date;
+}
+
+export interface RoomComponent {
+  id: string;
+  name: string;
+  type: string; // walls, ceiling, flooring, etc.
+  description: string;
+  condition: ConditionRating;
+  notes?: string;
+  images: {
+    id: string;
+    url: string;
+    timestamp: Date;
+  }[];
+  isOptional?: boolean;
 }
 
 export interface RoomSection {
@@ -82,6 +98,14 @@ export interface Report {
   rooms: Room[];
   generalNotes?: string;
   disclaimers: string[];
+  reportInfo?: {
+    reportDate: Date;
+    clerk: string;
+    inventoryType: string;
+    tenantPresent: boolean;
+    tenantName?: string;
+    additionalInfo?: string;
+  };
 }
 
 export interface GeminiResponse {
@@ -103,4 +127,10 @@ export interface GeminiResponse {
     additional?: string;
     cleaning: string;
   };
+}
+
+export interface ComponentAnalysisResponse {
+  description: string;
+  condition: ConditionRating;
+  notes?: string;
 }

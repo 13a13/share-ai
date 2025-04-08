@@ -18,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, roomType } = await req.json();
+    const { imageUrl, roomType, componentType } = await req.json();
     
     if (!imageUrl) {
       return new Response(
@@ -34,7 +34,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Processing room image:", roomType);
+    console.log(`Processing ${componentType || 'room'} image for ${roomType || 'unknown room type'}`);
 
     // For base64 images, we need to extract the data part
     let imageData = imageUrl;
@@ -42,19 +42,39 @@ serve(async (req) => {
       imageData = imageUrl.split(",")[1];
     }
 
-    // Prepare prompt for Gemini based on the room type
-    const roomTypeDescription = roomType 
-      ? `This is a ${roomType.replace('_', ' ')}. `
-      : "This is a room. ";
+    // Prepare prompt for Gemini based on the room type and component
+    let promptText = "";
 
-    const prompt = `${roomTypeDescription}Analyze this room image and provide a detailed assessment. Identify objects, their condition and description. Also provide an overall room assessment including general condition, walls, ceiling, flooring, doors, windows, lighting, furniture (if visible), appliances (if visible), and cleaning needs. Format your response as structured data that I can parse as JSON.`;
+    if (componentType) {
+      // Component-specific analysis
+      const componentDescription = componentType.replace('_', ' ');
+      promptText = `This is an image of ${componentDescription} in a ${roomType || 'room'}. 
+        Provide a detailed assessment of this specific component. 
+        Describe its appearance, condition, any visible damage or wear, and cleanliness.
+        Format your response as a JSON object with these fields:
+        {
+          "description": "detailed description of the component",
+          "condition": "excellent|good|fair|poor|needs_replacement",
+          "notes": "suggested notes about any issues that need attention"
+        }`;
+    } else {
+      // Full room analysis (original behavior)
+      const roomTypeDescription = roomType 
+        ? `This is a ${roomType.replace('_', ' ')}. `
+        : "This is a room. ";
+
+      promptText = `${roomTypeDescription}Analyze this room image and provide a detailed assessment. 
+        Identify objects, their condition and description. Also provide an overall room assessment including
+        general condition, walls, ceiling, flooring, doors, windows, lighting, furniture (if visible), 
+        appliances (if visible), and cleaning needs. Format your response as structured data that I can parse as JSON.`;
+    }
 
     // Prepare the request for Gemini API
     const geminiRequest = {
       contents: [
         {
           parts: [
-            { text: prompt },
+            { text: promptText },
             {
               inline_data: {
                 mime_type: "image/jpeg",
@@ -106,7 +126,7 @@ serve(async (req) => {
     try {
       // Look for JSON structure in the text
       let jsonMatch = textContent.match(/```json\n([\s\S]*?)\n```/) || 
-                      textContent.match(/{[\s\S]*}/);
+                    textContent.match(/{[\s\S]*}/);
       
       let jsonContent;
       if (jsonMatch) {
@@ -118,20 +138,32 @@ serve(async (req) => {
       // Parse the JSON content
       const parsedData = JSON.parse(jsonContent);
       
-      // Validate the parsed data has expected structure
-      const formattedResponse = {
-        objects: parsedData.objects || [],
-        roomAssessment: parsedData.roomAssessment || {
-          generalCondition: "Unknown",
-          walls: "Unknown",
-          ceiling: "Unknown",
-          flooring: "Unknown",
-          doors: "Unknown",
-          windows: "Unknown",
-          lighting: "Unknown",
-          cleaning: "Needs regular cleaning"
-        }
-      };
+      // Format the response based on whether this is a component or full room
+      let formattedResponse;
+      
+      if (componentType) {
+        // For component analysis
+        formattedResponse = {
+          description: parsedData.description || "No description available",
+          condition: parsedData.condition || "fair",
+          notes: parsedData.notes || "",
+        };
+      } else {
+        // For full room analysis (original behavior)
+        formattedResponse = {
+          objects: parsedData.objects || [],
+          roomAssessment: parsedData.roomAssessment || {
+            generalCondition: "Unknown",
+            walls: "Unknown",
+            ceiling: "Unknown",
+            flooring: "Unknown",
+            doors: "Unknown",
+            windows: "Unknown",
+            lighting: "Unknown",
+            cleaning: "Needs regular cleaning"
+          }
+        };
+      }
 
       console.log("Successfully processed image with Gemini");
       
@@ -143,23 +175,34 @@ serve(async (req) => {
       console.error("Error parsing Gemini response as JSON:", error);
       console.log("Raw response:", textContent);
       
-      // Return a fallback structured response
-      return new Response(
-        JSON.stringify({
-          objects: [{ name: "Unknown", condition: "Unknown", description: "Could not identify objects" }],
-          roomAssessment: {
-            generalCondition: "Could not determine from image",
-            walls: "Unknown",
-            ceiling: "Unknown",
-            flooring: "Unknown",
-            doors: "Unknown",
-            windows: "Unknown",
-            lighting: "Unknown",
-            cleaning: "Unknown"
-          }
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // Return a fallback structured response based on whether this is a component or full room
+      if (componentType) {
+        return new Response(
+          JSON.stringify({
+            description: "Could not determine from image",
+            condition: "fair",
+            notes: "AI analysis failed, please add manual description"
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else {
+        return new Response(
+          JSON.stringify({
+            objects: [{ name: "Unknown", condition: "Unknown", description: "Could not identify objects" }],
+            roomAssessment: {
+              generalCondition: "Could not determine from image",
+              walls: "Unknown",
+              ceiling: "Unknown",
+              flooring: "Unknown",
+              doors: "Unknown",
+              windows: "Unknown",
+              lighting: "Unknown",
+              cleaning: "Unknown"
+            }
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
   } catch (error) {
     console.error("Server error:", error);
