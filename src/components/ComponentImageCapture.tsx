@@ -1,9 +1,9 @@
 
 import { useState } from "react";
-import { Camera } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { RoomComponent } from "@/types";
+import ImageFileInput from "./ImageFileInput";
+import { processComponentImage } from "@/services/imageProcessingService";
 
 interface ComponentImageCaptureProps {
   componentId: string;
@@ -37,24 +37,7 @@ const ComponentImageCapture = ({
       onProcessingStateChange(componentId, true);
       
       try {
-        const response = await fetch(`${window.location.origin}/supabase-functions/process-room-image`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            imageUrl,
-            roomType,
-            componentType
-          })
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to process image: ${errorText}`);
-        }
-        
-        const result = await response.json();
+        const result = await processComponentImage(imageUrl, roomType, componentType);
         onImageProcessed(componentId, imageUrl, result);
         
         toast({
@@ -77,35 +60,11 @@ const ComponentImageCapture = ({
   };
 
   return (
-    <div className="relative">
-      <input
-        type="file" 
-        id={`image-upload-${componentId}`} 
-        accept="image/*"
-        className="sr-only"
-        onChange={handleImageCapture}
-        disabled={isProcessing}
-      />
-      <label 
-        htmlFor={`image-upload-${componentId}`}
-        className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-shareai-teal hover:bg-shareai-teal/90 cursor-pointer"
-      >
-        {isProcessing ? (
-          <div className="flex items-center">
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing...
-          </div>
-        ) : (
-          <div className="flex items-center">
-            <Camera className="h-4 w-4 mr-2" />
-            Upload Photo
-          </div>
-        )}
-      </label>
-    </div>
+    <ImageFileInput
+      id={`image-upload-${componentId}`}
+      isProcessing={isProcessing}
+      onChange={handleImageCapture}
+    />
   );
 };
 
