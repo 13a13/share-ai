@@ -41,56 +41,52 @@ export function generateSummaryAndDisclaimers(
 ): void {
   const pageWidth = doc.internal.pageSize.width;
   
-  // Header
+  // Header - simplified
   doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-  doc.roundedRect(pdfMargins.page, pdfMargins.page, pageWidth - (pdfMargins.page * 2), 25, 4, 4, "F");
+  doc.rect(pdfMargins.page, pdfMargins.page, pageWidth - (pdfMargins.page * 2), 20, "F");
   
   doc.setFontSize(pdfFontSizes.title);
   doc.setFont(pdfFonts.heading, "bold");
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.text("SUMMARY & DISCLAIMERS", pageWidth / 2, pdfMargins.page + 16, { align: "center" });
+  doc.text("SUMMARY & DISCLAIMERS", pageWidth / 2, pdfMargins.page + 13, { align: "center" });
   
-  let yPosition = pdfMargins.page + 40;
+  let yPosition = pdfMargins.page + 30;
   
-  // Summary section
-  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2], 0.1);
-  doc.roundedRect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 20, 4, 4, "F");
+  // Summary section - simplified
+  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.1);
+  doc.rect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 16, "F");
   
   doc.setFontSize(pdfFontSizes.subtitle);
   doc.setFont(pdfFonts.heading, "bold");
-  doc.setTextColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
-  doc.text("Report Summary", pageWidth / 2, yPosition + 14, { align: "center" });
+  doc.setTextColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
+  doc.text("Report Summary", pdfMargins.page + 10, yPosition + 11);
   
-  yPosition += 30;
+  yPosition += 25;
   
-  // Summary content in two-column layout
-  const colWidth = (pageWidth - (pdfMargins.page * 2) - 10) / 2;
-  
-  // Left column - Summary
-  createElegantBox(doc, pdfMargins.page, yPosition, colWidth, 80, 4);
-  
+  // Summary content
   doc.setFontSize(pdfFontSizes.normal);
   doc.setFont(pdfFonts.body, "normal");
   doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
   
   const summaryText = `This report includes an assessment of ${report.rooms.length} room(s) at the property located at ${property.address}, ${property.city}, ${property.state} ${property.zipCode}. The inspection was conducted on ${report.reportInfo?.reportDate ? formatDate(report.reportInfo.reportDate) : "an unspecified date"}.`;
   
-  const splitSummary = doc.splitTextToSize(summaryText, colWidth - 20);
-  doc.text(splitSummary, pdfMargins.page + 10, yPosition + 20);
+  const splitSummary = doc.splitTextToSize(summaryText, pageWidth - (pdfMargins.page * 2) - 20);
+  doc.text(splitSummary, pdfMargins.page + 10, yPosition);
   
-  // Right column - Disclaimers
-  createElegantBox(doc, pdfMargins.page + colWidth + 10, yPosition, colWidth, 80, 4);
+  yPosition += splitSummary.length * 6 + 20;
   
-  let disclaimerY = yPosition + 15;
+  // Disclaimers section - simplified
+  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.1);
+  doc.rect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 16, "F");
   
-  doc.setFontSize(pdfFontSizes.subheader);
+  doc.setFontSize(pdfFontSizes.subtitle);
   doc.setFont(pdfFonts.heading, "bold");
-  doc.setTextColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
-  doc.text("Disclaimers", pdfMargins.page + colWidth + 20, disclaimerY);
+  doc.setTextColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
+  doc.text("Disclaimers", pdfMargins.page + 10, yPosition + 11);
   
-  disclaimerY += 10;
+  yPosition += 25;
   
-  const disclaimerStartX = pdfMargins.page + colWidth + 20;
+  const disclaimerStartX = pdfMargins.page + 10;
   
   if (report.disclaimers && report.disclaimers.length > 0) {
     doc.setFontSize(pdfFontSizes.normal);
@@ -99,12 +95,12 @@ export function generateSummaryAndDisclaimers(
     
     for (const disclaimer of report.disclaimers) {
       // Bullet point
-      doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
-      doc.circle(disclaimerStartX, disclaimerY, 1.5, "F");
+      doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+      doc.circle(disclaimerStartX, yPosition, 1.5, "F");
       
-      const splitDisclaimer = doc.splitTextToSize(disclaimer, colWidth - 25);
-      doc.text(splitDisclaimer, disclaimerStartX + 5, disclaimerY);
-      disclaimerY += splitDisclaimer.length * 6 + 5;
+      const splitDisclaimer = doc.splitTextToSize(disclaimer, pageWidth - (pdfMargins.page * 2) - 15);
+      doc.text(splitDisclaimer, disclaimerStartX + 5, yPosition);
+      yPosition += splitDisclaimer.length * 6 + 5;
     }
   } else {
     // Default disclaimers
@@ -120,59 +116,63 @@ export function generateSummaryAndDisclaimers(
     
     for (const disclaimer of defaultDisclaimers) {
       // Bullet point
-      doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
-      doc.circle(disclaimerStartX, disclaimerY, 1.5, "F");
+      doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+      doc.circle(disclaimerStartX, yPosition, 1.5, "F");
       
-      const splitDisclaimer = doc.splitTextToSize(disclaimer, colWidth - 25);
-      doc.text(splitDisclaimer, disclaimerStartX + 5, disclaimerY);
-      disclaimerY += splitDisclaimer.length * 6 + 5;
+      const splitDisclaimer = doc.splitTextToSize(disclaimer, pageWidth - (pdfMargins.page * 2) - 15);
+      doc.text(splitDisclaimer, disclaimerStartX + 5, yPosition);
+      yPosition += splitDisclaimer.length * 6 + 5;
     }
   }
   
-  yPosition += 90;
+  yPosition += 20;
   
-  // Signature section
-  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
-  doc.roundedRect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 80, 4, 4, "F");
+  // Signature section - simplified
+  doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
+  doc.rect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 60, "F");
   
   doc.setFontSize(pdfFontSizes.subtitle);
   doc.setFont(pdfFonts.heading, "bold");
   doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
   doc.text("Signatures", pageWidth / 2, yPosition + 15, { align: "center" });
   
-  // Inspector signature - left side
-  createElegantBox(doc, pdfMargins.page + 20, yPosition + 25, colWidth - 40, 40, 4);
+  const colWidth = (pageWidth - (pdfMargins.page * 2)) / 2;
   
-  // Signature line - dashed - using our custom function instead of setLineDash
+  // Inspector signature - left side
+  doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+  doc.rect(pdfMargins.page + 10, yPosition + 25, colWidth - 20, 25, "F");
+  
+  // Signature line - dashed - using our custom function
   doc.setDrawColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
   drawDashedLine(
     doc, 
-    pdfMargins.page + 30, 
-    yPosition + 50, 
-    pdfMargins.page + colWidth - 30, 
-    yPosition + 50
+    pdfMargins.page + 15, 
+    yPosition + 40, 
+    pdfMargins.page + colWidth - 15, 
+    yPosition + 40
   );
   
   doc.setFontSize(pdfFontSizes.small);
   doc.setFont(pdfFonts.body, "normal");
   doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-  doc.text("Inspector's Signature", pdfMargins.page + 20 + (colWidth - 40) / 2, yPosition + 60, { align: "center" });
+  doc.text("Inspector's Signature", pdfMargins.page + (colWidth / 2), yPosition + 50, { align: "center" });
   
   // Client signature - right side
-  createElegantBox(doc, pdfMargins.page + colWidth + 20, yPosition + 25, colWidth - 40, 40, 4);
+  doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+  doc.rect(pdfMargins.page + colWidth + 10, yPosition + 25, colWidth - 20, 25, "F");
   
   // Signature line - dashed - using our custom function
   doc.setDrawColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
   drawDashedLine(
     doc,
-    pdfMargins.page + colWidth + 30, 
-    yPosition + 50, 
-    pdfMargins.page + (colWidth * 2) - 30, 
-    yPosition + 50
+    pdfMargins.page + colWidth + 15, 
+    yPosition + 40, 
+    pdfMargins.page + (colWidth * 2) - 15, 
+    yPosition + 40
   );
   
   doc.setFontSize(pdfFontSizes.small);
   doc.setFont(pdfFonts.body, "normal");
   doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-  doc.text("Client's Signature", pdfMargins.page + colWidth + 20 + (colWidth - 40) / 2, yPosition + 60, { align: "center" });
+  doc.text("Client's Signature", pdfMargins.page + (colWidth * 1.5), yPosition + 50, { align: "center" });
 }

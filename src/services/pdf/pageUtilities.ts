@@ -1,6 +1,6 @@
 
 import { jsPDF } from "jspdf";
-import { pdfColors, pdfFontSizes, pdfFonts, pdfMargins, createSeparator } from "./pdfStyles";
+import { pdfColors, pdfFontSizes, pdfFonts, pdfMargins } from "./pdfStyles";
 
 export class PageUtils {
   private currentPage: number = 1;
@@ -13,7 +13,7 @@ export class PageUtils {
   }
   
   /**
-   * Adds header and footer to the current page
+   * Adds header and footer to the current page - simplified design
    */
   addHeaderAndFooter(): void {
     // Footer on all pages except cover
@@ -21,7 +21,7 @@ export class PageUtils {
       const pageWidth = this.doc.internal.pageSize.width;
       const pageHeight = this.doc.internal.pageSize.height;
       
-      // Separator line above footer
+      // Simple separator line above footer
       this.doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
       this.doc.setLineWidth(0.5);
       this.doc.line(pdfMargins.page, pageHeight - 15, pageWidth - pdfMargins.page, pageHeight - 15);
@@ -33,7 +33,7 @@ export class PageUtils {
       this.doc.text(
         this.reportTitle,
         pdfMargins.page,
-        pageHeight - 10
+        pageHeight - 8
       );
       
       // Page number - centered
@@ -41,19 +41,15 @@ export class PageUtils {
       this.doc.text(
         `Page ${this.currentPage}`,
         pageWidth / 2,
-        pageHeight - 10,
+        pageHeight - 8,
         { align: "center" }
       );
       
       // Date - right aligned
       this.doc.text(
-        `Generated: ${new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })}`,
+        `Generated: ${new Date().toLocaleDateString()}`,
         pageWidth - pdfMargins.page,
-        pageHeight - 10,
+        pageHeight - 8,
         { align: "right" }
       );
     }

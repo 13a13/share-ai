@@ -1,28 +1,29 @@
+
 // PDF styling utilities and constants
 
-// PDF color constants - professional color palette
+// PDF color palette that matches the dashboard
 export const pdfColors = {
-  primary: [26, 35, 126], // Deep Blue (#1A237E)
-  secondary: [0, 121, 107], // Teal (#00796B)
-  accent: [245, 245, 245], // Light Gray (#F5F5F5)
+  primary: [155, 135, 245], // Primary Purple (#9b87f5)
+  secondary: [126, 105, 171], // Secondary Purple (#7E69AB)
+  accent: [30, 174, 219], // Bright Blue (#1EAEDB)
   white: [255, 255, 255],
-  black: [33, 33, 33], // Near black for main text
-  gray: [117, 117, 117], // Medium gray for secondary text
-  lightGray: [224, 224, 224], // Lighter gray for borders
-  bgGray: [245, 245, 245], // Light gray for backgrounds
-  successGreen: [76, 175, 80], // Professional green
-  warningYellow: [255, 193, 7], // Professional amber
-  dangerRed: [244, 67, 54], // Professional red
+  black: [34, 34, 34], // Dark Gray (#222222)
+  gray: [138, 137, 140], // Medium Gray (#8A898C)
+  lightGray: [241, 241, 241], // Light Gray (#F1F1F1)
+  bgGray: [246, 246, 247], // Dark Gray (#F6F6F7)
+  successGreen: [76, 175, 80],
+  warningYellow: [255, 193, 7],
+  dangerRed: [244, 67, 54],
 };
 
-// PDF font size constants - improved readability
+// PDF font size constants - simplified for better readability
 export const pdfFontSizes = {
-  title: 18, // Large title (cover page, section headers)
-  subtitle: 16, // Subtitles
-  header: 14, // Component titles
-  subheader: 12, // Section headers
-  normal: 11, // Body text
-  small: 9, // Captions, footnotes
+  title: 16, // Large title (cover page, section headers)
+  subtitle: 14, // Subtitles
+  header: 12, // Component titles
+  subheader: 11, // Section headers
+  normal: 10, // Body text
+  small: 8, // Captions, footnotes
 };
 
 // Font constants - using standard sans-serif fonts
@@ -31,12 +32,12 @@ export const pdfFonts = {
   body: "helvetica",
 };
 
-// Margin constants
+// Margin constants - simplified
 export const pdfMargins = {
-  page: 25, // ~1 inch margin
-  section: 12, // Section padding
-  paragraph: 8, // Paragraph spacing
-  component: 10, // Component padding
+  page: 20, // Standard page margin
+  section: 10, // Section padding
+  paragraph: 6, // Paragraph spacing
+  component: 8, // Component padding
 };
 
 // Helper function to get color for condition badges
@@ -58,29 +59,29 @@ export function getConditionColor(condition: string): number[] {
   }
 }
 
-// Helper function to create elegant section styling
+// Helper function to create section styling - simplified
 export function createSectionBox(doc: any, yPos: number, width: number, height: number, title: string): number {
-  const titleHeight = 16;
+  const titleHeight = 14;
   
   // Section background
-  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
-  doc.roundedRect(pdfMargins.page, yPos, width, height, 4, 4, "F");
+  doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
+  doc.roundedRect(pdfMargins.page, yPos, width, height, 3, 3, "F");
   
   // Section header background
   doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-  doc.roundedRect(pdfMargins.page, yPos, width, titleHeight, 4, 4, "F");
+  doc.roundedRect(pdfMargins.page, yPos, width, titleHeight, 3, 3, "F");
   
   // Section title
   doc.setFontSize(pdfFontSizes.header);
   doc.setFont(pdfFonts.heading, "bold");
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.text(title, pdfMargins.page + 10, yPos + 11);
+  doc.text(title, pdfMargins.page + 8, yPos + 10);
   
-  return yPos + titleHeight + 5; // Return the Y position after the title
+  return yPos + titleHeight + 4; // Return the Y position after the title
 }
 
-// Helper function to create elegant box
-export function createElegantBox(doc: any, x: number, y: number, width: number, height: number, radius: number = 4): void {
+// Helper function to create elegant box - simplified
+export function createElegantBox(doc: any, x: number, y: number, width: number, height: number, radius: number = 3): void {
   // Main box with clean background
   doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
   doc.roundedRect(x, y, width, height, radius, radius, "F");
