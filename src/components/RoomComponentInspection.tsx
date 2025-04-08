@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Accordion } from "@/components/ui/accordion";
@@ -172,29 +171,33 @@ const RoomComponentInspection = ({
 
   const handleImageProcessed = (
     componentId: string, 
-    imageUrl: string, 
+    imageUrls: string[], 
     result: { 
       description?: string; 
-      condition?: ConditionRating; 
+      condition?: {
+        summary?: string;
+        rating?: ConditionRating;
+      }; 
       notes?: string;
     }
   ) => {
-    const imageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
     const updatedComponents = components.map(comp => {
       if (comp.id === componentId) {
+        const newImages = imageUrls.map(url => ({
+          id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          url: url,
+          timestamp: new Date(),
+        }));
+        
         return {
           ...comp,
           description: result.description || comp.description,
-          condition: result.condition || comp.condition,
+          condition: result.condition?.rating || comp.condition,
+          conditionSummary: result.condition?.summary || comp.conditionSummary,
           notes: result.notes ? (comp.notes ? `${comp.notes}\n\nAI Suggested: ${result.notes}` : result.notes) : (comp.notes || ""),
           images: [
             ...comp.images,
-            {
-              id: imageId,
-              url: imageUrl,
-              timestamp: new Date(),
-            }
+            ...newImages
           ],
           isEditing: true
         };
