@@ -19,7 +19,7 @@ export class PageUtils {
       const pageWidth = this.doc.internal.pageSize.width;
       
       // Footer background - softer colors
-      doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+      this.doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
       this.doc.rect(0, 280, 210, 17, "F");
       
       // Page number - softer styling
