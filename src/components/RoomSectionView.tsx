@@ -16,6 +16,8 @@ const sectionTitles: Record<string, string> = {
   lighting: "Lighting and Electrical Fixtures",
   furniture: "Furniture and Built-In Storage",
   appliances: "Appliances and Utility Items",
+  cabinetry: "Cabinetry and Countertops",
+  plumbing: "Plumbing Fixtures",
   additional: "Additional Items",
   cleaning: "Cleaning Summary"
 };

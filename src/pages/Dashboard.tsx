@@ -6,7 +6,7 @@ import EmptyState from "@/components/EmptyState";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report } from "@/types";
 import { useEffect, useState } from "react";
-import { Home, FileText, Plus } from "lucide-react";
+import { Home, FileText, Plus, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
@@ -67,8 +67,16 @@ const Dashboard = () => {
       
       {isLoading ? (
         <div className="grid gap-8">
-          <div className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
-          <div className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
+            ))}
+          </div>
         </div>
       ) : (
         <>
