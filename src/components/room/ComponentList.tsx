@@ -19,7 +19,7 @@ interface ComponentListProps {
   onToggleEditMode: (componentId: string) => void;
   onUpdateComponent: (componentId: string, field: string, value: string) => void;
   onRemoveImage: (componentId: string, imageId: string) => void;
-  onImageProcessed: (componentId: string, imageUrl: string, result: any) => void;
+  onImageProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
 }
 

@@ -69,7 +69,7 @@ const UnifiedRoomView = ({
     handleUpdateComponent,
     toggleEditMode,
     handleRemoveImage,
-    handleImageProcessed,
+    handleImagesProcessed,
     handleComponentProcessingState,
     toggleExpandComponent
   } = useRoomComponents({
@@ -234,7 +234,7 @@ const UnifiedRoomView = ({
                 onToggleEditMode={toggleEditMode}
                 onUpdateComponent={handleUpdateComponent}
                 onRemoveImage={handleRemoveImage}
-                onImageProcessed={handleImageProcessed}
+                onImageProcessed={handleImagesProcessed}
                 onProcessingStateChange={handleComponentProcessingState}
               />
             </div>

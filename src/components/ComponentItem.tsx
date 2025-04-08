@@ -23,8 +23,8 @@ interface ComponentItemProps {
   onRemoveImage: (componentId: string, imageId: string) => void;
   onImageProcessed: (
     componentId: string, 
-    imageUrl: string, 
-    result: { description?: string; condition?: ConditionRating; notes?: string }
+    imageUrls: string[], 
+    result: { description?: string; condition?: { summary?: string; rating?: ConditionRating }; notes?: string }
   ) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
 }
@@ -43,10 +43,10 @@ const ComponentItem = ({
   onProcessingStateChange
 }: ComponentItemProps) => {
   
-  const handleComponentImage = (componentId: string, imageUrl: string, result: any) => {
+  const handleComponentImages = (componentId: string, imageUrls: string[], result: any) => {
     onImageProcessed(
       componentId, 
-      imageUrl, 
+      imageUrls, 
       {
         description: result.description,
         condition: result.condition,
@@ -116,8 +116,10 @@ const ComponentItem = ({
                 roomType={roomType}
                 componentType={component.type}
                 isProcessing={isProcessing}
-                onImageProcessed={handleComponentImage}
+                currentImages={component.images}
+                onImagesProcessed={handleComponentImages}
                 onProcessingStateChange={onProcessingStateChange}
+                onRemovePreviewImage={() => {}}
               />
               
               {!component.isEditing && (
