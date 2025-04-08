@@ -1,1 +1,5 @@
+
 project_id = "gfzievfpgkojticgvryn"
+
+[functions.process-room-image]
+verify_jwt = false

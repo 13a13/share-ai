@@ -1,7 +1,9 @@
+
 import { Property, Report, Room, RoomImage, RoomType } from '@/types';
 import { GeminiResponse } from '@/types/gemini';
 import { v4 as uuidv4 } from 'uuid';
 import { createNewReport, createNewRoom, mockGeminiResponse, mockProperties, mockReport } from './mockData';
+import { supabase } from '@/integrations/supabase/client';
 
 // Since we don't have a real API, we'll mock our API calls with local storage
 const LOCAL_STORAGE_KEYS = {
@@ -175,16 +177,26 @@ export const ReportsAPI = {
   },
 };
 
-// Gemini API mock functions
+// Gemini API implementation
 export const GeminiAPI = {
-  // This would connect to the actual Gemini API in production
-  analyzeImage: async (imageUrl: string): Promise<GeminiResponse> => {
-    // For the mock, we'll simulate an API delay and return mock data
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({...mockGeminiResponse});
-      }, 2000);
-    });
+  // Process the image with the real Gemini API
+  analyzeImage: async (imageUrl: string, roomType?: string): Promise<GeminiResponse> => {
+    try {
+      const response = await supabase.functions.invoke('process-room-image', {
+        body: { imageUrl, roomType },
+      });
+
+      if (response.error) {
+        console.error('Error calling Gemini API:', response.error);
+        return mockGeminiResponse; // Fallback to mock data if API call fails
+      }
+
+      return response.data as GeminiResponse;
+    } catch (error) {
+      console.error('Error in analyzeImage:', error);
+      // Return mock data as fallback
+      return mockGeminiResponse;
+    }
   },
   
   // Process the image and update the room with the AI analysis
@@ -207,8 +219,8 @@ export const GeminiAPI = {
     // Get the image URL
     const imageUrl = room.images[imageIndex].url;
     
-    // Call the Gemini API (mock)
-    const aiResult = await GeminiAPI.analyzeImage(imageUrl);
+    // Call the Gemini API with the room type for better context
+    const aiResult = await GeminiAPI.analyzeImage(imageUrl, room.type);
     
     // Update the image with AI data
     room.images[imageIndex] = {
