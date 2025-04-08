@@ -12,17 +12,21 @@ export const corsHeaders = {
  */
 export function createPrompt(roomType?: string, componentType?: string): string {
   if (componentType) {
-    // Component-specific analysis
-    const componentDescription = componentType.replace('_', ' ');
-    return `This is an image of ${componentDescription} in a ${roomType || 'room'}. 
-      Provide a detailed assessment of this specific component. 
-      Describe its appearance, condition, any visible damage or wear, and cleanliness.
-      Format your response as a JSON object with these fields:
-      {
-        "description": "detailed description of the component",
-        "condition": "excellent|good|fair|poor|needs_replacement",
-        "notes": "suggested notes about any issues that need attention"
-      }`;
+    // Component-specific analysis with optimized prompt structure
+    const componentTitle = componentType.replace('_', ' ');
+    
+    return `You are a professional property inspection assistant.
+
+You are analysing a photo of the following component: ${componentTitle}.
+
+Based only on this photo, answer the following:
+
+1. What is the item? Briefly describe what is visible in natural language.
+2. What is its condition? Use one of the following labels: Excellent, Good, Fair, Poor, Damaged.
+3. Return the result in this exact format:
+
+Description: [Your one-paragraph summary here]  
+Condition: [Label]`;
   } else {
     // Full room analysis (original behavior)
     const roomTypeDescription = roomType 
@@ -41,7 +45,19 @@ export function createPrompt(roomType?: string, componentType?: string): string 
  */
 export function extractJsonFromText(textContent: string): any {
   try {
-    // Look for JSON structure in the text
+    // For component analysis with the new format, parse the text response into a structured format
+    if (textContent.includes("Description:") && textContent.includes("Condition:")) {
+      const descriptionMatch = textContent.match(/Description:\s*(.*?)(?=\s*Condition:|$)/s);
+      const conditionMatch = textContent.match(/Condition:\s*(.*?)(?=\s*$)/s);
+      
+      return {
+        description: descriptionMatch ? descriptionMatch[1].trim() : "No description available",
+        condition: conditionMatch ? mapCondition(conditionMatch[1].trim()) : "fair",
+        notes: ""
+      };
+    }
+    
+    // For full room analysis or fallback, use the original JSON parsing logic
     const jsonMatch = textContent.match(/```json\n([\s\S]*?)\n```/) || 
                   textContent.match(/{[\s\S]*}/);
     
@@ -58,6 +74,22 @@ export function extractJsonFromText(textContent: string): any {
     console.error("Error parsing text as JSON:", error);
     throw error;
   }
+}
+
+/**
+ * Map Gemini's condition labels to system condition values
+ */
+function mapCondition(condition: string): string {
+  const conditionLower = condition.toLowerCase().trim();
+  
+  if (conditionLower.includes("excellent")) return "excellent";
+  if (conditionLower.includes("good")) return "good";
+  if (conditionLower.includes("fair")) return "fair";
+  if (conditionLower.includes("poor")) return "poor";
+  if (conditionLower.includes("damaged")) return "needs_replacement";
+  
+  // Default to fair if no match
+  return "fair";
 }
 
 /**
