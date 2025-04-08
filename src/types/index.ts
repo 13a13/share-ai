@@ -1,136 +1,98 @@
 
-export type Property = {
+export interface Property {
   id: string;
+  name?: string;
   address: string;
   city: string;
   state: string;
   zipCode: string;
-  propertyType: 'apartment' | 'house' | 'condo' | 'other';
+  propertyType: PropertyType;
   bedrooms: number;
   bathrooms: number;
-  imageUrl?: string;
+  squareFeet: number;
+  yearBuilt?: number;
+  images?: string[];
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
-export type RoomType = 
-  | 'entrance' 
-  | 'hallway'
-  | 'living_room' 
-  | 'dining_room'
-  | 'kitchen'
-  | 'bedroom'
-  | 'bathroom'
-  | 'garage'
-  | 'basement'
-  | 'attic'
-  | 'outdoor'
-  | 'other';
+export type PropertyType = 'single_family' | 'multi_family' | 'condo' | 'townhouse' | 'apartment' | 'commercial';
 
-export type ConditionRating = 
-  | 'excellent' 
-  | 'good' 
-  | 'fair' 
-  | 'poor' 
-  | 'needs_replacement';
+export interface Report {
+  id: string;
+  propertyId: string;
+  name?: string;
+  type: 'check_in' | 'check_out' | 'inspection';
+  status: 'draft' | 'in_progress' | 'pending_review' | 'completed' | 'archived';
+  reportInfo?: ReportInfo;
+  rooms: Room[];
+  disclaimers?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt: Date | null;
+  property?: Property; // Joined property data (not stored in DB)
+}
 
-export type CleanlinessRating =
-  | 'spotless'
-  | 'clean'
-  | 'needs_light_cleaning'
-  | 'needs_deep_cleaning'
-  | 'unsanitary';
+export interface ReportInfo {
+  reportDate: Date;
+  clerk?: string;
+  inventoryType?: string;
+  tenantPresent?: boolean;
+  tenantName?: string;
+  additionalInfo?: string;
+}
 
 export interface Room {
   id: string;
   name: string;
   type: RoomType;
   order: number;
-  generalCondition: string;
-  images: RoomImage[];
+  generalCondition?: string;
   sections: RoomSection[];
-  components?: RoomComponent[]; // New field for detailed components
+  components?: RoomComponent[];
+  images: RoomImage[];
 }
 
-export interface RoomImage {
+export type RoomType = 'entrance' | 'hallway' | 'living_room' | 'dining_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'garage' | 'basement' | 'attic' | 'outdoor' | 'other';
+
+export interface RoomSection {
   id: string;
-  url: string;
-  aiProcessed: boolean;
-  aiData?: any;
-  timestamp: Date;
+  title: string;
+  type: string;
+  description: string;
+  condition: 'excellent' | 'good' | 'fair' | 'poor';
+  notes?: string;
 }
 
 export interface RoomComponent {
   id: string;
   name: string;
-  type: string; // walls, ceiling, flooring, etc.
+  type: string;
   description: string;
-  condition: ConditionRating;
-  notes: string; // Changed from optional to required
-  images: {
-    id: string;
-    url: string;
-    timestamp: Date;
-  }[];
-  isOptional: boolean; // This is now required
-}
-
-export interface RoomSection {
-  id: string;
-  type: 'walls' | 'ceiling' | 'flooring' | 'doors' | 'windows' | 'lighting' | 'furniture' | 'appliances' | 'additional' | 'cleaning';
-  description: string;
-  condition: ConditionRating;
+  condition: 'excellent' | 'good' | 'fair' | 'poor';
   notes?: string;
-  images?: RoomImage[];
+  images: RoomComponentImage[];
+  isOptional: boolean;
 }
 
-export interface Report {
+export interface RoomImage {
   id: string;
-  propertyId: string;
-  property?: Property;
-  type: 'check_in' | 'check_out' | 'inspection';
-  status: 'draft' | 'in_progress' | 'pending_review' | 'completed';
-  createdAt: Date;
-  updatedAt: Date;
-  completedAt?: Date;
-  createdBy: string;
-  reviewedBy?: string;
-  rooms: Room[];
-  generalNotes?: string;
-  disclaimers: string[];
-  reportInfo?: {
-    reportDate: Date;
-    clerk: string;
-    inventoryType: string;
-    tenantPresent: boolean;
-    tenantName?: string;
-    additionalInfo?: string;
-  };
+  url: string;
+  timestamp: Date;
+  aiProcessed?: boolean;
+  aiData?: any;
 }
 
-export interface GeminiResponse {
-  objects: {
-    name: string;
-    condition: ConditionRating;
-    description: string;
-  }[];
-  roomAssessment: {
-    generalCondition: string;
-    walls: string;
-    ceiling: string;
-    flooring: string;
-    doors: string;
-    windows: string;
-    lighting: string;
-    furniture?: string;
-    appliances?: string;
-    additional?: string;
-    cleaning: string;
-  };
+export interface RoomComponentImage {
+  id: string;
+  url: string;
+  timestamp: Date;
+  aiProcessed?: boolean;
+  aiData?: any;
 }
 
-export interface ComponentAnalysisResponse {
-  description: string;
-  condition: ConditionRating;
-  notes?: string;
+export interface DisclaimerConfig {
+  title: string;
+  text: string;
+  default: boolean;
 }

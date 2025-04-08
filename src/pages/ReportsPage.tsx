@@ -7,11 +7,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report } from "@/types";
 import { useEffect, useState } from "react";
-import { FileText, Plus, Search } from "lucide-react";
+import { FileText, Plus, Search, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const ReportsPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [filteredReports, setFilteredReports] = useState<Report[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -19,6 +27,7 @@ const ReportsPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [propertyFilter, setPropertyFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -50,13 +59,18 @@ const ReportsPage = () => {
         setFilteredReports(sortedReports);
       } catch (error) {
         console.error("Error fetching reports:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load reports. Please refresh the page to try again.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     };
     
     fetchData();
-  }, []);
+  }, [toast]);
   
   useEffect(() => {
     let filtered = [...reports];
@@ -82,6 +96,114 @@ const ReportsPage = () => {
     
     setFilteredReports(filtered);
   }, [statusFilter, propertyFilter, searchQuery, reports]);
+  
+  const handleDeleteReport = async (reportId: string) => {
+    setIsProcessing(true);
+    try {
+      // Delete the report
+      await ReportsAPI.delete(reportId);
+      
+      // Update local state
+      setReports(prevReports => prevReports.filter(report => report.id !== reportId));
+      
+      toast({
+        title: "Report Deleted",
+        description: "The report has been permanently deleted.",
+      });
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  const handleDuplicateReport = async (reportId: string) => {
+    setIsProcessing(true);
+    try {
+      // Find the report to duplicate
+      const reportToDuplicate = reports.find(report => report.id === reportId);
+      
+      if (!reportToDuplicate) {
+        throw new Error("Report not found");
+      }
+      
+      // Create a duplicate report
+      const duplicatedReport = await ReportsAPI.duplicate(reportId);
+      
+      if (duplicatedReport) {
+        // Add property info to the duplicated report
+        const property = properties.find(p => p.id === duplicatedReport.propertyId);
+        const reportWithProperty = {
+          ...duplicatedReport,
+          property,
+        };
+        
+        // Update local state
+        setReports(prevReports => [reportWithProperty, ...prevReports]);
+        
+        toast({
+          title: "Report Duplicated",
+          description: "Report has been duplicated successfully.",
+        });
+      }
+    } catch (error) {
+      console.error("Error duplicating report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to duplicate report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  const handleArchiveReport = async (reportId: string) => {
+    setIsProcessing(true);
+    try {
+      // Find the report to archive
+      const reportToArchive = reports.find(report => report.id === reportId);
+      
+      if (!reportToArchive) {
+        throw new Error("Report not found");
+      }
+      
+      // Update the report with archived status
+      const archivedReport = await ReportsAPI.update(reportId, {
+        status: "archived",
+      });
+      
+      if (archivedReport) {
+        // Update local state
+        setReports(prevReports => 
+          prevReports.map(report => 
+            report.id === reportId 
+              ? { ...report, ...archivedReport } 
+              : report
+          )
+        );
+        
+        toast({
+          title: "Report Archived",
+          description: "Report has been archived successfully.",
+        });
+      }
+    } catch (error) {
+      console.error("Error archiving report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to archive report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   
   return (
     <div className="shareai-container">
@@ -109,21 +231,34 @@ const ReportsPage = () => {
           />
         </div>
         
-        <Select 
-          value={statusFilter} 
-          onValueChange={setStatusFilter}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="pending_review">Pending Review</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="relative">
+                <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Select 
+                  value={statusFilter} 
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="pl-8">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="pending_review">Pending Review</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Filter reports by their current status</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         
         <Select 
           value={propertyFilter} 
@@ -181,6 +316,9 @@ const ReportsPage = () => {
               key={report.id} 
               report={report} 
               propertyAddress={report.property?.address}
+              onDelete={handleDeleteReport}
+              onDuplicate={handleDuplicateReport}
+              onArchive={handleArchiveReport}
             />
           ))}
         </div>

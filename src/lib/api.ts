@@ -1,4 +1,3 @@
-
 import { Property, Report, Room, RoomImage, RoomType } from '@/types';
 import { GeminiResponse } from '@/types/gemini';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,7 +17,7 @@ function initializeLocalStorage() {
   }
   
   if (!localStorage.getItem(LOCAL_STORAGE_KEYS.REPORTS)) {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.REPORTS, JSON.stringify([mockReport]));
+    localStorage.setItem(LOCAL_STORAGE_KEYS.REPORTS, JSON.stringify([]));
   }
 }
 
@@ -111,6 +110,44 @@ export const ReportsAPI = {
     return updatedReport;
   },
   
+  delete: async (id: string): Promise<void> => {
+    const reports = await ReportsAPI.getAll();
+    const filteredReports = reports.filter(r => r.id !== id);
+    
+    localStorage.setItem(LOCAL_STORAGE_KEYS.REPORTS, JSON.stringify(filteredReports));
+  },
+  
+  duplicate: async (id: string): Promise<Report | null> => {
+    const reports = await ReportsAPI.getAll();
+    const reportToDuplicate = reports.find(r => r.id === id);
+    
+    if (!reportToDuplicate) return null;
+    
+    const newReport: Report = {
+      ...reportToDuplicate,
+      id: uuidv4(),
+      name: `${reportToDuplicate.name || ''} (Copy)`,
+      status: 'draft',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      completedAt: null,
+      rooms: reportToDuplicate.rooms.map(room => ({
+        ...room,
+        id: uuidv4(),
+        components: room.components ? room.components.map(component => ({
+          ...component,
+          id: uuidv4(),
+          images: [],
+        })) : [],
+        images: [],
+      })),
+    };
+    
+    reports.push(newReport);
+    localStorage.setItem(LOCAL_STORAGE_KEYS.REPORTS, JSON.stringify(reports));
+    return newReport;
+  },
+  
   addRoom: async (reportId: string, name: string, type: RoomType): Promise<Room | null> => {
     const reports = await ReportsAPI.getAll();
     const index = reports.findIndex(r => r.id === reportId);
@@ -192,7 +229,6 @@ export const ReportsAPI = {
 
 // Gemini API implementation
 export const GeminiAPI = {
-  // Process the image with the real Gemini API
   analyzeImage: async (imageUrl: string, roomType?: string): Promise<GeminiResponse> => {
     try {
       const response = await supabase.functions.invoke('process-room-image', {
@@ -212,7 +248,6 @@ export const GeminiAPI = {
     }
   },
   
-  // Process the image and update the room with the AI analysis
   processRoomImage: async (reportId: string, roomId: string, imageId: string): Promise<Room | null> => {
     const reports = await ReportsAPI.getAll();
     const reportIndex = reports.findIndex(r => r.id === reportId);
@@ -229,25 +264,20 @@ export const GeminiAPI = {
     
     if (imageIndex === -1) return null;
     
-    // Get the image URL
     const imageUrl = room.images[imageIndex].url;
     
-    // Call the Gemini API with the room type for better context
     const aiResult = await GeminiAPI.analyzeImage(imageUrl, room.type);
     
-    // Update the image with AI data
     room.images[imageIndex] = {
       ...room.images[imageIndex],
       aiProcessed: true,
       aiData: aiResult,
     };
     
-    // Update the room with AI assessment data
     const updatedRoom: Room = {
       ...room,
       generalCondition: aiResult.roomAssessment.generalCondition,
       sections: room.sections.map(section => {
-        // Match the section type with the AI assessment
         const aiAssessment = aiResult.roomAssessment[section.type as keyof typeof aiResult.roomAssessment];
         
         if (aiAssessment) {
@@ -272,8 +302,6 @@ export const GeminiAPI = {
 // PDF Generation API mock
 export const PDFGenerationAPI = {
   generatePDF: async (reportId: string): Promise<string> => {
-    // In a real implementation, this would call a server endpoint to generate a PDF
-    // For now, we'll just simulate a delay and return a fake download URL
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(`https://shareai.com/reports/${reportId}/download`);
