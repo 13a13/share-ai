@@ -41,7 +41,7 @@ const RoomSectionView = ({ section }: RoomSectionViewProps) => {
   return (
     <Card className="mb-4">
       <CardHeader className="py-3 flex flex-row justify-between items-center">
-        <CardTitle className="text-lg">{sectionTitles[section.type] || section.type}</CardTitle>
+        <CardTitle className="text-lg">{section.title || sectionTitles[section.type] || section.type}</CardTitle>
         {getConditionBadge(section.condition)}
       </CardHeader>
       <CardContent className="py-2">

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Accordion } from "@/components/ui/accordion";
@@ -42,7 +41,6 @@ const RoomComponentInspection = ({
 
   const handleAddComponent = () => {
     if (!selectedComponentType) {
-      // If no component is selected from dropdown, show the first available
       const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
         comp => !components.some(c => c.type === comp.type)
       );
@@ -58,7 +56,6 @@ const RoomComponentInspection = ({
       const newComponent = availableComponents[0];
       addComponentToRoom(newComponent);
     } else {
-      // Add the selected component from dropdown
       const componentToAdd = getDefaultComponentsByRoomType(roomType).find(
         comp => comp.type === selectedComponentType
       );
@@ -223,7 +220,6 @@ const RoomComponentInspection = ({
     );
   };
 
-  // Get available components that haven't been added yet
   const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
     comp => !components.some(c => c.type === comp.type)
   );

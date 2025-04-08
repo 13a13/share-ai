@@ -38,7 +38,7 @@ const conditionOptions: { value: ConditionRating; label: string }[] = [
 
 const formSchema = z.object({
   description: z.string().min(1, "Description is required"),
-  condition: z.enum(["excellent", "good", "fair", "poor", "needs_replacement"]),
+  condition: z.enum(["excellent", "good", "fair", "poor", "needs_replacement"] as const),
   notes: z.string().optional(),
 });
 
@@ -64,7 +64,7 @@ const RoomSectionEditor = ({ section, onSave }: RoomSectionEditorProps) => {
   return (
     <Card className="mb-4">
       <CardHeader className="py-4">
-        <CardTitle className="text-lg">{sectionTitles[section.type] || section.type}</CardTitle>
+        <CardTitle className="text-lg">{section.title || sectionTitles[section.type] || section.type}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>

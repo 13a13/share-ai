@@ -1,4 +1,5 @@
-import { Property, Report, Room, RoomImage, RoomSection, RoomType } from "@/types";
+
+import { Property, Report, Room, RoomImage, RoomSection, RoomType, ConditionRating } from "@/types";
 import { GeminiResponse } from "@/types/gemini";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,6 +14,7 @@ export const mockProperties: Property[] = [
     propertyType: 'apartment',
     bedrooms: 2,
     bathrooms: 2,
+    squareFeet: 1200,
     imageUrl: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
     createdAt: new Date('2023-01-15'),
     updatedAt: new Date('2023-01-15'),
@@ -26,6 +28,7 @@ export const mockProperties: Property[] = [
     propertyType: 'condo',
     bedrooms: 3,
     bathrooms: 2,
+    squareFeet: 1800,
     imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
     createdAt: new Date('2023-02-20'),
     updatedAt: new Date('2023-02-20'),
@@ -39,6 +42,7 @@ export const mockProperties: Property[] = [
     propertyType: 'house',
     bedrooms: 4,
     bathrooms: 3,
+    squareFeet: 2500,
     imageUrl: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
     createdAt: new Date('2023-03-10'),
     updatedAt: new Date('2023-03-10'),
@@ -147,6 +151,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
   const sections: RoomSection[] = [
     {
       id: uuidv4(),
+      title: "Walls",
       type: 'walls',
       condition: 'good',
       description: 'Painted drywall with eggshell finish',
@@ -154,6 +159,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
     },
     {
       id: uuidv4(),
+      title: "Ceiling",
       type: 'ceiling',
       condition: 'good',
       description: 'Smooth painted ceiling',
@@ -161,6 +167,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
     },
     {
       id: uuidv4(),
+      title: "Flooring",
       type: 'flooring',
       condition: 'good',
       description: isForBathroom ? 'Ceramic tile flooring' : 'Hardwood flooring',
@@ -168,6 +175,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
     },
     {
       id: uuidv4(),
+      title: "Doors",
       type: 'doors',
       condition: 'good',
       description: 'Solid wood door with brass hardware',
@@ -175,6 +183,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
     },
     {
       id: uuidv4(),
+      title: "Windows",
       type: 'windows',
       condition: 'good',
       description: 'Double-hung vinyl windows with screens',
@@ -182,6 +191,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
     },
     {
       id: uuidv4(),
+      title: "Lighting",
       type: 'lighting',
       condition: 'excellent',
       description: 'Recessed LED lighting with dimmer switch',
@@ -189,6 +199,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
     },
     {
       id: uuidv4(),
+      title: "Cleaning",
       type: 'cleaning',
       condition: 'good',
       description: 'Room is generally clean',
@@ -199,6 +210,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
   if (includeFurniture) {
     sections.push({
       id: uuidv4(),
+      title: "Furniture",
       type: 'furniture',
       condition: 'good',
       description: 'Bed frame, mattress, nightstand, and dresser',
@@ -209,6 +221,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
   if (includeAppliances) {
     sections.push({
       id: uuidv4(),
+      title: "Appliances",
       type: 'appliances',
       condition: 'good',
       description: 'Refrigerator, stove, dishwasher, and microwave',
@@ -218,6 +231,7 @@ function createDefaultSections(includeAppliances = false, includeFurniture = fal
 
   sections.push({
     id: uuidv4(),
+    title: "Additional Items",
     type: 'additional',
     condition: 'good',
     description: 'Smoke detector, carbon monoxide detector',
@@ -239,6 +253,7 @@ export function createNewReport(propertyId: string, type: 'check_in' | 'check_ou
     createdBy: 'Current User',
     rooms: [],
     disclaimers: [...standardDisclaimers],
+    completedAt: null,
   };
 }
 
@@ -265,6 +280,7 @@ export const mockReport: Report = {
   createdAt: new Date('2023-04-15'),
   updatedAt: new Date('2023-04-15'),
   createdBy: 'John Doe',
+  completedAt: null,
   rooms: [
     {
       id: 'room1',

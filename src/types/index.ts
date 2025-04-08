@@ -12,11 +12,14 @@ export interface Property {
   squareFeet: number;
   yearBuilt?: number;
   images?: string[];
+  imageUrl?: string; // Add imageUrl property
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type PropertyType = 'single_family' | 'multi_family' | 'condo' | 'townhouse' | 'apartment' | 'commercial';
+export type PropertyType = 'single_family' | 'multi_family' | 'condo' | 'townhouse' | 'apartment' | 'commercial' | 'house';
+
+export type ConditionRating = 'excellent' | 'good' | 'fair' | 'poor' | 'needs_replacement';
 
 export interface Report {
   id: string;
@@ -31,6 +34,7 @@ export interface Report {
   updatedAt: Date;
   completedAt: Date | null;
   property?: Property; // Joined property data (not stored in DB)
+  createdBy?: string; // Add createdBy property
 }
 
 export interface ReportInfo {
@@ -57,11 +61,12 @@ export type RoomType = 'entrance' | 'hallway' | 'living_room' | 'dining_room' | 
 
 export interface RoomSection {
   id: string;
-  title: string;
+  title: string; // This was missing
   type: string;
   description: string;
-  condition: 'excellent' | 'good' | 'fair' | 'poor';
+  condition: ConditionRating;
   notes?: string;
+  images?: RoomImage[]; // Add images property
 }
 
 export interface RoomComponent {
@@ -69,7 +74,7 @@ export interface RoomComponent {
   name: string;
   type: string;
   description: string;
-  condition: 'excellent' | 'good' | 'fair' | 'poor';
+  condition: ConditionRating;
   notes?: string;
   images: RoomComponentImage[];
   isOptional: boolean;
