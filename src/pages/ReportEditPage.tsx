@@ -4,11 +4,12 @@ import { ReportInfoFormValues } from "@/components/ReportInfoForm";
 import ReportHeader from "@/components/ReportHeader";
 import ReportInfoForm from "@/components/ReportInfoForm";
 import EmptyRoomsState from "@/components/EmptyRoomsState";
-import EditableRoomSection from "@/components/EditableRoomSection";
 import ReportRoomForm from "@/components/ReportRoomForm";
 import ReportLoadingState from "@/components/ReportLoadingState";
 import { useReportEditor, RoomFormValues } from "@/hooks/useReportEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import UnifiedRoomView from "@/components/room/UnifiedRoomView";
 
 const ReportEditPage = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -76,7 +77,7 @@ const ReportEditPage = () => {
         ) : (
           <div className="space-y-4 mb-6">
             {report.rooms.map((room, index) => (
-              <EditableRoomSection 
+              <UnifiedRoomView
                 key={room.id}
                 reportId={report.id}
                 room={room}
@@ -84,7 +85,6 @@ const ReportEditPage = () => {
                 totalRooms={report.rooms.length}
                 onNavigateRoom={handleNavigateRoom}
                 onUpdateGeneralCondition={handleUpdateGeneralCondition}
-                onSaveSection={handleSaveSection}
                 onUpdateComponents={handleUpdateComponents}
                 onDeleteRoom={handleDeleteRoom}
                 isComplete={room.components?.filter(c => !c.isOptional).every(c => 
@@ -125,6 +125,3 @@ const ReportEditPage = () => {
 };
 
 export default ReportEditPage;
-
-// Add Button component import at the top
-import { Button } from "@/components/ui/button";

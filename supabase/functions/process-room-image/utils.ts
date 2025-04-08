@@ -17,16 +17,21 @@ export function createPrompt(roomType?: string, componentType?: string): string 
     
     return `You are a professional property inspection assistant.
 
-You are analysing a photo of the following component: ${componentTitle}.
+You are analysing a photo of the following room component: ${componentTitle}.
 
-Based only on this photo, answer the following:
+From this image, provide the following:
 
-1. What is the item? Briefly describe what is visible in natural language.
-2. What is its condition? Use one of the following labels: Excellent, Good, Fair, Poor, Damaged.
-3. Return the result in this exact format:
+1. A short, natural-language description of what is visible in the photo. Be specific about material, colour, and any visible characteristics.
+2. A detailed condition analysis. Note any wear and tear, damage, age indicators, cleanliness, or specific issues.
+3. Rate the condition using one of the following standard labels: Excellent, Good, Fair, Poor, Damaged.
 
-Description: [Your one-paragraph summary here]  
-Condition: [Label]`;
+Return the result in this exact format:
+
+Description: [One-paragraph natural description]
+
+Condition:
+- Summary: [Detailed assessment]
+- Rating: [One of: Excellent, Good, Fair, Poor, Damaged]`;
   } else {
     // Full room analysis (original behavior)
     const roomTypeDescription = roomType 
@@ -48,12 +53,32 @@ export function extractJsonFromText(textContent: string): any {
     // For component analysis with the new format, parse the text response into a structured format
     if (textContent.includes("Description:") && textContent.includes("Condition:")) {
       const descriptionMatch = textContent.match(/Description:\s*(.*?)(?=\s*Condition:|$)/s);
-      const conditionMatch = textContent.match(/Condition:\s*(.*?)(?=\s*$)/s);
+      
+      // Extract condition data with the new format
+      const conditionBlock = textContent.match(/Condition:\s*(.*?)(?=\s*$)/s);
+      let conditionSummary = "";
+      let conditionRating = "fair";
+      
+      if (conditionBlock && conditionBlock[1]) {
+        // Extract the summary and rating from the condition block
+        const summaryMatch = conditionBlock[1].match(/- Summary:\s*(.*?)(?=\s*-|$)/s);
+        const ratingMatch = conditionBlock[1].match(/- Rating:\s*(.*?)(?=\s*$)/s);
+        
+        if (summaryMatch && summaryMatch[1]) {
+          conditionSummary = summaryMatch[1].trim();
+        }
+        
+        if (ratingMatch && ratingMatch[1]) {
+          conditionRating = mapCondition(ratingMatch[1].trim());
+        }
+      }
       
       return {
         description: descriptionMatch ? descriptionMatch[1].trim() : "No description available",
-        condition: conditionMatch ? mapCondition(conditionMatch[1].trim()) : "fair",
-        notes: ""
+        condition: {
+          summary: conditionSummary,
+          rating: conditionRating
+        }
       };
     }
     
@@ -100,8 +125,10 @@ export function formatResponse(parsedData: any, componentType?: string): any {
     // For component analysis
     return {
       description: parsedData.description || "No description available",
-      condition: parsedData.condition || "fair",
-      notes: parsedData.notes || "",
+      condition: {
+        summary: parsedData.condition?.summary || "",
+        rating: parsedData.condition?.rating || "fair"
+      }
     };
   } else {
     // For full room analysis (original behavior)
@@ -128,8 +155,10 @@ export function createFallbackResponse(componentType?: string): any {
   if (componentType) {
     return {
       description: "Could not determine from image",
-      condition: "fair",
-      notes: "AI analysis failed, please add manual description"
+      condition: {
+        summary: "AI analysis failed, please add manual description",
+        rating: "fair"
+      }
     };
   } else {
     return {

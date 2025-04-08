@@ -3,7 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface ProcessedImageResult {
   description?: string;
-  condition?: string;
+  condition?: {
+    summary?: string;
+    rating?: string;
+  };
   notes?: string;
 }
 
@@ -13,7 +16,7 @@ export const processComponentImage = async (
   componentType: string
 ): Promise<ProcessedImageResult> => {
   try {
-    // Use supabase.functions.invoke instead of direct fetch
+    // Use supabase.functions.invoke to call the serverless function
     const response = await supabase.functions.invoke('process-room-image', {
       body: {
         imageUrl,
