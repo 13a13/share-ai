@@ -1,55 +1,77 @@
 
 import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
-import { pdfColors, pdfFontSizes, getConditionColor } from "./pdfStyles";
+import { pdfColors, pdfFontSizes, getConditionColor, pdfFonts, createSectionBox } from "./pdfStyles";
 
 export function generateRoomSection(
   doc: jsPDF, 
   room: Room,
   addHeaderAndFooter: () => void
 ): void {
-  // Room Header
+  // Room Header with improved styling
+  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
+  doc.roundedRect(15, 15, 180, 20, 5, 5, "F");
+  
   doc.setFontSize(pdfFontSizes.title);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
-  doc.text(room.name, 105, 20, { align: "center" });
+  doc.setFont(pdfFonts.heading, "bold");
+  doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+  doc.text(room.name, 105, 28, { align: "center" });
   
-  doc.setFontSize(pdfFontSizes.normal);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-  doc.text(`Room Type: ${room.type.replace('_', ' ')}`, 105, 30, { align: "center" });
+  // Room type badge
+  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
+  doc.roundedRect(75, 40, 60, 10, 5, 5, "F");
   
-  doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+  doc.setFontSize(pdfFontSizes.small);
+  doc.setFont(pdfFonts.body, "bold");
+  doc.text(`${room.type.replace('_', ' ').toUpperCase()}`, 105, 47, { align: "center" });
   
-  // General Condition
+  let yPosition = 60;
+  
+  // General Condition Section
   if (room.generalCondition) {
+    doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
+    doc.roundedRect(15, yPosition, 180, 40, 5, 5, "F");
+    
     doc.setFontSize(pdfFontSizes.subtitle);
-    doc.setFont("helvetica", "bold");
-    doc.text("General Condition", 20, 45);
+    doc.setFont(pdfFonts.heading, "bold");
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+    doc.text("General Condition", 25, yPosition + 15);
+    
     doc.setFontSize(pdfFontSizes.normal);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(pdfFonts.body, "normal");
+    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
     
     // Split long text into multiple lines
-    const splitCondition = doc.splitTextToSize(room.generalCondition, 170);
-    doc.text(splitCondition, 20, 55);
+    const splitCondition = doc.splitTextToSize(room.generalCondition, 160);
+    doc.text(splitCondition, 25, yPosition + 25);
+    
+    yPosition += 50; // Adjust based on content
   }
   
   // Components Section
-  let yPosition = room.generalCondition ? 55 + (doc.splitTextToSize(room.generalCondition, 170).length * 7) : 45;
-  
   if (room.components && room.components.length > 0) {
-    doc.setFontSize(pdfFontSizes.subtitle);
-    doc.setFont("helvetica", "bold");
-    doc.text("Components", 20, yPosition + 10);
+    doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.1);
+    doc.roundedRect(15, yPosition, 180, 15, 5, 5, "F");
     
-    yPosition += 20;
+    doc.setFontSize(pdfFontSizes.subtitle);
+    doc.setFont(pdfFonts.heading, "bold");
+    doc.setTextColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
+    doc.text("Room Components", 105, yPosition + 10, { align: "center" });
+    
+    yPosition += 25;
     
     // Process each component
     for (const component of room.components) {
       yPosition = generateComponentSection(doc, component, yPosition, addHeaderAndFooter);
     }
   } else {
-    doc.text("No components have been added to this room.", 20, yPosition + 10);
+    doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+    doc.roundedRect(15, yPosition, 180, 30, 5, 5, "F");
+    
+    doc.setFontSize(pdfFontSizes.normal);
+    doc.setFont(pdfFonts.body, "italic");
+    doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
+    doc.text("No components have been added to this room.", 105, yPosition + 15, { align: "center" });
   }
 }
 
@@ -66,77 +88,92 @@ function generateComponentSection(
     yPosition = 20;
   }
   
-  // Component box with enhanced background
+  // Calculate component box height
   const boxHeight = calculateComponentBoxHeight(doc, component);
-  const colorR = pdfColors.bgGray[0];
-  const colorG = pdfColors.bgGray[1];
-  const colorB = pdfColors.bgGray[2];
   
-  doc.setFillColor(colorR, colorG, colorB);
-  doc.roundedRect(15, yPosition, 180, boxHeight, 3, 3, "F");
+  // Component box with enhanced styling
+  doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
+  doc.roundedRect(15, yPosition, 180, boxHeight, 5, 5, "F");
   
-  // Component title and condition badge in header box
+  // Component title and condition badge in header box with gradient-like effect
   doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-  doc.roundedRect(15, yPosition, 180, 14, 3, 3, "F");
+  doc.roundedRect(15, yPosition, 180, 16, 5, 5, "F");
   
   // Component name
   doc.setFontSize(pdfFontSizes.header);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(pdfFonts.heading, "bold");
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.text(component.name, 20, yPosition + 10);
+  doc.text(component.name, 25, yPosition + 11);
   
-  // Condition badge
+  // Condition badge with improved styling
   if (component.condition) {
     const conditionColorArray = getConditionColor(component.condition);
     
     doc.setFillColor(conditionColorArray[0], conditionColorArray[1], conditionColorArray[2]);
-    doc.roundedRect(150, yPosition + 4, 40, 7, 2, 2, "F");
+    doc.roundedRect(150, yPosition + 4, 40, 9, 4, 4, "F");
     doc.setFontSize(pdfFontSizes.small);
+    doc.setFont(pdfFonts.body, "bold");
     doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-    doc.text(component.condition.toUpperCase(), 170, yPosition + 9, { align: "center" });
+    doc.text(component.condition.toUpperCase(), 170, yPosition + 10, { align: "center" });
   }
   
-  let contentYPosition = yPosition + 20;
+  let contentYPosition = yPosition + 25;
   
-  // Component description
-  doc.setFontSize(pdfFontSizes.normal);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
-  
+  // Component description with improved styling
   if (component.description) {
-    const splitDesc = doc.splitTextToSize(component.description, 170);
-    doc.text(splitDesc, 20, contentYPosition);
+    const splitDesc = doc.splitTextToSize(component.description, 160);
+    doc.setFontSize(pdfFontSizes.normal);
+    doc.setFont(pdfFonts.body, "normal");
+    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+    doc.text(splitDesc, 25, contentYPosition);
     contentYPosition += splitDesc.length * 7;
   }
   
   // Condition summary if available
   if (component.conditionSummary) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Condition Summary:", 20, contentYPosition + 5);
-    doc.setFont("helvetica", "normal");
+    // Section box for condition summary
+    doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2], 0.5);
+    doc.roundedRect(25, contentYPosition + 5, 160, 7 + (doc.splitTextToSize(component.conditionSummary, 150).length * 7), 3, 3, "F");
     
-    const splitSummary = doc.splitTextToSize(component.conditionSummary, 170);
-    doc.text(splitSummary, 20, contentYPosition + 12);
-    contentYPosition += (splitSummary.length * 7) + 12;
+    doc.setFont(pdfFonts.heading, "bold");
+    doc.setFontSize(pdfFontSizes.subheader);
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+    doc.text("Condition Summary:", 35, contentYPosition + 10);
+    
+    doc.setFont(pdfFonts.body, "normal");
+    doc.setFontSize(pdfFontSizes.normal);
+    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+    
+    const splitSummary = doc.splitTextToSize(component.conditionSummary, 150);
+    doc.text(splitSummary, 35, contentYPosition + 17);
+    contentYPosition += (splitSummary.length * 7) + 22;
   } else {
     contentYPosition += 5;
   }
   
-  // Component notes
+  // Component notes with improved styling
   if (component.notes) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Notes:", 20, contentYPosition + 5);
-    doc.setFont("helvetica", "italic");
+    // Notes box
+    doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.1);
+    doc.roundedRect(25, contentYPosition + 5, 160, 7 + (doc.splitTextToSize(component.notes, 150).length * 7), 3, 3, "F");
+    
+    doc.setFont(pdfFonts.heading, "bold");
+    doc.setFontSize(pdfFontSizes.subheader);
+    doc.setTextColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
+    doc.text("Notes:", 35, contentYPosition + 10);
+    
+    doc.setFont(pdfFonts.body, "italic");
+    doc.setFontSize(pdfFontSizes.normal);
     doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
     
-    const splitNotes = doc.splitTextToSize(component.notes, 170);
-    doc.text(splitNotes, 20, contentYPosition + 12);
-    contentYPosition += (splitNotes.length * 7) + 12;
+    const splitNotes = doc.splitTextToSize(component.notes, 150);
+    doc.text(splitNotes, 35, contentYPosition + 17);
+    contentYPosition += (splitNotes.length * 7) + 22;
   } else {
     contentYPosition += 5;
   }
   
-  // Add component images if they exist
+  // Add component images if they exist with improved layout
   if (component.images && component.images.length > 0) {
     // Check if we need a new page for images
     if (contentYPosition > 200) {
@@ -145,18 +182,24 @@ function generateComponentSection(
       contentYPosition = 20;
       
       // Add component name as a header on the new page
+      doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+      doc.roundedRect(15, contentYPosition, 180, 16, 5, 5, "F");
+      
       doc.setFontSize(pdfFontSizes.header);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-      doc.text(`${component.name} (Images)`, 20, contentYPosition);
-      contentYPosition += 15;
+      doc.setFont(pdfFonts.heading, "bold");
+      doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+      doc.text(`${component.name} (Images)`, 25, contentYPosition + 11);
+      contentYPosition += 25;
     } else {
       // Add images section header
-      doc.setFontSize(pdfFontSizes.small);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
-      doc.text("Images:", 20, contentYPosition + 5);
-      contentYPosition += 10;
+      doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2], 0.1);
+      doc.roundedRect(25, contentYPosition, 160, 15, 3, 3, "F");
+      
+      doc.setFontSize(pdfFontSizes.subheader);
+      doc.setFont(pdfFonts.heading, "bold");
+      doc.setTextColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
+      doc.text("Component Images", 105, contentYPosition + 10, { align: "center" });
+      contentYPosition += 20;
     }
     
     // Calculate how many images to show per row (2 images per row)
@@ -171,52 +214,64 @@ function generateComponentSection(
         contentYPosition = 20;
         
         // Add component name as a header on the new page
+        doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+        doc.roundedRect(15, contentYPosition, 180, 16, 5, 5, "F");
+        
         doc.setFontSize(pdfFontSizes.header);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-        doc.text(`${component.name} (Images)`, 20, contentYPosition);
-        contentYPosition += 15;
+        doc.setFont(pdfFonts.heading, "bold");
+        doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+        doc.text(`${component.name} (Images)`, 25, contentYPosition + 11);
+        contentYPosition += 25;
       }
       
       for (let col = 0; col < imagesPerRow; col++) {
         const index = row * imagesPerRow + col;
         if (index < component.images.length) {
           const image = component.images[index];
-          const xPos = 20 + col * 90;
+          const xPos = 25 + col * 85;
           
           try {
-            // Add timestamp below image
+            // Image container with border
+            doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(xPos, contentYPosition, 75, 65, 3, 3, "S");
+            
+            // Add image to PDF with rounded corners effect (approximated)
+            doc.addImage(
+              image.url,         // URL or base64 string
+              'JPEG',            // Format (JPEG, PNG, etc.)
+              xPos + 2.5,        // X position
+              contentYPosition + 2.5, // Y position
+              70,                // Width
+              50                 // Height
+            );
+            
+            // Add timestamp container
+            doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+            doc.roundedRect(xPos, contentYPosition + 52.5, 75, 12.5, 0, 0, "F");
+            
+            // Add timestamp under the image
             const date = new Date(image.timestamp);
             const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
             
-            // Add image to PDF
-            doc.addImage(
-              image.url,       // URL or base64 string
-              'JPEG',          // Format (JPEG, PNG, etc.)
-              xPos,            // X position
-              contentYPosition, // Y position
-              80,              // Width
-              60               // Height
-            );
-            
-            // Add timestamp under the image
             doc.setFontSize(pdfFontSizes.small);
-            doc.setFont("helvetica", "normal");
+            doc.setFont(pdfFonts.body, "normal");
             doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-            doc.text(formattedDate, xPos + 40, contentYPosition + 65, { align: "center" });
+            doc.text(formattedDate, xPos + 37.5, contentYPosition + 60, { align: "center" });
           } catch (error) {
             console.error("Error adding image to PDF:", error);
             
-            // Add error placeholder
-            const r = 220, g = 220, b = 220;
-            doc.setFillColor(r, g, b);
-            doc.rect(xPos, contentYPosition, 80, 60, "F");
+            // Add error placeholder with improved styling
+            doc.setFillColor(220, 220, 220);
+            doc.roundedRect(xPos, contentYPosition, 75, 65, 3, 3, "F");
+            
+            doc.setFont(pdfFonts.body, "italic");
             doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-            doc.text("Image loading error", xPos + 40, contentYPosition + 30, { align: "center" });
+            doc.text("Image loading error", xPos + 37.5, contentYPosition + 32.5, { align: "center" });
           }
         }
       }
-      contentYPosition += 70; // Move down for the next row of images
+      contentYPosition += 75; // Move down for the next row of images with spacing
     }
   }
   
@@ -225,24 +280,24 @@ function generateComponentSection(
 
 // Helper function to calculate component box height
 function calculateComponentBoxHeight(doc: jsPDF, component: RoomComponent): number {
-  let height = 50; // Base height
+  let height = 60; // Base height with improved spacing
   
   // Add space for description
   if (component.description) {
-    const splitDesc = doc.splitTextToSize(component.description, 170);
+    const splitDesc = doc.splitTextToSize(component.description, 160);
     height += splitDesc.length * 7;
   }
   
   // Add space for condition summary
   if (component.conditionSummary) {
-    const splitSummary = doc.splitTextToSize(component.conditionSummary, 170);
-    height += (splitSummary.length * 7) + 12;
+    const splitSummary = doc.splitTextToSize(component.conditionSummary, 150);
+    height += (splitSummary.length * 7) + 22; // Extra padding for section
   }
   
   // Add space for notes
   if (component.notes) {
-    const splitNotes = doc.splitTextToSize(component.notes, 170);
-    height += (splitNotes.length * 7) + 12;
+    const splitNotes = doc.splitTextToSize(component.notes, 150);
+    height += (splitNotes.length * 7) + 22; // Extra padding for section
   }
   
   // We won't add space for images here since they're handled separately

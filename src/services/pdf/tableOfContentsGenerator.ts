@@ -1,38 +1,114 @@
 
 import { jsPDF } from "jspdf";
 import { Report } from "@/types";
-import { pdfColors, pdfFontSizes } from "./pdfStyles";
+import { pdfColors, pdfFontSizes, pdfFonts } from "./pdfStyles";
 
 export function generateTableOfContents(
   doc: jsPDF, 
   report: Report,
   roomPageMap: Record<string, number>
 ): void {
-  doc.setFontSize(pdfFontSizes.title);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
-  doc.text("TABLE OF CONTENTS", 105, 20, { align: "center" });
+  // Header
+  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+  doc.roundedRect(15, 15, 180, 25, 5, 5, "F");
   
+  doc.setFontSize(pdfFontSizes.title);
+  doc.setFont(pdfFonts.heading, "bold");
+  doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+  doc.text("TABLE OF CONTENTS", 105, 32, { align: "center" });
+  
+  // Table of contents content
   doc.setFontSize(pdfFontSizes.normal);
   doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
   
   // List rooms with page numbers
   if (report.rooms.length > 0) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Rooms:", 20, 40);
-    doc.setFont("helvetica", "normal");
+    // Rooms section header
+    doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.1);
+    doc.roundedRect(15, 50, 180, 15, 5, 5, "F");
     
+    doc.setFontSize(pdfFontSizes.subtitle);
+    doc.setFont(pdfFonts.heading, "bold");
+    doc.setTextColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
+    doc.text("Rooms", 105, 60, { align: "center" });
+    
+    // Table header
+    doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+    doc.rect(30, 75, 150, 10, "F");
+    
+    doc.setFontSize(pdfFontSizes.subheader);
+    doc.setFont(pdfFonts.heading, "bold");
+    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+    doc.text("Room Name", 40, 82);
+    doc.text("Page", 165, 82, { align: "center" });
+    
+    // Room list
     report.rooms.forEach((room, index) => {
+      const yPos = 85 + (index * 10);
       const pageNumber = roomPageMap[room.id];
-      doc.text(`${index + 1}. ${room.name}`, 30, 50 + (index * 10));
-      doc.text(`Page ${pageNumber}`, 150, 50 + (index * 10));
+      
+      // Alternate row background
+      if (index % 2 === 0) {
+        doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
+        doc.rect(30, yPos, 150, 10, "F");
+      }
+      
+      doc.setFontSize(pdfFontSizes.normal);
+      doc.setFont(pdfFonts.body, "normal");
+      doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+      doc.text(`${index + 1}. ${room.name}`, 40, yPos + 7);
+      
+      // Page number in a circle
+      doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+      doc.circle(165, yPos + 5, 6, "F");
+      
+      doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+      doc.setFont(pdfFonts.body, "bold");
+      doc.text(`${pageNumber}`, 165, yPos + 7, { align: "center" });
     });
   } else {
-    doc.text("No rooms in this report.", 20, 40);
+    doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+    doc.roundedRect(30, 75, 150, 20, 5, 5, "F");
+    
+    doc.setFontSize(pdfFontSizes.normal);
+    doc.setFont(pdfFonts.body, "italic");
+    doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
+    doc.text("No rooms in this report.", 105, 88, { align: "center" });
   }
   
-  // Add Summary section to TOC
+  // Summary and Disclaimers section
+  const summaryYPos = report.rooms.length > 0 ? 95 + (report.rooms.length * 10) : 105;
   const summaryPageNumber = 3 + report.rooms.length; // Cover + TOC + all rooms
-  doc.text("Summary and Disclaimers", 30, 50 + (report.rooms.length * 10));
-  doc.text(`Page ${summaryPageNumber}`, 150, 50 + (report.rooms.length * 10));
+  
+  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2], 0.1);
+  doc.roundedRect(15, summaryYPos, 180, 15, 5, 5, "F");
+  
+  doc.setFontSize(pdfFontSizes.subtitle);
+  doc.setFont(pdfFonts.heading, "bold");
+  doc.setTextColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
+  doc.text("Additional Sections", 105, summaryYPos + 10, { align: "center" });
+  
+  // Table for additional sections
+  doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+  doc.rect(30, summaryYPos + 25, 150, 10, "F");
+  
+  doc.setFontSize(pdfFontSizes.subheader);
+  doc.setFont(pdfFonts.heading, "bold");
+  doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+  doc.text("Section", 40, summaryYPos + 32);
+  doc.text("Page", 165, summaryYPos + 32, { align: "center" });
+  
+  // Summary and Disclaimers row
+  doc.setFontSize(pdfFontSizes.normal);
+  doc.setFont(pdfFonts.body, "normal");
+  doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+  doc.text("Summary and Disclaimers", 40, summaryYPos + 42);
+  
+  // Page number in a circle
+  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+  doc.circle(165, summaryYPos + 40, 6, "F");
+  
+  doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+  doc.setFont(pdfFonts.body, "bold");
+  doc.text(`${summaryPageNumber}`, 165, summaryYPos + 42, { align: "center" });
 }

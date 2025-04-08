@@ -1,6 +1,6 @@
 
 import { jsPDF } from "jspdf";
-import { pdfColors, pdfFontSizes } from "./pdfStyles";
+import { pdfColors, pdfFontSizes, pdfFonts } from "./pdfStyles";
 
 export class PageUtils {
   private currentPage: number = 1;
@@ -17,19 +17,34 @@ export class PageUtils {
     // Footer on all pages except cover
     if (this.currentPage > 1) {
       const pageWidth = this.doc.internal.pageSize.width;
+      
+      // Footer background
+      this.doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+      this.doc.rect(0, 280, 210, 17, "F");
+      
+      // Page number
+      this.doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+      this.doc.circle(pageWidth / 2, 288, 8, "F");
+      
+      this.doc.setFontSize(pdfFontSizes.normal);
+      this.doc.setFont(pdfFonts.heading, "bold");
+      this.doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+      this.doc.text(`${this.currentPage}`, pageWidth / 2, 291, { align: "center" });
+      
+      // Footer text
       this.doc.setFontSize(pdfFontSizes.small);
+      this.doc.setFont(pdfFonts.body, "normal");
       this.doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
       this.doc.text(
-        `Share.AI Property Report - Page ${this.currentPage}`,
-        pageWidth / 2,
-        285,
-        { align: "center" }
+        `Share.AI Property Report`,
+        20,
+        288
       );
       this.doc.text(
         `Generated on ${new Date().toLocaleDateString()}`,
-        pageWidth / 2,
-        290,
-        { align: "center" }
+        190,
+        288,
+        { align: "right" }
       );
     }
     this.currentPage++;
@@ -37,7 +52,7 @@ export class PageUtils {
   
   /**
    * Calculate room page mapping for table of contents
-   * @param roomCount Number of rooms in the report
+   * @param roomIds Room IDs in the report
    * @returns Record mapping room IDs to page numbers
    */
   calculateRoomPageMap(roomIds: string[]): Record<string, number> {
