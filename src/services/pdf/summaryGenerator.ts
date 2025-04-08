@@ -8,8 +8,7 @@ import {
   pdfMargins, 
   createElegantBox, 
   createSeparator, 
-  formatDate,
-  drawDashedLine
+  formatDate 
 } from "./pdfStyles";
 
 export function generateSummaryAndDisclaimers(
@@ -121,19 +120,12 @@ export function generateSummaryAndDisclaimers(
   // Inspector signature - left side
   createElegantBox(doc, pdfMargins.page + 20, yPosition + 25, colWidth - 40, 40, 4);
   
-  // Signature line - dashed (using custom function)
+  // Signature line - dashed
   doc.setDrawColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
   doc.setLineWidth(0.5);
-  // Using custom dashed line function instead of setLineDash
-  drawDashedLine(
-    doc, 
-    pdfMargins.page + 30, 
-    yPosition + 50, 
-    pdfMargins.page + colWidth - 30, 
-    yPosition + 50, 
-    2, 
-    2
-  );
+  doc.setLineDash([2, 2], 0);
+  doc.line(pdfMargins.page + 30, yPosition + 50, pdfMargins.page + colWidth - 30, yPosition + 50);
+  doc.setLineDash([0], 0);
   
   doc.setFontSize(pdfFontSizes.small);
   doc.setFont(pdfFonts.body, "normal");
@@ -143,19 +135,12 @@ export function generateSummaryAndDisclaimers(
   // Client signature - right side
   createElegantBox(doc, pdfMargins.page + colWidth + 20, yPosition + 25, colWidth - 40, 40, 4);
   
-  // Signature line - dashed (using custom function)
+  // Signature line - dashed
   doc.setDrawColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
   doc.setLineWidth(0.5);
-  // Using custom dashed line function instead of setLineDash
-  drawDashedLine(
-    doc, 
-    pdfMargins.page + colWidth + 30, 
-    yPosition + 50, 
-    pdfMargins.page + (colWidth * 2) - 30, 
-    yPosition + 50, 
-    2, 
-    2
-  );
+  doc.setLineDash([2, 2], 0);
+  doc.line(pdfMargins.page + colWidth + 30, yPosition + 50, pdfMargins.page + (colWidth * 2) - 30, yPosition + 50);
+  doc.setLineDash([0], 0);
   
   doc.setFontSize(pdfFontSizes.small);
   doc.setFont(pdfFonts.body, "normal");

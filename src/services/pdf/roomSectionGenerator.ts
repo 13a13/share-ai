@@ -279,7 +279,8 @@ function generateComponentSection(
           doc.rect(xPos, yPos + imageSize, imageSize, 15, "F");
           
           // Add timestamp caption
-          const formattedDate = formatDate(image.timestamp);
+          const date = new Date(image.timestamp);
+          const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
           
           doc.setFontSize(pdfFontSizes.small);
           doc.setFont(pdfFonts.body, "normal");
@@ -316,6 +317,7 @@ function generateComponentSection(
           doc.rect(xPos, yPos + imageSize, imageSize, 15, "F");
           
           // Add timestamp caption
+          const date = new Date(image.timestamp);
           const formattedDate = formatDate(image.timestamp);
           
           doc.setFontSize(pdfFontSizes.small);
