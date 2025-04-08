@@ -75,9 +75,11 @@ export interface RoomComponent {
   type: string;
   description: string;
   condition: ConditionRating;
+  conditionSummary?: string; // Add conditionSummary property
   notes?: string;
   images: RoomComponentImage[];
   isOptional: boolean;
+  isEditing?: boolean; // Add isEditing property
 }
 
 export interface RoomImage {

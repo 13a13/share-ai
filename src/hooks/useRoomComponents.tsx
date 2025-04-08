@@ -70,6 +70,7 @@ export function useRoomComponents({
         type: componentToAdd.type,
         description: "",
         condition: "fair" as ConditionRating,
+        conditionSummary: "",
         notes: "",
         images: [],
         isOptional: componentToAdd.isOptional,

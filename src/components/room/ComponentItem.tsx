@@ -12,7 +12,7 @@ import { conditionOptions } from "@/utils/roomComponentUtils";
 import { RoomComponent, RoomType, ConditionRating } from "@/types";
 
 interface ComponentItemProps {
-  component: RoomComponent & { isEditing?: boolean; conditionSummary?: string };
+  component: RoomComponent;
   roomType: RoomType;
   expanded: boolean;
   isProcessing: boolean;

@@ -46,7 +46,10 @@ const ComponentImageCapture = ({
       // Even if AI fails, still add the image without AI data
       onImageProcessed(componentId, imageUrl, {
         description: "",
-        condition: "fair",
+        condition: {
+          summary: "",
+          rating: "fair"
+        },
         notes: "AI analysis failed - please add description manually"
       });
     } finally {
