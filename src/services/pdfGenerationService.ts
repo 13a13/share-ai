@@ -216,7 +216,13 @@ export const usePDFGeneration = () => {
               
               // Condition badge
               if (component.condition) {
-                doc.setFillColor(getConditionColor(component.condition));
+                const conditionColorArray = getConditionColor(component.condition);
+                // Convert color array to string format that setFillColor expects
+                const colorR = conditionColorArray[0];
+                const colorG = conditionColorArray[1];
+                const colorB = conditionColorArray[2];
+                
+                doc.setFillColor(colorR, colorG, colorB);
                 doc.roundedRect(150, yPosition + 5, 40, 7, 2, 2, "F");
                 doc.setFontSize(smallSize);
                 doc.setTextColor(255, 255, 255);
