@@ -51,7 +51,8 @@ export function createGeminiRequest(promptText: string, imageData: string): Gemi
  * Calls the Gemini API to analyze an image
  */
 export async function callGeminiApi(apiKey: string, request: GeminiRequest): Promise<any> {
-  const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent";
+  // Updated to use gemini-1.5-flash model which replaced the deprecated gemini-pro-vision
+  const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
   
   const response = await fetch(`${apiUrl}?key=${apiKey}`, {
     method: "POST",
