@@ -2,6 +2,7 @@
 import { Room } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { ReportsAPI } from './reportsApi';
+import { LOCAL_STORAGE_KEYS } from './utils';
 
 // Gemini API implementation
 export const GeminiAPI = {
