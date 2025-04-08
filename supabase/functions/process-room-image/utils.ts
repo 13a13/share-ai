@@ -23,12 +23,15 @@ You are analysing **multiple photos** of the following room component: **${compo
 From the set of images, provide the following:
 
 1. A natural-language description of what is visible across all photos. Consider material, colour, build, and any visible features. Use all photos as context.
-2. A detailed condition analysis. Identify any wear, damage, soiling, structural issues, or installation problems visible in any image.
-3. Rate the condition using one of the following labels: Excellent, Good, Fair, Poor, Damaged.
+2. A detailed list of all objects visible in the images.
+3. A detailed condition analysis. Identify any wear, damage, soiling, structural issues, or installation problems visible in any image.
+4. Rate the condition using one of the following labels: Excellent, Good, Fair, Poor, Damaged.
 
 Return the result in this exact format:
 
 Description: [Paragraph summary across all images]
+
+Objects: [List of all visible objects with their properties]
 
 Condition:
 - Summary: [Condition assessment using all images]
@@ -41,12 +44,15 @@ You are analysing a photo of the following room component: ${componentTitle}.
 From this image, provide the following:
 
 1. A short, natural-language description of what is visible in the photo. Be specific about material, colour, and any visible characteristics.
-2. A detailed condition analysis. Note any wear and tear, damage, age indicators, cleanliness, or specific issues.
-3. Rate the condition using one of the following standard labels: Excellent, Good, Fair, Poor, Damaged.
+2. A detailed list of all objects visible in the image with their properties.
+3. A detailed condition analysis. Note any wear and tear, damage, age indicators, cleanliness, or specific issues.
+4. Rate the condition using one of the following standard labels: Excellent, Good, Fair, Poor, Damaged.
 
 Return the result in this exact format:
 
 Description: [One-paragraph natural description]
+
+Objects: [List of all visible objects with their properties]
 
 Condition:
 - Summary: [Detailed assessment]
@@ -72,7 +78,8 @@ export function extractJsonFromText(textContent: string): any {
   try {
     // For component analysis with the new format, parse the text response into a structured format
     if (textContent.includes("Description:") && textContent.includes("Condition:")) {
-      const descriptionMatch = textContent.match(/Description:\s*(.*?)(?=\s*Condition:|$)/s);
+      const descriptionMatch = textContent.match(/Description:\s*(.*?)(?=\s*Objects:|$)/s);
+      const objectsMatch = textContent.match(/Objects:\s*(.*?)(?=\s*Condition:|$)/s);
       
       // Extract condition data with the new format
       const conditionBlock = textContent.match(/Condition:\s*(.*?)(?=\s*$)/s);
@@ -95,6 +102,7 @@ export function extractJsonFromText(textContent: string): any {
       
       return {
         description: descriptionMatch ? descriptionMatch[1].trim() : "No description available",
+        objects: objectsMatch ? objectsMatch[1].trim().split('\n').map(item => item.trim()).filter(Boolean) : [],
         condition: {
           summary: conditionSummary,
           rating: conditionRating
@@ -145,10 +153,12 @@ export function formatResponse(parsedData: any, componentType?: string): any {
     // For component analysis
     return {
       description: parsedData.description || "No description available",
+      objects: parsedData.objects || [],
       condition: {
         summary: parsedData.condition?.summary || "",
         rating: parsedData.condition?.rating || "fair"
-      }
+      },
+      notes: parsedData.objects ? `Objects detected: ${parsedData.objects.join(', ')}` : ""
     };
   } else {
     // For full room analysis (original behavior)
@@ -175,6 +185,7 @@ export function createFallbackResponse(componentType?: string): any {
   if (componentType) {
     return {
       description: "Could not determine from image",
+      objects: [],
       condition: {
         summary: "AI analysis failed, please add manual description",
         rating: "fair"

@@ -1,98 +1,84 @@
 
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { Home, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { LogOut, User, ChevronDown } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const Header = () => {
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { toast } = useToast();
+  
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    navigate("/login");
+  };
   
   return (
-    <header className="bg-shareai-blue text-white shadow-md">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <div className="flex items-center space-x-2" onClick={() => navigate("/")} role="button">
-          <div className="flex items-center">
-            <Home className="h-6 w-6 mr-2" />
-            <span className="text-xl font-bold">Share.AI</span>
-          </div>
+    <header className="bg-shareai-blue py-4 text-white">
+      <div className="shareai-container flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <Link to="/" className="text-xl font-bold">Share.AI</Link>
+          
+          {isAuthenticated && (
+            <nav className="hidden md:flex space-x-4 ml-8">
+              <Link to="/" className="hover:text-shareai-teal transition">Dashboard</Link>
+              <Link to="/properties" className="hover:text-shareai-teal transition">Properties</Link>
+              <Link to="/reports" className="hover:text-shareai-teal transition">Reports</Link>
+            </nav>
+          )}
         </div>
         
-        {/* Mobile menu button */}
-        <div className="block lg:hidden">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="text-white hover:bg-shareai-blue/20"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            {menuOpen ? <X /> : <Menu />}
-          </Button>
+        <div className="flex items-center space-x-4">
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-white hover:bg-shareai-blue/50 flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  <span className="mr-1">{user?.name || user?.email?.split('@')[0]}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="h-4 w-4 mr-2" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:text-red-500">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" className="text-white hover:bg-shareai-blue/50">
+                  Login
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button className="bg-shareai-teal hover:bg-shareai-teal/90">
+                  Register
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
-        
-        {/* Desktop menu */}
-        <nav className="hidden lg:flex items-center space-x-6">
-          <Button 
-            variant="ghost" 
-            className="text-white hover:bg-shareai-blue/20"
-            onClick={() => navigate("/")}
-          >
-            Dashboard
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="text-white hover:bg-shareai-blue/20"
-            onClick={() => navigate("/properties")}
-          >
-            Properties
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="text-white hover:bg-shareai-blue/20"
-            onClick={() => navigate("/reports")}
-          >
-            Reports
-          </Button>
-        </nav>
       </div>
-      
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="lg:hidden bg-shareai-blue border-t border-white/10 py-2">
-          <div className="container mx-auto px-4 flex flex-col space-y-2">
-            <Button 
-              variant="ghost" 
-              className="text-white hover:bg-shareai-blue/20 justify-start"
-              onClick={() => {
-                navigate("/");
-                setMenuOpen(false);
-              }}
-            >
-              Dashboard
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="text-white hover:bg-shareai-blue/20 justify-start"
-              onClick={() => {
-                navigate("/properties");
-                setMenuOpen(false);
-              }}
-            >
-              Properties
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="text-white hover:bg-shareai-blue/20 justify-start"
-              onClick={() => {
-                navigate("/reports");
-                setMenuOpen(false);
-              }}
-            >
-              Reports
-            </Button>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

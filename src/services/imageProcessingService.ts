@@ -39,3 +39,25 @@ export const processComponentImage = async (
     throw error;
   }
 };
+
+// Helper function to test if Gemini API is configured correctly
+export const testGeminiConnection = async (): Promise<boolean> => {
+  try {
+    // Call the test endpoint with a simple request
+    const response = await supabase.functions.invoke('process-room-image', {
+      body: {
+        test: true
+      }
+    });
+    
+    if (response.error) {
+      console.error("Gemini API connection test failed:", response.error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error testing Gemini API connection:", error);
+    return false;
+  }
+};

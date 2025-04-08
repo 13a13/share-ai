@@ -22,7 +22,24 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrls, roomType, componentType } = await req.json();
+    const requestData = await req.json();
+    
+    // Handle test connection request
+    if (requestData.test === true) {
+      if (!GEMINI_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: "API key not configured", configured: false }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ message: "Gemini API key is configured", configured: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const { imageUrls, roomType, componentType } = requestData;
     
     if (!imageUrls || (Array.isArray(imageUrls) && imageUrls.length === 0)) {
       return new Response(

@@ -78,10 +78,10 @@ const ComponentImageCapture = ({
       if (!e.target?.result) return;
       const imageUrl = e.target.result as string;
       
-      if (currentImages.length + stagingImages.length >= 6) {
+      if (currentImages.length + stagingImages.length >= 5) {
         toast({
           title: "Maximum images reached",
-          description: "You can upload a maximum of 6 images per component.",
+          description: "You can upload a maximum of 5 images per component.",
           variant: "destructive",
         });
         return;
@@ -94,10 +94,10 @@ const ComponentImageCapture = ({
   };
 
   const handleCameraCapture = async (imageData: string) => {
-    if (currentImages.length + stagingImages.length >= 6) {
+    if (currentImages.length + stagingImages.length >= 5) {
       toast({
         title: "Maximum images reached",
-        description: "You can upload a maximum of 6 images per component.",
+        description: "You can upload a maximum of 5 images per component.",
         variant: "destructive",
       });
       return;
@@ -124,7 +124,7 @@ const ComponentImageCapture = ({
   };
 
   const totalImages = currentImages.length + stagingImages.length;
-  const canAddMore = totalImages < 6;
+  const canAddMore = totalImages < 5;
 
   return (
     <div className="space-y-4">
@@ -179,7 +179,7 @@ const ComponentImageCapture = ({
             onImageCapture={handleCameraCapture}
           />
           <div className="text-sm text-gray-500 mt-1">
-            {totalImages}/6 images
+            {totalImages}/5 images
           </div>
         </div>
       )}
