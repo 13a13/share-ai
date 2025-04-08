@@ -1,5 +1,8 @@
 
-// PDF Generation API
+/**
+ * PDF Generation API
+ * Simulates a backend service that would generate PDF documents
+ */
 export const PDFGenerationAPI = {
   /**
    * Generate a PDF document for a report
@@ -25,7 +28,7 @@ export const PDFGenerationAPI = {
         // We'll return an empty string here because the actual PDF
         // will be generated on the frontend in the usePDFGeneration hook
         resolve('');
-      }, 1000);
+      }, 500); // Reduced delay for better responsiveness
     });
   },
 };
