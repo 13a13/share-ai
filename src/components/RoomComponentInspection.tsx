@@ -1,5 +1,5 @@
+
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Accordion } from "@/components/ui/accordion";
 import { Plus } from "lucide-react";
@@ -193,7 +193,7 @@ const RoomComponentInspection = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium">Room Components</h3>
         <Button 
           onClick={handleAddComponent}

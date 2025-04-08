@@ -2,17 +2,30 @@
 import { useToast } from "@/components/ui/use-toast";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report, Room, RoomSection, RoomType, RoomComponent } from "@/types";
-import { BookCheck, Loader2 } from "lucide-react";
+import { BookCheck, Loader2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
-import { Button } from "@/components/ui/button"; // Added Button import
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-// Import our new components
+// Import components
 import ReportHeader from "@/components/ReportHeader";
 import ReportInfoForm, { ReportInfoFormValues } from "@/components/ReportInfoForm";
-import RoomList, { RoomFormValues } from "@/components/RoomList";
-import RoomDetails from "@/components/RoomDetails";
+import EditableRoomSection from "@/components/EditableRoomSection";
+
+const roomFormSchema = z.object({
+  name: z.string().min(1, "Room name is required"),
+  type: z.string().min(1, "Room type is required"),
+});
+
+type RoomFormValues = z.infer<typeof roomFormSchema>;
 
 const ReportEditPage = () => {
   const navigate = useNavigate();
@@ -21,12 +34,17 @@ const ReportEditPage = () => {
   
   const [report, setReport] = useState<Report | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
-  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmittingRoom, setIsSubmittingRoom] = useState(false);
   
-  const currentRoom = report?.rooms.find(room => room.id === currentRoomId) || null;
+  const roomForm = useForm<RoomFormValues>({
+    resolver: zodResolver(roomFormSchema),
+    defaultValues: {
+      name: "",
+      type: "living_room",
+    },
+  });
   
   useEffect(() => {
     const fetchReportData = async () => {
@@ -45,11 +63,6 @@ const ReportEditPage = () => {
         }
         
         setReport(reportData);
-        
-        if (reportData.rooms.length > 0 && !currentRoomId) {
-          setCurrentRoomId(reportData.rooms[0].id);
-        }
-        
         const propertyData = await PropertiesAPI.getById(reportData.propertyId);
         setProperty(propertyData);
       } catch (error) {
@@ -65,7 +78,7 @@ const ReportEditPage = () => {
     };
     
     fetchReportData();
-  }, [reportId, currentRoomId, toast, navigate]);
+  }, [reportId, toast, navigate]);
   
   const createDefaultComponent = (name: string, type: string, isOptional: boolean): RoomComponent => {
     return {
@@ -136,11 +149,14 @@ const ReportEditPage = () => {
           };
         });
         
-        setCurrentRoomId(newRoom.id);
-        
         toast({
           title: "Room Added",
           description: `${newRoom.name} has been added to the report with default components.`,
+        });
+        
+        roomForm.reset({
+          name: "",
+          type: "living_room",
         });
       }
     } catch (error) {
@@ -156,7 +172,10 @@ const ReportEditPage = () => {
   };
   
   const handleUpdateGeneralCondition = async (roomId: string, generalCondition: string) => {
-    if (!report || !currentRoom) return;
+    if (!report) return;
+    
+    const currentRoom = report.rooms.find(room => room.id === roomId);
+    if (!currentRoom) return;
     
     try {
       const updatedRoom = {
@@ -188,7 +207,13 @@ const ReportEditPage = () => {
   };
   
   const handleSaveSection = async (updatedSection: RoomSection) => {
-    if (!report || !currentRoom) return;
+    if (!report) return;
+    
+    const currentRoom = report.rooms.find(room => 
+      room.sections.some(section => section.id === updatedSection.id)
+    );
+    
+    if (!currentRoom) return;
     
     try {
       const updatedRoom = {
@@ -226,8 +251,11 @@ const ReportEditPage = () => {
     }
   };
   
-  const handleUpdateComponents = async (updatedComponents: RoomComponent[]) => {
-    if (!report || !currentRoom) return;
+  const handleUpdateComponents = async (roomId: string, updatedComponents: RoomComponent[]) => {
+    if (!report) return;
+    
+    const currentRoom = report.rooms.find(room => room.id === roomId);
+    if (!currentRoom) return;
     
     try {
       const updatedRoom = {
@@ -235,7 +263,7 @@ const ReportEditPage = () => {
         components: updatedComponents,
       };
       
-      const savedRoom = await ReportsAPI.updateRoom(report.id, currentRoom.id, updatedRoom);
+      const savedRoom = await ReportsAPI.updateRoom(report.id, roomId, updatedRoom);
       
       if (savedRoom) {
         setReport(prev => {
@@ -255,6 +283,25 @@ const ReportEditPage = () => {
         description: "Failed to update components. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+  
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!report) return;
+    
+    try {
+      await ReportsAPI.deleteRoom(report.id, roomId);
+      
+      setReport(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          rooms: prev.rooms.filter(room => room.id !== roomId),
+        };
+      });
+    } catch (error) {
+      console.error("Error deleting room:", error);
+      throw error;
     }
   };
   
@@ -373,22 +420,20 @@ const ReportEditPage = () => {
     }
   };
   
-  const handleImageProcessed = (updatedRoom: Room) => {
-    setReport(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        rooms: prev.rooms.map(room => 
-          room.id === updatedRoom.id ? updatedRoom : room
-        ),
-      };
-    });
-    
-    toast({
-      title: "Image Processed",
-      description: "AI has analyzed the image and updated the room details.",
-    });
-  };
+  const roomTypeOptions = [
+    { value: "entrance", label: "Entrance" },
+    { value: "hallway", label: "Hallway" },
+    { value: "living_room", label: "Living Room" },
+    { value: "dining_room", label: "Dining Room" },
+    { value: "kitchen", label: "Kitchen" },
+    { value: "bedroom", label: "Bedroom" },
+    { value: "bathroom", label: "Bathroom" },
+    { value: "garage", label: "Garage" },
+    { value: "basement", label: "Basement" },
+    { value: "attic", label: "Attic" },
+    { value: "outdoor", label: "Outdoor Space" },
+    { value: "other", label: "Other Room" },
+  ];
   
   if (isLoading) {
     return (
@@ -442,27 +487,107 @@ const ReportEditPage = () => {
         isSaving={isSaving}
       />
       
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <RoomList 
-            rooms={report.rooms}
-            currentRoomId={currentRoomId}
-            onSelectRoom={setCurrentRoomId}
-            onAddRoom={handleAddRoom}
-            isSubmittingRoom={isSubmittingRoom}
-          />
+      <div className="my-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Rooms</h2>
         </div>
         
-        <div className="lg:col-span-3">
-          <RoomDetails 
-            reportId={report.id}
-            room={currentRoom}
-            onUpdateGeneralCondition={handleUpdateGeneralCondition}
-            onSaveSection={handleSaveSection}
-            onUpdateComponents={handleUpdateComponents}
-            onImageProcessed={handleImageProcessed}
-          />
-        </div>
+        {report.rooms.length === 0 ? (
+          <Card className="mb-6">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <BookCheck className="h-16 w-16 text-shareai-teal mb-4" />
+              <h3 className="text-xl font-medium mb-2">No Rooms Added</h3>
+              <p className="text-gray-500 text-center mb-6 max-w-md">
+                Add rooms to your report to begin documenting property conditions.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4 mb-6">
+            {report.rooms.map((room) => (
+              <EditableRoomSection 
+                key={room.id}
+                reportId={report.id}
+                room={room}
+                onUpdateGeneralCondition={handleUpdateGeneralCondition}
+                onSaveSection={handleSaveSection}
+                onUpdateComponents={handleUpdateComponents}
+                onDeleteRoom={handleDeleteRoom}
+              />
+            ))}
+          </div>
+        )}
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Add New Room</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...roomForm}>
+              <form onSubmit={roomForm.handleSubmit(handleAddRoom)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={roomForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Room Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Master Bedroom" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={roomForm.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Room Type</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select room type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {roomTypeOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="bg-shareai-teal hover:bg-shareai-teal/90"
+                  disabled={isSubmittingRoom}
+                >
+                  {isSubmittingRoom ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adding Room...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Room
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
