@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import RoomSectionView from "@/components/RoomSectionView";
 import { PDFGenerationAPI, PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report } from "@/types";
-import { BookCheck, Download, FilePdf, FileText, Home, Loader2, Pencil } from "lucide-react";
+import { BookCheck, Download, FileText, Home, Loader2, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -24,7 +23,6 @@ const ReportViewPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
-  // Get the current room from the report
   const currentRoom = report?.rooms.find(room => room.id === currentRoomId) || null;
   
   useEffect(() => {
@@ -45,12 +43,10 @@ const ReportViewPage = () => {
         
         setReport(reportData);
         
-        // Set the current room to the first room if available
         if (reportData.rooms.length > 0 && !currentRoomId) {
           setCurrentRoomId(reportData.rooms[0].id);
         }
         
-        // Fetch property data
         const propertyData = await PropertiesAPI.getById(reportData.propertyId);
         setProperty(propertyData);
       } catch (error) {
@@ -80,8 +76,6 @@ const ReportViewPage = () => {
         title: "PDF Generated",
         description: "Your report PDF has been generated and is ready to download.",
       });
-      
-      // In a real app, this would trigger a download or redirect to the PDF
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast({
@@ -94,7 +88,6 @@ const ReportViewPage = () => {
     }
   };
   
-  // Helper function to get status badge color
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'draft':
@@ -110,7 +103,6 @@ const ReportViewPage = () => {
     }
   };
   
-  // Helper function to format report type
   const formatReportType = (type: string) => {
     return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -177,7 +169,7 @@ const ReportViewPage = () => {
               </>
             ) : (
               <>
-                <FilePdf className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 mr-2" />
                 Export PDF
               </>
             )}
@@ -185,7 +177,6 @@ const ReportViewPage = () => {
         </div>
       </div>
       
-      {/* Report metadata */}
       <Card className="mb-6">
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -222,7 +213,6 @@ const ReportViewPage = () => {
       </Card>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar - Room List */}
         <div className="lg:col-span-1">
           <Card>
             <CardHeader className="pb-3">
@@ -256,7 +246,6 @@ const ReportViewPage = () => {
             </CardContent>
           </Card>
           
-          {/* Disclaimers */}
           <Card className="mt-6">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center">
@@ -276,7 +265,6 @@ const ReportViewPage = () => {
           </Card>
         </div>
         
-        {/* Main Content */}
         <div className="lg:col-span-3">
           {currentRoom ? (
             <Card>
@@ -297,15 +285,12 @@ const ReportViewPage = () => {
                   
                   <TabsContent value="details" className="pt-2">
                     <div className="space-y-6">
-                      {/* Room Sections */}
-                      <div className="space-y-4">
-                        {currentRoom.sections.map((section) => (
-                          <RoomSectionView 
-                            key={section.id} 
-                            section={section}
-                          />
-                        ))}
-                      </div>
+                      {currentRoom.sections.map((section) => (
+                        <RoomSectionView 
+                          key={section.id} 
+                          section={section}
+                        />
+                      ))}
                     </div>
                   </TabsContent>
                   
@@ -358,7 +343,6 @@ const ReportViewPage = () => {
             </Card>
           )}
           
-          {/* Notes and general information */}
           {report.generalNotes && (
             <Card className="mt-6">
               <CardHeader className="pb-3">

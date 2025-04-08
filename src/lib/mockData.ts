@@ -1,5 +1,5 @@
-
-import { Property, Report, Room, RoomImage, RoomSection, RoomType } from '@/types';
+import { Property, Report, Room, RoomImage, RoomSection, RoomType } from "@/types";
+import { GeminiResponse } from "@/types/gemini";
 import { v4 as uuidv4 } from 'uuid';
 
 // Demo properties
