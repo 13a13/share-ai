@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import CollapsibleRoomSection from "@/components/CollapsibleRoomSection";
+import PDFExportButton from "@/components/PDFExportButton";
 
 const ReportViewPage = () => {
   const navigate = useNavigate();
@@ -107,6 +107,9 @@ const ReportViewPage = () => {
           >
             Edit Report
           </Button>
+          {report && property && (
+            <PDFExportButton report={report} property={property} />
+          )}
         </div>
       </div>
       
