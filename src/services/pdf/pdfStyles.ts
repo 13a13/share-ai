@@ -1,4 +1,3 @@
-
 // PDF styling utilities and constants
 
 // PDF color constants - professional color palette
@@ -127,19 +126,19 @@ export function createTwoColumnLayout(doc: any, leftContent: string, rightConten
   return yPos + Math.max(leftHeight, rightHeight) + pdfMargins.paragraph;
 }
 
-// Helper to format dates consistently
-export function formatDate(dateString: string): string {
-  if (!dateString) return "Not specified";
+// Helper to format dates consistently - now accepts Date or string
+export function formatDate(dateInput: string | Date): string {
+  if (!dateInput) return "Not specified";
   
   try {
-    const date = new Date(dateString);
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   } catch (e) {
-    return dateString;
+    return typeof dateInput === 'string' ? dateInput : "Invalid date";
   }
 }
 

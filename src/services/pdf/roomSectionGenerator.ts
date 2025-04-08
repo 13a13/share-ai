@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
 import { 
@@ -278,9 +277,8 @@ function generateComponentSection(
           doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
           doc.rect(xPos, yPos + imageSize, imageSize, 15, "F");
           
-          // Add timestamp caption
-          const date = new Date(image.timestamp);
-          const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+          // Add timestamp caption - fixed formatting
+          const formattedDate = formatDate(image.timestamp);
           
           doc.setFontSize(pdfFontSizes.small);
           doc.setFont(pdfFonts.body, "normal");
@@ -316,8 +314,7 @@ function generateComponentSection(
           doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
           doc.rect(xPos, yPos + imageSize, imageSize, 15, "F");
           
-          // Add timestamp caption
-          const date = new Date(image.timestamp);
+          // Add timestamp caption - fixed formatting
           const formattedDate = formatDate(image.timestamp);
           
           doc.setFontSize(pdfFontSizes.small);
