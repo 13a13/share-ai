@@ -48,8 +48,15 @@ const ComponentImageCapture = ({
         console.error("Error processing image:", error);
         toast({
           title: "Error processing image",
-          description: error instanceof Error ? error.message : "An unknown error occurred",
+          description: "AI analysis failed. Please try again or check your internet connection.",
           variant: "destructive",
+        });
+        
+        // Even if AI fails, still add the image without AI data
+        onImageProcessed(componentId, imageUrl, {
+          description: "",
+          condition: "fair",
+          notes: "AI analysis failed - please add description manually"
         });
       } finally {
         onProcessingStateChange(componentId, false);

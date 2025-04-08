@@ -95,11 +95,18 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
         
         // Notify parent component
         onImageProcessed(updatedRoom);
+      } else {
+        toast({
+          title: "Processing failed",
+          description: "AI analysis was unable to process this image. You can still edit room details manually.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
+      console.error("Processing error:", error);
       toast({
         title: "Processing failed",
-        description: "There was a problem processing your image with AI",
+        description: "There was a problem processing your image with AI. You can still edit room details manually.",
         variant: "destructive",
       });
     }

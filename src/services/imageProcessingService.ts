@@ -1,5 +1,5 @@
 
-import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ProcessedImageResult {
   description?: string;
@@ -13,25 +13,21 @@ export const processComponentImage = async (
   componentType: string
 ): Promise<ProcessedImageResult> => {
   try {
-    const response = await fetch(`${window.location.origin}/supabase-functions/process-room-image`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Use supabase.functions.invoke instead of direct fetch
+    const response = await supabase.functions.invoke('process-room-image', {
+      body: {
         imageUrl,
         roomType,
         componentType
-      })
+      }
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to process image: ${errorText}`);
+    if (response.error) {
+      console.error("Gemini API error:", response.error);
+      throw new Error(`Failed to process image: ${response.error.message}`);
     }
     
-    const result = await response.json();
-    return result;
+    return response.data;
   } catch (error) {
     console.error("Error processing image:", error);
     throw error;
