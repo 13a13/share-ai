@@ -1,6 +1,6 @@
 
 import { PDFGenerationAPI } from "@/lib/api/pdfApi";
-import { Report, Property, Room, RoomComponent } from "@/types";
+import { Report, Property } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 
 export type PDFGenerationStatus = "idle" | "generating" | "complete" | "error";

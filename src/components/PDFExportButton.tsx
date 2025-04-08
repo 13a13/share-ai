@@ -25,8 +25,13 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
       const url = await generatePDF(report, property);
       setDownloadUrl(url);
       
-      // Open the download URL in a new tab
-      window.open(url, "_blank");
+      // Instead of opening in a new tab, trigger the download directly
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}_Report.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error("Error exporting PDF:", error);
     } finally {

@@ -27,6 +27,11 @@ const PDFPreviewDialog = ({
   downloadUrl,
   reportTitle
 }: PDFPreviewDialogProps) => {
+  // Create a blob URL for the PDF if it's just a string identifier
+  const embedUrl = pdfUrl && !pdfUrl.startsWith('http') && !pdfUrl.startsWith('blob:') 
+    ? `data:application/pdf;base64,${pdfUrl}` 
+    : pdfUrl;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-11/12 h-[85vh] flex flex-col">
@@ -43,9 +48,9 @@ const PDFPreviewDialog = ({
               <Loader2 className="h-12 w-12 animate-spin text-shareai-teal" />
               <span className="ml-3 text-shareai-blue">Generating PDF preview...</span>
             </div>
-          ) : pdfUrl ? (
+          ) : embedUrl ? (
             <iframe 
-              src={pdfUrl}
+              src={embedUrl}
               className="w-full h-full"
               title="PDF Preview"
             />
@@ -66,7 +71,15 @@ const PDFPreviewDialog = ({
           {downloadUrl && (
             <Button 
               className="bg-shareai-blue hover:bg-shareai-blue/90 text-white"
-              onClick={() => window.open(downloadUrl, "_blank")}
+              onClick={() => {
+                // Create a temporary link to initiate download
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.setAttribute('download', `${reportTitle.replace(/\s+/g, '_')}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
             >
               <Download className="mr-2 h-4 w-4" />
               Download
