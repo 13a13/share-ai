@@ -1,24 +1,24 @@
 
 import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
-import { pdfColors, pdfFontSizes, getConditionColor, pdfFonts, createSectionBox } from "./pdfStyles";
+import { pdfColors, pdfFontSizes, getConditionColor, pdfFonts, createSectionBox, createElegantBox } from "./pdfStyles";
 
 export function generateRoomSection(
   doc: jsPDF, 
   room: Room,
   addHeaderAndFooter: () => void
 ): void {
-  // Room Header with improved styling
-  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
-  doc.roundedRect(15, 15, 180, 20, 5, 5, "F");
+  // Room Header - more elegant styling
+  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.9);
+  doc.roundedRect(15, 15, 180, 20, 6, 6, "F");
   
   doc.setFontSize(pdfFontSizes.title);
   doc.setFont(pdfFonts.heading, "bold");
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
   doc.text(room.name, 105, 28, { align: "center" });
   
-  // Room type badge
-  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
+  // Room type badge - more elegant
+  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2], 0.8);
   doc.roundedRect(75, 40, 60, 10, 5, 5, "F");
   
   doc.setFontSize(pdfFontSizes.small);
@@ -27,10 +27,9 @@ export function generateRoomSection(
   
   let yPosition = 60;
   
-  // General Condition Section
+  // General Condition Section - elegant box
   if (room.generalCondition) {
-    doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-    doc.roundedRect(15, yPosition, 180, 40, 5, 5, "F");
+    createElegantBox(doc, 15, yPosition, 180, 40, 5);
     
     doc.setFontSize(pdfFontSizes.subtitle);
     doc.setFont(pdfFonts.heading, "bold");
@@ -48,10 +47,10 @@ export function generateRoomSection(
     yPosition += 50; // Adjust based on content
   }
   
-  // Components Section
+  // Components Section - more elegant styling
   if (room.components && room.components.length > 0) {
-    doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.1);
-    doc.roundedRect(15, yPosition, 180, 15, 5, 5, "F");
+    doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.15);
+    doc.roundedRect(15, yPosition, 180, 15, 6, 6, "F");
     
     doc.setFontSize(pdfFontSizes.subtitle);
     doc.setFont(pdfFonts.heading, "bold");
@@ -65,8 +64,8 @@ export function generateRoomSection(
       yPosition = generateComponentSection(doc, component, yPosition, addHeaderAndFooter);
     }
   } else {
-    doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-    doc.roundedRect(15, yPosition, 180, 30, 5, 5, "F");
+    // Empty state - more elegant
+    createElegantBox(doc, 15, yPosition, 180, 30, 5);
     
     doc.setFontSize(pdfFontSizes.normal);
     doc.setFont(pdfFonts.body, "italic");
@@ -91,12 +90,11 @@ function generateComponentSection(
   // Calculate component box height
   const boxHeight = calculateComponentBoxHeight(doc, component);
   
-  // Component box with enhanced styling
-  doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-  doc.roundedRect(15, yPosition, 180, boxHeight, 5, 5, "F");
+  // Component box - elegant styling
+  createElegantBox(doc, 15, yPosition, 180, boxHeight, 5);
   
-  // Component title and condition badge in header box with gradient-like effect
-  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+  // Component title header - softer gradient
+  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.9);
   doc.roundedRect(15, yPosition, 180, 16, 5, 5, "F");
   
   // Component name
@@ -105,21 +103,21 @@ function generateComponentSection(
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
   doc.text(component.name, 25, yPosition + 11);
   
-  // Condition badge with improved styling
+  // Condition badge with elegant styling
   if (component.condition) {
     const conditionColorArray = getConditionColor(component.condition);
     
-    doc.setFillColor(conditionColorArray[0], conditionColorArray[1], conditionColorArray[2]);
-    doc.roundedRect(150, yPosition + 4, 40, 9, 4, 4, "F");
+    doc.setFillColor(conditionColorArray[0], conditionColorArray[1], conditionColorArray[2], 0.9);
+    doc.roundedRect(150, yPosition + 4, 40, 9, 5, 5, "F");
     doc.setFontSize(pdfFontSizes.small);
     doc.setFont(pdfFonts.body, "bold");
     doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-    doc.text(component.condition.toUpperCase(), 170, yPosition + 10, { align: "center" });
+    doc.text(component.condition.toUpperCase().replace('_', ' '), 170, yPosition + 10, { align: "center" });
   }
   
   let contentYPosition = yPosition + 25;
   
-  // Component description with improved styling
+  // Component description with elegant styling
   if (component.description) {
     const splitDesc = doc.splitTextToSize(component.description, 160);
     doc.setFontSize(pdfFontSizes.normal);
@@ -129,11 +127,11 @@ function generateComponentSection(
     contentYPosition += splitDesc.length * 7;
   }
   
-  // Condition summary if available
+  // Condition summary if available - elegant styling
   if (component.conditionSummary) {
-    // Section box for condition summary
-    doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2], 0.5);
-    doc.roundedRect(25, contentYPosition + 5, 160, 7 + (doc.splitTextToSize(component.conditionSummary, 150).length * 7), 3, 3, "F");
+    // Section box for condition summary - soft subtle background
+    doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2], 0.4);
+    doc.roundedRect(25, contentYPosition + 5, 160, 7 + (doc.splitTextToSize(component.conditionSummary, 150).length * 7), 4, 4, "F");
     
     doc.setFont(pdfFonts.heading, "bold");
     doc.setFontSize(pdfFontSizes.subheader);
@@ -151,11 +149,11 @@ function generateComponentSection(
     contentYPosition += 5;
   }
   
-  // Component notes with improved styling
+  // Component notes with elegant styling
   if (component.notes) {
-    // Notes box
+    // Notes box - soft subtle styling
     doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.1);
-    doc.roundedRect(25, contentYPosition + 5, 160, 7 + (doc.splitTextToSize(component.notes, 150).length * 7), 3, 3, "F");
+    doc.roundedRect(25, contentYPosition + 5, 160, 7 + (doc.splitTextToSize(component.notes, 150).length * 7), 4, 4, "F");
     
     doc.setFont(pdfFonts.heading, "bold");
     doc.setFontSize(pdfFontSizes.subheader);
@@ -173,7 +171,7 @@ function generateComponentSection(
     contentYPosition += 5;
   }
   
-  // Add component images if they exist with improved layout
+  // Add component images if they exist - elegant layout
   if (component.images && component.images.length > 0) {
     // Check if we need a new page for images
     if (contentYPosition > 200) {
@@ -181,8 +179,8 @@ function generateComponentSection(
       addHeaderAndFooter();
       contentYPosition = 20;
       
-      // Add component name as a header on the new page
-      doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+      // Add component name as a header on the new page - elegant
+      doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.9);
       doc.roundedRect(15, contentYPosition, 180, 16, 5, 5, "F");
       
       doc.setFontSize(pdfFontSizes.header);
@@ -191,9 +189,9 @@ function generateComponentSection(
       doc.text(`${component.name} (Images)`, 25, contentYPosition + 11);
       contentYPosition += 25;
     } else {
-      // Add images section header
+      // Add images section header - subtle styling
       doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2], 0.1);
-      doc.roundedRect(25, contentYPosition, 160, 15, 3, 3, "F");
+      doc.roundedRect(25, contentYPosition, 160, 15, 4, 4, "F");
       
       doc.setFontSize(pdfFontSizes.subheader);
       doc.setFont(pdfFonts.heading, "bold");
@@ -213,8 +211,8 @@ function generateComponentSection(
         addHeaderAndFooter();
         contentYPosition = 20;
         
-        // Add component name as a header on the new page
-        doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+        // Add component name as a header on the new page - elegant
+        doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.9);
         doc.roundedRect(15, contentYPosition, 180, 16, 5, 5, "F");
         
         doc.setFontSize(pdfFontSizes.header);
@@ -231,10 +229,8 @@ function generateComponentSection(
           const xPos = 25 + col * 85;
           
           try {
-            // Image container with border
-            doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-            doc.setLineWidth(0.5);
-            doc.roundedRect(xPos, contentYPosition, 75, 65, 3, 3, "S");
+            // Image container with elegant styling
+            createElegantBox(doc, xPos, contentYPosition, 75, 65, 4);
             
             // Add image to PDF with rounded corners effect (approximated)
             doc.addImage(
@@ -246,13 +242,13 @@ function generateComponentSection(
               50                 // Height
             );
             
-            // Add timestamp container
-            doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+            // Add timestamp container - subtle styling
+            doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2], 0.7);
             doc.roundedRect(xPos, contentYPosition + 52.5, 75, 12.5, 0, 0, "F");
             
-            // Add timestamp under the image
+            // Add timestamp under the image - subtle text
             const date = new Date(image.timestamp);
-            const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+            const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
             
             doc.setFontSize(pdfFontSizes.small);
             doc.setFont(pdfFonts.body, "normal");
@@ -261,9 +257,8 @@ function generateComponentSection(
           } catch (error) {
             console.error("Error adding image to PDF:", error);
             
-            // Add error placeholder with improved styling
-            doc.setFillColor(220, 220, 220);
-            doc.roundedRect(xPos, contentYPosition, 75, 65, 3, 3, "F");
+            // Add error placeholder with elegant styling
+            createElegantBox(doc, xPos, contentYPosition, 75, 65, 4);
             
             doc.setFont(pdfFonts.body, "italic");
             doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);

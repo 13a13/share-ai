@@ -1,42 +1,40 @@
 
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
-import { pdfColors, pdfFontSizes, pdfFonts } from "./pdfStyles";
+import { pdfColors, pdfFontSizes, pdfFonts, createElegantBox } from "./pdfStyles";
 
 export function generateCoverPage(
   doc: jsPDF, 
   report: Report, 
   property: Property
 ): void {
-  // Header with gradient-like effect
-  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+  // Elegant header with gradient-like effect
+  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.9);
   doc.rect(0, 0, 210, 60, "F");
   
-  // Accent strip
-  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
-  doc.rect(0, 60, 210, 10, "F");
+  // Subtle accent strip
+  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.8);
+  doc.rect(0, 60, 210, 8, "F");
   
   // Title text
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.setFontSize(pdfFontSizes.title + 8); // Larger title
+  doc.setFontSize(pdfFontSizes.title + 6); // Slightly larger title
   doc.setFont(pdfFonts.heading, "bold");
   doc.text("PROPERTY INVENTORY", 105, 30, { align: "center" });
   doc.text("REPORT", 105, 50, { align: "center" });
   
-  // Report type badge
-  doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.roundedRect(55, 80, 100, 20, 5, 5, "F");
+  // Report type badge - more elegant
+  createElegantBox(doc, 55, 80, 100, 20, 5);
   
   doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
   doc.setFontSize(pdfFontSizes.subtitle);
   doc.text(`${report.type.replace('_', ' ').toUpperCase()} REPORT`, 105, 94, { align: "center" });
   
-  // Property Details Card
-  doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-  doc.roundedRect(25, 120, 160, 80, 8, 8, "F");
+  // Property Details Card - more elegant
+  createElegantBox(doc, 25, 120, 160, 80, 8);
   
-  // Property Details Header
-  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
+  // Property Details Header - softer color
+  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2], 0.9);
   doc.roundedRect(25, 120, 160, 20, 8, 8, "F");
   
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
@@ -44,12 +42,12 @@ export function generateCoverPage(
   doc.setFont(pdfFonts.heading, "bold");
   doc.text("PROPERTY DETAILS", 105, 134, { align: "center" });
   
-  // Property Details Content
+  // Property Details Content - softer text color
   doc.setFontSize(pdfFontSizes.normal);
   doc.setFont(pdfFonts.body, "normal");
   doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
   
-  // Left column
+  // Left column - softer bold
   doc.setFont(pdfFonts.body, "bold");
   doc.text("Address:", 35, 150);
   doc.text("City:", 35, 160);
@@ -63,12 +61,11 @@ export function generateCoverPage(
   doc.text(property.state, 85, 170);
   doc.text(property.zipCode, 85, 180);
   
-  // Report Information Card
-  doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-  doc.roundedRect(25, 210, 160, 60, 8, 8, "F");
+  // Report Information Card - more elegant
+  createElegantBox(doc, 25, 210, 160, 60, 8);
   
-  // Report Info Header
-  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
+  // Report Info Header - softer color
+  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.8);
   doc.roundedRect(25, 210, 160, 20, 8, 8, "F");
   
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
@@ -102,7 +99,7 @@ export function generateCoverPage(
     }
   }
   
-  // Footer
+  // Footer - softer colors
   doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
   doc.rect(0, 280, 210, 17, "F");
   

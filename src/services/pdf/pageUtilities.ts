@@ -18,12 +18,12 @@ export class PageUtils {
     if (this.currentPage > 1) {
       const pageWidth = this.doc.internal.pageSize.width;
       
-      // Footer background
-      this.doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+      // Footer background - softer colors
+      doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
       this.doc.rect(0, 280, 210, 17, "F");
       
-      // Page number
-      this.doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+      // Page number - softer styling
+      this.doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.9);
       this.doc.circle(pageWidth / 2, 288, 8, "F");
       
       this.doc.setFontSize(pdfFontSizes.normal);
@@ -31,7 +31,7 @@ export class PageUtils {
       this.doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
       this.doc.text(`${this.currentPage}`, pageWidth / 2, 291, { align: "center" });
       
-      // Footer text
+      // Footer text - softer gray
       this.doc.setFontSize(pdfFontSizes.small);
       this.doc.setFont(pdfFonts.body, "normal");
       this.doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);

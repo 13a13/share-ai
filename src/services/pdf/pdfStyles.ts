@@ -1,25 +1,25 @@
 
 // PDF styling utilities and constants
 
-// PDF color constants
+// PDF color constants - softer, more elegant palette with reduced contrast
 export const pdfColors = {
-  primary: [67, 56, 202], // Indigo
-  secondary: [99, 102, 241], // Lighter indigo
-  accent: [139, 92, 246], // Purple
+  primary: [59, 130, 246], // Softer blue
+  secondary: [96, 165, 250], // Lighter blue
+  accent: [167, 139, 250], // Soft purple
   white: [255, 255, 255],
-  black: [45, 55, 72], // Slate-800
-  gray: [113, 128, 150], // Slate-500
-  lightGray: [226, 232, 240], // Slate-200
-  bgGray: [247, 250, 252], // Slate-50
-  successGreen: [72, 187, 120], // Green-500
-  warningYellow: [237, 187, 22], // Yellow-500
-  dangerRed: [245, 101, 101], // Red-500
+  black: [71, 85, 105], // Softer slate-700
+  gray: [148, 163, 184], // Softer slate-400
+  lightGray: [241, 245, 249], // Softer slate-100
+  bgGray: [249, 250, 251], // Softer slate-50
+  successGreen: [132, 204, 170], // Softer green
+  warningYellow: [251, 211, 141], // Softer yellow
+  dangerRed: [248, 153, 153], // Softer red
 };
 
-// PDF font size constants
+// PDF font size constants - slightly adjusted for better readability
 export const pdfFontSizes = {
-  title: 24,
-  subtitle: 18,
+  title: 22,
+  subtitle: 16,
   header: 14,
   subheader: 12,
   normal: 10,
@@ -32,36 +32,36 @@ export const pdfFonts = {
   body: "helvetica",
 };
 
-// Helper function to get color for condition badges
+// Helper function to get color for condition badges - softer colors
 export function getConditionColor(condition: string): number[] {
   switch (condition.toLowerCase()) {
     case 'excellent':
-      return [72, 187, 120]; // Green-500
+      return [132, 204, 170]; // Softer green
     case 'good':
-      return [56, 161, 105]; // Green-600
+      return [163, 217, 190]; // Even softer green
     case 'fair':
-      return [237, 187, 22]; // Yellow-500
+      return [251, 211, 141]; // Softer yellow
     case 'poor':
-      return [237, 137, 54]; // Orange-500
+      return [251, 175, 130]; // Softer orange
     case 'damaged':
     case 'needs_replacement':
-      return [245, 101, 101]; // Red-500
+      return [248, 153, 153]; // Softer red
     default:
-      return [113, 128, 150]; // Slate-500
+      return [148, 163, 184]; // Softer slate-400
   }
 }
 
-// Helper function to create consistent section styling
+// Helper function to create consistent section styling with softer colors
 export function createSectionBox(doc: any, yPos: number, width: number, height: number, title: string): number {
   const titleHeight = 16;
   
-  // Section background
+  // Section background - softer
   doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-  doc.roundedRect(15, yPos, width, height, 3, 3, "F");
+  doc.roundedRect(15, yPos, width, height, 4, 4, "F");
   
-  // Section header background
+  // Section header background - softer gradient effect
   doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-  doc.roundedRect(15, yPos, width, titleHeight, 3, 3, "F");
+  doc.roundedRect(15, yPos, width, titleHeight, 4, 4, "F");
   
   // Section title
   doc.setFontSize(pdfFontSizes.header);
@@ -72,3 +72,14 @@ export function createSectionBox(doc: any, yPos: number, width: number, height: 
   return yPos + titleHeight + 5; // Return the Y position after the title
 }
 
+// Helper function to create elegant box shadows (simulation)
+export function createElegantBox(doc: any, x: number, y: number, width: number, height: number, radius: number = 4): void {
+  // Main box with softer background
+  doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+  doc.roundedRect(x, y, width, height, radius, radius, "F");
+  
+  // Subtle border
+  doc.setDrawColor(230, 235, 240);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(x, y, width, height, radius, radius, "S");
+}
