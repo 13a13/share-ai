@@ -1,121 +1,149 @@
 
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
-import { pdfColors, pdfFontSizes, pdfFonts, createElegantBox } from "./pdfStyles";
+import { 
+  pdfColors, 
+  pdfFontSizes, 
+  pdfFonts, 
+  pdfMargins, 
+  createElegantBox, 
+  createSeparator, 
+  formatDate 
+} from "./pdfStyles";
 
 export function generateSummaryAndDisclaimers(
   doc: jsPDF, 
   report: Report,
   property: Property
 ): void {
-  // Header - more elegant styling
-  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.9);
-  doc.roundedRect(15, 15, 180, 25, 6, 6, "F");
+  const pageWidth = doc.internal.pageSize.width;
+  
+  // Header
+  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+  doc.roundedRect(pdfMargins.page, pdfMargins.page, pageWidth - (pdfMargins.page * 2), 25, 4, 4, "F");
   
   doc.setFontSize(pdfFontSizes.title);
   doc.setFont(pdfFonts.heading, "bold");
   doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.text("SUMMARY & DISCLAIMERS", 105, 32, { align: "center" });
+  doc.text("SUMMARY & DISCLAIMERS", pageWidth / 2, pdfMargins.page + 16, { align: "center" });
   
-  // Summary section - more subtle styling
-  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2], 0.15);
-  doc.roundedRect(15, 50, 180, 15, 6, 6, "F");
+  let yPosition = pdfMargins.page + 40;
   
-  doc.setFontSize(pdfFontSizes.subtitle);
-  doc.setFont(pdfFonts.heading, "bold");
-  doc.setTextColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
-  doc.text("Report Summary", 105, 60, { align: "center" });
-  
-  // Summary content - elegant box
-  doc.setFontSize(pdfFontSizes.normal);
-  doc.setFont(pdfFonts.body, "normal");
-  doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
-  
-  const summaryText = `This report includes an assessment of ${report.rooms.length} room(s) at the property located at ${property.address}, ${property.city}, ${property.state} ${property.zipCode}. The inspection was conducted on ${report.reportInfo?.reportDate ? new Date(report.reportInfo.reportDate).toLocaleDateString() : "an unspecified date"}.`;
-  
-  createElegantBox(doc, 15, 70, 180, 30, 5);
-  
-  const splitSummary = doc.splitTextToSize(summaryText, 170);
-  doc.text(splitSummary, 25, 85);
-  
-  // Disclaimers - more subtle styling
-  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2], 0.15);
-  doc.roundedRect(15, 110, 180, 15, 6, 6, "F");
+  // Summary section
+  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2], 0.1);
+  doc.roundedRect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 20, 4, 4, "F");
   
   doc.setFontSize(pdfFontSizes.subtitle);
   doc.setFont(pdfFonts.heading, "bold");
   doc.setTextColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
-  doc.text("Disclaimers", 105, 120, { align: "center" });
+  doc.text("Report Summary", pageWidth / 2, yPosition + 14, { align: "center" });
   
-  // Elegant disclaimer box
-  createElegantBox(doc, 15, 130, 180, 60, 5);
+  yPosition += 30;
   
-  let disclaimerY = 140;
+  // Summary content in two-column layout
+  const colWidth = (pageWidth - (pdfMargins.page * 2) - 10) / 2;
+  
+  // Left column - Summary
+  createElegantBox(doc, pdfMargins.page, yPosition, colWidth, 80, 4);
   
   doc.setFontSize(pdfFontSizes.normal);
   doc.setFont(pdfFonts.body, "normal");
   doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
   
+  const summaryText = `This report includes an assessment of ${report.rooms.length} room(s) at the property located at ${property.address}, ${property.city}, ${property.state} ${property.zipCode}. The inspection was conducted on ${report.reportInfo?.reportDate ? formatDate(report.reportInfo.reportDate) : "an unspecified date"}.`;
+  
+  const splitSummary = doc.splitTextToSize(summaryText, colWidth - 20);
+  doc.text(splitSummary, pdfMargins.page + 10, yPosition + 20);
+  
+  // Right column - Disclaimers
+  createElegantBox(doc, pdfMargins.page + colWidth + 10, yPosition, colWidth, 80, 4);
+  
+  let disclaimerY = yPosition + 15;
+  
+  doc.setFontSize(pdfFontSizes.subheader);
+  doc.setFont(pdfFonts.heading, "bold");
+  doc.setTextColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
+  doc.text("Disclaimers", pdfMargins.page + colWidth + 20, disclaimerY);
+  
+  disclaimerY += 10;
+  
+  const disclaimerStartX = pdfMargins.page + colWidth + 20;
+  
   if (report.disclaimers && report.disclaimers.length > 0) {
+    doc.setFontSize(pdfFontSizes.normal);
+    doc.setFont(pdfFonts.body, "normal");
+    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+    
     for (const disclaimer of report.disclaimers) {
-      // Bullet point styling - softer
-      doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.8);
-      doc.circle(20, disclaimerY, 1.5, "F");
+      // Bullet point
+      doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
+      doc.circle(disclaimerStartX, disclaimerY, 1.5, "F");
       
-      const splitDisclaimer = doc.splitTextToSize(disclaimer, 165);
-      doc.text(splitDisclaimer, 25, disclaimerY);
-      disclaimerY += splitDisclaimer.length * 7 + 5;
+      const splitDisclaimer = doc.splitTextToSize(disclaimer, colWidth - 25);
+      doc.text(splitDisclaimer, disclaimerStartX + 5, disclaimerY);
+      disclaimerY += splitDisclaimer.length * 6 + 5;
     }
   } else {
-    // Default disclaimers if none are provided
+    // Default disclaimers
     const defaultDisclaimers = [
       "This report represents the condition of the property at the time of inspection only.",
       "Areas not accessible for inspection are not included in this report.",
-      "The inspector is not required to move furniture or personal items.",
-      "This report is not a warranty or guarantee of any kind."
+      "The inspector is not required to move furniture or personal items."
     ];
     
+    doc.setFontSize(pdfFontSizes.normal);
+    doc.setFont(pdfFonts.body, "normal");
+    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+    
     for (const disclaimer of defaultDisclaimers) {
-      // Bullet point styling - softer
-      doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.8);
-      doc.circle(20, disclaimerY, 1.5, "F");
+      // Bullet point
+      doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
+      doc.circle(disclaimerStartX, disclaimerY, 1.5, "F");
       
-      const splitDisclaimer = doc.splitTextToSize(disclaimer, 165);
-      doc.text(splitDisclaimer, 25, disclaimerY);
-      disclaimerY += splitDisclaimer.length * 7 + 5;
+      const splitDisclaimer = doc.splitTextToSize(disclaimer, colWidth - 25);
+      doc.text(splitDisclaimer, disclaimerStartX + 5, disclaimerY);
+      disclaimerY += splitDisclaimer.length * 6 + 5;
     }
   }
   
-  // Signature section - elegant
-  doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2], 0.5);
-  doc.roundedRect(15, 200, 180, 70, 6, 6, "F");
+  yPosition += 90;
+  
+  // Signature section
+  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
+  doc.roundedRect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 80, 4, 4, "F");
   
   doc.setFontSize(pdfFontSizes.subtitle);
   doc.setFont(pdfFonts.heading, "bold");
   doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-  doc.text("Signatures", 105, 215, { align: "center" });
+  doc.text("Signatures", pageWidth / 2, yPosition + 15, { align: "center" });
   
-  // Inspector signature - elegant boxes
-  createElegantBox(doc, 25, 225, 70, 35, 4);
+  // Inspector signature - left side
+  createElegantBox(doc, pdfMargins.page + 20, yPosition + 25, colWidth - 40, 40, 4);
   
-  // Signature line - softer
+  // Signature line - dashed
   doc.setDrawColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-  doc.setLineWidth(0.3);
-  doc.line(30, 245, 90, 245);
+  doc.setLineWidth(0.5);
+  doc.setLineDash([2, 2], 0);
+  doc.line(pdfMargins.page + 30, yPosition + 50, pdfMargins.page + colWidth - 30, yPosition + 50);
+  doc.setLineDash([0], 0);
   
   doc.setFontSize(pdfFontSizes.small);
   doc.setFont(pdfFonts.body, "normal");
   doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-  doc.text("Inspector", 60, 255, { align: "center" });
+  doc.text("Inspector's Signature", pdfMargins.page + 20 + (colWidth - 40) / 2, yPosition + 60, { align: "center" });
   
-  // Client signature - elegant box
-  createElegantBox(doc, 115, 225, 70, 35, 4);
+  // Client signature - right side
+  createElegantBox(doc, pdfMargins.page + colWidth + 20, yPosition + 25, colWidth - 40, 40, 4);
   
-  // Signature line - softer
-  doc.line(120, 245, 180, 245);
+  // Signature line - dashed
+  doc.setDrawColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
+  doc.setLineWidth(0.5);
+  doc.setLineDash([2, 2], 0);
+  doc.line(pdfMargins.page + colWidth + 30, yPosition + 50, pdfMargins.page + (colWidth * 2) - 30, yPosition + 50);
+  doc.setLineDash([0], 0);
   
   doc.setFontSize(pdfFontSizes.small);
   doc.setFont(pdfFonts.body, "normal");
   doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-  doc.text("Client", 150, 255, { align: "center" });
+  doc.text("Client's Signature", pdfMargins.page + colWidth + 20 + (colWidth - 40) / 2, yPosition + 60, { align: "center" });
 }

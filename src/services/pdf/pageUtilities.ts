@@ -1,13 +1,15 @@
 
 import { jsPDF } from "jspdf";
-import { pdfColors, pdfFontSizes, pdfFonts } from "./pdfStyles";
+import { pdfColors, pdfFontSizes, pdfFonts, pdfMargins, createSeparator } from "./pdfStyles";
 
 export class PageUtils {
   private currentPage: number = 1;
   private doc: jsPDF;
+  private reportTitle: string;
   
-  constructor(doc: jsPDF) {
+  constructor(doc: jsPDF, reportTitle: string = "Property Inventory Report") {
     this.doc = doc;
+    this.reportTitle = reportTitle;
   }
   
   /**
@@ -17,33 +19,41 @@ export class PageUtils {
     // Footer on all pages except cover
     if (this.currentPage > 1) {
       const pageWidth = this.doc.internal.pageSize.width;
+      const pageHeight = this.doc.internal.pageSize.height;
       
-      // Footer background - softer colors
-      this.doc.setFillColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-      this.doc.rect(0, 280, 210, 17, "F");
+      // Separator line above footer
+      this.doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+      this.doc.setLineWidth(0.5);
+      this.doc.line(pdfMargins.page, pageHeight - 15, pageWidth - pdfMargins.page, pageHeight - 15);
       
-      // Page number - softer styling
-      this.doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2], 0.9);
-      this.doc.circle(pageWidth / 2, 288, 8, "F");
-      
-      this.doc.setFontSize(pdfFontSizes.normal);
-      this.doc.setFont(pdfFonts.heading, "bold");
-      this.doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-      this.doc.text(`${this.currentPage}`, pageWidth / 2, 291, { align: "center" });
-      
-      // Footer text - softer gray
+      // Footer text - left aligned report title
       this.doc.setFontSize(pdfFontSizes.small);
       this.doc.setFont(pdfFonts.body, "normal");
       this.doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
       this.doc.text(
-        `Share.AI Property Report`,
-        20,
-        288
+        this.reportTitle,
+        pdfMargins.page,
+        pageHeight - 10
       );
+      
+      // Page number - centered
+      this.doc.setFont(pdfFonts.body, "normal");
       this.doc.text(
-        `Generated on ${new Date().toLocaleDateString()}`,
-        190,
-        288,
+        `Page ${this.currentPage}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: "center" }
+      );
+      
+      // Date - right aligned
+      this.doc.text(
+        `Generated: ${new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })}`,
+        pageWidth - pdfMargins.page,
+        pageHeight - 10,
         { align: "right" }
       );
     }

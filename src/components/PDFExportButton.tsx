@@ -5,6 +5,7 @@ import { usePDFGeneration } from "@/services/pdfGenerationService";
 import { Report, Property } from "@/types";
 import { FileText, Loader2, Eye } from "lucide-react";
 import PDFPreviewDialog from "./PDFPreviewDialog";
+import { Separator } from "@/components/ui/separator";
 
 interface PDFExportButtonProps {
   report: Report;
@@ -55,17 +56,20 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
   
   // Determine report title
   const getReportTitle = () => {
-    return `${report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Report - ${property.address.replace(/\s+/g, '_')}`;
+    const formattedType = report.type
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+    return `${formattedType} Report - ${property.address.replace(/\s+/g, '_')}`;
   };
   
   return (
     <>
-      <div className="flex space-x-2">
+      <div className="flex items-center gap-2">
         <Button
           onClick={handlePreviewPDF}
           disabled={isGenerating}
           variant="outline"
-          className="text-shareai-blue border-shareai-blue hover:bg-shareai-blue/10"
+          className="transition-all"
         >
           {isGenerating ? (
             <>
@@ -83,7 +87,7 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
         <Button
           onClick={handleExportPDF}
           disabled={isGenerating}
-          className="bg-shareai-blue hover:bg-shareai-blue/90 text-white"
+          className="bg-shareai-blue hover:bg-shareai-blue/90 text-white transition-all"
         >
           {isGenerating ? (
             <>

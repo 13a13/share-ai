@@ -7,6 +7,7 @@ import { generateTableOfContents } from "./pdf/tableOfContentsGenerator";
 import { generateRoomSection } from "./pdf/roomSectionGenerator";
 import { generateSummaryAndDisclaimers } from "./pdf/summaryGenerator";
 import { PageUtils } from "./pdf/pageUtilities";
+import { capitalizeWords } from "./pdf/pdfStyles";
 
 export type PDFGenerationStatus = "idle" | "generating" | "complete" | "error";
 
@@ -32,8 +33,11 @@ export const usePDFGeneration = () => {
         format: "a4",
       });
       
+      // Create report title for headers/footers
+      const reportTitle = `${capitalizeWords(report.type)} Report - ${property.address}`;
+      
       // Initialize page utilities
-      const pageUtils = new PageUtils(doc);
+      const pageUtils = new PageUtils(doc, reportTitle);
       const addHeaderAndFooter = () => pageUtils.addHeaderAndFooter();
       
       // 1. COVER PAGE
