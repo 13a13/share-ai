@@ -113,17 +113,70 @@ function generateComponentSection(
   
   // Add component images if they exist
   if (component.images && component.images.length > 0) {
-    // For now, we'll just add a placeholder for images
-    // In a real implementation, you would load and embed the actual images
-    doc.setFillColor(220, 220, 220);
-    doc.roundedRect(20, yPosition, 170, 20, 3, 3, "F");
+    // Calculate how many images to show per row (2 images per row)
+    const imagesPerRow = 2;
+    const rows = Math.ceil(component.images.length / imagesPerRow);
     
+    // Add a label for images
     doc.setFontSize(pdfFontSizes.small);
-    doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-    doc.text(`This component has ${component.images.length} image(s)`, 105, yPosition + 10, { align: "center" });
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+    doc.text("Images:", 20, yPosition);
     
-    yPosition += 30;
+    yPosition += 5;
+    
+    for (let row = 0; row < rows; row++) {
+      // Check if we need a new page
+      if (yPosition > 220) {
+        doc.addPage();
+        addHeaderAndFooter();
+        yPosition = 20;
+      }
+      
+      for (let col = 0; col < imagesPerRow; col++) {
+        const index = row * imagesPerRow + col;
+        if (index < component.images.length) {
+          const image = component.images[index];
+          const xPos = 20 + col * 90;
+          
+          try {
+            // Add timestamp below image
+            const date = new Date(image.timestamp);
+            const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+            
+            // Create image element to get dimensions
+            const img = new Image();
+            img.src = image.url;
+            
+            // Add image to PDF
+            doc.addImage(
+              image.url,       // URL or base64 string
+              'JPEG',          // Format (JPEG, PNG, etc.)
+              xPos,            // X position
+              yPosition,       // Y position
+              80,              // Width
+              60               // Height
+            );
+            
+            // Add timestamp under the image
+            doc.setFontSize(pdfFontSizes.small);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
+            doc.text(formattedDate, xPos + 40, yPosition + 65, { align: "center" });
+          } catch (error) {
+            console.error("Error adding image to PDF:", error);
+            
+            // Add error placeholder
+            doc.setFillColor(220, 220, 220);
+            doc.rect(xPos, yPosition, 80, 60, "F");
+            doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
+            doc.text("Image loading error", xPos + 40, yPosition + 30, { align: "center" });
+          }
+        }
+      }
+      yPosition += 70; // Move down for the next row of images
+    }
   }
   
-  return yPosition;
+  return yPosition + 10; // Add some spacing between components
 }

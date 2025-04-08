@@ -33,6 +33,7 @@ export function getConditionColor(condition: string): number[] {
     case 'poor':
       return [230, 126, 34]; // Orange
     case 'damaged':
+    case 'needs_replacement':
       return [231, 76, 60]; // Red
     default:
       return [149, 165, 166]; // Gray
