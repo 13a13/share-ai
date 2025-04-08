@@ -22,11 +22,11 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, roomType, componentType } = await req.json();
+    const { imageUrls, roomType, componentType } = await req.json();
     
-    if (!imageUrl) {
+    if (!imageUrls || (Array.isArray(imageUrls) && imageUrls.length === 0)) {
       return new Response(
-        JSON.stringify({ error: "Image URL is required" }),
+        JSON.stringify({ error: "At least one image URL is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -38,19 +38,23 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Processing ${componentType || 'room'} image for ${roomType || 'unknown room type'}`);
+    // Convert to array if single string was passed
+    const images = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
+    console.log(`Processing ${componentType || 'room'} with ${images.length} images for ${roomType || 'unknown room type'}`);
 
-    // For base64 images, extract the data part
-    let imageData = imageUrl;
-    if (imageUrl.startsWith("data:")) {
-      imageData = imageUrl.split(",")[1];
-    }
+    // Extract base64 data from each image
+    const imageDataArray = images.map(imageUrl => {
+      if (imageUrl.startsWith("data:")) {
+        return imageUrl.split(",")[1];
+      }
+      return imageUrl;
+    });
 
     // Generate prompt based on component type
-    const promptText = createPrompt(roomType, componentType);
+    const promptText = createPrompt(roomType, componentType, images.length > 1);
     
-    // Create and send request to Gemini API
-    const geminiRequest = createGeminiRequest(promptText, imageData);
+    // Create and send request to Gemini API with all images
+    const geminiRequest = createGeminiRequest(promptText, imageDataArray);
     
     try {
       // Call Gemini API and get the text response
@@ -62,7 +66,7 @@ serve(async (req) => {
       // Format the response based on whether this is a component or full room
       const formattedResponse = formatResponse(parsedData, componentType);
 
-      console.log("Successfully processed image with Gemini");
+      console.log("Successfully processed images with Gemini");
       
       return new Response(
         JSON.stringify(formattedResponse),

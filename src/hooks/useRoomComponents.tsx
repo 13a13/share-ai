@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ConditionRating, RoomComponent, RoomType } from "@/types";
 import { getDefaultComponentsByRoomType } from "@/utils/roomComponentUtils";
-import { processComponentImage } from "@/services/imageProcessingService";
 
 interface UseRoomComponentsProps {
   roomId: string;
@@ -23,6 +22,7 @@ export function useRoomComponents({
   const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
   const [expandedComponents, setExpandedComponents] = useState<string[]>([]);
   const [selectedComponentType, setSelectedComponentType] = useState<string>("");
+  const [stagingImages, setStagingImages] = useState<Record<string, string[]>>({});
 
   const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
     comp => !components.some(c => c.type === comp.type)
@@ -160,9 +160,9 @@ export function useRoomComponents({
     onChange(updatedComponents);
   };
 
-  const handleImageProcessed = (
+  const handleImagesProcessed = (
     componentId: string, 
-    imageUrl: string, 
+    imageUrls: string[], 
     result: { 
       description?: string; 
       condition?: {
@@ -172,24 +172,22 @@ export function useRoomComponents({
       notes?: string;
     }
   ) => {
-    const imageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
     const updatedComponents = components.map(comp => {
       if (comp.id === componentId) {
+        // Create new image objects for all uploaded images
+        const newImages = imageUrls.map(url => ({
+          id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          url: url,
+          timestamp: new Date(),
+        }));
+        
         return {
           ...comp,
           description: result.description || comp.description,
           condition: result.condition?.rating || comp.condition,
           conditionSummary: result.condition?.summary || comp.conditionSummary,
           notes: result.notes ? (comp.notes ? `${comp.notes}\n\n${result.notes}` : result.notes) : comp.notes,
-          images: [
-            ...comp.images,
-            {
-              id: imageId,
-              url: imageUrl,
-              timestamp: new Date(),
-            }
-          ],
+          images: [...comp.images, ...newImages],
           isEditing: true
         };
       }
@@ -228,7 +226,7 @@ export function useRoomComponents({
     handleUpdateComponent,
     toggleEditMode,
     handleRemoveImage,
-    handleImageProcessed,
+    handleImagesProcessed,
     handleComponentProcessingState,
     toggleExpandComponent
   };

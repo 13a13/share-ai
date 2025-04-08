@@ -10,12 +10,31 @@ export const corsHeaders = {
 /**
  * Create prompt text based on the room type and component
  */
-export function createPrompt(roomType?: string, componentType?: string): string {
+export function createPrompt(roomType?: string, componentType?: string, multipleImages: boolean = false): string {
   if (componentType) {
     // Component-specific analysis with optimized prompt structure
     const componentTitle = componentType.replace('_', ' ');
     
-    return `You are a professional property inspection assistant.
+    if (multipleImages) {
+      return `You are a professional property inspection assistant.
+
+You are analysing **multiple photos** of the following room component: **${componentTitle}**.
+
+From the set of images, provide the following:
+
+1. A natural-language description of what is visible across all photos. Consider material, colour, build, and any visible features. Use all photos as context.
+2. A detailed condition analysis. Identify any wear, damage, soiling, structural issues, or installation problems visible in any image.
+3. Rate the condition using one of the following labels: Excellent, Good, Fair, Poor, Damaged.
+
+Return the result in this exact format:
+
+Description: [Paragraph summary across all images]
+
+Condition:
+- Summary: [Condition assessment using all images]
+- Rating: [One of: Excellent, Good, Fair, Poor, Damaged]`;
+    } else {
+      return `You are a professional property inspection assistant.
 
 You are analysing a photo of the following room component: ${componentTitle}.
 
@@ -32,6 +51,7 @@ Description: [One-paragraph natural description]
 Condition:
 - Summary: [Detailed assessment]
 - Rating: [One of: Excellent, Good, Fair, Poor, Damaged]`;
+    }
   } else {
     // Full room analysis (original behavior)
     const roomTypeDescription = roomType 

@@ -23,7 +23,7 @@ interface ComponentItemProps {
   onRemoveImage: (componentId: string, imageId: string) => void;
   onImageProcessed: (
     componentId: string, 
-    imageUrl: string, 
+    imageUrl: string[], 
     result: { 
       description?: string;
       condition?: {
@@ -49,11 +49,12 @@ const ComponentItem = ({
   onImageProcessed,
   onProcessingStateChange
 }: ComponentItemProps) => {
+  const [stagingImages, setStagingImages] = useState<string[]>([]);
   
-  const handleComponentImage = (componentId: string, imageUrl: string, result: any) => {
+  const handleComponentImage = (componentId: string, imageUrls: string[], result: any) => {
     onImageProcessed(
       componentId, 
-      imageUrl, 
+      imageUrls, 
       {
         description: result.description,
         condition: {
@@ -81,21 +82,28 @@ const ComponentItem = ({
               <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">Required</Badge>
             )}
           </span>
-          {component.condition && (
-            <Badge className={
-              conditionOptions.find(opt => opt.value === component.condition)?.color || 
-              "bg-gray-500"
-            }>
-              {conditionOptions.find(opt => opt.value === component.condition)?.label || component.condition}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {component.images.length > 0 && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                {component.images.length} {component.images.length === 1 ? 'image' : 'images'}
+              </Badge>
+            )}
+            {component.condition && (
+              <Badge className={
+                conditionOptions.find(opt => opt.value === component.condition)?.color || 
+                "bg-gray-500"
+              }>
+                {conditionOptions.find(opt => opt.value === component.condition)?.label || component.condition}
+              </Badge>
+            )}
+          </div>
         </div>
       </AccordionTrigger>
       <AccordionContent className="px-4 pb-4 pt-2">
         <div className="space-y-4">
           <div className="flex flex-col space-y-2">
             <label className="text-sm font-medium">
-              Photos ({component.images.length})
+              Photos ({component.images.length}/6)
             </label>
             
             {component.images.length > 0 && (
@@ -120,16 +128,22 @@ const ComponentItem = ({
               </div>
             )}
             
-            <div className="flex flex-wrap gap-2">
-              <ComponentImageCapture 
-                componentId={component.id}
-                roomType={roomType}
-                componentType={component.type}
-                isProcessing={isProcessing}
-                onImageProcessed={handleComponentImage}
-                onProcessingStateChange={onProcessingStateChange}
-              />
-              
+            <ComponentImageCapture 
+              componentId={component.id}
+              roomType={roomType}
+              componentType={component.type}
+              isProcessing={isProcessing}
+              currentImages={component.images}
+              onImagesProcessed={handleComponentImage}
+              onProcessingStateChange={onProcessingStateChange}
+              onRemovePreviewImage={(index) => {
+                const newStagingImages = [...stagingImages];
+                newStagingImages.splice(index, 1);
+                setStagingImages(newStagingImages);
+              }}
+            />
+            
+            <div className="flex flex-wrap gap-2 mt-2">
               {!component.isEditing && (
                 <Button
                   variant="outline"

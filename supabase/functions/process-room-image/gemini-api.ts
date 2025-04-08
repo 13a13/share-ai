@@ -21,21 +21,27 @@ export interface GeminiRequest {
 }
 
 /**
- * Creates a request body for the Gemini API
+ * Creates a request body for the Gemini API with support for multiple images
  */
-export function createGeminiRequest(promptText: string, imageData: string): GeminiRequest {
+export function createGeminiRequest(promptText: string, imageData: string | string[]): GeminiRequest {
+  // Ensure imageData is an array
+  const imageDataArray = Array.isArray(imageData) ? imageData : [imageData];
+
+  // Create parts array with prompt text and all images
+  const parts = [
+    { text: promptText },
+    ...imageDataArray.map(data => ({
+      inline_data: {
+        mime_type: "image/jpeg",
+        data: data
+      }
+    }))
+  ];
+
   return {
     contents: [
       {
-        parts: [
-          { text: promptText },
-          {
-            inline_data: {
-              mime_type: "image/jpeg",
-              data: imageData
-            }
-          }
-        ]
+        parts: parts
       }
     ],
     generationConfig: {
@@ -48,7 +54,7 @@ export function createGeminiRequest(promptText: string, imageData: string): Gemi
 }
 
 /**
- * Calls the Gemini API to analyze an image
+ * Calls the Gemini API to analyze an image or multiple images
  */
 export async function callGeminiApi(apiKey: string, request: GeminiRequest): Promise<any> {
   // Updated to use gemini-1.5-flash model which replaced the deprecated gemini-pro-vision

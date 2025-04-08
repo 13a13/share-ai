@@ -11,15 +11,18 @@ export interface ProcessedImageResult {
 }
 
 export const processComponentImage = async (
-  imageUrl: string,
+  imageUrls: string[] | string,
   roomType: string,
   componentType: string
 ): Promise<ProcessedImageResult> => {
   try {
+    // Convert single image to array for consistent handling
+    const images = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
+    
     // Use supabase.functions.invoke to call the serverless function
     const response = await supabase.functions.invoke('process-room-image', {
       body: {
-        imageUrl,
+        imageUrls: images,
         roomType,
         componentType
       }
