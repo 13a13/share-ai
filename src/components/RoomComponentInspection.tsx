@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,10 +147,10 @@ const RoomComponentInspection = ({
       description?: string; 
       condition?: ConditionRating; 
       notes?: string;
-      imageId: string;
-      timestamp: Date;
     }
   ) => {
+    const imageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     const updatedComponents = components.map(comp => {
       if (comp.id === componentId) {
         return {
@@ -162,9 +161,9 @@ const RoomComponentInspection = ({
           images: [
             ...comp.images,
             {
-              id: result.imageId,
+              id: imageId,
               url: imageUrl,
-              timestamp: result.timestamp,
+              timestamp: new Date(),
             }
           ],
           isEditing: true

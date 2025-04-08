@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,9 +51,7 @@ const ComponentItem = ({
       {
         description: result.description,
         condition: result.condition,
-        notes: result.notes,
-        imageId,
-        timestamp: new Date()
+        notes: result.notes
       }
     );
   };
