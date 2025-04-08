@@ -175,6 +175,19 @@ export const ReportsAPI = {
     localStorage.setItem(LOCAL_STORAGE_KEYS.REPORTS, JSON.stringify(reports));
     return newImage;
   },
+  
+  deleteRoom: async (reportId: string, roomId: string): Promise<void> => {
+    const reports = await ReportsAPI.getAll();
+    const reportIndex = reports.findIndex(r => r.id === reportId);
+    
+    if (reportIndex === -1) return;
+    
+    const report = reports[reportIndex];
+    report.rooms = report.rooms.filter(room => room.id !== roomId);
+    report.updatedAt = new Date();
+    
+    localStorage.setItem(LOCAL_STORAGE_KEYS.REPORTS, JSON.stringify(reports));
+  }
 };
 
 // Gemini API implementation

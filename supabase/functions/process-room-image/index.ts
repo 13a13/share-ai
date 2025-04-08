@@ -169,7 +169,7 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify(formattedResponse),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (error) {
       console.error("Error parsing Gemini response as JSON:", error);

@@ -1,3 +1,4 @@
+
 export type Property = {
   id: string;
   address: string;
