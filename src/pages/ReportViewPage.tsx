@@ -16,6 +16,7 @@ const ReportViewPage = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeRoomIndex, setActiveRoomIndex] = useState(0);
   
   useEffect(() => {
     const fetchReportData = async () => {
@@ -51,6 +52,12 @@ const ReportViewPage = () => {
     
     fetchReportData();
   }, [reportId, toast, navigate]);
+  
+  const handleNavigateRoom = (index: number) => {
+    if (index >= 0 && index < (report?.rooms.length || 0)) {
+      setActiveRoomIndex(index);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -149,8 +156,17 @@ const ReportViewPage = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {report.rooms.map((room) => (
-            <CollapsibleRoomSection key={room.id} room={room} />
+          {report.rooms.map((room, index) => (
+            <CollapsibleRoomSection 
+              key={room.id} 
+              room={room} 
+              roomIndex={index}
+              totalRooms={report.rooms.length}
+              onNavigateRoom={handleNavigateRoom}
+              isComplete={room.components?.filter(c => !c.isOptional).every(c => 
+                c.description && c.condition && (c.images.length > 0 || c.notes)
+              )}
+            />
           ))}
         </div>
       )}

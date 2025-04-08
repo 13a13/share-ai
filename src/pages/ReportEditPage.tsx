@@ -1,4 +1,3 @@
-
 import { useToast } from "@/components/ui/use-toast";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report, Room, RoomSection, RoomType, RoomComponent } from "@/types";
@@ -44,6 +43,7 @@ const ReportEditPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmittingRoom, setIsSubmittingRoom] = useState(false);
+  const [activeRoomIndex, setActiveRoomIndex] = useState(0);
   
   const roomForm = useForm<RoomFormValues>({
     resolver: zodResolver(roomFormSchema),
@@ -427,6 +427,12 @@ const ReportEditPage = () => {
     }
   };
   
+  const handleNavigateRoom = (index: number) => {
+    if (index >= 0 && index < (report?.rooms.length || 0)) {
+      setActiveRoomIndex(index);
+    }
+  };
+  
   const roomTypeOptions = [
     { value: "entrance", label: "Entrance" },
     { value: "hallway", label: "Hallway" },
@@ -465,7 +471,6 @@ const ReportEditPage = () => {
     );
   }
   
-  // Prepare the report info form default values
   const reportInfoDefaults: ReportInfoFormValues = {
     reportDate: report.reportInfo?.reportDate 
       ? new Date(report.reportInfo.reportDate).toISOString().substring(0, 10)
@@ -511,15 +516,21 @@ const ReportEditPage = () => {
           </Card>
         ) : (
           <div className="space-y-4 mb-6">
-            {report.rooms.map((room) => (
+            {report.rooms.map((room, index) => (
               <EditableRoomSection 
                 key={room.id}
                 reportId={report.id}
                 room={room}
+                roomIndex={index}
+                totalRooms={report.rooms.length}
+                onNavigateRoom={handleNavigateRoom}
                 onUpdateGeneralCondition={handleUpdateGeneralCondition}
                 onSaveSection={handleSaveSection}
                 onUpdateComponents={handleUpdateComponents}
                 onDeleteRoom={handleDeleteRoom}
+                isComplete={room.components?.filter(c => !c.isOptional).every(c => 
+                  c.description && c.condition && (c.images.length > 0 || c.notes)
+                )}
               />
             ))}
           </div>
