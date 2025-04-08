@@ -6,6 +6,7 @@ import { BookCheck, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
+import { Button } from "@/components/ui/button"; // Added Button import
 
 // Import our new components
 import ReportHeader from "@/components/ReportHeader";
