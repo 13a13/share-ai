@@ -4,8 +4,10 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
 import { Room } from "@/types";
-import { Camera, Loader2, Upload } from "lucide-react";
+import { Camera, Loader2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
+import CameraCapture from "./CameraCapture";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface RoomImageUploaderProps {
   reportId: string;
@@ -20,6 +22,8 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const isMobile = useIsMobile();
   
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -47,23 +51,42 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
       const reader = new FileReader();
       reader.onload = async (event) => {
         const imageUrl = event.target?.result as string;
-        setUploadedImage(imageUrl);
-        
-        // Add the image to the room
-        const image = await ReportsAPI.addImageToRoom(reportId, roomId, imageUrl);
-        
-        if (image) {
-          setUploadedImageId(image.id);
-          toast({
-            title: "Image uploaded",
-            description: "Image has been added to the room",
-          });
-        }
-        
-        setIsUploading(false);
+        processImage(imageUrl);
       };
       
       reader.readAsDataURL(file);
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "There was a problem uploading your image",
+        variant: "destructive",
+      });
+      setIsUploading(false);
+    }
+  };
+
+  const handleCameraCapture = (imageData: string) => {
+    setCameraOpen(false);
+    processImage(imageData);
+  };
+  
+  const processImage = async (imageUrl: string) => {
+    setIsUploading(true);
+    setUploadedImage(imageUrl);
+    
+    try {
+      // Add the image to the room
+      const image = await ReportsAPI.addImageToRoom(reportId, roomId, imageUrl);
+      
+      if (image) {
+        setUploadedImageId(image.id);
+        toast({
+          title: "Image uploaded",
+          description: "Image has been added to the room",
+        });
+      }
+      
+      setIsUploading(false);
     } catch (error) {
       toast({
         title: "Upload failed",
@@ -113,6 +136,16 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
     
     setIsProcessing(false);
   };
+
+  if (cameraOpen) {
+    return (
+      <CameraCapture 
+        onCapture={handleCameraCapture} 
+        onCancel={() => setCameraOpen(false)} 
+        isProcessing={isUploading}
+      />
+    );
+  }
   
   return (
     <div className="w-full">
@@ -126,20 +159,39 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
       
       {!uploadedImage ? (
         <Card 
-          className="border-dashed border-2 p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={handleUploadClick}
+          className="border-dashed border-2 p-6 flex flex-col items-center justify-center hover:bg-gray-50 transition-colors"
         >
           {isUploading ? (
             <Loader2 className="h-10 w-10 text-shareai-teal animate-spin mb-2" />
           ) : (
-            <Camera className="h-10 w-10 text-shareai-teal mb-2" />
+            <div className="w-full">
+              <div className="flex flex-col items-center justify-center p-4">
+                <Camera className="h-10 w-10 text-shareai-teal mb-2" />
+                <p className="text-center font-medium mb-1">Add Room Photo</p>
+                <p className="text-sm text-gray-500 text-center mb-4">
+                  Take a photo or upload from your device
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <Button 
+                  onClick={() => setCameraOpen(true)}
+                  className="bg-shareai-teal hover:bg-shareai-teal/90 w-full sm:w-auto"
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  {isMobile ? "Take Photo" : "Use Camera"}
+                </Button>
+                <Button 
+                  onClick={handleUploadClick}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Image
+                </Button>
+              </div>
+            </div>
           )}
-          <p className="text-center font-medium mb-1">
-            {isUploading ? "Uploading..." : "Upload Room Photo"}
-          </p>
-          <p className="text-sm text-gray-500 text-center">
-            Click to select an image or drag and drop
-          </p>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -159,13 +211,15 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
                 setUploadedImageId(null);
               }}
               disabled={isProcessing}
+              className="flex-1 sm:flex-none"
             >
+              <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
             <Button 
               onClick={handleProcessImage}
               disabled={isProcessing}
-              className="bg-shareai-teal hover:bg-shareai-teal/90"
+              className="bg-shareai-teal hover:bg-shareai-teal/90 flex-1 sm:flex-none"
             >
               {isProcessing ? (
                 <>

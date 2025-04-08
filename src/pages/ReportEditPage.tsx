@@ -8,9 +8,11 @@ import EditableRoomSection from "@/components/EditableRoomSection";
 import ReportRoomForm from "@/components/ReportRoomForm";
 import ReportLoadingState from "@/components/ReportLoadingState";
 import { useReportEditor, RoomFormValues } from "@/hooks/useReportEditor";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ReportEditPage = () => {
   const { reportId } = useParams<{ reportId: string }>();
+  const isMobile = useIsMobile();
   
   const {
     report,
@@ -48,7 +50,7 @@ const ReportEditPage = () => {
   };
   
   return (
-    <div className="shareai-container">
+    <div className="shareai-container pb-24 sm:pb-8">
       <ReportHeader 
         title={report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) + " Report"}
         address={`${property.address}, ${property.city}, ${property.state} ${property.zipCode}`}
@@ -98,8 +100,31 @@ const ReportEditPage = () => {
           isSubmittingRoom={isSubmittingRoom}
         />
       </div>
+      
+      {/* Add sticky bottom bar for mobile navigation if needed */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-around z-40 shadow-lg">
+          <Button
+            variant="outline"
+            onClick={() => window.scrollTo(0, 0)}
+            className="text-xs flex-1 mx-1"
+          >
+            Top
+          </Button>
+          <Button
+            onClick={handleSaveReport}
+            disabled={isSaving}
+            className="bg-shareai-teal hover:bg-shareai-teal/90 text-xs flex-1 mx-1"
+          >
+            {isSaving ? "Saving..." : "Save Report"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ReportEditPage;
+
+// Add Button component import at the top
+import { Button } from "@/components/ui/button";
