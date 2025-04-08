@@ -21,7 +21,7 @@ export const usePDFGeneration = () => {
   ): Promise<string> => {
     try {
       // Call the PDF Generation API
-      const downloadUrl = await PDFGenerationAPI.generatePDF(report.id);
+      const pdfData = await PDFGenerationAPI.generatePDF(report.id);
       
       // Show success toast
       toast({
@@ -30,7 +30,7 @@ export const usePDFGeneration = () => {
         variant: "default",
       });
       
-      return downloadUrl;
+      return pdfData;
     } catch (error) {
       console.error("Error generating PDF:", error);
       

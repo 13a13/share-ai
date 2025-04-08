@@ -27,10 +27,8 @@ const PDFPreviewDialog = ({
   downloadUrl,
   reportTitle
 }: PDFPreviewDialogProps) => {
-  // Create a blob URL for the PDF if it's just a string identifier
-  const embedUrl = pdfUrl && !pdfUrl.startsWith('http') && !pdfUrl.startsWith('blob:') 
-    ? `data:application/pdf;base64,${pdfUrl}` 
-    : pdfUrl;
+  // Create a proper data URL for the PDF preview
+  const embedUrl = pdfUrl ? `data:application/pdf;base64,${pdfUrl}` : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,7 +72,7 @@ const PDFPreviewDialog = ({
               onClick={() => {
                 // Create a temporary link to initiate download
                 const link = document.createElement('a');
-                link.href = downloadUrl;
+                link.href = `data:application/pdf;base64,${downloadUrl}`;
                 link.setAttribute('download', `${reportTitle.replace(/\s+/g, '_')}.pdf`);
                 document.body.appendChild(link);
                 link.click();
