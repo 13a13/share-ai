@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
 import { Room } from "@/types";
-import { compressImage } from "@/utils/imageCompression";
+import { compressImageFile } from "@/utils/imageCompression";
 
 interface UseRoomImageUploadProps {
   reportId: string;
@@ -39,16 +39,10 @@ export const useRoomImageUpload = ({
     
     try {
       // Compress the image first
-      const { compressedFile } = await compressImage(file, file.name);
+      const compressedDataUrl = await compressImageFile(file);
       
-      // Create a data URL from the compressed file
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const imageUrl = event.target?.result as string;
-        await processImage(imageUrl);
-      };
-      
-      reader.readAsDataURL(compressedFile);
+      // Process the compressed image
+      await processImage(compressedDataUrl);
     } catch (error) {
       toast({
         title: "Upload failed",
@@ -66,16 +60,11 @@ export const useRoomImageUpload = ({
       // Compress the camera-captured image
       const fileName = `camera-${Date.now()}.jpg`;
       const blob = await (await fetch(imageData)).blob();
-      const { compressedFile } = await compressImage(blob, fileName);
+      const compressedDataUrl = await compressImageFile(
+        new File([blob], fileName, { type: 'image/jpeg' })
+      );
       
-      // Convert back to data URL
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const compressedDataUrl = event.target?.result as string;
-        await processImage(compressedDataUrl);
-      };
-      
-      reader.readAsDataURL(compressedFile);
+      await processImage(compressedDataUrl);
     } catch (error) {
       toast({
         title: "Upload failed",
