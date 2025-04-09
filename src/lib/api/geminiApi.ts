@@ -1,4 +1,8 @@
 
+/**
+ * PDF Generation API
+ * Simulates a backend service that would generate PDF documents
+ */
 import { Room } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { ReportsAPI } from './reportsApi';

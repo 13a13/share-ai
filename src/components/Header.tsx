@@ -31,14 +31,6 @@ const Header = () => {
       <div className="shareai-container flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Link to="/" className="text-xl font-bold">Share.AI</Link>
-          
-          {isAuthenticated && (
-            <nav className="hidden md:flex space-x-4 ml-8">
-              <Link to="/" className="hover:text-shareai-teal transition">Dashboard</Link>
-              <Link to="/properties" className="hover:text-shareai-teal transition">Properties</Link>
-              <Link to="/reports" className="hover:text-shareai-teal transition">Reports</Link>
-            </nav>
-          )}
         </div>
         
         <div className="flex items-center space-x-4">

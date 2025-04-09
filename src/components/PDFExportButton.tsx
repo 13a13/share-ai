@@ -5,7 +5,6 @@ import { usePDFGeneration } from "@/services/pdfGenerationService";
 import { Report, Property } from "@/types";
 import { FileText, Loader2, Eye } from "lucide-react";
 import PDFPreviewDialog from "./PDFPreviewDialog";
-import { Separator } from "@/components/ui/separator";
 
 interface PDFExportButtonProps {
   report: Report;

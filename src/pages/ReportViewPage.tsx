@@ -31,7 +31,7 @@ const ReportViewPage = () => {
             description: "The requested report could not be found.",
             variant: "destructive",
           });
-          navigate("/reports");
+          navigate("/");
           return;
         }
         
@@ -74,10 +74,10 @@ const ReportViewPage = () => {
         <h2 className="text-2xl font-bold mb-4">Report Not Found</h2>
         <p className="mb-6">The requested report could not be found or has been deleted.</p>
         <Button 
-          onClick={() => navigate("/reports")}
+          onClick={() => navigate("/")}
           className="bg-shareai-teal hover:bg-shareai-teal/90"
         >
-          Back to Reports
+          Back to Dashboard
         </Button>
       </div>
     );
@@ -98,9 +98,9 @@ const ReportViewPage = () => {
         <div className="flex flex-wrap gap-2">
           <Button 
             variant="outline" 
-            onClick={() => navigate("/reports")}
+            onClick={() => navigate(`/properties/${property.id}`)}
           >
-            Back to Reports
+            Back to Property
           </Button>
           <Button 
             onClick={() => navigate(`/reports/${reportId}/edit`)}
