@@ -22,14 +22,30 @@ interface MultiImageComponentCaptureProps {
   onRemoveImage: (index: number) => void;
 }
 
-// Draggable Image Item Type
+// Define item type constant for drag and drop
 const ItemType = "IMAGE";
 
-// Draggable Image Component
-const DraggableImage = ({ image, index, onRemove, onMove }) => {
+// Define the type for drag item
+interface DragItem {
+  index: number;
+  type: string;
+}
+
+// Draggable Image Component with proper TypeScript types
+const DraggableImage = ({ 
+  image, 
+  index, 
+  onRemove, 
+  onMove 
+}: { 
+  image: { url: string }, 
+  index: number, 
+  onRemove: (index: number) => void, 
+  onMove: (dragIndex: number, hoverIndex: number) => void 
+}) => {
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemType,
-    item: { index },
+    item: { index, type: ItemType } as DragItem,
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -37,7 +53,7 @@ const DraggableImage = ({ image, index, onRemove, onMove }) => {
 
   const [, dropRef] = useDrop({
     accept: ItemType,
-    hover: (item, monitor) => {
+    hover: (item: DragItem, monitor) => {
       const dragIndex = item.index;
       const hoverIndex = index;
       
