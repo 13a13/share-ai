@@ -57,30 +57,15 @@ export function generateRoomSection(
     
     const splitCondition = doc.splitTextToSize(room.generalCondition, pageWidth - (pdfMargins.page * 2) - 20);
     doc.text(splitCondition, pdfMargins.page + 10, yPosition + 20);
-    
-    yPosition += splitCondition.length * 6 + 15;
   }
   
-  // Components Section
+  // Components Section - Now each component gets its own page
   if (room.components && room.components.length > 0) {
-    // Section header - simplified
-    doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
-    doc.rect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 16, "F");
-    
-    doc.setFontSize(pdfFontSizes.subtitle);
-    doc.setFont(pdfFonts.heading, "bold");
-    doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-    doc.text("Room Components", pageWidth / 2, yPosition + 11, { align: "center" });
-    
-    yPosition += 25;
-    
-    // Process each component
+    // Process each component on a new page
     for (const component of room.components) {
-      yPosition = generateComponentSection(doc, component, yPosition, addHeaderAndFooter);
-      
-      // Add separator between components
-      yPosition = createSeparator(doc, yPosition, pageWidth - (pdfMargins.page * 2));
-      yPosition += 5;
+      doc.addPage();
+      addHeaderAndFooter();
+      generateComponentSection(doc, component, pdfMargins.page, addHeaderAndFooter);
     }
   } else {
     // Empty state - simplified
@@ -99,13 +84,6 @@ function generateComponentSection(
 ): number {
   const pageWidth = doc.internal.pageSize.width;
   const componentWidth = pageWidth - (pdfMargins.page * 2);
-  
-  // Check if we need a new page
-  if (yPosition > 230) {
-    doc.addPage();
-    addHeaderAndFooter();
-    yPosition = pdfMargins.page;
-  }
   
   // Component header - simplified
   doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
@@ -237,121 +215,47 @@ function generateComponentSection(
       const xPos = rightColX + (col * (imageSize + spacing));
       const yPos = imageYPosition + (row * (imageSize + spacing + 15)); // Extra space for caption
       
-      // Check if we need a new page for images
-      if (yPos + imageSize + 15 > 270) {
-        doc.addPage();
-        addHeaderAndFooter();
-        // Reset positions for new page
-        imageYPosition = pdfMargins.page;
-        textYPosition = Math.max(textYPosition, imageYPosition + ((Math.ceil(component.images.length / imagesPerRow) * (imageSize + spacing + 15))));
+      try {
+        // Image with simple border
+        doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
+        doc.rect(xPos, yPos, imageSize, imageSize, "F");
+        doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+        doc.rect(xPos, yPos, imageSize, imageSize, "S");
         
-        // Add component continuation header
-        doc.setFontSize(pdfFontSizes.header);
-        doc.setFont(pdfFonts.heading, "bold");
-        doc.setTextColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
-        doc.text(`${component.name} (continued)`, pdfMargins.page, imageYPosition);
+        // Add image to PDF
+        doc.addImage(
+          image.url,  // URL or base64 string
+          'JPEG',     // Format
+          xPos + 1,   // X position
+          yPos + 1,   // Y position
+          imageSize - 2, // Width
+          imageSize - 2  // Height
+        );
         
-        imageYPosition += 15;
+        // Simple caption background
+        doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
+        doc.rect(xPos, yPos + imageSize, imageSize, 10, "F");
         
-        // Recalculate positions for this image
-        const newRow = Math.floor((i - (row * imagesPerRow)) / imagesPerRow);
-        const xPos = rightColX + (col * (imageSize + spacing));
-        const yPos = imageYPosition + (newRow * (imageSize + spacing + 15));
+        // Add timestamp caption - fixed formatting
+        const formattedDate = formatDate(image.timestamp);
         
-        try {
-          // Image with simple border
-          doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-          doc.rect(xPos, yPos, imageSize, imageSize, "F");
-          doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-          doc.rect(xPos, yPos, imageSize, imageSize, "S");
-          
-          // Add image to PDF
-          doc.addImage(
-            image.url,  // URL or base64 string
-            'JPEG',     // Format
-            xPos + 1,   // X position
-            yPos + 1,   // Y position
-            imageSize - 2, // Width
-            imageSize - 2  // Height
-          );
-          
-          // Simple caption background
-          doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-          doc.rect(xPos, yPos + imageSize, imageSize, 10, "F");
-          
-          // Add timestamp caption - fixed formatting
-          const formattedDate = formatDate(image.timestamp);
-          
-          doc.setFontSize(pdfFontSizes.small);
-          doc.setFont(pdfFonts.body, "normal");
-          doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-          doc.text(formattedDate, xPos + (imageSize / 2), yPos + imageSize + 7, { align: "center" });
-        } catch (error) {
-          console.error("Error adding image to PDF:", error);
-          
-          // Error placeholder
-          doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-          doc.rect(xPos, yPos, imageSize, imageSize, "S");
-          
-          doc.setFont(pdfFonts.body, "italic");
-          doc.setFontSize(pdfFontSizes.small);
-          doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-          doc.text("Image loading error", xPos + (imageSize / 2), yPos + (imageSize / 2), { align: "center" });
-        }
-      } else {
-        try {
-          // Image with simple border
-          doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-          doc.rect(xPos, yPos, imageSize, imageSize, "F");
-          doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-          doc.rect(xPos, yPos, imageSize, imageSize, "S");
-          
-          // Add image to PDF
-          doc.addImage(
-            image.url,  // URL or base64 string
-            'JPEG',     // Format
-            xPos + 1,   // X position
-            yPos + 1,   // Y position
-            imageSize - 2, // Width
-            imageSize - 2  // Height
-          );
-          
-          // Simple caption background
-          doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-          doc.rect(xPos, yPos + imageSize, imageSize, 10, "F");
-          
-          // Add timestamp caption - fixed formatting
-          const formattedDate = formatDate(image.timestamp);
-          
-          doc.setFontSize(pdfFontSizes.small);
-          doc.setFont(pdfFonts.body, "normal");
-          doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-          doc.text(formattedDate, xPos + (imageSize / 2), yPos + imageSize + 7, { align: "center" });
-        } catch (error) {
-          console.error("Error adding image to PDF:", error);
-          
-          // Error placeholder
-          doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-          doc.rect(xPos, yPos, imageSize, imageSize, "S");
-          
-          doc.setFont(pdfFonts.body, "italic");
-          doc.setFontSize(pdfFontSizes.small);
-          doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-          doc.text("Image loading error", xPos + (imageSize / 2), yPos + (imageSize / 2), { align: "center" });
-        }
+        doc.setFontSize(pdfFontSizes.small);
+        doc.setFont(pdfFonts.body, "normal");
+        doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
+        doc.text(formattedDate, xPos + (imageSize / 2), yPos + imageSize + 7, { align: "center" });
+      } catch (error) {
+        console.error("Error adding image to PDF:", error);
+        
+        // Error placeholder
+        doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+        doc.rect(xPos, yPos, imageSize, imageSize, "S");
+        
+        doc.setFont(pdfFonts.body, "italic");
+        doc.setFontSize(pdfFontSizes.small);
+        doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
+        doc.text("Image loading error", xPos + (imageSize / 2), yPos + (imageSize / 2), { align: "center" });
       }
     }
-    
-    // Calculate the maximum y-position reached by images
-    const rowsNeeded = Math.ceil(component.images.length / imagesPerRow);
-    const imagesHeight = rowsNeeded * (imageSize + spacing + 15);
-    const imagesEndY = imageYPosition + imagesHeight;
-    
-    // Use the maximum y-position between text and images
-    yPosition = Math.max(textYPosition, imagesEndY);
-  } else {
-    // No images - just use text height
-    yPosition = textYPosition;
   }
   
   return yPosition;

@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Edit, Trash2, InfoIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Room, RoomComponent, RoomSection, RoomType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,11 +61,11 @@ const EditableRoomSection = ({
     : 100;
 
   useEffect(() => {
-    // Auto-scroll to this room if it's incomplete and marked for attention
-    if (!isComplete && isExpanded && cardRef.current) {
+    // Only scroll to room if explicitly navigated to
+    if (isExpanded && cardRef.current) {
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [isExpanded, isComplete]);
+  }, [isExpanded]);
 
   const handleComponentsChange = (updatedComponents: RoomComponent[]) => {
     onUpdateComponents(room.id, updatedComponents);
@@ -90,20 +89,10 @@ const EditableRoomSection = ({
     }
   };
 
-  const handleNextRoom = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onNavigateRoom(roomIndex + 1);
-  };
-
-  const handlePrevRoom = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onNavigateRoom(roomIndex - 1);
-  };
-
   return (
     <Card 
       ref={cardRef}
-      className={`mb-4 transition-all duration-300 ${isComplete ? 'border-green-400' : ''} ${!isComplete && !isExpanded ? 'animate-pulse-opacity' : ''}`}
+      className={`mb-4 transition-all duration-300 ${isComplete ? 'border-green-400' : ''}`}
     >
       <CardHeader 
         className="py-3 flex flex-row justify-between items-center cursor-pointer" 
@@ -133,49 +122,7 @@ const EditableRoomSection = ({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center mr-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 mr-1"
-                    disabled={roomIndex === 0}
-                    onClick={handlePrevRoom}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span className="sr-only md:not-sr-only md:ml-1">Previous</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Go to previous room</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8"
-                    disabled={roomIndex === totalRooms - 1}
-                    onClick={handleNextRoom}
-                  >
-                    <span className="sr-only md:not-sr-only md:mr-1">Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Go to next room</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          
+        <div className="flex items-center gap-2">          
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => {
             e.stopPropagation();
             handleDeleteRoom();

@@ -5,17 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Room, RoomSection, RoomComponent } from "@/types";
-import { BookCheck, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { BookCheck } from "lucide-react";
 import RoomSectionEditor from "@/components/RoomSectionEditor";
 import RoomComponentInspection from "@/components/RoomComponentInspection";
 import RoomImageUploader from "@/components/RoomImageUploader";
 import { useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface RoomDetailsProps {
   reportId: string;
@@ -79,49 +73,6 @@ const RoomDetails = ({
       <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
           <CardTitle className="text-xl">{room.name}</CardTitle>
-          <div className="flex items-center space-x-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={currentRoomIndex === 0}
-                    onClick={() => onChangeRoom(currentRoomIndex - 1)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span className="sr-only md:not-sr-only md:ml-1">Previous</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Go to previous room</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <span className="text-sm text-gray-500">
-              {currentRoomIndex + 1} of {allRooms.length} rooms
-            </span>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={currentRoomIndex === allRooms.length - 1}
-                    onClick={() => onChangeRoom(currentRoomIndex + 1)}
-                  >
-                    <span className="sr-only md:not-sr-only md:mr-1">Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Go to next room</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
         </div>
         <div className="mt-2">
           <div className="flex justify-between items-center mb-1">
