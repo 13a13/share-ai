@@ -41,7 +41,13 @@ export const pdfMargins = {
 };
 
 // Helper function to get color for condition badges
-export function getConditionColor(condition: string): number[] {
+export function getConditionColor(condition: string | undefined | null): number[] {
+  // Handle undefined, null or non-string condition values
+  if (!condition || typeof condition !== 'string') {
+    return pdfColors.gray;
+  }
+  
+  // Now safely call toLowerCase on the string
   switch (condition.toLowerCase()) {
     case 'excellent':
       return pdfColors.successGreen;
