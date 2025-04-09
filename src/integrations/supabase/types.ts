@@ -9,7 +9,168 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      inspection_images: {
+        Row: {
+          analysis: Json | null
+          created_at: string
+          id: string
+          image_url: string
+          inspection_id: string
+        }
+        Insert: {
+          analysis?: Json | null
+          created_at?: string
+          id?: string
+          image_url: string
+          inspection_id: string
+        }
+        Update: {
+          analysis?: Json | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          inspection_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_images_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspections: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          report_url: string | null
+          room_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          report_url?: string | null
+          room_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          report_url?: string | null
+          room_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          location: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          location: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          created_at: string
+          id: string
+          property_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          property_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          property_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
