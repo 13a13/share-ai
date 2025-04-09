@@ -1,10 +1,17 @@
 
+import React from 'react';
+import { useDrag, useDrop } from 'react-dnd';
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import DraggableImage from "./DraggableImage";
+import { Trash2, Loader2, ArrowUpDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
+
+interface DraggableImageProps {
+  src: string;
+  index: number;
+  onRemove: (index: number) => void;
+  onMoveImage: (dragIndex: number, hoverIndex: number) => void;
+}
 
 interface StagingImagesGridProps {
   stagingImages: string[];
@@ -18,7 +25,66 @@ interface StagingImagesGridProps {
   maxImages: number;
 }
 
-const StagingImagesGrid = ({
+// Draggable image component
+const DraggableImage = ({ src, index, onRemove, onMoveImage }: DraggableImageProps) => {
+  const [{ isDragging }, drag] = useDrag({
+    type: 'IMAGE',
+    item: { index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  const [{ isOver }, drop] = useDrop({
+    accept: 'IMAGE',
+    hover: (item: { index: number }, monitor) => {
+      if (item.index !== index) {
+        onMoveImage(item.index, index);
+        item.index = index;
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  return (
+    <div
+      ref={(node) => drag(drop(node))}
+      className={`relative group border rounded overflow-hidden aspect-square 
+                ${isDragging ? 'opacity-50' : 'opacity-100'}
+                ${isOver ? 'border-blue-500 border-2' : ''}`}
+    >
+      <img 
+        src={src} 
+        alt={`Preview ${index + 1}`} 
+        className="w-full h-full object-cover"
+      />
+      <Button
+        variant="destructive"
+        size="icon"
+        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={() => onRemove(index)}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+      <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded">
+        {index + 1}
+      </div>
+      <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="secondary"
+          size="icon"
+          className="bg-black/50 hover:bg-black/70"
+        >
+          <ArrowUpDown className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const StagingImagesGrid: React.FC<StagingImagesGridProps> = ({
   stagingImages,
   analysisInProgress,
   compressionInProgress,
@@ -28,47 +94,39 @@ const StagingImagesGrid = ({
   onMoveImage,
   totalImages,
   maxImages
-}: StagingImagesGridProps) => {
+}) => {
   if (stagingImages.length === 0) {
     return null;
   }
-  
+
   return (
-    <div className="space-y-2">
+    <Card className="p-4 space-y-4">
       <div className="flex justify-between items-center">
-        <div className="text-sm font-medium">
-          {compressionInProgress ? (
-            <span className="flex items-center text-shareai-teal">
-              <Loader2 className="h-3 w-3 mr-1 animate-spin" /> 
-              Compressing images...
-            </span>
-          ) : (
-            `Preview Images (${stagingImages.length})`
-          )}
+        <h3 className="text-sm font-medium">
+          Preview Images ({stagingImages.length})
+        </h3>
+        <div className="text-xs text-gray-500">
+          {totalImages}/{maxImages} total images
         </div>
-        <div className="text-xs text-gray-500">{totalImages} of {maxImages} total</div>
       </div>
       
       <ScrollArea className="h-full max-h-[250px]">
-        <DndProvider backend={HTML5Backend}>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {stagingImages.map((image, index) => (
-              <DraggableImage
-                key={`staging-${index}`}
-                image={{ url: image }}
-                index={index}
-                onRemove={onRemoveStagingImage}
-                onMove={onMoveImage}
-                badgeNumber={index + 1}
-              />
-            ))}
-          </div>
-        </DndProvider>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {stagingImages.map((image, index) => (
+            <DraggableImage
+              key={index}
+              src={image}
+              index={index}
+              onRemove={onRemoveStagingImage}
+              onMoveImage={onMoveImage}
+            />
+          ))}
+        </div>
       </ScrollArea>
       
       <div className="flex justify-end space-x-2">
         <Button
-          variant="destructive"
+          variant="outline"
           size="sm"
           onClick={onCancel}
           disabled={analysisInProgress || compressionInProgress}
@@ -79,19 +137,20 @@ const StagingImagesGrid = ({
           variant="default"
           size="sm"
           onClick={onProcess}
-          disabled={analysisInProgress || compressionInProgress || stagingImages.length === 0}
+          disabled={analysisInProgress || compressionInProgress}
+          className="bg-shareai-teal hover:bg-shareai-teal/90"
         >
-          {analysisInProgress ? (
+          {analysisInProgress || compressionInProgress ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Processing...
+              {analysisInProgress ? "Analyzing..." : "Processing..."}
             </>
           ) : (
             "Analyze Images"
           )}
         </Button>
       </div>
-    </div>
+    </Card>
   );
 };
 

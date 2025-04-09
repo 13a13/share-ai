@@ -1,113 +1,112 @@
 
-import imageCompression from "browser-image-compression";
-
-export interface CompressionResult {
-  compressedFile: File;
-  originalSize: number;
-  compressedSize: number;
-  compressionRatio: number;
-}
-
-/**
- * Compresses an image for efficient storage and API transmission
- */
-export const compressImage = async (
-  imageFile: File | Blob,
-  fileName = "compressed-image.jpg"
-): Promise<CompressionResult> => {
-  // If it's already a small file, don't compress further
-  const originalSize = imageFile.size / 1024 / 1024; // in MB
-  
-  // Set compression options to target <500KB with max width of 1280px
-  const options = {
-    maxSizeMB: 0.5, // 500KB
-    maxWidthOrHeight: 1280,
-    useWebWorker: true,
-    initialQuality: 0.8,
-  };
-
-  try {
-    // Ensure we're working with a File object as required by the library
-    const fileToCompress = imageFile instanceof File 
-      ? imageFile 
-      : new File([imageFile], fileName, { type: imageFile.type || 'image/jpeg' });
-      
-    const compressedFile = await imageCompression(fileToCompress, options);
-    
-    // Calculate compressed size and ratio
-    const compressedSize = compressedFile.size / 1024 / 1024; // in MB
-    const compressionRatio = (1 - compressedSize / originalSize) * 100;
-    
-    console.log(
-      `Image compression: ${originalSize.toFixed(2)}MB → ${compressedSize.toFixed(
-        2
-      )}MB (${compressionRatio.toFixed(0)}% reduction)`
-    );
-
-    return {
-      compressedFile: new File([compressedFile], fileName, {
-        type: compressedFile.type,
-      }),
-      originalSize,
-      compressedSize,
-      compressionRatio,
-    };
-  } catch (error) {
-    console.error("Error compressing image:", error);
-    // If compression fails, return the original file with 0% compression
-    const fileToReturn = imageFile instanceof File 
-      ? imageFile 
-      : new File([imageFile], fileName, { type: imageFile.type || "image/jpeg" });
-
-    return {
-      compressedFile: fileToReturn,
-      originalSize,
-      compressedSize: originalSize,
-      compressionRatio: 0,
-    };
-  }
-};
-
-/**
- * Converts a data URL to a Blob
- */
-export const dataURLToBlob = (dataURL: string): Blob => {
-  const arr = dataURL.split(",");
-  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  
-  return new Blob([u8arr], { type: mime });
-};
-
 /**
  * Compresses an image from a data URL
+ * @param dataUrl The data URL of the image to compress
+ * @param fileName Optional file name
+ * @param quality JPEG quality (0.0 to 1.0)
+ * @param maxWidth Maximum width in pixels
+ * @param maxHeight Maximum height in pixels
+ * @returns A Promise resolving to the compressed data URL
  */
 export const compressDataURLImage = async (
-  dataURL: string,
-  fileName = "compressed-image.jpg"
+  dataUrl: string, 
+  fileName: string = "image.jpg",
+  quality: number = 0.7,
+  maxWidth: number = 1280,
+  maxHeight: number = 1280
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    // Create an image element to load the data URL
+    const img = new Image();
+    img.onload = () => {
+      // Calculate new dimensions while maintaining aspect ratio
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round(height * (maxWidth / width));
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round(width * (maxHeight / height));
+          height = maxHeight;
+        }
+      }
+      
+      // Create a canvas to draw the resized image
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'));
+        return;
+      }
+      
+      // Draw the image on the canvas
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to compressed data URL
+      // Determine file type from fileName or use JPEG as default
+      let mimeType = 'image/jpeg';
+      if (fileName.toLowerCase().endsWith('.png')) {
+        mimeType = 'image/png';
+      } else if (fileName.toLowerCase().endsWith('.webp')) {
+        mimeType = 'image/webp';
+      }
+      
+      const compressedDataUrl = canvas.toDataURL(mimeType, quality);
+      resolve(compressedDataUrl);
+    };
+    
+    img.onerror = () => {
+      reject(new Error('Failed to load image for compression'));
+    };
+    
+    img.src = dataUrl;
+  });
+};
+
+/**
+ * Convert a File object to a data URL
+ * @param file The file to convert
+ * @returns A Promise resolving to the data URL
+ */
+export const fileToDataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'));
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
+/**
+ * Compress an image file
+ * @param file The image file to compress
+ * @param quality JPEG quality (0.0 to 1.0)
+ * @param maxWidth Maximum width in pixels
+ * @param maxHeight Maximum height in pixels
+ * @returns A Promise resolving to a compressed data URL
+ */
+export const compressImageFile = async (
+  file: File,
+  quality: number = 0.7,
+  maxWidth: number = 1280,
+  maxHeight: number = 1280
 ): Promise<string> => {
   try {
-    // Convert data URL to blob
-    const blob = dataURLToBlob(dataURL);
-    
-    // Compress the blob
-    const { compressedFile } = await compressImage(blob, fileName);
-    
-    // Convert compressed file back to data URL
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(compressedFile);
-    });
+    const dataUrl = await fileToDataURL(file);
+    return await compressDataURLImage(dataUrl, file.name, quality, maxWidth, maxHeight);
   } catch (error) {
-    console.error("Error compressing data URL image:", error);
-    return dataURL; // Return original if compression fails
+    console.error('Error compressing image file:', error);
+    throw error;
   }
 };

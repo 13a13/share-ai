@@ -82,72 +82,74 @@ const MultiImageComponentCapture = ({
   }, [stagingImages.length]);
 
   return (
-    <div className="space-y-4">
-      {showProgress && stagingImages.length > 0 && (
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs">
-            <span>Preparing images...</span>
-            <span>{Math.round(imageLoadProgress)}%</span>
+    <DndProvider backend={HTML5Backend}>
+      <div className="space-y-4">
+        {showProgress && stagingImages.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span>Preparing images...</span>
+              <span>{Math.round(imageLoadProgress)}%</span>
+            </div>
+            <Progress value={imageLoadProgress} className="h-1" />
           </div>
-          <Progress value={imageLoadProgress} className="h-1" />
-        </div>
-      )}
-    
-      <StagingImagesGrid 
-        stagingImages={stagingImages}
-        analysisInProgress={analysisInProgress}
-        compressionInProgress={compressionInProgress}
-        onCancel={cancelStagingImages}
-        onProcess={processImages}
-        onRemoveStagingImage={handleRemoveStagingImage}
-        onMoveImage={moveImage}
-        totalImages={totalImages}
-        maxImages={maxImages}
-      />
+        )}
       
-      {currentImages.length > 0 && (
-        <ScrollArea className="h-full max-h-[250px]">
-          <div className="text-sm font-medium mb-2">
-            Current Images ({currentImages.length})
-          </div>
-          <ComponentImages 
-            images={currentImages}
-            onRemoveImage={(imageId) => {
-              // Find the index in the array by ID
-              const index = currentImages.findIndex(img => img.id === imageId);
-              if (index !== -1) {
-                onRemoveImage(index);
-              }
-            }}
-          />
-        </ScrollArea>
-      )}
-      
-      <div className="flex flex-col gap-2">
-        <ImageFileInput
-          id={`image-upload-${componentId}`}
-          isProcessing={isProcessing || compressionInProgress}
-          onChange={handleImageCapture}
-          onImageCapture={handleCameraCapture}
-          multiple={true}
-          disabled={!canAddMore}
+        <StagingImagesGrid 
+          stagingImages={stagingImages}
+          analysisInProgress={analysisInProgress}
+          compressionInProgress={compressionInProgress}
+          onCancel={cancelStagingImages}
+          onProcess={processImages}
+          onRemoveStagingImage={handleRemoveStagingImage}
+          onMoveImage={moveImage}
           totalImages={totalImages}
           maxImages={maxImages}
-          compressionInProgress={compressionInProgress}
         />
-        <div className="text-sm text-gray-500 mt-1">
-          {totalImages}/{maxImages} images
+        
+        {currentImages.length > 0 && (
+          <ScrollArea className="h-full max-h-[250px]">
+            <div className="text-sm font-medium mb-2">
+              Current Images ({currentImages.length})
+            </div>
+            <ComponentImages 
+              images={currentImages}
+              onRemoveImage={(imageId) => {
+                // Find the index in the array by ID
+                const index = currentImages.findIndex(img => img.id === imageId);
+                if (index !== -1) {
+                  onRemoveImage(index);
+                }
+              }}
+            />
+          </ScrollArea>
+        )}
+        
+        <div className="flex flex-col gap-2">
+          <ImageFileInput
+            id={`image-upload-${componentId}`}
+            isProcessing={isProcessing || compressionInProgress}
+            onChange={handleImageCapture}
+            onImageCapture={handleCameraCapture}
+            multiple={true}
+            disabled={!canAddMore}
+            totalImages={totalImages}
+            maxImages={maxImages}
+            compressionInProgress={compressionInProgress}
+          />
+          <div className="text-sm text-gray-500 mt-1">
+            {totalImages}/{maxImages} images
+          </div>
         </div>
+        
+        {!canAddMore && !stagingImages.length && (
+          <Card className="p-3 bg-yellow-50 border-yellow-200">
+            <p className="text-sm text-yellow-700">
+              Maximum number of images reached ({maxImages}). Remove some images to add more.
+            </p>
+          </Card>
+        )}
       </div>
-      
-      {!canAddMore && !stagingImages.length && (
-        <Card className="p-3 bg-yellow-50 border-yellow-200">
-          <p className="text-sm text-yellow-700">
-            Maximum number of images reached ({maxImages}). Remove some images to add more.
-          </p>
-        </Card>
-      )}
-    </div>
+    </DndProvider>
   );
 };
 
