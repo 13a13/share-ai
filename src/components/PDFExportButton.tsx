@@ -85,6 +85,8 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
         isLoading={isGenerating}
         downloadUrl={downloadUrl}
         reportTitle={getReportTitle()}
+        report={report}
+        property={property}
       />
     </>
   );
