@@ -1,18 +1,14 @@
 
-import React, { useState } from "react";
-import { Camera, Upload } from "lucide-react";
-import LoadingSpinner from "./ui/LoadingSpinner";
-import { Button } from "./ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
-import CameraCapture from "./CameraCapture";
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Camera, Upload, Loader2 } from "lucide-react";
 
 interface ImageFileInputProps {
   id: string;
   isProcessing: boolean;
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onImageCapture?: (imageData: string) => void;
-  label?: string;
-  processingLabel?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onImageCapture: (imageData: string) => void;
+  multiple?: boolean;
 }
 
 const ImageFileInput = ({ 
@@ -20,69 +16,127 @@ const ImageFileInput = ({
   isProcessing, 
   onChange, 
   onImageCapture,
-  label = "Upload Photo", 
-  processingLabel = "Processing..." 
+  multiple = false
 }: ImageFileInputProps) => {
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const isMobile = useIsMobile();
-
-  const handleCameraCapture = (imageData: string) => {
-    setCameraOpen(false);
-    if (onImageCapture) {
-      onImageCapture(imageData);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Start camera capture
+  const startCamera = async () => {
+    setIsCameraOpen(true);
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error("Error accessing camera:", error);
+      setIsCameraOpen(false);
     }
   };
-
-  if (cameraOpen) {
-    return (
-      <CameraCapture 
-        onCapture={handleCameraCapture} 
-        onCancel={() => setCameraOpen(false)} 
-        isProcessing={isProcessing}
-      />
-    );
-  }
-
+  
+  // Stop camera capture
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    
+    setIsCameraOpen(false);
+  };
+  
+  // Take a picture
+  const takePicture = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    if (video && canvas) {
+      const context = canvas.getContext('2d');
+      
+      if (context) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        onImageCapture(imageData);
+        stopCamera();
+      }
+    }
+  };
+  
+  // Open file picker
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+  
   return (
-    <div className="flex flex-wrap gap-2">
-      {/* File Upload Button */}
-      <div className="relative">
-        <input
-          type="file" 
-          id={id} 
-          accept="image/*"
-          className="sr-only"
-          onChange={onChange}
-          disabled={isProcessing}
-        />
-        <label 
-          htmlFor={id}
-          className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-shareai-teal hover:bg-shareai-teal/90 cursor-pointer"
-        >
-          {isProcessing ? (
-            <div className="flex items-center">
-              <LoadingSpinner size="sm" text={processingLabel} />
-            </div>
-          ) : (
-            <div className="flex items-center">
-              <Upload className="h-4 w-4 mr-2" />
-              {label}
-            </div>
-          )}
-        </label>
-      </div>
-
-      {/* Camera Button - Only show if onImageCapture is provided */}
-      {onImageCapture && (
-        <Button
-          onClick={() => setCameraOpen(true)}
-          variant="outline"
-          disabled={isProcessing}
-          className="flex items-center gap-2"
-        >
-          <Camera className="h-4 w-4" />
-          {isMobile ? "Take Photo" : "Use Camera"}
-        </Button>
+    <div>
+      <input
+        ref={fileInputRef}
+        id={id}
+        type="file"
+        accept="image/*"
+        multiple={multiple}
+        onChange={onChange}
+        className="hidden"
+      />
+      
+      {isCameraOpen ? (
+        <div className="space-y-2">
+          <video 
+            ref={videoRef}
+            autoPlay 
+            playsInline
+            className="w-full h-auto max-h-96 bg-black rounded"
+          ></video>
+          <canvas ref={canvasRef} className="hidden"></canvas>
+          
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={stopCamera}>
+              Cancel
+            </Button>
+            <Button onClick={takePicture} className="bg-shareai-teal hover:bg-shareai-teal/90">
+              Take Photo
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={startCamera}
+            disabled={isProcessing}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Camera className="h-4 w-4" />
+            )}
+            Camera
+          </Button>
+          <Button
+            onClick={openFilePicker}
+            disabled={isProcessing}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            {multiple ? 'Upload Images' : 'Upload Image'}
+          </Button>
+        </div>
       )}
     </div>
   );

@@ -76,6 +76,8 @@ export interface RoomComponent {
   description: string;
   condition: ConditionRating;
   conditionSummary?: string; // Add conditionSummary property
+  conditionPoints?: string[]; // Add conditionPoints for bullet points
+  cleanliness?: string; // Add cleanliness property
   notes?: string;
   images: RoomComponentImage[];
   isOptional: boolean;

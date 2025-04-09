@@ -23,8 +23,11 @@ export function useComponentImageProcessing({
       description?: string; 
       condition?: {
         summary?: string;
+        points?: string[];
         rating?: ConditionRating;
       }; 
+      cleanliness?: string;
+      rating?: string;
       notes?: string;
     }
   ) => {
@@ -37,11 +40,35 @@ export function useComponentImageProcessing({
           timestamp: new Date(),
         }));
         
+        // Map the condition rating from inventory to standard format if needed
+        let conditionValue = comp.condition;
+        if (result.condition?.rating) {
+          conditionValue = result.condition.rating;
+        } else if (result.rating) {
+          // Map inventory ratings to system ratings
+          switch (result.rating.toLowerCase()) {
+            case 'good order':
+              conditionValue = 'excellent';
+              break;
+            case 'used order':
+              conditionValue = 'good';
+              break;
+            case 'fair order':
+              conditionValue = 'fair';
+              break;
+            case 'damaged':
+              conditionValue = 'poor';
+              break;
+          }
+        }
+        
         return {
           ...comp,
           description: result.description || comp.description,
-          condition: result.condition?.rating || comp.condition,
+          condition: conditionValue,
           conditionSummary: result.condition?.summary || comp.conditionSummary,
+          conditionPoints: result.condition?.points || comp.conditionPoints,
+          cleanliness: result.cleanliness || comp.cleanliness,
           notes: result.notes ? (comp.notes ? `${comp.notes}\n\n${result.notes}` : result.notes) : comp.notes,
           images: [...comp.images, ...newImages],
           isEditing: true

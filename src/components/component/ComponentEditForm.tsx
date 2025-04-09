@@ -9,7 +9,11 @@ interface ComponentEditFormProps {
   componentId: string;
   description: string;
   conditionSummary?: string;
+  conditionPoints?: string[];
   condition: ConditionRating;
+  cleanliness?: string;
+  cleanlinessOptions?: { value: string, label: string }[];
+  conditionRatingOptions?: { value: string, label: string }[];
   notes: string;
   onUpdateComponent: (componentId: string, field: string, value: string) => void;
   onToggleEditMode: (componentId: string) => void;
@@ -19,7 +23,11 @@ const ComponentEditForm = ({
   componentId,
   description,
   conditionSummary,
+  conditionPoints = [],
   condition,
+  cleanliness,
+  cleanlinessOptions = [],
+  conditionRatingOptions = [],
   notes,
   onUpdateComponent,
   onToggleEditMode
@@ -35,7 +43,7 @@ const ComponentEditForm = ({
           onChange={(e) => onUpdateComponent(componentId, "description", e.target.value)}
           placeholder="Describe the current condition, appearance, etc."
           className="w-full"
-          rows={3}
+          rows={2}
         />
       </div>
       
@@ -52,29 +60,83 @@ const ComponentEditForm = ({
         />
       </div>
       
+      {conditionPoints && conditionPoints.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Condition Details
+          </label>
+          <ul className="list-disc pl-5 space-y-1 text-sm">
+            {conditionPoints.map((point, index) => (
+              <li key={index}>{point}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      
       <div>
         <label className="block text-sm font-medium mb-1">
           Condition Rating
         </label>
-        <Select
-          value={condition}
-          onValueChange={(value) => onUpdateComponent(componentId, "condition", value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select condition" />
-          </SelectTrigger>
-          <SelectContent>
-            {conditionOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                <div className="flex items-center">
-                  <span className={`h-2 w-2 rounded-full ${option.color} mr-2`}></span>
+        {conditionRatingOptions && conditionRatingOptions.length > 0 ? (
+          <Select
+            value={condition}
+            onValueChange={(value) => onUpdateComponent(componentId, "condition", value)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select condition" />
+            </SelectTrigger>
+            <SelectContent>
+              {conditionRatingOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
                   {option.label}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Select
+            value={condition}
+            onValueChange={(value) => onUpdateComponent(componentId, "condition", value)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select condition" />
+            </SelectTrigger>
+            <SelectContent>
+              {conditionOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <div className="flex items-center">
+                    <span className={`h-2 w-2 rounded-full ${option.color} mr-2`}></span>
+                    {option.label}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
+      
+      {cleanlinessOptions && cleanlinessOptions.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Cleanliness
+          </label>
+          <Select
+            value={cleanliness || "domestic_clean"}
+            onValueChange={(value) => onUpdateComponent(componentId, "cleanliness", value)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select cleanliness" />
+            </SelectTrigger>
+            <SelectContent>
+              {cleanlinessOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       
       <div>
         <label className="block text-sm font-medium mb-1">

@@ -2,12 +2,16 @@
 import { useState } from "react";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import ComponentImageCapture from "./ComponentImageCapture";
 import { RoomComponent, RoomType, ConditionRating } from "@/types";
 import ComponentImages from "./component/ComponentImages";
 import ComponentEditForm from "./component/ComponentEditForm";
 import ComponentActions from "./component/ComponentActions";
 import ComponentHeader from "./component/ComponentHeader";
+import MultiImageComponentCapture from "./MultiImageComponentCapture";
+import {
+  cleanlinessOptions,
+  conditionRatingOptions
+} from "@/services/imageProcessingService";
 
 interface ComponentItemProps {
   component: RoomComponent & { isEditing?: boolean };
@@ -26,8 +30,11 @@ interface ComponentItemProps {
       description?: string; 
       condition?: {
         summary?: string;
+        points?: string[];
         rating?: ConditionRating;
-      }; 
+      };
+      cleanliness?: string;
+      rating?: string;
       notes?: string;
     }
   ) => void;
@@ -49,15 +56,35 @@ const ComponentItem = ({
 }: ComponentItemProps) => {
   
   const handleComponentImages = (componentId: string, imageUrls: string[], result: any) => {
+    // Map cleanliness value to standard format if provided
+    let standardizedCleanliness = result.cleanliness;
+    if (standardizedCleanliness) {
+      // Convert from "Professional Clean" to "professional_clean" format
+      standardizedCleanliness = standardizedCleanliness
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '');
+    }
+    
     onImageProcessed(
       componentId, 
       imageUrls, 
       {
         description: result.description,
-        condition: result.condition,
+        condition: {
+          summary: result.condition?.summary,
+          points: result.condition?.points || [],
+          rating: result.condition?.rating
+        },
+        cleanliness: standardizedCleanliness || "domestic_clean",
         notes: result.notes
       }
     );
+  };
+
+  const handleRemoveStagingImage = (index: number) => {
+    console.log("Remove staging image at index", index);
+    // This is handled in the MultiImageComponentCapture component
   };
 
   return (
@@ -80,7 +107,7 @@ const ComponentItem = ({
         <div className="space-y-4">
           <div className="flex flex-col space-y-2">
             <label className="text-sm font-medium">
-              Photos ({component.images.length}/6)
+              Photos ({component.images.length}/20)
             </label>
             
             <ComponentImages 
@@ -88,15 +115,15 @@ const ComponentItem = ({
               onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
             />
             
-            <ComponentImageCapture 
+            <MultiImageComponentCapture 
               componentId={component.id}
+              componentName={component.name}
               roomType={roomType}
-              componentType={component.type}
               isProcessing={isProcessing}
               currentImages={component.images}
               onImagesProcessed={handleComponentImages}
               onProcessingStateChange={onProcessingStateChange}
-              onRemovePreviewImage={() => {}}
+              onRemoveImage={handleRemoveStagingImage}
             />
             
             <ComponentActions
@@ -114,7 +141,11 @@ const ComponentItem = ({
                 componentId={component.id}
                 description={component.description}
                 conditionSummary={component.conditionSummary}
+                conditionPoints={component.conditionPoints || []}
                 condition={component.condition}
+                cleanliness={component.cleanliness}
+                cleanlinessOptions={cleanlinessOptions}
+                conditionRatingOptions={conditionRatingOptions}
                 notes={component.notes}
                 onUpdateComponent={onUpdateComponent}
                 onToggleEditMode={onToggleEditMode}
