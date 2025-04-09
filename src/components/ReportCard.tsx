@@ -1,5 +1,5 @@
 
-import { Report } from "@/types";
+import { Report, Property } from "@/types";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import { ReportsAPI } from "@/lib/api";
 interface ReportCardProps {
   report: Report;
   propertyAddress?: string;
+  property?: Property;
   onDelete?: (reportId: string) => void;
   onDuplicate?: (reportId: string) => void;
   onArchive?: (reportId: string) => void;
@@ -46,6 +47,7 @@ interface ReportCardProps {
 const ReportCard = ({ 
   report, 
   propertyAddress, 
+  property,
   onDelete, 
   onDuplicate,
   onArchive 

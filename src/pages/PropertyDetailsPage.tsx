@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -95,7 +94,6 @@ const PropertyDetailsPage = () => {
     try {
       let imageUrl = property.imageUrl;
       
-      // If there's a new image, convert it to a data URL
       if (imageFile) {
         imageUrl = await new Promise<string>((resolve) => {
           const reader = new FileReader();
@@ -165,7 +163,6 @@ const PropertyDetailsPage = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Property Details */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -195,7 +192,6 @@ const PropertyDetailsPage = () => {
             <CardContent>
               {!isEditing ? (
                 <div className="space-y-4">
-                  {/* Property Image */}
                   <div className="aspect-video relative overflow-hidden rounded-md">
                     {property.imageUrl ? (
                       <img 
@@ -210,7 +206,6 @@ const PropertyDetailsPage = () => {
                     )}
                   </div>
                   
-                  {/* Property Details */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h3 className="font-medium text-gray-500">Name</h3>
@@ -248,7 +243,6 @@ const PropertyDetailsPage = () => {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Edit Property Image */}
                   <div className="space-y-2">
                     <Label htmlFor="propertyImage">Property Image</Label>
                     <div className="flex items-center gap-4">
@@ -279,7 +273,6 @@ const PropertyDetailsPage = () => {
                     </div>
                   </div>
                   
-                  {/* Property Details Form */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
@@ -395,7 +388,6 @@ const PropertyDetailsPage = () => {
             </CardContent>
           </Card>
           
-          {/* Property Reports */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="flex items-center text-xl">
@@ -421,8 +413,37 @@ const PropertyDetailsPage = () => {
                   {reports.map((report) => (
                     <ReportCard 
                       key={report.id} 
-                      report={report} 
+                      report={report}
+                      propertyAddress={property.address}
                       property={property}
+                      onDelete={async (reportId) => {
+                        await ReportsAPI.delete(reportId);
+                        setReports(reports.filter(r => r.id !== reportId));
+                        toast({
+                          title: "Report deleted",
+                          description: "The report has been deleted successfully.",
+                        });
+                      }}
+                      onDuplicate={async (reportId) => {
+                        const duplicatedReport = await ReportsAPI.duplicate(reportId);
+                        if (duplicatedReport) {
+                          setReports([...reports, duplicatedReport]);
+                          toast({
+                            title: "Report duplicated",
+                            description: "The report has been duplicated successfully.",
+                          });
+                        }
+                      }}
+                      onArchive={async (reportId) => {
+                        const archivedReport = await ReportsAPI.update(reportId, { status: 'archived' });
+                        if (archivedReport) {
+                          setReports(reports.map(r => r.id === reportId ? archivedReport : r));
+                          toast({
+                            title: "Report archived",
+                            description: "The report has been archived successfully.",
+                          });
+                        }
+                      }}
                     />
                   ))}
                 </div>
@@ -431,7 +452,6 @@ const PropertyDetailsPage = () => {
           </Card>
         </div>
         
-        {/* Quick Actions */}
         <div>
           <Card>
             <CardHeader>
