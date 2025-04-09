@@ -2,15 +2,19 @@
 import { useState } from "react";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import ComponentImageCapture from "../ComponentImageCapture";
 import { RoomComponent, RoomType, ConditionRating } from "@/types";
 import ComponentImages from "../component/ComponentImages";
 import ComponentEditForm from "../component/ComponentEditForm";
 import ComponentActions from "../component/ComponentActions";
 import ComponentHeader from "../component/ComponentHeader";
+import MultiImageComponentCapture from "../MultiImageComponentCapture";
+import {
+  cleanlinessOptions,
+  conditionRatingOptions
+} from "@/services/imageProcessingService";
 
 interface ComponentItemProps {
-  component: RoomComponent;
+  component: RoomComponent & { isEditing?: boolean };
   roomType: RoomType;
   expanded: boolean;
   isProcessing: boolean;
@@ -21,13 +25,16 @@ interface ComponentItemProps {
   onRemoveImage: (componentId: string, imageId: string) => void;
   onImageProcessed: (
     componentId: string, 
-    imageUrl: string[], 
+    imageUrls: string[], 
     result: { 
-      description?: string;
+      description?: string; 
       condition?: {
         summary?: string;
+        points?: string[];
         rating?: ConditionRating;
       };
+      cleanliness?: string;
+      rating?: string;
       notes?: string;
     }
   ) => void;
@@ -47,9 +54,18 @@ const ComponentItem = ({
   onImageProcessed,
   onProcessingStateChange
 }: ComponentItemProps) => {
-  const [stagingImages, setStagingImages] = useState<string[]>([]);
   
-  const handleComponentImage = (componentId: string, imageUrls: string[], result: any) => {
+  const handleComponentImages = (componentId: string, imageUrls: string[], result: any) => {
+    // Map cleanliness value to standard format if provided
+    let standardizedCleanliness = result.cleanliness;
+    if (standardizedCleanliness) {
+      // Convert from "Professional Clean" to "professional_clean" format
+      standardizedCleanliness = standardizedCleanliness
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '');
+    }
+    
     onImageProcessed(
       componentId, 
       imageUrls, 
@@ -57,11 +73,18 @@ const ComponentItem = ({
         description: result.description,
         condition: {
           summary: result.condition?.summary,
+          points: result.condition?.points || [],
           rating: result.condition?.rating
         },
+        cleanliness: standardizedCleanliness || "domestic_clean",
         notes: result.notes
       }
     );
+  };
+
+  const handleRemoveStagingImage = (index: number) => {
+    console.log("Remove staging image at index", index);
+    // This is handled in the MultiImageComponentCapture component
   };
 
   return (
@@ -84,7 +107,7 @@ const ComponentItem = ({
         <div className="space-y-4">
           <div className="flex flex-col space-y-2">
             <label className="text-sm font-medium">
-              Photos ({component.images.length}/6)
+              Photos ({component.images.length}/20)
             </label>
             
             <ComponentImages 
@@ -92,19 +115,15 @@ const ComponentItem = ({
               onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
             />
             
-            <ComponentImageCapture 
+            <MultiImageComponentCapture 
               componentId={component.id}
+              componentName={component.name}
               roomType={roomType}
-              componentType={component.type}
               isProcessing={isProcessing}
               currentImages={component.images}
-              onImagesProcessed={handleComponentImage}
+              onImagesProcessed={handleComponentImages}
               onProcessingStateChange={onProcessingStateChange}
-              onRemovePreviewImage={(index) => {
-                const newStagingImages = [...stagingImages];
-                newStagingImages.splice(index, 1);
-                setStagingImages(newStagingImages);
-              }}
+              onRemoveImage={handleRemoveStagingImage}
             />
             
             <ComponentActions
@@ -122,7 +141,11 @@ const ComponentItem = ({
                 componentId={component.id}
                 description={component.description}
                 conditionSummary={component.conditionSummary}
+                conditionPoints={component.conditionPoints || []}
                 condition={component.condition}
+                cleanliness={component.cleanliness}
+                cleanlinessOptions={cleanlinessOptions}
+                conditionRatingOptions={conditionRatingOptions}
                 notes={component.notes}
                 onUpdateComponent={onUpdateComponent}
                 onToggleEditMode={onToggleEditMode}
@@ -133,6 +156,6 @@ const ComponentItem = ({
       </AccordionContent>
     </AccordionItem>
   );
-};
+}
 
 export default ComponentItem;
