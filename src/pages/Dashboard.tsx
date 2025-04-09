@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { Building2, ClipboardEdit } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
@@ -18,7 +18,7 @@ const Dashboard = () => {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardContent className="p-6 flex flex-col items-center text-center">
             <Building2 className="h-12 w-12 text-shareai-teal mb-4" />
@@ -31,22 +31,6 @@ const Dashboard = () => {
               className="bg-shareai-teal hover:bg-shareai-teal/90 w-full"
             >
               View Properties
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6 flex flex-col items-center text-center">
-            <ClipboardEdit className="h-12 w-12 text-shareai-teal mb-4" />
-            <h2 className="text-xl font-bold mb-2">Reports</h2>
-            <p className="text-gray-600 mb-6">
-              View and manage all your property inspection reports.
-            </p>
-            <Button 
-              onClick={() => navigate("/reports")}
-              className="bg-shareai-teal hover:bg-shareai-teal/90 w-full"
-            >
-              View Reports
             </Button>
           </CardContent>
         </Card>

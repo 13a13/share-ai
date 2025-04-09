@@ -20,6 +20,7 @@ export const PropertiesAPI = {
     const properties = await PropertiesAPI.getAll();
     const newProperty: Property = {
       ...property,
+      name: property.name || property.address, // Use address as fallback if name not provided
       id: uuidv4(),
       createdAt: new Date(),
       updatedAt: new Date(),

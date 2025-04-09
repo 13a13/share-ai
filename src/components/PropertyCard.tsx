@@ -20,7 +20,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         {property.imageUrl ? (
           <img 
             src={property.imageUrl} 
-            alt={property.address} 
+            alt={property.name || property.address} 
             className="w-full h-full object-cover"
           />
         ) : (
@@ -34,7 +34,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
       </div>
       
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{property.address}</CardTitle>
+        <CardTitle className="text-lg">{property.name || property.address}</CardTitle>
         <CardDescription>
           {property.city}, {property.state} {property.zipCode}
         </CardDescription>

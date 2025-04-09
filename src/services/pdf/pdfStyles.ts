@@ -3,14 +3,14 @@
 
 // PDF color palette that matches the dashboard
 export const pdfColors = {
-  primary: [155, 135, 245], // Primary Purple (#9b87f5)
-  secondary: [126, 105, 171], // Secondary Purple (#7E69AB)
-  accent: [30, 174, 219], // Bright Blue (#1EAEDB)
-  white: [255, 255, 255],
+  primary: [14, 52, 96], // Ocean Blue (#0E345F - shareai-blue)
+  secondary: [46, 139, 192], // Light Blue (#2E8BC0 - shareai-teal)
+  accent: [255, 87, 34], // Orange Accent (#FF5722 - shareai-orange)
+  white: [255, 255, 255], // Pure White (#FFFFFF)
   black: [34, 34, 34], // Dark Gray (#222222)
   gray: [138, 137, 140], // Medium Gray (#8A898C)
   lightGray: [241, 241, 241], // Light Gray (#F1F1F1)
-  bgGray: [246, 246, 247], // Dark Gray (#F6F6F7)
+  bgGray: [245, 247, 250], // Light Background (#F5F7FA - shareai-light)
   successGreen: [76, 175, 80],
   warningYellow: [255, 193, 7],
   dangerRed: [244, 67, 54],
@@ -68,7 +68,7 @@ export function createSectionBox(doc: any, yPos: number, width: number, height: 
   doc.roundedRect(pdfMargins.page, yPos, width, height, 3, 3, "F");
   
   // Section header background
-  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
+  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
   doc.roundedRect(pdfMargins.page, yPos, width, titleHeight, 3, 3, "F");
   
   // Section title
@@ -100,6 +100,32 @@ export function createSeparator(doc: any, y: number, width: number, startX: numb
   return y + pdfMargins.paragraph;
 }
 
+// Helper function to draw dashed lines (since jsPDF might not support setLineDash)
+export function drawDashedLine(doc: any, x1: number, y1: number, x2: number, y2: number, dashLength: number = 3, spaceLength: number = 3): void {
+  const deltaX = x2 - x1;
+  const deltaY = y2 - y1;
+  const numDashes = Math.floor(Math.sqrt(deltaX * deltaX + deltaY * deltaY) / (dashLength + spaceLength));
+  const dashX = deltaX / (numDashes * 2);
+  const dashY = deltaY / (numDashes * 2);
+
+  doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
+  doc.setLineWidth(0.5);
+
+  let currX = x1;
+  let currY = y1;
+  
+  for (let i = 0; i < numDashes; i++) {
+    const startX = currX;
+    const startY = currY;
+    currX += dashX;
+    currY += dashY;
+    doc.line(startX, startY, currX, currY); // Draw dash
+    currX += dashX;
+    currY += dashY;
+    // Space is created by moving the current position without drawing
+  }
+}
+
 // Helper function for creating two-column layout
 export function createTwoColumnLayout(doc: any, leftContent: string, rightContent: string, yPos: number, labelLeft: string, labelRight: string): number {
   const pageWidth = doc.internal.pageSize.width;
@@ -127,7 +153,7 @@ export function createTwoColumnLayout(doc: any, leftContent: string, rightConten
   return yPos + Math.max(leftHeight, rightHeight) + pdfMargins.paragraph;
 }
 
-// Helper to format dates consistently - now accepts Date or string
+// Helper to format dates consistently - accepts Date or string
 export function formatDate(dateInput: string | Date): string {
   if (!dateInput) return "Not specified";
   
