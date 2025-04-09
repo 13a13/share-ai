@@ -27,8 +27,7 @@ export const compressImage = async (
   };
 
   try {
-    // Compress the image
-    // Cast to File if it's not already, with minimal metadata to satisfy the type requirement
+    // Ensure we're working with a File object as required by the library
     const fileToCompress = imageFile instanceof File 
       ? imageFile 
       : new File([imageFile], fileName, { type: imageFile.type || 'image/jpeg' });
@@ -56,10 +55,12 @@ export const compressImage = async (
   } catch (error) {
     console.error("Error compressing image:", error);
     // If compression fails, return the original file with 0% compression
+    const fileToReturn = imageFile instanceof File 
+      ? imageFile 
+      : new File([imageFile], fileName, { type: imageFile.type || "image/jpeg" });
+
     return {
-      compressedFile: new File([imageFile], fileName, {
-        type: imageFile.type || "image/jpeg",
-      }),
+      compressedFile: fileToReturn,
       originalSize,
       compressedSize: originalSize,
       compressionRatio: 0,
