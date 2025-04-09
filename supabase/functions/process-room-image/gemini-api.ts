@@ -48,7 +48,7 @@ export function createGeminiRequest(promptText: string, imageData: string | stri
       temperature: 0.4,
       topK: 32,
       topP: 1,
-      maxOutputTokens: 2048,  // Reduced output tokens
+      maxOutputTokens: 1024,  // Reduced output tokens for conciseness
     }
   };
 }
