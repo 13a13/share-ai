@@ -1,7 +1,7 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, Loader2 } from "lucide-react";
+import { Camera, Upload, Loader2, ImagePlus } from "lucide-react";
 
 interface ImageFileInputProps {
   id: string;
@@ -109,30 +109,34 @@ const ImageFileInput = ({
           </div>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={startCamera}
             disabled={isProcessing}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex-1 flex items-center gap-2"
           >
             {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Camera className="h-4 w-4" />
             )}
-            Camera
+            Take Photo
           </Button>
           <Button
             onClick={openFilePicker}
             disabled={isProcessing}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex-1 flex items-center gap-2"
           >
             {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Upload className="h-4 w-4" />
+              multiple ? (
+                <ImagePlus className="h-4 w-4" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )
             )}
             {multiple ? 'Upload Images' : 'Upload Image'}
           </Button>

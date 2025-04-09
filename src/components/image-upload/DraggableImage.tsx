@@ -1,6 +1,7 @@
 
 import { useDrag, useDrop } from "react-dnd";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Trash2, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,13 +19,15 @@ interface DraggableImageProps {
   index: number;
   onRemove: (index: number) => void;
   onMove: (dragIndex: number, hoverIndex: number) => void;
+  badgeNumber?: number;
 }
 
 const DraggableImage = ({ 
   image, 
   index, 
   onRemove, 
-  onMove 
+  onMove,
+  badgeNumber
 }: DraggableImageProps) => {
   const [{ isDragging }, dragRef] = useDrag({
     type: IMAGE_ITEM_TYPE,
@@ -54,15 +57,16 @@ const DraggableImage = ({
     <div 
       ref={(node) => dragRef(dropRef(node))}
       className={cn(
-        "relative group border rounded overflow-hidden cursor-move", 
+        "relative group border rounded-md overflow-hidden cursor-move aspect-square", 
         isDragging ? "opacity-50 border-dashed border-2 border-gray-400" : ""
       )}
     >
       <img 
         src={image.url} 
         alt={`Image ${index + 1}`} 
-        className="w-full h-24 object-cover"
+        className="w-full h-full object-cover"
       />
+      
       <Button
         variant="destructive"
         size="icon"
@@ -74,9 +78,19 @@ const DraggableImage = ({
       >
         <Trash2 className="h-4 w-4" />
       </Button>
+      
       <div className="absolute top-1 left-1 opacity-50 group-hover:opacity-100 transition-opacity">
         <GripVertical className="h-4 w-4 text-white drop-shadow-md" />
       </div>
+      
+      {badgeNumber && (
+        <Badge 
+          variant="secondary" 
+          className="absolute bottom-1 left-1 bg-black/50 text-white"
+        >
+          {badgeNumber}
+        </Badge>
+      )}
     </div>
   );
 };

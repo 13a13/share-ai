@@ -26,17 +26,21 @@ export function useImageUploadAndProcess({
   const [stagingImages, setStagingImages] = useState<string[]>([]);
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
 
+  const MAX_IMAGES = 20;
+  const totalImages = currentImages.length + stagingImages.length;
+  const canAddMore = totalImages < MAX_IMAGES;
+
   const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) return;
     
     // Handle multiple file selection
     const newImages: string[] = [];
-    const maxFilesToAdd = 20 - (stagingImages.length + currentImages.length);
+    const maxFilesToAdd = MAX_IMAGES - totalImages;
     
     if (maxFilesToAdd <= 0) {
       toast({
         title: "Maximum images reached",
-        description: "You can upload a maximum of 20 images per component.",
+        description: `You can upload a maximum of ${MAX_IMAGES} images per component.`,
         variant: "destructive",
       });
       return;
@@ -63,14 +67,26 @@ export function useImageUploadAndProcess({
     
     if (newImages.length > 0) {
       setStagingImages([...stagingImages, ...newImages]);
+
+      if (newImages.length < filesToProcess.length) {
+        toast({
+          title: "Some files skipped",
+          description: "Only image files were added to the upload queue.",
+        });
+      }
+    }
+
+    // Clear input value to allow selecting the same file again
+    if (event.target) {
+      event.target.value = '';
     }
   };
 
   const handleCameraCapture = async (imageData: string) => {
-    if (stagingImages.length + currentImages.length >= 20) {
+    if (totalImages >= MAX_IMAGES) {
       toast({
         title: "Maximum images reached",
-        description: "You can upload a maximum of 20 images per component.",
+        description: `You can upload a maximum of ${MAX_IMAGES} images per component.`,
         variant: "destructive",
       });
       return;
@@ -136,14 +152,12 @@ export function useImageUploadAndProcess({
     setStagingImages([]);
   };
 
-  const totalImages = currentImages.length + stagingImages.length;
-  const canAddMore = totalImages < 20;
-
   return {
     stagingImages,
     analysisInProgress,
     totalImages,
     canAddMore,
+    maxImages: MAX_IMAGES,
     handleImageCapture,
     handleCameraCapture,
     handleRemoveStagingImage,

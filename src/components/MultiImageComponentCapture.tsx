@@ -6,6 +6,10 @@ import ImageFileInput from "./ImageFileInput";
 import { processComponentImage } from "@/services/imageProcessingService";
 import StagingImagesGrid from "./image-upload/StagingImagesGrid";
 import { useImageUploadAndProcess } from "@/hooks/useImageUploadAndProcess";
+import ComponentImages from "./component/ComponentImages";
+import { Card } from "./ui/card";
+import { Progress } from "./ui/progress";
+import { useEffect, useState } from "react";
 
 interface MultiImageComponentCaptureProps {
   componentId: string;
@@ -28,10 +32,14 @@ const MultiImageComponentCapture = ({
   onProcessingStateChange,
   onRemoveImage
 }: MultiImageComponentCaptureProps) => {
+  const [imageLoadProgress, setImageLoadProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
+  
   const {
     stagingImages,
     analysisInProgress,
     totalImages,
+    maxImages,
     canAddMore,
     handleImageCapture,
     handleCameraCapture,
@@ -49,8 +57,40 @@ const MultiImageComponentCapture = ({
     processComponentImage
   });
 
+  // Simulate progress when loading images
+  useEffect(() => {
+    if (stagingImages.length > 0) {
+      setShowProgress(true);
+      setImageLoadProgress(0);
+      
+      const interval = setInterval(() => {
+        setImageLoadProgress(prev => {
+          const next = prev + Math.random() * 15;
+          if (next >= 100) {
+            clearInterval(interval);
+            setTimeout(() => setShowProgress(false), 500);
+            return 100;
+          }
+          return next;
+        });
+      }, 200);
+      
+      return () => clearInterval(interval);
+    }
+  }, [stagingImages.length]);
+
   return (
     <div className="space-y-4">
+      {showProgress && stagingImages.length > 0 && (
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <span>Preparing images...</span>
+            <span>{Math.round(imageLoadProgress)}%</span>
+          </div>
+          <Progress value={imageLoadProgress} className="h-1" />
+        </div>
+      )}
+    
       <StagingImagesGrid 
         stagingImages={stagingImages}
         analysisInProgress={analysisInProgress}
@@ -58,21 +98,31 @@ const MultiImageComponentCapture = ({
         onProcess={processImages}
         onRemoveStagingImage={handleRemoveStagingImage}
         onMoveImage={moveImage}
+        totalImages={totalImages}
+        maxImages={maxImages}
       />
       
       {canAddMore && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2">
           <ImageFileInput
             id={`image-upload-${componentId}`}
             isProcessing={isProcessing}
             onChange={handleImageCapture}
             onImageCapture={handleCameraCapture}
-            multiple={true} // Enable multiple file selection
+            multiple={true}
           />
           <div className="text-sm text-gray-500 mt-1">
-            {totalImages}/20 images
+            {totalImages}/{maxImages} images
           </div>
         </div>
+      )}
+      
+      {!canAddMore && !stagingImages.length && (
+        <Card className="p-3 bg-yellow-50 border-yellow-200">
+          <p className="text-sm text-yellow-700">
+            Maximum number of images reached ({maxImages}). Remove some images to add more.
+          </p>
+        </Card>
       )}
     </div>
   );
