@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Room, RoomComponent, RoomSection, RoomType } from "@/types";
@@ -27,7 +28,7 @@ interface EditableRoomSectionProps {
   roomIndex: number;
   totalRooms: number;
   onNavigateRoom: (index: number) => void;
-  onUpdateGeneralCondition: (roomId: string, generalCondition: string) => Promise<void>;
+  onUpdateGeneralCondition: (roomId: string, condition: string) => Promise<void>;
   onSaveSection: (updatedSection: RoomSection) => Promise<void>;
   onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
   onDeleteRoom: (roomId: string) => Promise<void>;

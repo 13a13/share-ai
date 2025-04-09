@@ -47,11 +47,14 @@ const PDFPreviewDialog = ({
               <span className="ml-3 text-shareai-blue">Generating PDF preview...</span>
             </div>
           ) : embedUrl ? (
-            <iframe 
-              src={embedUrl}
+            <object 
+              data={embedUrl}
+              type="application/pdf"
               className="w-full h-full"
-              title="PDF Preview"
-            />
+              aria-label="PDF Preview"
+            >
+              <p>Your browser does not support PDFs. <a href={embedUrl} download={`${reportTitle.replace(/\s+/g, '_')}.pdf`}>Download the PDF</a> instead.</p>
+            </object>
           ) : (
             <div className="flex items-center justify-center h-full">
               <p className="text-gray-500">No preview available</p>

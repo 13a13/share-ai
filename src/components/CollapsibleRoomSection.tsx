@@ -1,7 +1,7 @@
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, InfoIcon } from "lucide-react";
-import { Room, RoomComponent } from "@/types";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { Room } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,18 +35,8 @@ const CollapsibleRoomSection = ({
 }: CollapsibleRoomSectionProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleNextRoom = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onNavigateRoom(roomIndex + 1);
-  };
-
-  const handlePrevRoom = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onNavigateRoom(roomIndex - 1);
-  };
-
   return (
-    <Card className={`mb-4 transition-all duration-300 ${isComplete ? 'border-green-400' : ''} ${!isComplete && !isExpanded ? 'animate-pulse-opacity' : ''}`}>
+    <Card className={`mb-4 transition-all duration-300 ${isComplete ? 'border-green-400' : ''}`}>
       <CardHeader 
         className="px-4 py-3 flex flex-row justify-between items-center cursor-pointer" 
         onClick={() => setIsExpanded(!isExpanded)}
@@ -70,47 +60,6 @@ const CollapsibleRoomSection = ({
           </CardTitle>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center mr-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 mr-1"
-                    disabled={roomIndex === 0}
-                    onClick={handlePrevRoom}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span className="sr-only md:not-sr-only md:ml-1">Previous</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Go to previous room</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8"
-                    disabled={roomIndex === totalRooms - 1}
-                    onClick={handleNextRoom}
-                  >
-                    <span className="sr-only md:not-sr-only md:mr-1">Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Go to next room</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
           <Button variant="ghost" size="sm" className="p-0 h-auto">
             {isExpanded ? (
               <ChevronUp className="h-5 w-5" />

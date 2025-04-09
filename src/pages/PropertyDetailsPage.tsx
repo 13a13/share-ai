@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -415,7 +416,6 @@ const PropertyDetailsPage = () => {
                       key={report.id} 
                       report={report}
                       propertyAddress={property.address}
-                      property={property}
                       onDelete={async (reportId) => {
                         await ReportsAPI.delete(reportId);
                         setReports(reports.filter(r => r.id !== reportId));

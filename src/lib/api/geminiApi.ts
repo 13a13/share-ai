@@ -12,12 +12,12 @@ import { LOCAL_STORAGE_KEYS } from './utils';
 export const GeminiAPI = {
   analyzeImage: async (imageUrl: string, roomType?: string): Promise<any> => {
     try {
-      // Request simplified responses from the Gemini API
+      // Request simplified responses from the Gemini API (max 2 sentences)
       const response = await supabase.functions.invoke('process-room-image', {
         body: { 
           imageUrl, 
           roomType,
-          maxSentences: 2 // Request simplified responses (max 2 sentences)
+          maxSentences: 2 // Limit responses to maximum 2 sentences
         },
       });
 

@@ -36,7 +36,10 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
   
   const handlePreviewPDF = async () => {
     setPreviewOpen(true);
-    await handleGeneratePDF();
+    
+    if (!downloadUrl) {
+      await handleGeneratePDF();
+    }
   };
   
   // Determine report title
