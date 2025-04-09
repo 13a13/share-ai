@@ -1,5 +1,4 @@
-
-import { Room, RoomComponent, RoomImage, ConditionRating } from '@/types';
+import { Room, RoomComponent, RoomImage, ConditionRating, RoomType } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export const createRoomComponent = (name: string, type: string, isOptional: boolean = false): RoomComponent => {
@@ -131,12 +130,13 @@ export const getComponentsForRoomType = (roomType: string): RoomComponent[] => {
 };
 
 // Helper function to create an empty room section
-const createRoomSection = (type: string, title: string): { id: string; type: string; title: string; description: string } => {
+const createRoomSection = (type: string, title: string): { id: string; type: string; title: string; description: string; condition: ConditionRating } => {
   return {
     id: uuidv4(),
     type,
     title,
     description: '',
+    condition: 'good', // Add the required condition property
   };
 };
 
@@ -144,7 +144,7 @@ export const createNewRoom = (name: string, type: string, order: number): Room =
   return {
     id: uuidv4(),
     name,
-    type,
+    type: type as RoomType, // Cast string to RoomType
     order,
     generalCondition: '',
     images: [],

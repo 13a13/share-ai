@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { Button } from "@/components/ui/button";
 import { Loader2, X, MoveVertical } from "lucide-react";
