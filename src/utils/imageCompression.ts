@@ -28,7 +28,12 @@ export const compressImage = async (
 
   try {
     // Compress the image
-    const compressedFile = await imageCompression(imageFile, options);
+    // Cast to File if it's not already, with minimal metadata to satisfy the type requirement
+    const fileToCompress = imageFile instanceof File 
+      ? imageFile 
+      : new File([imageFile], fileName, { type: imageFile.type || 'image/jpeg' });
+      
+    const compressedFile = await imageCompression(fileToCompress, options);
     
     // Calculate compressed size and ratio
     const compressedSize = compressedFile.size / 1024 / 1024; // in MB
