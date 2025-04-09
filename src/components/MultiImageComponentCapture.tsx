@@ -39,6 +39,7 @@ const MultiImageComponentCapture = ({
   const {
     stagingImages,
     analysisInProgress,
+    compressionInProgress,
     totalImages,
     maxImages,
     canAddMore,
@@ -95,6 +96,7 @@ const MultiImageComponentCapture = ({
       <StagingImagesGrid 
         stagingImages={stagingImages}
         analysisInProgress={analysisInProgress}
+        compressionInProgress={compressionInProgress}
         onCancel={cancelStagingImages}
         onProcess={processImages}
         onRemoveStagingImage={handleRemoveStagingImage}
@@ -124,13 +126,14 @@ const MultiImageComponentCapture = ({
       <div className="flex flex-col gap-2">
         <ImageFileInput
           id={`image-upload-${componentId}`}
-          isProcessing={isProcessing}
+          isProcessing={isProcessing || compressionInProgress}
           onChange={handleImageCapture}
           onImageCapture={handleCameraCapture}
           multiple={true}
           disabled={!canAddMore}
           totalImages={totalImages}
           maxImages={maxImages}
+          compressionInProgress={compressionInProgress}
         />
         <div className="text-sm text-gray-500 mt-1">
           {totalImages}/{maxImages} images

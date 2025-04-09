@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface StagingImagesGridProps {
   stagingImages: string[];
   analysisInProgress: boolean;
+  compressionInProgress: boolean;
   onCancel: () => void;
   onProcess: () => void;
   onRemoveStagingImage: (index: number) => void;
@@ -20,6 +21,7 @@ interface StagingImagesGridProps {
 const StagingImagesGrid = ({
   stagingImages,
   analysisInProgress,
+  compressionInProgress,
   onCancel,
   onProcess,
   onRemoveStagingImage,
@@ -34,7 +36,16 @@ const StagingImagesGrid = ({
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <div className="text-sm font-medium">Preview Images ({stagingImages.length})</div>
+        <div className="text-sm font-medium">
+          {compressionInProgress ? (
+            <span className="flex items-center text-shareai-teal">
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" /> 
+              Compressing images...
+            </span>
+          ) : (
+            `Preview Images (${stagingImages.length})`
+          )}
+        </div>
         <div className="text-xs text-gray-500">{totalImages} of {maxImages} total</div>
       </div>
       
@@ -60,7 +71,7 @@ const StagingImagesGrid = ({
           variant="destructive"
           size="sm"
           onClick={onCancel}
-          disabled={analysisInProgress}
+          disabled={analysisInProgress || compressionInProgress}
         >
           Cancel
         </Button>
@@ -68,7 +79,7 @@ const StagingImagesGrid = ({
           variant="default"
           size="sm"
           onClick={onProcess}
-          disabled={analysisInProgress || stagingImages.length === 0}
+          disabled={analysisInProgress || compressionInProgress || stagingImages.length === 0}
         >
           {analysisInProgress ? (
             <>

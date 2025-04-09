@@ -12,6 +12,7 @@ interface ImageFileInputProps {
   disabled?: boolean;
   totalImages?: number;
   maxImages?: number;
+  compressionInProgress?: boolean;
 }
 
 const ImageFileInput = ({ 
@@ -22,7 +23,8 @@ const ImageFileInput = ({
   multiple = false,
   disabled = false,
   totalImages = 0,
-  maxImages = 20
+  maxImages = 20,
+  compressionInProgress = false
 }: ImageFileInputProps) => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isCaptureSeries, setIsCaptureSeries] = useState(false);
@@ -133,8 +135,20 @@ const ImageFileInput = ({
               <Button variant="outline" onClick={stopCamera} size="sm">
                 Done
               </Button>
-              <Button onClick={takePicture} className="bg-shareai-teal hover:bg-shareai-teal/90" size="sm">
-                {isCaptureSeries ? "Take Photo" : "Capture"}
+              <Button 
+                onClick={takePicture} 
+                className="bg-shareai-teal hover:bg-shareai-teal/90" 
+                size="sm"
+                disabled={compressionInProgress}
+              >
+                {compressionInProgress ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Compressing...
+                  </>
+                ) : (
+                  isCaptureSeries ? "Take Photo" : "Capture"
+                )}
               </Button>
             </div>
           </div>
@@ -152,7 +166,7 @@ const ImageFileInput = ({
             ) : (
               <Camera className="h-4 w-4" />
             )}
-            Take Photos
+            {compressionInProgress ? "Compressing..." : "Take Photos"}
           </Button>
           <Button
             onClick={openFilePicker}
@@ -169,7 +183,7 @@ const ImageFileInput = ({
                 <Upload className="h-4 w-4" />
               )
             )}
-            {multiple ? 'Upload Images' : 'Upload Image'}
+            {compressionInProgress ? "Compressing..." : (multiple ? 'Upload Images' : 'Upload Image')}
           </Button>
         </div>
       )}

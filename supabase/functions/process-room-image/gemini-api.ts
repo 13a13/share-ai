@@ -22,18 +22,37 @@ export interface GeminiRequest {
 
 /**
  * Creates a request body for the Gemini API with support for multiple images
+ * Optimized for large batches by limiting the number of images
  */
 export function createGeminiRequest(promptText: string, imageData: string | string[]): GeminiRequest {
   // Ensure imageData is an array
   const imageDataArray = Array.isArray(imageData) ? imageData : [imageData];
+  
+  // Limit to 10 images max for Gemini API (prevent overloading)
+  // For large batches, we'll use a subset of the images (first, middle, and last few)
+  let optimizedImageArray = imageDataArray;
+  if (imageDataArray.length > 10) {
+    // Take the first 4, middle 2, and last 4 images
+    const first = imageDataArray.slice(0, 4);
+    const middle = imageDataArray.length > 6 
+      ? [imageDataArray[Math.floor(imageDataArray.length / 2) - 1], 
+         imageDataArray[Math.floor(imageDataArray.length / 2)]]
+      : [];
+    const last = imageDataArray.slice(-4);
+    
+    optimizedImageArray = [...first, ...middle, ...last];
+    
+    // Update prompt to indicate we're analyzing a subset
+    promptText = `${promptText}\n\nNote: You are being shown a representative subset of ${imageDataArray.length} total images. Please analyze what you see in these sample images.`;
+  }
 
-  // Create parts array with prompt text and all images
+  // Create parts array with prompt text and selected images
   const parts = [
     { text: promptText },
-    ...imageDataArray.map(data => ({
+    ...optimizedImageArray.map(data => ({
       inline_data: {
         mime_type: "image/jpeg",
-        data: data
+        data: data.startsWith('data:') ? data.split(',')[1] : data
       }
     }))
   ];
