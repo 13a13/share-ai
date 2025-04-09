@@ -13,7 +13,8 @@ import {
   createGeminiRequest 
 } from "./gemini-api.ts";
 
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+// Use the provided API key directly
+const GEMINI_API_KEY = "AIzaSyDxmg0G7I2ioF8VUCipwf7riTNoprHlaBY";
 
 serve(async (req) => {
   // CORS preflight request
