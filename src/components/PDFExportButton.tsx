@@ -35,11 +35,13 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
   };
   
   const handlePreviewPDF = async () => {
-    setPreviewOpen(true);
-    
+    // Generate PDF if not already generated
     if (!downloadUrl) {
       await handleGeneratePDF();
     }
+    
+    // Open the preview dialog after generating
+    setPreviewOpen(true);
   };
   
   // Determine report title

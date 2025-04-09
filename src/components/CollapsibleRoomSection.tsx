@@ -36,7 +36,7 @@ const CollapsibleRoomSection = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <Card className={`mb-4 transition-all duration-300 ${isComplete ? 'border-green-400' : ''}`}>
+    <Card className={`mb-4 transition-none ${isComplete ? 'border-green-400' : ''}`}>
       <CardHeader 
         className="px-4 py-3 flex flex-row justify-between items-center cursor-pointer" 
         onClick={() => setIsExpanded(!isExpanded)}
@@ -71,7 +71,7 @@ const CollapsibleRoomSection = ({
       </CardHeader>
       
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+        <CollapsibleContent className="data-[state=open]:animate-none data-[state=closed]:animate-none">
           <CardContent className="px-4 py-3">
             <div className="space-y-1 mb-4">
               <h3 className="text-sm font-medium text-gray-500">General Condition</h3>

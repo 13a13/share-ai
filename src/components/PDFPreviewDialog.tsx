@@ -8,7 +8,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 
 interface PDFPreviewDialogProps {
   open: boolean;
@@ -27,7 +27,7 @@ const PDFPreviewDialog = ({
   downloadUrl,
   reportTitle
 }: PDFPreviewDialogProps) => {
-  // Create a proper data URL for the PDF preview
+  // Important: Create a proper data URL for the PDF viewer
   const embedUrl = pdfUrl ? `data:application/pdf;base64,${pdfUrl}` : null;
 
   return (
@@ -47,14 +47,11 @@ const PDFPreviewDialog = ({
               <span className="ml-3 text-shareai-blue">Generating PDF preview...</span>
             </div>
           ) : embedUrl ? (
-            <object 
-              data={embedUrl}
-              type="application/pdf"
+            <iframe 
+              src={embedUrl}
               className="w-full h-full"
-              aria-label="PDF Preview"
-            >
-              <p>Your browser does not support PDFs. <a href={embedUrl} download={`${reportTitle.replace(/\s+/g, '_')}.pdf`}>Download the PDF</a> instead.</p>
-            </object>
+              title="PDF Preview"
+            />
           ) : (
             <div className="flex items-center justify-center h-full">
               <p className="text-gray-500">No preview available</p>

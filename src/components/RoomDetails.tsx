@@ -70,7 +70,7 @@ const RoomDetails = ({
   };
 
   return (
-    <Card>
+    <Card className="transition-none">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
           <CardTitle className="text-xl">{room.name}</CardTitle>
