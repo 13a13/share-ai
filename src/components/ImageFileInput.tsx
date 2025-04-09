@@ -9,6 +9,9 @@ interface ImageFileInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageCapture: (imageData: string) => void;
   multiple?: boolean;
+  disabled?: boolean;
+  totalImages?: number;
+  maxImages?: number;
 }
 
 const ImageFileInput = ({ 
@@ -16,9 +19,13 @@ const ImageFileInput = ({
   isProcessing, 
   onChange, 
   onImageCapture,
-  multiple = false
+  multiple = false,
+  disabled = false,
+  totalImages = 0,
+  maxImages = 20
 }: ImageFileInputProps) => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCaptureSeries, setIsCaptureSeries] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +57,7 @@ const ImageFileInput = ({
     }
     
     setIsCameraOpen(false);
+    setIsCaptureSeries(false);
   };
   
   // Take a picture
@@ -67,15 +75,30 @@ const ImageFileInput = ({
         
         const imageData = canvas.toDataURL('image/jpeg', 0.8);
         onImageCapture(imageData);
+        
+        // If in capture series mode and not reached the max, stay in camera mode
+        if (isCaptureSeries && totalImages < maxImages - 1) {
+          return;
+        }
+        
         stopCamera();
       }
     }
+  };
+  
+  // Start multi-photo capture series
+  const startCaptureSeries = async () => {
+    setIsCaptureSeries(true);
+    await startCamera();
   };
   
   // Open file picker
   const openFilePicker = () => {
     fileInputRef.current?.click();
   };
+  
+  const remainingImages = maxImages - totalImages;
+  const hasReachedLimit = remainingImages <= 0;
   
   return (
     <div>
@@ -87,6 +110,7 @@ const ImageFileInput = ({
         multiple={multiple}
         onChange={onChange}
         className="hidden"
+        disabled={disabled || hasReachedLimit}
       />
       
       {isCameraOpen ? (
@@ -99,20 +123,27 @@ const ImageFileInput = ({
           ></video>
           <canvas ref={canvasRef} className="hidden"></canvas>
           
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={stopCamera}>
-              Cancel
-            </Button>
-            <Button onClick={takePicture} className="bg-shareai-teal hover:bg-shareai-teal/90">
-              Take Photo
-            </Button>
+          <div className="flex justify-between items-center">
+            {isCaptureSeries && (
+              <div className="text-sm">
+                {remainingImages} {remainingImages === 1 ? 'photo' : 'photos'} remaining
+              </div>
+            )}
+            <div className="flex ml-auto space-x-2">
+              <Button variant="outline" onClick={stopCamera} size="sm">
+                Done
+              </Button>
+              <Button onClick={takePicture} className="bg-shareai-teal hover:bg-shareai-teal/90" size="sm">
+                {isCaptureSeries ? "Take Photo" : "Capture"}
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
-            onClick={startCamera}
-            disabled={isProcessing}
+            onClick={startCaptureSeries}
+            disabled={isProcessing || disabled || hasReachedLimit}
             variant="outline"
             className="flex-1 flex items-center gap-2"
           >
@@ -121,11 +152,11 @@ const ImageFileInput = ({
             ) : (
               <Camera className="h-4 w-4" />
             )}
-            Take Photo
+            Take Photos
           </Button>
           <Button
             onClick={openFilePicker}
-            disabled={isProcessing}
+            disabled={isProcessing || disabled || hasReachedLimit}
             variant="outline"
             className="flex-1 flex items-center gap-2"
           >
@@ -140,6 +171,12 @@ const ImageFileInput = ({
             )}
             {multiple ? 'Upload Images' : 'Upload Image'}
           </Button>
+        </div>
+      )}
+      
+      {hasReachedLimit && (
+        <div className="text-amber-600 text-xs mt-2">
+          Maximum of {maxImages} images reached. Remove some to add more.
         </div>
       )}
     </div>

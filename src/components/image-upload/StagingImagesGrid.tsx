@@ -38,7 +38,7 @@ const StagingImagesGrid = ({
         <div className="text-xs text-gray-500">{totalImages} of {maxImages} total</div>
       </div>
       
-      <ScrollArea className="h-full max-h-[calc(100vh-300px)]">
+      <ScrollArea className="h-full max-h-[250px]">
         <DndProvider backend={HTML5Backend}>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {stagingImages.map((image, index) => (

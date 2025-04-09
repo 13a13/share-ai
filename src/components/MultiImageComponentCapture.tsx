@@ -9,6 +9,7 @@ import { useImageUploadAndProcess } from "@/hooks/useImageUploadAndProcess";
 import ComponentImages from "./component/ComponentImages";
 import { Card } from "./ui/card";
 import { Progress } from "./ui/progress";
+import { ScrollArea } from "./ui/scroll-area";
 import { useEffect, useState } from "react";
 
 interface MultiImageComponentCaptureProps {
@@ -102,20 +103,39 @@ const MultiImageComponentCapture = ({
         maxImages={maxImages}
       />
       
-      {canAddMore && (
-        <div className="flex flex-col gap-2">
-          <ImageFileInput
-            id={`image-upload-${componentId}`}
-            isProcessing={isProcessing}
-            onChange={handleImageCapture}
-            onImageCapture={handleCameraCapture}
-            multiple={true}
-          />
-          <div className="text-sm text-gray-500 mt-1">
-            {totalImages}/{maxImages} images
+      {currentImages.length > 0 && (
+        <ScrollArea className="h-full max-h-[250px]">
+          <div className="text-sm font-medium mb-2">
+            Current Images ({currentImages.length})
           </div>
-        </div>
+          <ComponentImages 
+            images={currentImages}
+            onRemoveImage={(imageId) => {
+              // Find the index in the array by ID
+              const index = currentImages.findIndex(img => img.id === imageId);
+              if (index !== -1) {
+                onRemoveImage(index);
+              }
+            }}
+          />
+        </ScrollArea>
       )}
+      
+      <div className="flex flex-col gap-2">
+        <ImageFileInput
+          id={`image-upload-${componentId}`}
+          isProcessing={isProcessing}
+          onChange={handleImageCapture}
+          onImageCapture={handleCameraCapture}
+          multiple={true}
+          disabled={!canAddMore}
+          totalImages={totalImages}
+          maxImages={maxImages}
+        />
+        <div className="text-sm text-gray-500 mt-1">
+          {totalImages}/{maxImages} images
+        </div>
+      </div>
       
       {!canAddMore && !stagingImages.length && (
         <Card className="p-3 bg-yellow-50 border-yellow-200">
