@@ -24,7 +24,8 @@ export const processComponentImage = async (
       body: {
         imageUrls: images,
         roomType,
-        componentType
+        componentType,
+        maxSentences: 2 // Limit responses to maximum 2 sentences
       }
     });
     

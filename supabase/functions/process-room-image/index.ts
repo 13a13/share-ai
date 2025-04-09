@@ -39,7 +39,7 @@ serve(async (req) => {
       );
     }
     
-    const { imageUrls, roomType, componentType } = requestData;
+    const { imageUrls, roomType, componentType, maxSentences = 2 } = requestData;
     
     if (!imageUrls || (Array.isArray(imageUrls) && imageUrls.length === 0)) {
       return new Response(
@@ -67,8 +67,8 @@ serve(async (req) => {
       return imageUrl;
     });
 
-    // Generate prompt based on component type
-    const promptText = createPrompt(roomType, componentType, images.length > 1);
+    // Generate prompt based on component type with max sentences limit
+    const promptText = createPrompt(roomType, componentType, images.length > 1, maxSentences);
     
     // Create and send request to Gemini API with all images
     const geminiRequest = createGeminiRequest(promptText, imageDataArray);

@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -27,8 +26,28 @@ const PDFPreviewDialog = ({
   downloadUrl,
   reportTitle
 }: PDFPreviewDialogProps) => {
-  // Important: Create a proper data URL for the PDF viewer
-  const embedUrl = pdfUrl ? `data:application/pdf;base64,${pdfUrl}` : null;
+  // Create proper data URL for the PDF viewer if not already in that format
+  const embedUrl = React.useMemo(() => {
+    if (!pdfUrl) return null;
+    
+    // If pdfUrl is already a complete data URL, use it as is
+    if (pdfUrl.startsWith('data:application/pdf;base64,')) {
+      return pdfUrl;
+    }
+    
+    // Otherwise, convert it to a proper data URL
+    return `data:application/pdf;base64,${pdfUrl}`;
+  }, [pdfUrl]);
+  
+  // Set up a key to force iframe refresh when URL changes
+  const [iframeKey, setIframeKey] = React.useState(0);
+  
+  useEffect(() => {
+    // Refresh iframe when embedUrl changes
+    if (embedUrl) {
+      setIframeKey(prev => prev + 1);
+    }
+  }, [embedUrl]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,6 +67,7 @@ const PDFPreviewDialog = ({
             </div>
           ) : embedUrl ? (
             <iframe 
+              key={iframeKey}
               src={embedUrl}
               className="w-full h-full"
               title="PDF Preview"
@@ -72,7 +92,11 @@ const PDFPreviewDialog = ({
               onClick={() => {
                 // Create a temporary link to initiate download
                 const link = document.createElement('a');
-                link.href = `data:application/pdf;base64,${downloadUrl}`;
+                const dataUrl = downloadUrl.startsWith('data:') 
+                  ? downloadUrl
+                  : `data:application/pdf;base64,${downloadUrl}`;
+                
+                link.href = dataUrl;
                 link.setAttribute('download', `${reportTitle.replace(/\s+/g, '_')}.pdf`);
                 document.body.appendChild(link);
                 link.click();

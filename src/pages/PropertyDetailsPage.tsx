@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,13 +13,13 @@ import {
   Plus, 
   Home,
   Upload,
-  FileText
 } from "lucide-react";
 import { Property, Report } from "@/types";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import ReportCard from "@/components/ReportCard";
 
 const PropertyDetailsPage = () => {
+  
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -72,6 +71,7 @@ const PropertyDetailsPage = () => {
     
     fetchData();
   }, [propertyId, toast]);
+  
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
@@ -191,6 +191,7 @@ const PropertyDetailsPage = () => {
           
           <CardContent>
             {!isEditing ? (
+              
               <div className="space-y-4">
                 <div className="aspect-video relative overflow-hidden rounded-md">
                   {property.imageUrl ? (
@@ -242,6 +243,7 @@ const PropertyDetailsPage = () => {
                 </div>
               </div>
             ) : (
+              
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="propertyImage">Property Image</Label>
@@ -391,7 +393,7 @@ const PropertyDetailsPage = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="flex items-center text-xl">
-              <FileText className="h-5 w-5 mr-2 text-shareai-teal" />
+              <Plus className="h-5 w-5 mr-2 text-shareai-teal" />
               Property Reports
             </CardTitle>
             <Button

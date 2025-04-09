@@ -48,7 +48,7 @@ export function createGeminiRequest(promptText: string, imageData: string | stri
       temperature: 0.4,
       topK: 32,
       topP: 1,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 2048,  // Reduced output tokens
     }
   };
 }
@@ -57,7 +57,7 @@ export function createGeminiRequest(promptText: string, imageData: string | stri
  * Calls the Gemini API to analyze an image or multiple images
  */
 export async function callGeminiApi(apiKey: string, request: GeminiRequest): Promise<any> {
-  // Updated to use gemini-1.5-flash model which replaced the deprecated gemini-pro-vision
+  // Using gemini-1.5-flash model which replaced the deprecated gemini-pro-vision
   const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
   
   const response = await fetch(`${apiUrl}?key=${apiKey}`, {

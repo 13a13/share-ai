@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Eye, 
-  FileText, 
   Pencil, 
   MoreHorizontal, 
   Copy, 
@@ -33,7 +32,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { ReportsAPI } from "@/lib/api";
 
 interface ReportCardProps {
   report: Report;
@@ -236,9 +234,9 @@ const ReportCard = ({
             <Button 
               size="sm" 
               variant="secondary"
-              onClick={() => navigate(`/reports/${report.id}/pdf`)}
+              onClick={() => navigate(`/reports/${report.id}`)}
             >
-              <FileText className="h-4 w-4 mr-1" /> PDF
+              <Eye className="h-4 w-4 mr-1" /> View
             </Button>
           ) : report.status !== 'completed' ? (
             <Button 
@@ -252,9 +250,9 @@ const ReportCard = ({
             <Button 
               size="sm" 
               variant="secondary"
-              onClick={() => navigate(`/reports/${report.id}/pdf`)}
+              onClick={() => navigate(`/reports/${report.id}`)}
             >
-              <FileText className="h-4 w-4 mr-1" /> PDF
+              <Eye className="h-4 w-4 mr-1" /> View
             </Button>
           )}
         </CardFooter>

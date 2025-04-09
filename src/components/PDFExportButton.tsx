@@ -24,6 +24,12 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
     try {
       // Generate the PDF with real report data
       const pdfData = await generatePDF(report, property);
+      
+      // Ensure we have the PDF data
+      if (!pdfData) {
+        throw new Error("Failed to generate PDF data");
+      }
+      
       setDownloadUrl(pdfData);
       return pdfData;
     } catch (error) {
@@ -36,12 +42,12 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
   
   const handlePreviewPDF = async () => {
     // Generate PDF if not already generated
-    if (!downloadUrl) {
-      await handleGeneratePDF();
-    }
+    const pdfData = downloadUrl || await handleGeneratePDF();
     
     // Open the preview dialog after generating
-    setPreviewOpen(true);
+    if (pdfData) {
+      setPreviewOpen(true);
+    }
   };
   
   // Determine report title

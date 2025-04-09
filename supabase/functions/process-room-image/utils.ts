@@ -1,208 +1,171 @@
 
-// Utility functions for the image processing API
-
-// CORS headers for cross-origin requests
+// CORS headers for all responses
 export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 /**
- * Create prompt text based on the room type and component
+ * Creates a prompt for the Gemini API based on room type and component
+ * @param roomType The type of room being processed (e.g., "bathroom", "kitchen")
+ * @param componentType The specific component type (e.g., "walls", "floors")
+ * @param multipleImages Whether there are multiple images to process
+ * @param maxSentences Maximum number of sentences for each response field (default: 2)
+ * @returns A prompt string
  */
-export function createPrompt(roomType?: string, componentType?: string, multipleImages: boolean = false): string {
+export function createPrompt(roomType: string, componentType?: string, multipleImages = false, maxSentences = 2): string {
+  const basePrompt = `
+  You are a professional property inspector who analyzes images of property interiors.
+  ${multipleImages ? "I'm providing multiple images of the same area from different angles." : ""}
+  ${maxSentences ? `IMPORTANT: Limit your responses to a maximum of ${maxSentences} sentences per field.` : ""}
+  
+  Please analyze what you see in ${multipleImages ? "these images" : "this image"} and provide a concise, professional assessment.
+  `;
+  
   if (componentType) {
-    // Component-specific analysis with optimized prompt structure
-    const componentTitle = componentType.replace('_', ' ');
-    
-    if (multipleImages) {
-      return `You are a professional property inspection assistant.
-
-You are analysing **multiple photos** of the following room component: **${componentTitle}**.
-
-From the set of images, provide the following:
-
-1. A natural-language description of what is visible across all photos. Consider material, colour, build, and any visible features. Use all photos as context.
-2. A detailed list of all objects visible in the images.
-3. A detailed condition analysis. Identify any wear, damage, soiling, structural issues, or installation problems visible in any image.
-4. Rate the condition using one of the following labels: Excellent, Good, Fair, Poor, Damaged.
-
-Return the result in this exact format:
-
-Description: [Paragraph summary across all images]
-
-Objects: [List of all visible objects with their properties]
-
-Condition:
-- Summary: [Condition assessment using all images]
-- Rating: [One of: Excellent, Good, Fair, Poor, Damaged]`;
-    } else {
-      return `You are a professional property inspection assistant.
-
-You are analysing a photo of the following room component: ${componentTitle}.
-
-From this image, provide the following:
-
-1. A short, natural-language description of what is visible in the photo. Be specific about material, colour, and any visible characteristics.
-2. A detailed list of all objects visible in the image with their properties.
-3. A detailed condition analysis. Note any wear and tear, damage, age indicators, cleanliness, or specific issues.
-4. Rate the condition using one of the following standard labels: Excellent, Good, Fair, Poor, Damaged.
-
-Return the result in this exact format:
-
-Description: [One-paragraph natural description]
-
-Objects: [List of all visible objects with their properties]
-
-Condition:
-- Summary: [Detailed assessment]
-- Rating: [One of: Excellent, Good, Fair, Poor, Damaged]`;
-    }
+    return `
+      ${basePrompt}
+      
+      This is an image of ${componentType} in a ${roomType || 'room'}. 
+      
+      Give me the following details, strictly in the format of a JSON object:
+      {
+        "description": "Brief factual description of what you see, focusing on the ${componentType}. Maximum ${maxSentences} sentences.",
+        "condition": {
+          "summary": "Brief assessment of the condition. Maximum ${maxSentences} sentences.",
+          "rating": "One of the following: excellent, good, fair, poor, very_poor"
+        },
+        "notes": "Any important notes or recommendations regarding this component. Maximum ${maxSentences} sentences."
+      }
+      
+      Keep it brief, factual, and focus only on what is visible.
+    `;
   } else {
-    // Full room analysis (original behavior)
-    const roomTypeDescription = roomType 
-      ? `This is a ${roomType.replace('_', ' ')}. `
-      : "This is a room. ";
-
-    return `${roomTypeDescription}Analyze this room image and provide a detailed assessment. 
-      Identify objects, their condition and description. Also provide an overall room assessment including
-      general condition, walls, ceiling, flooring, doors, windows, lighting, furniture (if visible), 
-      appliances (if visible), and cleaning needs. Format your response as structured data that I can parse as JSON.`;
+    // Full room analysis
+    return `
+      ${basePrompt}
+      
+      This is an image of a ${roomType || 'room'} in a property.
+      
+      Give me the following details, strictly in the format of a JSON object:
+      {
+        "roomAssessment": {
+          "generalCondition": "Brief overall condition assessment. Maximum ${maxSentences} sentences.",
+          "walls": "Brief assessment of the walls. Maximum ${maxSentences} sentences.",
+          "ceiling": "Brief assessment of the ceiling. Maximum ${maxSentences} sentences.",
+          "flooring": "Brief assessment of the flooring/floor. Maximum ${maxSentences} sentences.",
+          "doors": "Brief assessment of any doors. Maximum ${maxSentences} sentences.",
+          "windows": "Brief assessment of any windows. Maximum ${maxSentences} sentences.",
+          "lighting": "Brief assessment of lighting fixtures. Maximum ${maxSentences} sentences.",
+          ${roomType === 'kitchen' ? `"appliances": "Brief assessment of kitchen appliances. Maximum ${maxSentences} sentences.",` : ''}
+          ${roomType === 'bathroom' ? `"plumbing": "Brief assessment of bathroom fixtures. Maximum ${maxSentences} sentences.",` : ''}
+          "cleaning": "Brief assessment of cleanliness. Maximum ${maxSentences} sentences."
+        }
+      }
+      
+      Focus on observable condition, damage, or wear. If an element is not visible, state "Not visible in image."
+      Keep responses concise and professional.
+    `;
   }
 }
 
 /**
- * Extract JSON data from Gemini's text response
+ * Extracts JSON data from Gemini's text output
+ * @param text Text output from Gemini API
+ * @returns Parsed JSON object
  */
-export function extractJsonFromText(textContent: string): any {
+export function extractJsonFromText(text: string): any {
   try {
-    // For component analysis with the new format, parse the text response into a structured format
-    if (textContent.includes("Description:") && textContent.includes("Condition:")) {
-      const descriptionMatch = textContent.match(/Description:\s*(.*?)(?=\s*Objects:|$)/s);
-      const objectsMatch = textContent.match(/Objects:\s*(.*?)(?=\s*Condition:|$)/s);
-      
-      // Extract condition data with the new format
-      const conditionBlock = textContent.match(/Condition:\s*(.*?)(?=\s*$)/s);
-      let conditionSummary = "";
-      let conditionRating = "fair";
-      
-      if (conditionBlock && conditionBlock[1]) {
-        // Extract the summary and rating from the condition block
-        const summaryMatch = conditionBlock[1].match(/- Summary:\s*(.*?)(?=\s*-|$)/s);
-        const ratingMatch = conditionBlock[1].match(/- Rating:\s*(.*?)(?=\s*$)/s);
-        
-        if (summaryMatch && summaryMatch[1]) {
-          conditionSummary = summaryMatch[1].trim();
-        }
-        
-        if (ratingMatch && ratingMatch[1]) {
-          conditionRating = mapCondition(ratingMatch[1].trim());
-        }
-      }
-      
-      return {
-        description: descriptionMatch ? descriptionMatch[1].trim() : "No description available",
-        objects: objectsMatch ? objectsMatch[1].trim().split('\n').map(item => item.trim()).filter(Boolean) : [],
-        condition: {
-          summary: conditionSummary,
-          rating: conditionRating
-        }
-      };
+    // Find JSON pattern in text (anything within curly braces, including nested curly braces)
+    const jsonMatch = text.match(/\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}/g);
+    
+    if (jsonMatch && jsonMatch[0]) {
+      return JSON.parse(jsonMatch[0]);
     }
     
-    // For full room analysis or fallback, use the original JSON parsing logic
-    const jsonMatch = textContent.match(/```json\n([\s\S]*?)\n```/) || 
-                  textContent.match(/{[\s\S]*}/);
-    
-    let jsonContent;
-    if (jsonMatch) {
-      jsonContent = jsonMatch[0].replace(/```json\n|```/g, '');
-    } else {
-      jsonContent = textContent;
+    // Try to find content without code block markers
+    const codeBlockMatch = text.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+    if (codeBlockMatch && codeBlockMatch[1]) {
+      return JSON.parse(codeBlockMatch[1]);
     }
     
-    // Parse the JSON content
-    return JSON.parse(jsonContent);
+    // Last resort, try to parse the whole text
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Error parsing text as JSON:", error);
-    throw error;
+    console.error("Error parsing JSON from Gemini response:", error);
+    console.error("Raw text:", text);
+    
+    // If parsing fails, create a fallback response
+    return {
+      description: "Unable to analyze image properly.",
+      condition: { 
+        summary: "Analysis unavailable.",
+        rating: "fair"
+      },
+      notes: "Please try again with a clearer image.",
+      roomAssessment: {
+        generalCondition: "Unable to analyze image properly.",
+        walls: "Analysis unavailable.",
+        ceiling: "Analysis unavailable.",
+        flooring: "Analysis unavailable.",
+        doors: "Analysis unavailable.",
+        windows: "Analysis unavailable.",
+        lighting: "Analysis unavailable.",
+        cleaning: "Analysis unavailable."
+      }
+    };
   }
 }
 
 /**
- * Map Gemini's condition labels to system condition values
+ * Formats the API response based on whether this is a component or full room
+ * @param data Parsed data from Gemini
+ * @param componentType The component type (if any)
+ * @returns Formatted response object
  */
-function mapCondition(condition: string): string {
-  const conditionLower = condition.toLowerCase().trim();
-  
-  if (conditionLower.includes("excellent")) return "excellent";
-  if (conditionLower.includes("good")) return "good";
-  if (conditionLower.includes("fair")) return "fair";
-  if (conditionLower.includes("poor")) return "poor";
-  if (conditionLower.includes("damaged")) return "needs_replacement";
-  
-  // Default to fair if no match
-  return "fair";
-}
-
-/**
- * Format the response based on whether this is a component or full room
- */
-export function formatResponse(parsedData: any, componentType?: string): any {
+export function formatResponse(data: any, componentType?: string): any {
   if (componentType) {
-    // For component analysis
+    // Component analysis - take what we have, ensure it has the right structure
     return {
-      description: parsedData.description || "No description available",
-      objects: parsedData.objects || [],
+      description: data.description || "No description available.",
       condition: {
-        summary: parsedData.condition?.summary || "",
-        rating: parsedData.condition?.rating || "fair"
+        summary: data.condition?.summary || "Condition unknown.",
+        rating: data.condition?.rating || "fair"
       },
-      notes: parsedData.objects ? `Objects detected: ${parsedData.objects.join(', ')}` : ""
+      notes: data.notes || ""
     };
   } else {
-    // For full room analysis (original behavior)
-    return {
-      objects: parsedData.objects || [],
-      roomAssessment: parsedData.roomAssessment || {
-        generalCondition: "Unknown",
-        walls: "Unknown",
-        ceiling: "Unknown",
-        flooring: "Unknown",
-        doors: "Unknown",
-        windows: "Unknown",
-        lighting: "Unknown",
-        cleaning: "Needs regular cleaning"
-      }
-    };
+    // Full room analysis
+    return data;
   }
 }
 
 /**
- * Create a fallback response when AI analysis fails
+ * Creates a fallback response when the API fails
+ * @param componentType The component type (if any)
+ * @returns Fallback response object
  */
 export function createFallbackResponse(componentType?: string): any {
   if (componentType) {
     return {
-      description: "Could not determine from image",
-      objects: [],
+      description: "Unable to analyze component accurately.",
       condition: {
-        summary: "AI analysis failed, please add manual description",
+        summary: "Please manually assess the condition.",
         rating: "fair"
-      }
+      },
+      notes: "Consider retaking the image with better lighting."
     };
   } else {
     return {
-      objects: [{ name: "Unknown", condition: "Unknown", description: "Could not identify objects" }],
       roomAssessment: {
-        generalCondition: "Could not determine from image",
-        walls: "Unknown",
-        ceiling: "Unknown",
-        flooring: "Unknown",
-        doors: "Unknown",
-        windows: "Unknown",
-        lighting: "Unknown",
-        cleaning: "Unknown"
+        generalCondition: "Unable to analyze room accurately.",
+        walls: "Please manually assess the condition.",
+        ceiling: "Please manually assess the condition.",
+        flooring: "Please manually assess the condition.",
+        doors: "Please manually assess the condition.",
+        windows: "Please manually assess the condition.",
+        lighting: "Please manually assess the condition.",
+        cleaning: "Please manually assess the condition."
       }
     };
   }

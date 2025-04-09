@@ -98,7 +98,7 @@ const RoomDetails = ({
             <TabsTrigger value="photos">Photos & AI Analysis</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="details" className="pt-2">
+          <TabsContent value="details" className="pt-2 animate-none">
             <div className="space-y-6">
               <div className="space-y-2">
                 <h3 className="text-lg font-medium">General Condition</h3>
@@ -124,7 +124,7 @@ const RoomDetails = ({
             </div>
           </TabsContent>
           
-          <TabsContent value="components" className="pt-2">
+          <TabsContent value="components" className="pt-2 animate-none">
             <RoomComponentInspection
               reportId={reportId}
               roomId={room.id}
@@ -137,7 +137,7 @@ const RoomDetails = ({
             />
           </TabsContent>
           
-          <TabsContent value="photos" className="pt-2">
+          <TabsContent value="photos" className="pt-2 animate-none">
             <div className="space-y-6">
               <h3 className="text-lg font-medium">Room Photos</h3>
               
