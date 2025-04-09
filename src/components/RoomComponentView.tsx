@@ -16,9 +16,9 @@ interface RoomComponentViewProps {
 }
 
 const RoomComponentView = ({ component }: RoomComponentViewProps) => {
-  const conditionOption = conditionOptions.find(
+  const conditionOption = component.condition ? conditionOptions.find(
     (option) => option.value === component.condition
-  );
+  ) : null;
 
   return (
     <Card className="mb-2 transition-all duration-300 hover:shadow-md">
@@ -40,9 +40,9 @@ const RoomComponentView = ({ component }: RoomComponentViewProps) => {
                 </TooltipProvider>
               )}
             </div>
-            {component.condition && (
+            {component.condition && conditionOption && (
               <Badge className={conditionOption?.color || "bg-gray-500"}>
-                {conditionOption?.label || component.condition}
+                {conditionOption?.label || String(component.condition)}
               </Badge>
             )}
           </div>

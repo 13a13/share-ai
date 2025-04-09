@@ -1,38 +1,40 @@
 
 import { Badge } from "@/components/ui/badge";
-import { conditionOptions } from "@/utils/roomComponentUtils";
 import { ConditionRating } from "@/types";
+import { InfoIcon } from "lucide-react";
+import { conditionOptions } from "@/utils/roomComponentUtils";
 
 interface ComponentHeaderProps {
   name: string;
   isOptional: boolean;
-  condition: ConditionRating;
+  condition: ConditionRating | undefined;
   imagesCount: number;
 }
 
 const ComponentHeader = ({ name, isOptional, condition, imagesCount }: ComponentHeaderProps) => {
+  const conditionOption = condition ? conditionOptions.find(
+    (option) => option.value === condition
+  ) : null;
+
   return (
-    <div className="flex items-center justify-between w-full pr-4">
-      <span className="flex items-center gap-2">
-        {name}
-        {!isOptional && (
-          <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">Required</Badge>
-        )}
-      </span>
+    <div className="flex items-center justify-between w-full">
       <div className="flex items-center gap-2">
-        {imagesCount > 0 && (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-            {imagesCount} {imagesCount === 1 ? 'image' : 'images'}
+        <span className="font-medium">{name}</span>
+        {!isOptional && (
+          <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600">
+            Required
           </Badge>
         )}
-        {condition && (
-          <Badge className={
-            conditionOptions.find(opt => opt.value === condition)?.color || 
-            "bg-gray-500"
-          }>
-            {conditionOptions.find(opt => opt.value === condition)?.label || condition}
+      </div>
+      <div className="flex items-center gap-2">
+        {condition && conditionOption && (
+          <Badge className={conditionOption.color || "bg-gray-500"}>
+            {conditionOption.label || String(condition)}
           </Badge>
         )}
+        <Badge variant="outline" className="text-[10px]">
+          {imagesCount} {imagesCount === 1 ? "image" : "images"}
+        </Badge>
       </div>
     </div>
   );
