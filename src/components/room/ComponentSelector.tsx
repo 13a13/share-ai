@@ -1,5 +1,4 @@
 
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   Select, 
@@ -8,6 +7,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Plus } from "lucide-react";
 
 interface ComponentSelectorProps {
   selectedComponentType: string;
