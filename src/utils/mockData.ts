@@ -10,123 +10,33 @@ export const createRoomComponent = (name: string, type: string, isOptional: bool
     description: '',
     conditionSummary: '',
     conditionPoints: [],
-    cleanliness: 'domestic_clean',
     condition: 'fair',
+    cleanliness: 'domestic_clean',
     notes: '',
-    images: [],
+    images: []
   };
 };
 
-export const getComponentsForRoomType = (roomType: string): RoomComponent[] => {
-  switch(roomType) {
-    case 'bathroom':
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Door', 'door'),
-        createRoomComponent('Windows', 'windows'),
-        createRoomComponent('Bath/Shower', 'bath'),
-        createRoomComponent('Sink', 'sink'),
-        createRoomComponent('Toilet', 'toilet'),
-        createRoomComponent('Mirror', 'mirror', true),
-        createRoomComponent('Towel Rail', 'towel_rail', true),
-        createRoomComponent('Extractor Fan', 'extractor_fan', true),
-      ];
-    case 'kitchen':
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Doors', 'doors'),
-        createRoomComponent('Windows', 'windows'),
-        createRoomComponent('Countertops', 'countertops'),
-        createRoomComponent('Cabinets', 'cabinets'),
-        createRoomComponent('Sink', 'sink'),
-        createRoomComponent('Oven/Stove', 'oven', true),
-        createRoomComponent('Refrigerator', 'refrigerator', true),
-        createRoomComponent('Dishwasher', 'dishwasher', true),
-        createRoomComponent('Microwave', 'microwave', true),
-      ];
-    case 'bedroom':
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Door', 'door'),
-        createRoomComponent('Windows', 'windows'),
-        createRoomComponent('Closet/Wardrobe', 'closet', true),
-        createRoomComponent('Bed Frame', 'bed_frame', true),
-        createRoomComponent('Mattress', 'mattress', true),
-        createRoomComponent('Nightstand', 'nightstand', true),
-        createRoomComponent('Dresser', 'dresser', true),
-      ];
-    case 'living_room':
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Doors', 'doors'),
-        createRoomComponent('Windows', 'windows'),
-        createRoomComponent('Sofa/Couch', 'sofa', true),
-        createRoomComponent('Coffee Table', 'coffee_table', true),
-        createRoomComponent('TV Stand', 'tv_stand', true),
-        createRoomComponent('Bookcases', 'bookcases', true),
-        createRoomComponent('Fireplace', 'fireplace', true),
-      ];
-    case 'dining_room':
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Door', 'door'),
-        createRoomComponent('Windows', 'windows'),
-        createRoomComponent('Dining Table', 'dining_table', true),
-        createRoomComponent('Chairs', 'chairs', true),
-        createRoomComponent('Sideboard', 'sideboard', true),
-        createRoomComponent('Light Fixture', 'light_fixture', true),
-      ];
-    case 'hallway':
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Doors', 'doors'),
-        createRoomComponent('Staircase', 'staircase', true),
-        createRoomComponent('Coat Rack', 'coat_rack', true),
-      ];
-    case 'office':
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Door', 'door'),
-        createRoomComponent('Windows', 'windows'),
-        createRoomComponent('Desk', 'desk', true),
-        createRoomComponent('Office Chair', 'office_chair', true),
-        createRoomComponent('Shelves', 'shelves', true),
-        createRoomComponent('Filing Cabinet', 'filing_cabinet', true),
-      ];
-    case 'utility_room':
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Door', 'door'),
-        createRoomComponent('Washer', 'washer', true),
-        createRoomComponent('Dryer', 'dryer', true),
-        createRoomComponent('Sink', 'sink', true),
-        createRoomComponent('Storage', 'storage', true),
-      ];
-    default:
-      return [
-        createRoomComponent('Walls', 'walls'),
-        createRoomComponent('Ceiling', 'ceiling'),
-        createRoomComponent('Floor', 'floor'),
-        createRoomComponent('Door', 'door'),
-        createRoomComponent('Windows', 'windows'),
-      ];
-  }
+export const createNewReport = (propertyId: string, type: 'check_in' | 'check_out' | 'inspection'): any => {
+  return {
+    id: uuidv4(),
+    propertyId: propertyId,
+    name: `Report for ${propertyId}`,
+    type: type,
+    status: 'draft',
+    reportInfo: {
+      reportDate: new Date().toISOString().slice(0, 10),
+      clerk: 'Inspector',
+      inventoryType: 'Full Inventory',
+      tenantPresent: false,
+      tenantName: '',
+      additionalInfo: ''
+    },
+    rooms: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    completedAt: null
+  };
 };
 
 // Helper function to create an empty room section
@@ -148,57 +58,115 @@ export const createNewRoom = (name: string, type: string, order: number): Room =
     order,
     generalCondition: '',
     images: [],
-    components: getComponentsForRoomType(type),
     sections: [
       createRoomSection('walls', 'Walls'),
       createRoomSection('ceiling', 'Ceiling'),
       createRoomSection('flooring', 'Flooring'),
-      createRoomSection('doors', 'Doors & Windows'),
-      createRoomSection('lighting', 'Lighting'),
+      createRoomSection('doors', 'Doors'),
+      createRoomSection('windows', 'Windows'),
     ],
+    components: []
   };
 };
 
-// Generates a default report structure for a new report
-export const createNewReport = (propertyId: string, type: 'check_in' | 'check_out' | 'inspection') => {
-  const now = new Date();
-  return {
+export const initialRooms: Room[] = [
+  {
     id: uuidv4(),
-    name: `${type.replace('_', ' ').replace(/\b\w/g, char => char.toUpperCase())} Report`,
-    type,
-    propertyId,
-    status: 'draft',
-    rooms: [],
-    reportInfo: {
-      reportDate: now.toISOString(),
-      clerk: '',
-      inventoryType: 'Full Inventory',
-      tenantPresent: false,
-      tenantName: '',
-      additionalInfo: '',
-    },
-    createdAt: now,
-    updatedAt: now,
-    completedAt: null,
-  };
-};
-
-export const generateMockRoomImages = (count: number = 1): RoomImage[] => {
-  const images: RoomImage[] = [];
-  
-  for (let i = 0; i < count; i++) {
-    images.push({
-      id: uuidv4(),
-      url: `https://source.unsplash.com/random/800x600?room&sig=${Math.random()}`,
-      aiProcessed: Math.random() > 0.7,
-      timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date within last 30 days
-      aiData: Math.random() > 0.7 ? {
-        detectedObjects: ['wall', 'window', 'floor'],
-        condition: 'good',
-        description: 'Room appears to be in good condition with clean walls and floors.',
-      } : undefined,
-    });
+    name: 'Living Room',
+    type: 'living_room',
+    order: 1,
+    generalCondition: 'Good condition with some wear and tear.',
+    images: [],
+    sections: [
+      createRoomSection('walls', 'Walls'),
+      createRoomSection('ceiling', 'Ceiling'),
+      createRoomSection('flooring', 'Flooring'),
+      createRoomSection('doors', 'Doors'),
+      createRoomSection('windows', 'Windows'),
+    ],
+    components: [
+      createRoomComponent('Sofa', 'sofa'),
+      createRoomComponent('Television', 'television'),
+      createRoomComponent('Coffee Table', 'coffee_table'),
+    ]
+  },
+  {
+    id: uuidv4(),
+    name: 'Kitchen',
+    type: 'kitchen',
+    order: 2,
+    generalCondition: 'Clean and functional.',
+    images: [],
+    sections: [
+      createRoomSection('walls', 'Walls'),
+      createRoomSection('ceiling', 'Ceiling'),
+      createRoomSection('flooring', 'Flooring'),
+      createRoomSection('doors', 'Doors'),
+      createRoomSection('windows', 'Windows'),
+    ],
+    components: [
+      createRoomComponent('Oven', 'oven'),
+      createRoomComponent('Sink', 'sink'),
+      createRoomComponent('Countertops', 'countertops'),
+    ]
+  },
+  {
+    id: uuidv4(),
+    name: 'Bedroom',
+    type: 'bedroom',
+    order: 3,
+    generalCondition: 'Well-maintained.',
+    images: [],
+    sections: [
+      createRoomSection('walls', 'Walls'),
+      createRoomSection('ceiling', 'Ceiling'),
+      createRoomSection('flooring', 'Flooring'),
+      createRoomSection('doors', 'Doors'),
+      createRoomSection('windows', 'Windows'),
+    ],
+    components: [
+      createRoomComponent('Bed', 'bed'),
+      createRoomComponent('Wardrobe', 'wardrobe'),
+      createRoomComponent('Nightstand', 'nightstand'),
+    ]
+  },
+  {
+    id: uuidv4(),
+    name: 'Bathroom',
+    type: 'bathroom',
+    order: 4,
+    generalCondition: 'Good.',
+    images: [],
+    sections: [
+      createRoomSection('walls', 'Walls'),
+      createRoomSection('ceiling', 'Ceiling'),
+      createRoomSection('flooring', 'Flooring'),
+      createRoomSection('doors', 'Doors'),
+      createRoomSection('windows', 'Windows'),
+    ],
+    components: [
+      createRoomComponent('Bath', 'bath'),
+      createRoomComponent('Toilet', 'toilet'),
+      createRoomComponent('Sink', 'sink'),
+    ]
+  },
+  {
+    id: uuidv4(),
+    name: 'Hallway',
+    type: 'hallway',
+    order: 5,
+    generalCondition: 'Clean.',
+    images: [],
+    sections: [
+      createRoomSection('walls', 'Walls'),
+      createRoomSection('ceiling', 'Ceiling'),
+      createRoomSection('flooring', 'Flooring'),
+      createRoomSection('doors', 'Doors'),
+      createRoomSection('windows', 'Windows'),
+    ],
+    components: [
+      createRoomComponent('Light Fixture', 'light_fixture', true),
+      createRoomComponent('Mirror', 'mirror', true),
+    ]
   }
-  
-  return images;
-};
+];

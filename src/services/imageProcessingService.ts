@@ -44,7 +44,7 @@ export const processComponentImage = async (
   multipleImages = false
 ): Promise<ProcessedImageResult> => {
   try {
-    console.log(`Processing ${imageUrls.length} images for component: ${componentName}`);
+    console.log(`Processing ${Array.isArray(imageUrls) ? imageUrls.length : 1} images for component: ${componentName}`);
     
     const response = await supabase.functions.invoke('process-room-image', {
       body: {

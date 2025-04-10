@@ -156,6 +156,6 @@ const ComponentItem = ({
       </AccordionContent>
     </AccordionItem>
   );
-}
+};
 
 export default ComponentItem;

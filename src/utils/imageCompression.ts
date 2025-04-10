@@ -1,41 +1,121 @@
 
 /**
- * Utility functions for image compression
+ * Compresses an image file to a specified quality and max dimensions
+ * @param file The image file to compress
+ * @param maxWidth Maximum width of the compressed image (default: 1200)
+ * @param maxHeight Maximum height of the compressed image (default: 1200)
+ * @param quality JPEG quality between 0 and 1 (default: 0.7)
+ * @returns A Promise that resolves to a compressed image as a data URL
  */
-
-/**
- * Compresses an image file and returns a data URL
- */
-export async function compressImageFile(file: File): Promise<string> {
+export const compressImageFile = async (
+  file: File,
+  maxWidth = 1200,
+  maxHeight = 1200,
+  quality = 0.7
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     
-    reader.onload = (e) => {
+    reader.onload = (event) => {
       const img = new Image();
-      img.src = e.target?.result as string;
+      img.src = event.target?.result as string;
       
       img.onload = () => {
-        // Create canvas
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round(height * (maxWidth / width));
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round(width * (maxHeight / height));
+              height = maxHeight;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not get canvas context'));
+            return;
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Get the data URL as JPEG with the specified quality
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } catch (error) {
+          console.error("Error compressing image:", error);
+          // If compression fails, return the original image
+          resolve(img.src);
+        }
+      };
+      
+      img.onerror = (error) => {
+        console.error("Error loading image:", error);
+        reject(error);
+      };
+    };
+    
+    reader.onerror = (error) => {
+      console.error("Error reading file:", error);
+      reject(error);
+    };
+  });
+};
+
+/**
+ * Compresses an image from a data URL
+ * @param dataUrl The data URL of the image to compress
+ * @param fileName Optional filename for logging purposes
+ * @param maxWidth Maximum width of the compressed image (default: 1200)
+ * @param maxHeight Maximum height of the compressed image (default: 1200)
+ * @param quality JPEG quality between 0 and 1 (default: 0.7)
+ * @returns A Promise that resolves to a compressed image as a data URL
+ */
+export const compressDataURLImage = async (
+  dataUrl: string,
+  fileName: string = 'image.jpg',
+  maxWidth = 1200,
+  maxHeight = 1200,
+  quality = 0.7
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const img = new Image();
+      img.src = dataUrl;
+      
+      img.onload = () => {
         const canvas = document.createElement('canvas');
-        
-        // Calculate new dimensions (max width/height 1200px)
-        const MAX_SIZE = 1200;
         let width = img.width;
         let height = img.height;
         
-        if (width > height && width > MAX_SIZE) {
-          height = Math.round((height * MAX_SIZE) / width);
-          width = MAX_SIZE;
-        } else if (height > MAX_SIZE) {
-          width = Math.round((width * MAX_SIZE) / height);
-          height = MAX_SIZE;
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round(height * (maxWidth / width));
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round(width * (maxHeight / height));
+            height = maxHeight;
+          }
         }
         
         canvas.width = width;
         canvas.height = height;
         
-        // Draw image on canvas and compress
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Could not get canvas context'));
@@ -44,83 +124,28 @@ export async function compressImageFile(file: File): Promise<string> {
         
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Convert to data URL with reduced quality
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        // Get the data URL as JPEG with the specified quality
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        
+        // Log compression results
+        if (dataUrl.length > compressedDataUrl.length) {
+          console.log(`Compressed ${fileName}: ${(dataUrl.length / 1024).toFixed(2)}KB → ${(compressedDataUrl.length / 1024).toFixed(2)}KB (${Math.round((1 - compressedDataUrl.length / dataUrl.length) * 100)}% reduction)`);
+        } else {
+          console.log(`Note: ${fileName} could not be further compressed`);
+        }
+        
         resolve(compressedDataUrl);
       };
       
-      img.onerror = () => {
-        reject(new Error('Failed to load image'));
+      img.onerror = (error) => {
+        console.error(`Error loading image ${fileName}:`, error);
+        // If compression fails, return the original data URL
+        resolve(dataUrl);
       };
-    };
-    
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'));
-    };
+    } catch (error) {
+      console.error(`Error compressing image ${fileName}:`, error);
+      // If compression fails, return the original data URL
+      resolve(dataUrl);
+    }
   });
-}
-
-/**
- * Compresses an image from a data URL and returns a new compressed data URL
- */
-export async function compressDataURLImage(dataUrl: string, fileName: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.src = dataUrl;
-    
-    img.onload = () => {
-      // Create canvas
-      const canvas = document.createElement('canvas');
-      
-      // Calculate new dimensions (max width/height 1200px)
-      const MAX_SIZE = 1200;
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > height && width > MAX_SIZE) {
-        height = Math.round((height * MAX_SIZE) / width);
-        width = MAX_SIZE;
-      } else if (height > MAX_SIZE) {
-        width = Math.round((width * MAX_SIZE) / height);
-        height = MAX_SIZE;
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      // Draw image on canvas and compress
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Could not get canvas context'));
-        return;
-      }
-      
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      // Convert to data URL with reduced quality
-      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-      resolve(compressedDataUrl);
-    };
-    
-    img.onerror = () => {
-      reject(new Error('Failed to load image'));
-    };
-  });
-}
-
-/**
- * Converts a data URL to a File object
- */
-export function dataURLtoFile(dataUrl: string, filename: string): File {
-  const arr = dataUrl.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  
-  return new File([u8arr], filename, { type: mime });
-}
+};
