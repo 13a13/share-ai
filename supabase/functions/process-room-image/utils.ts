@@ -1,3 +1,4 @@
+
 // Define CORS headers for the function
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,9 +66,11 @@ export const formatResponse = (data: any, componentName: string | undefined) => 
     return {
       description: data.description || "",
       condition: {
-        summary: data.notes || data.concerns || "",
-        points: Array.isArray(data.points) ? data.points : [],
-        rating: data.condition || "fair"
+        summary: data.notes || data.concerns || data.condition?.summary || "",
+        points: Array.isArray(data.condition?.points) ? data.condition.points 
+              : Array.isArray(data.points) ? data.points 
+              : [],
+        rating: data.condition?.rating || data.condition || "fair"
       },
       cleanliness: data.cleanliness || "domestic_clean",
       notes: data.notes || ""

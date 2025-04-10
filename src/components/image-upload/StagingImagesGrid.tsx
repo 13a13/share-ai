@@ -1,116 +1,10 @@
 
-import React from 'react';
-import { useDrag, useDrop } from 'react-dnd';
+import React, { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { Loader2, X, MoveVertical } from "lucide-react";
 import { Card } from "@/components/ui/card";
-
-interface DragItem {
-  index: number;
-  id: string;
-  type: string;
-}
-
-interface StagingImageProps {
-  image: string;
-  index: number;
-  isProcessing: boolean;
-  onRemove: (index: number) => void;
-  onMove: (dragIndex: number, hoverIndex: number) => void;
-}
-
-const StagingImage = ({ image, index, isProcessing, onRemove, onMove }: StagingImageProps) => {
-  const ref = React.useRef<HTMLDivElement>(null);
-  
-  const [{ isDragging }, drag] = useDrag({
-    type: 'IMAGE',
-    item: { index, id: `image-${index}`, type: 'IMAGE' } as DragItem,
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-    canDrag: !isProcessing,
-  });
-  
-  const [, drop] = useDrop({
-    accept: 'IMAGE',
-    hover: (item: DragItem, monitor) => {
-      if (!ref.current) {
-        return;
-      }
-      
-      const dragIndex = item.index;
-      const hoverIndex = index;
-      
-      // Don't replace items with themselves
-      if (dragIndex === hoverIndex) {
-        return;
-      }
-      
-      // Determine rectangle on screen
-      const hoverBoundingRect = ref.current?.getBoundingClientRect();
-      
-      // Get horizontal middle
-      const hoverMiddleX =
-        (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
-      
-      // Determine mouse position
-      const clientOffset = monitor.getClientOffset();
-      
-      // Get pixels to the left
-      const hoverClientX = clientOffset!.x - hoverBoundingRect.left;
-      
-      // Only perform the move when the mouse has crossed half of the items height
-      // Dragging left to right
-      if (dragIndex < hoverIndex && hoverClientX < hoverMiddleX) {
-        return;
-      }
-      
-      // Dragging right to left
-      if (dragIndex > hoverIndex && hoverClientX > hoverMiddleX) {
-        return;
-      }
-      
-      // Time to actually perform the action
-      onMove(dragIndex, hoverIndex);
-      
-      // Note: we're mutating the monitor item here!
-      // This generally isn't good practice, but it simplifies the example.
-      // In real world applications this could potentially lead to weird state issues,
-      // but in this specific case it should be fine.
-      item.index = hoverIndex;
-    },
-  });
-  
-  drag(drop(ref));
-  
-  return (
-    <div 
-      ref={ref}
-      className={`relative group aspect-square rounded-md overflow-hidden border ${isDragging ? 'opacity-50 border-dashed border-blue-500' : ''}`}
-    >
-      <img 
-        src={image} 
-        alt={`Uploaded preview ${index + 1}`} 
-        className="w-full h-full object-cover"
-      />
-      {!isProcessing && (
-        <>
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={() => onRemove(index)}
-          >
-            <X size={14} />
-          </Button>
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <MoveVertical size={24} className="text-white drop-shadow-lg" />
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, X, Play } from "lucide-react";
+import DraggableImage from './DraggableImage';
 
 interface StagingImagesGridProps {
   stagingImages: string[];
@@ -135,44 +29,60 @@ const StagingImagesGrid = ({
   totalImages,
   maxImages
 }: StagingImagesGridProps) => {
+  const showDragHint = useMemo(() => stagingImages.length > 1, [stagingImages.length]);
+  
   if (stagingImages.length === 0) {
     return null;
   }
 
   return (
-    <div className="space-y-4">
-      <div className="text-sm font-medium flex justify-between">
-        <span>New Images ({stagingImages.length})</span>
-        <span className="text-gray-500">{totalImages}/{maxImages} total</span>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="font-medium">
+          Pending Images ({stagingImages.length})
+        </div>
+        
+        {showDragHint && (
+          <div className="text-xs text-gray-500">
+            Drag to reorder
+          </div>
+        )}
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-        {stagingImages.map((image, index) => (
-          <StagingImage
-            key={index}
-            image={image}
-            index={index}
-            isProcessing={analysisInProgress || compressionInProgress}
-            onRemove={onRemoveStagingImage}
-            onMove={onMoveImage}
-          />
-        ))}
-      </div>
+      <ScrollArea className="h-full max-h-[250px]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {stagingImages.map((image, index) => (
+            <DraggableImage
+              key={index}
+              index={index}
+              imageUrl={image}
+              onRemove={() => onRemoveStagingImage(index)}
+              onMoveImage={onMoveImage}
+            />
+          ))}
+        </div>
+      </ScrollArea>
       
-      <div className="flex justify-end space-x-2">
+      <div className="flex justify-end items-center gap-2">
+        <span className="text-xs text-gray-500 mr-auto">
+          {totalImages}/{maxImages} images
+        </span>
+        
         <Button
           variant="outline"
           size="sm"
-          disabled={analysisInProgress || compressionInProgress}
           onClick={onCancel}
+          disabled={analysisInProgress || compressionInProgress}
         >
+          <X className="h-4 w-4 mr-1" />
           Cancel
         </Button>
+        
         <Button
           variant="default"
           size="sm"
-          disabled={analysisInProgress || compressionInProgress}
           onClick={onProcess}
+          disabled={analysisInProgress || compressionInProgress || stagingImages.length === 0}
           className="bg-shareai-teal hover:bg-shareai-teal/90"
         >
           {analysisInProgress ? (
@@ -180,11 +90,28 @@ const StagingImagesGrid = ({
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               Analyzing...
             </>
+          ) : compressionInProgress ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Compressing...
+            </>
           ) : (
-            "Run AI Analysis"
+            <>
+              <Play className="h-4 w-4 mr-1" />
+              Analyze Images
+            </>
           )}
         </Button>
       </div>
+      
+      {analysisInProgress && (
+        <Card className="p-3 border-shareai-teal bg-shareai-teal/5">
+          <p className="text-sm text-shareai-teal flex items-center">
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            AI is analyzing {stagingImages.length} {stagingImages.length === 1 ? 'image' : 'images'}...
+          </p>
+        </Card>
+      )}
     </div>
   );
 };

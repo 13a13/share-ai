@@ -59,16 +59,31 @@ export function useComponentImageProcessing({
             case 'damaged':
               conditionValue = 'poor';
               break;
+            default:
+              conditionValue = comp.condition;
           }
         }
+        
+        // Parse and convert cleanliness value if needed
+        let cleanlinessValue = result.cleanliness || comp.cleanliness;
+        if (cleanlinessValue) {
+          // Convert from "Professional Clean" format to "professional_clean" format
+          cleanlinessValue = cleanlinessValue
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_]/g, '');
+        }
+        
+        // Ensure points are properly formatted
+        const conditionPoints = result.condition?.points || [];
         
         return {
           ...comp,
           description: result.description || comp.description,
           condition: conditionValue,
           conditionSummary: result.condition?.summary || comp.conditionSummary,
-          conditionPoints: result.condition?.points || comp.conditionPoints,
-          cleanliness: result.cleanliness || comp.cleanliness,
+          conditionPoints: conditionPoints,
+          cleanliness: cleanlinessValue,
           notes: result.notes ? (comp.notes ? `${comp.notes}\n\n${result.notes}` : result.notes) : comp.notes,
           images: [...comp.images, ...newImages],
           isEditing: true
