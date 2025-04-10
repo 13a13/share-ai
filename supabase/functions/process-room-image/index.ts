@@ -252,3 +252,4 @@ function parseInventoryResponse(text: string): any {
     rating: ratingValue || ''
   };
 }
+
