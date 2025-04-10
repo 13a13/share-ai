@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,7 +29,7 @@ const StagingImagesGrid = ({
   totalImages,
   maxImages
 }: StagingImagesGridProps) => {
-  const showDragHint = useMemo(() => stagingImages.length > 1, [stagingImages.length]);
+  const showDragHint = React.useMemo(() => stagingImages.length > 1, [stagingImages.length]);
   
   if (stagingImages.length === 0) {
     return null;
@@ -51,13 +51,13 @@ const StagingImagesGrid = ({
       
       <ScrollArea className="h-full max-h-[250px]">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {stagingImages.map((image, index) => (
+          {stagingImages.map((url, index) => (
             <DraggableImage
               key={index}
               index={index}
-              imageUrl={image}
+              image={{ url }}
               onRemove={() => onRemoveStagingImage(index)}
-              onMoveImage={onMoveImage}
+              onMove={onMoveImage}
             />
           ))}
         </div>
