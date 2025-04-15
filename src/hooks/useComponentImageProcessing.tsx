@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useRef } from "react";
 import { RoomComponent, RoomComponentImage } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
@@ -29,7 +30,7 @@ export function useComponentImageProcessing({
     const newImages: RoomComponentImage[] = imageUrls.map(url => ({
       id: uuidv4(),
       url,
-      timestamp: new Date()
+      timestamp: new Date().toISOString() // Store current timestamp for "last analyzed"
     }));
     
     const updatedComponents = components.map(comp => {
@@ -48,7 +49,7 @@ export function useComponentImageProcessing({
           condition: result.condition?.rating || comp.condition,
           cleanliness: result.cleanliness || comp.cleanliness,
           notes: result.notes || comp.notes,
-          isEditing: true
+          isEditing: true // Automatically open edit mode after analysis
         };
       }
       return comp;
@@ -57,9 +58,23 @@ export function useComponentImageProcessing({
     setComponents(updatedComponents);
     onChange(updatedComponents);
     
+    // Ensure the component is expanded to show analysis results
     if (!expandedComponents.includes(componentId)) {
       setExpandedComponents([...expandedComponents, componentId]);
     }
+    
+    // Scroll to the component element
+    setTimeout(() => {
+      const element = document.getElementById(`component-${componentId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a brief highlight effect
+        element.classList.add('highlight-component');
+        setTimeout(() => {
+          element.classList.remove('highlight-component');
+        }, 3000);
+      }
+    }, 300);
     
     toast({
       title: "AI Analysis Complete",
