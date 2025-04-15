@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, FileText } from "lucide-react";
-import EditablePDFPreview from "./EditablePDFPreview";
+import EditablePDFPreview from "./pdf-preview/EditablePDFPreview";
 import { Report, Property } from "@/types";
 import { usePDFGeneration } from "@/services/pdfGenerationService";
 
