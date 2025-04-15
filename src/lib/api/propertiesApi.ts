@@ -47,4 +47,15 @@ export const PropertiesAPI = {
     localStorage.setItem(LOCAL_STORAGE_KEYS.PROPERTIES, JSON.stringify(properties));
     return updatedProperty;
   },
+  
+  delete: async (id: string): Promise<boolean> => {
+    const properties = await PropertiesAPI.getAll();
+    const index = properties.findIndex(p => p.id === id);
+    
+    if (index === -1) return false;
+    
+    properties.splice(index, 1);
+    localStorage.setItem(LOCAL_STORAGE_KEYS.PROPERTIES, JSON.stringify(properties));
+    return true;
+  }
 };

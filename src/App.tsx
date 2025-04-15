@@ -42,7 +42,7 @@ const App = () => (
                   
                   {/* Protected Routes */}
                   <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/properties" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/properties" element={<ProtectedRoute><PropertiesPage /></ProtectedRoute>} />
                   <Route path="/properties/new" element={<ProtectedRoute><PropertyCreationPage /></ProtectedRoute>} />
                   <Route path="/properties/:propertyId" element={<ProtectedRoute><PropertyDetailsPage /></ProtectedRoute>} />
                   <Route path="/reports/new/:propertyId" element={<ProtectedRoute><ReportCreationPage /></ProtectedRoute>} />
