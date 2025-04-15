@@ -1,4 +1,4 @@
 
 // Main export file for PDF service
-export { usePDFGeneration } from './pdfGenerator';
-export type { PDFGenerationStatus } from './pdfGenerator';
+export { usePDFGeneration } from './usePDFGeneration';
+export type { PDFGenerationStatus } from './usePDFGeneration';
