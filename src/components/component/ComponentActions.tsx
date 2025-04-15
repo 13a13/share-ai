@@ -40,25 +40,24 @@ const ComponentActions = ({
         )}
       </Button>
       
-      {isOptional && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                className="text-red-500 hover:text-red-700 ml-auto"
-                onClick={() => onRemoveComponent(componentId)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Remove
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Remove this component from the room</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
+      {/* Remove isOptional check to allow all components to be deleted */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              className="text-red-500 hover:text-red-700 ml-auto"
+              onClick={() => onRemoveComponent(componentId)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Remove
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Remove this component from the room</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 };

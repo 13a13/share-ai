@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { RoomComponent, ConditionRating } from "@/types";
@@ -20,15 +19,6 @@ export function useComponentActions({
     const component = components.find(c => c.id === componentId);
     
     if (!component) return;
-    
-    if (!component.isOptional) {
-      toast({
-        title: "Cannot remove component",
-        description: `${component.name} is a required component for this room type.`,
-        variant: "destructive",
-      });
-      return;
-    }
     
     const updatedComponents = components.filter(c => c.id !== componentId);
     setComponents(updatedComponents);
