@@ -1,15 +1,14 @@
 
 import { useParams } from "react-router-dom";
-import { ReportInfoFormValues } from "@/components/ReportInfoForm";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 import ReportHeader from "@/components/ReportHeader";
 import ReportInfoForm from "@/components/ReportInfoForm";
 import EmptyRoomsState from "@/components/EmptyRoomsState";
 import ReportRoomForm from "@/components/ReportRoomForm";
 import ReportLoadingState from "@/components/ReportLoadingState";
-import { useReportEditor, RoomFormValues } from "@/hooks/useReportEditor";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Button } from "@/components/ui/button";
 import UnifiedRoomView from "@/components/room/UnifiedRoomView";
+import { useReportEditor, ReportInfoFormValues } from "@/hooks/report/useReportEditor";
 
 const ReportEditPage = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -125,3 +124,4 @@ const ReportEditPage = () => {
 };
 
 export default ReportEditPage;
+
