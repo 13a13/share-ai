@@ -7,8 +7,8 @@ import ComponentImages from "../component/ComponentImages";
 import ComponentEditForm from "../component/ComponentEditForm";
 import ComponentActions from "../component/ComponentActions";
 import ComponentHeader from "../component/ComponentHeader";
-import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
 import ComponentAnalysisSummary from "../component/ComponentAnalysisSummary";
+import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
 import {
   cleanlinessOptions,
   conditionRatingOptions
@@ -133,7 +133,7 @@ const ComponentItem = ({
               )}
             </div>
             
-            {/* Unified image display - only one place to see images */}
+            {/* Unified image display section */}
             <ComponentImages 
               images={component.images}
               onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
@@ -147,8 +147,8 @@ const ComponentItem = ({
               isProcessing={isProcessing}
               currentImages={component.images}
               onImagesProcessed={handleComponentImages}
-              onProcessingStateChange={onProcessingStateChange}
-              onRemoveImage={handleRemoveStagingImage}
+              onProcessingStateChange={handleComponentProcessingState}
+              onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
               disabled={isProcessing}
             />
             
