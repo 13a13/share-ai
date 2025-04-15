@@ -1,7 +1,7 @@
 
 import { jsPDF } from "jspdf";
 import { Report } from "@/types";
-import { Colors, Fonts } from "../styles";
+import { Colors, Fonts, pdfStyles } from "../styles";
 
 /**
  * Generates the property summary section of the PDF
@@ -15,12 +15,12 @@ export const generatePropertySummarySection = (doc: jsPDF, report: Report): void
   // Add section title
   doc.setFont(Fonts.HEADER_FONT, "bold");
   doc.setFontSize(14);
-  doc.setTextColor(Colors.PRIMARY);
+  doc.setTextColor(Colors.PRIMARY[0], Colors.PRIMARY[1], Colors.PRIMARY[2]);
   doc.text("PROPERTY SUMMARY", 14, yPos);
   yPos += 10;
   
   // Add horizontal line
-  doc.setDrawColor(Colors.BORDER);
+  doc.setDrawColor(Colors.BORDER[0], Colors.BORDER[1], Colors.BORDER[2]);
   doc.setLineWidth(0.5);
   doc.line(14, yPos, doc.internal.pageSize.width - 14, yPos);
   yPos += 8;
@@ -31,13 +31,13 @@ export const generatePropertySummarySection = (doc: jsPDF, report: Report): void
     
     doc.setFont(Fonts.HEADER_FONT, "bold");
     doc.setFontSize(12);
-    doc.setTextColor(Colors.TEXT_DARK);
+    doc.setTextColor(Colors.TEXT_DARK[0], Colors.TEXT_DARK[1], Colors.TEXT_DARK[2]);
     doc.text(title, 14, yPos);
     yPos += 6;
     
     doc.setFont(Fonts.BODY_FONT, "normal");
     doc.setFontSize(10);
-    doc.setTextColor(Colors.TEXT);
+    doc.setTextColor(Colors.TEXT[0], Colors.TEXT[1], Colors.TEXT[2]);
     
     // Split text to fit width
     const textLines = doc.splitTextToSize(content, doc.internal.pageSize.width - 28);
@@ -68,13 +68,13 @@ export const generatePropertySummarySection = (doc: jsPDF, report: Report): void
     };
     
     // Add horizontal line to separate overall from category summaries
-    doc.setDrawColor(Colors.BORDER_LIGHT);
+    doc.setDrawColor(Colors.BORDER_LIGHT[0], Colors.BORDER_LIGHT[1], Colors.BORDER_LIGHT[2]);
     doc.setLineWidth(0.2);
     doc.line(14, yPos - 4, doc.internal.pageSize.width - 14, yPos - 4);
     
     doc.setFont(Fonts.HEADER_FONT, "bold");
     doc.setFontSize(12);
-    doc.setTextColor(Colors.PRIMARY);
+    doc.setTextColor(Colors.PRIMARY[0], Colors.PRIMARY[1], Colors.PRIMARY[2]);
     doc.text("Category Details", 14, yPos);
     yPos += 8;
     
@@ -92,7 +92,7 @@ export const generatePropertySummarySection = (doc: jsPDF, report: Report): void
       // Add category title
       doc.setFont(Fonts.HEADER_FONT, "bold");
       doc.setFontSize(11);
-      doc.setTextColor(Colors.TEXT_DARK);
+      doc.setTextColor(Colors.TEXT_DARK[0], Colors.TEXT_DARK[1], Colors.TEXT_DARK[2]);
       doc.text(title, 14, yPos);
       yPos += 6;
       
@@ -100,11 +100,11 @@ export const generatePropertySummarySection = (doc: jsPDF, report: Report): void
       if (categoryData.conditionSummary) {
         doc.setFont(Fonts.BODY_FONT, "italic");
         doc.setFontSize(9);
-        doc.setTextColor(Colors.TEXT_LIGHT);
+        doc.setTextColor(Colors.TEXT_LIGHT[0], Colors.TEXT_LIGHT[1], Colors.TEXT_LIGHT[2]);
         doc.text("Condition:", 14, yPos);
         
         doc.setFont(Fonts.BODY_FONT, "normal");
-        doc.setTextColor(Colors.TEXT);
+        doc.setTextColor(Colors.TEXT[0], Colors.TEXT[1], Colors.TEXT[2]);
         const conditionLines = doc.splitTextToSize(categoryData.conditionSummary, doc.internal.pageSize.width - 40);
         doc.text(conditionLines, 40, yPos);
         yPos += conditionLines.length * 5;
@@ -114,11 +114,11 @@ export const generatePropertySummarySection = (doc: jsPDF, report: Report): void
       if (categoryData.cleanlinessSummary) {
         doc.setFont(Fonts.BODY_FONT, "italic");
         doc.setFontSize(9);
-        doc.setTextColor(Colors.TEXT_LIGHT);
+        doc.setTextColor(Colors.TEXT_LIGHT[0], Colors.TEXT_LIGHT[1], Colors.TEXT_LIGHT[2]);
         doc.text("Cleanliness:", 14, yPos);
         
         doc.setFont(Fonts.BODY_FONT, "normal");
-        doc.setTextColor(Colors.TEXT);
+        doc.setTextColor(Colors.TEXT[0], Colors.TEXT[1], Colors.TEXT[2]);
         const cleanlinessLines = doc.splitTextToSize(categoryData.cleanlinessSummary, doc.internal.pageSize.width - 40);
         doc.text(cleanlinessLines, 40, yPos);
         yPos += cleanlinessLines.length * 5 + 6;

@@ -17,13 +17,13 @@ export const generateTableOfContents = (
   // Set title
   doc.setFont(Fonts.HEADER_FONT, "bold");
   doc.setFontSize(16);
-  doc.setTextColor(Colors.PRIMARY);
+  doc.setTextColor(Colors.PRIMARY[0], Colors.PRIMARY[1], Colors.PRIMARY[2]);
   doc.text("Contents", 14, 30);
   
   // Set up for table of contents entries
   doc.setFont(Fonts.BODY_FONT, "normal");
   doc.setFontSize(11);
-  doc.setTextColor(Colors.TEXT);
+  doc.setTextColor(Colors.TEXT[0], Colors.TEXT[1], Colors.TEXT[2]);
   
   // Start position for entries
   let yPos = 45;
