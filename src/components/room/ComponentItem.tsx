@@ -56,10 +56,8 @@ const ComponentItem = ({
 }: ComponentItemProps) => {
   
   const handleComponentImages = (componentId: string, imageUrls: string[], result: any) => {
-    // Map cleanliness value to standard format if provided
     let standardizedCleanliness = result.cleanliness;
     if (standardizedCleanliness) {
-      // Convert from "Professional Clean" to "professional_clean" format
       standardizedCleanliness = standardizedCleanliness
         .toLowerCase()
         .replace(/\s+/g, '_')
@@ -82,21 +80,17 @@ const ComponentItem = ({
     );
   };
 
-  const handleRemoveStagingImage = (index: number) => {
-    console.log("Remove staging image at index", index);
-    // This is handled in the MultiImageComponentCapture component
+  const handleRemoveStagingImage = (imageId: string) => {
+    console.log("Remove staging image with ID", imageId);
   };
   
-  // Render component details if there's any meaningful content
   const hasDetails = component.description || 
                      component.conditionSummary || 
                      (component.conditionPoints && component.conditionPoints.length > 0) || 
                      component.notes;
                      
-  // Determine if this component has been analyzed by Gemini
   const isAnalyzed = hasDetails && component.images.length > 0;
   
-  // Get the last image timestamp if available to show last analyzed time
   const lastImageTimestamp = component.images.length > 0 
     ? component.images.reduce((latest, img) => 
         img.timestamp && new Date(img.timestamp) > new Date(latest) ? img.timestamp : latest, 
@@ -153,7 +147,6 @@ const ComponentItem = ({
               disabled={isProcessing}
             />
             
-            {/* Display component details summary when not editing */}
             {hasDetails && !component.isEditing && (
               <ComponentAnalysisSummary
                 component={component}

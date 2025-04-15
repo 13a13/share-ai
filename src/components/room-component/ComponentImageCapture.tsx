@@ -10,7 +10,7 @@ interface ComponentImageCaptureProps {
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  onRemovePreviewImage: (index: number) => void;
+  onRemovePreviewImage: (imageId: string) => void; // Updated type from (index: number) to (imageId: string)
   disabled?: boolean;
 }
 

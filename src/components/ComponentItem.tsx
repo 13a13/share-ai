@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
@@ -82,8 +81,8 @@ const ComponentItem = ({
     );
   };
 
-  const handleRemoveStagingImage = (index: number) => {
-    console.log("Remove staging image at index", index);
+  const handleRemoveStagingImage = (imageId: string) => {
+    console.log("Remove staging image with ID", imageId);
     // This is handled in the MultiImageComponentCapture component
   };
 
