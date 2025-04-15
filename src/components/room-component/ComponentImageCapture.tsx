@@ -1,6 +1,6 @@
 
 import { ConditionRating } from "@/types";
-import MultiImageComponentCapture from "../MultiImageComponentCapture";
+import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
 
 interface ComponentImageCaptureProps {
   componentId: string;
@@ -11,7 +11,7 @@ interface ComponentImageCaptureProps {
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
   onRemovePreviewImage: (index: number) => void;
-  disabled?: boolean; // Add disabled prop
+  disabled?: boolean;
 }
 
 /**

@@ -6,7 +6,7 @@ import ComponentImages from "../component/ComponentImages";
 import ComponentEditForm from "../component/ComponentEditForm";
 import ComponentActions from "../component/ComponentActions";
 import ComponentHeader from "../component/ComponentHeader";
-import MultiImageComponentCapture from "../MultiImageComponentCapture";
+import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
 import ComponentAnalysisSummary from "../component/ComponentAnalysisSummary";
 import {
   cleanlinessOptions,
