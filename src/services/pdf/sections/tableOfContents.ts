@@ -1,110 +1,79 @@
 
 import { jsPDF } from "jspdf";
 import { Report } from "@/types";
-import { pdfStyles } from "../styles";
+import { Colors, Fonts } from "../styles";
 
 /**
- * Generate table of contents with dot leaders
+ * Generate the table of contents for the PDF
+ * @param doc PDF document
+ * @param pageMap Map of section IDs to page numbers
+ * @param report Report data (optional)
  */
-export function generateTableOfContents(doc: jsPDF, pageMap: Record<string, number>, report?: Report): void {
-  const pageWidth = doc.internal.pageSize.width;
-  const margins = pdfStyles.margins.page;
+export const generateTableOfContents = (
+  doc: jsPDF, 
+  pageMap: Record<string, number>,
+  report?: Report
+): void => {
+  // Set title
+  doc.setFont(Fonts.HEADER_FONT, "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(Colors.PRIMARY);
+  doc.text("Contents", 14, 30);
   
-  // Title
-  doc.setFont(pdfStyles.fonts.header, "bold");
-  doc.setFontSize(pdfStyles.fontSizes.title);
-  doc.setTextColor(pdfStyles.colors.black[0], pdfStyles.colors.black[1], pdfStyles.colors.black[2]);
-  doc.text("CONTENTS", margins, margins + 10);
+  // Set up for table of contents entries
+  doc.setFont(Fonts.BODY_FONT, "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(Colors.TEXT);
   
-  // Underline
-  doc.setDrawColor(pdfStyles.colors.black[0], pdfStyles.colors.black[1], pdfStyles.colors.black[2]);
-  doc.line(margins, margins + 15, margins + 40, margins + 15);
+  // Start position for entries
+  let yPos = 45;
   
-  let yPosition = margins + 30;
-  
-  // Standard sections
-  doc.setFont(pdfStyles.fonts.body, "normal");
-  doc.setFontSize(pdfStyles.fontSizes.normal);
-  
-  const standardSections = [
-    { key: "disclaimer", label: "Disclaimer" },
-    { key: "summary", label: "Summary" },
-  ];
-  
-  for (const section of standardSections) {
-    const pageNumber = pageMap[section.key] || "";
-    const textWidth = doc.getTextWidth(section.label);
-    const dotsWidth = pageWidth - margins * 2 - textWidth - 5;
+  // Function to add a table of contents entry
+  const addEntry = (text: string, pageKey: string): void => {
+    const page = pageMap[pageKey];
+    if (!page) return;
     
-    // Draw section name
-    doc.text(section.label, margins, yPosition);
+    doc.setFont(Fonts.BODY_FONT, "normal");
+    doc.text(text, 20, yPos);
     
-    // Calculate dot leaders
-    const dotCount = Math.floor(dotsWidth / 2);
+    // Add dots
+    const textWidth = doc.getTextWidth(text);
+    const pageNumWidth = doc.getTextWidth(String(page));
+    const dotsWidth = doc.internal.pageSize.width - 40 - textWidth - pageNumWidth;
+    const dotCount = Math.floor(dotsWidth / doc.getTextWidth("."));
+    
     let dots = "";
     for (let i = 0; i < dotCount; i++) {
-      dots += ". ";
+      dots += ".";
     }
     
-    // Draw dot leaders and page number
-    doc.text(dots, margins + textWidth + 3, yPosition);
-    doc.text(pageNumber.toString(), pageWidth - margins, yPosition, { align: "right" });
+    doc.text(dots, 20 + textWidth, yPos);
     
-    yPosition += 10;
-  }
+    // Add page number
+    doc.setFont(Fonts.BODY_FONT, "bold");
+    doc.text(String(page), doc.internal.pageSize.width - 20 - pageNumWidth, yPos);
+    
+    yPos += 8;
+  };
   
-  // Rooms (if report provided)
-  if (report && report.rooms.length > 0) {
-    yPosition += 10;
-    doc.setFont(pdfStyles.fonts.header, "bold");
-    doc.text("Rooms", margins, yPosition);
-    yPosition += 10;
-    
-    doc.setFont(pdfStyles.fonts.body, "normal");
+  // Add fixed entries
+  if (pageMap["summary"]) {
+    addEntry("Property Summary", "summary");
+  }
+  addEntry("Disclaimer", "disclaimer");
+  addEntry("Property Details", "details");
+  
+  // Add rooms entries
+  if (report) {
+    doc.setFont(Fonts.HEADER_FONT, "bold");
+    doc.text("Rooms", 18, yPos + 5);
+    yPos += 12;
     
     report.rooms.forEach((room, index) => {
-      const roomNum = index + 1;
-      const roomLabel = `${roomNum}. ${room.name}`;
-      const textWidth = doc.getTextWidth(roomLabel);
-      const dotsWidth = pageWidth - margins * 2 - textWidth - 5;
-      const pageNumber = pageMap[room.id] || "";
-      
-      // Draw room name
-      doc.text(roomLabel, margins, yPosition);
-      
-      // Calculate dot leaders
-      const dotCount = Math.floor(dotsWidth / 2);
-      let dots = "";
-      for (let i = 0; i < dotCount; i++) {
-        dots += ". ";
-      }
-      
-      // Draw dot leaders and page number
-      doc.text(dots, margins + textWidth + 3, yPosition);
-      doc.text(pageNumber.toString(), pageWidth - margins, yPosition, { align: "right" });
-      
-      yPosition += 10;
+      addEntry(`${index + 1}. ${room.name}`, room.id);
     });
   }
   
-  // Final sections
-  yPosition += 10;
-  const finalSectionLabel = "Final Notes & Declarations";
-  const textWidth = doc.getTextWidth(finalSectionLabel);
-  const dotsWidth = pageWidth - margins * 2 - textWidth - 5;
-  const pageNumber = pageMap["final"] || "";
-  
-  // Draw section name
-  doc.text(finalSectionLabel, margins, yPosition);
-  
-  // Calculate dot leaders
-  const dotCount = Math.floor(dotsWidth / 2);
-  let dots = "";
-  for (let i = 0; i < dotCount; i++) {
-    dots += ". ";
-  }
-  
-  // Draw dot leaders and page number
-  doc.text(dots, margins + textWidth + 3, yPosition);
-  doc.text(pageNumber.toString(), pageWidth - margins, yPosition, { align: "right" });
-}
+  // Add final entry
+  addEntry("Declaration", "final");
+};
