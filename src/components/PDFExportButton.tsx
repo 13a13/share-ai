@@ -52,10 +52,7 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
   
   // Determine report title
   const getReportTitle = () => {
-    const formattedType = report.type
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase());
-    return `${formattedType} Report - ${property.address.replace(/\s+/g, '_')}`;
+    return `Inventory & Check In - ${property.address.replace(/\s+/g, '_')}`;
   };
   
   return (
