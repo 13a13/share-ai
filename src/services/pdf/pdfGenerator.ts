@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import { Report, Property, Room, RoomComponent } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -418,7 +417,7 @@ function generateSummaryTables(doc: jsPDF, report: Report, property: Property): 
     { label: "Property Address", value: `${property.address}, ${property.city}, ${property.state} ${property.zipCode}` },
     { label: "Report Date", value: report.reportInfo?.reportDate ? new Date(report.reportInfo.reportDate).toLocaleDateString() : "Not specified" },
     { label: "Conducted By", value: report.reportInfo?.clerk || "Not specified" },
-    { label: "Property Type", value: property.type || "Not specified" },
+    { label: "Property Type", value: property.propertyType || "Not specified" },
     { label: "Number of Rooms", value: report.rooms.length.toString() },
     { label: "Tenant Name", value: report.reportInfo?.tenantName || "Not specified" },
     { label: "Report Status", value: report.status || "Draft" }
