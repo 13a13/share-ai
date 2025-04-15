@@ -1,6 +1,5 @@
-
 import { ConditionRating } from "@/types";
-import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
+import MultiImageComponentCapture from "@/components/image-upload/MultiImageComponentCapture";
 
 interface ComponentImageCaptureProps {
   componentId: string;
