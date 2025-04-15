@@ -82,7 +82,7 @@ const categoryMap: Record<string, string> = {
   "sink": "kitchen",
   "counter": "kitchen",
   "countertop": "kitchen",
-  "cabinet": "kitchen",
+  "cabinet_kitchen": "kitchen", // Fixed duplicate "cabinet" key
   "tap": "kitchen",
   "faucet": "kitchen"
 };

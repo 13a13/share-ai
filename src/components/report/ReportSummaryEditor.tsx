@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, BookOpenText } from "lucide-react";
-import { ReportSummary } from "@/hooks/useReportSummary";
+import { ReportSummary, CategorySummary } from "@/hooks/useReportSummary";
 
 interface ReportSummaryEditorProps {
   open: boolean;
@@ -111,35 +111,38 @@ const ReportSummaryEditor = ({
             </TabsContent>
             
             <TabsContent value="categories" className="p-1 space-y-6">
-              {Object.keys(categoryTitles).map((categoryKey) => (
-                <div key={categoryKey} className="space-y-3 border-b pb-6 last:border-b-0 last:pb-0">
-                  <h3 className="text-lg font-semibold">{categoryTitles[categoryKey]}</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Condition Summary</Label>
-                      <Textarea 
-                        value={summaries[categoryKey as keyof typeof summaries]?.conditionSummary || "No data available"}
-                        onChange={(e) => onSummaryUpdate(categoryKey, 'conditionSummary', e.target.value)}
-                        className="min-h-[80px] mt-1"
-                      />
-                    </div>
+              {Object.keys(categoryTitles).map((categoryKey) => {
+                const categorySummary = summaries[categoryKey as keyof ReportSummary] as CategorySummary;
+                return (
+                  <div key={categoryKey} className="space-y-3 border-b pb-6 last:border-b-0 last:pb-0">
+                    <h3 className="text-lg font-semibold">{categoryTitles[categoryKey]}</h3>
                     
-                    <div>
-                      <Label>Cleanliness Summary</Label>
-                      <Textarea 
-                        value={summaries[categoryKey as keyof typeof summaries]?.cleanlinessSummary || "No data available"}
-                        onChange={(e) => onSummaryUpdate(categoryKey, 'cleanlinessSummary', e.target.value)}
-                        className="min-h-[80px] mt-1"
-                      />
-                    </div>
-                    
-                    <div className="text-xs text-gray-500">
-                      Components: {summaries[categoryKey as keyof typeof summaries]?.components.length || 0} analyzed
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Condition Summary</Label>
+                        <Textarea 
+                          value={categorySummary?.conditionSummary || "No data available"}
+                          onChange={(e) => onSummaryUpdate(categoryKey, 'conditionSummary', e.target.value)}
+                          className="min-h-[80px] mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Cleanliness Summary</Label>
+                        <Textarea 
+                          value={categorySummary?.cleanlinessSummary || "No data available"}
+                          onChange={(e) => onSummaryUpdate(categoryKey, 'cleanlinessSummary', e.target.value)}
+                          className="min-h-[80px] mt-1"
+                        />
+                      </div>
+                      
+                      <div className="text-xs text-gray-500">
+                        Components: {categorySummary?.components?.length || 0} analyzed
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </TabsContent>
           </ScrollArea>
         </Tabs>

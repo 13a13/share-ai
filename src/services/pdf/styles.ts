@@ -26,3 +26,22 @@ export const pdfStyles = {
     section: 15,
   }
 };
+
+// Export Colors and Fonts for backward compatibility
+export const Colors = {
+  PRIMARY: pdfStyles.colors.primary,
+  SECONDARY: pdfStyles.colors.secondary,
+  ACCENT: pdfStyles.colors.accent,
+  WHITE: pdfStyles.colors.white,
+  BLACK: pdfStyles.colors.black,
+  TEXT: pdfStyles.colors.primary,
+  TEXT_DARK: [30, 30, 30],
+  TEXT_LIGHT: [80, 80, 80],
+  BORDER: [180, 180, 180],
+  BORDER_LIGHT: [220, 220, 220],
+};
+
+export const Fonts = {
+  HEADER_FONT: pdfStyles.fonts.header,
+  BODY_FONT: pdfStyles.fonts.body,
+};
