@@ -72,7 +72,6 @@ export const getDefaultComponentsByRoomType = (roomType: RoomType) => {
     { name: "Light Fixtures", type: "lighting", isOptional: false },
   ];
 
-  // Common additional components that can be added to any room type
   const additionalComponents = [
     { name: "Light Fixtures", type: "lighting", isOptional: true },
     { name: "Windows & Frames", type: "windows", isOptional: true },
