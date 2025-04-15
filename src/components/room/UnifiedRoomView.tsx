@@ -5,8 +5,7 @@ import {
   ChevronUp, 
   ChevronLeft, 
   ChevronRight, 
-  Trash2, 
-  Edit 
+  Trash2
 } from "lucide-react";
 import { Room, RoomComponent, RoomSection } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -65,6 +64,7 @@ const UnifiedRoomView = ({
     availableComponents,
     setSelectedComponentType,
     handleAddComponent,
+    addCustomComponent,
     handleRemoveComponent,
     handleUpdateComponent,
     toggleEditMode,
@@ -229,6 +229,7 @@ const UnifiedRoomView = ({
                 availableComponents={availableComponents}
                 onSelectComponent={setSelectedComponentType}
                 onAddComponent={handleAddComponent}
+                onAddCustomComponent={addCustomComponent}
                 onToggleExpand={toggleExpandComponent}
                 onRemoveComponent={handleRemoveComponent}
                 onToggleEditMode={toggleEditMode}

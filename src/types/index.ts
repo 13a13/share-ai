@@ -1,4 +1,3 @@
-
 export interface Property {
   id: string;
   name?: string;
@@ -82,6 +81,7 @@ export interface RoomComponent {
   images: RoomComponentImage[];
   isOptional: boolean;
   isEditing?: boolean; // Add isEditing property
+  isCustom?: boolean; // Add isCustom property to identify custom components
 }
 
 export interface RoomImage {

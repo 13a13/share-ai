@@ -2,6 +2,7 @@
 import { useToast } from "@/components/ui/use-toast";
 import { ConditionRating, RoomComponent, RoomType } from "@/types";
 import { getDefaultComponentsByRoomType } from "@/utils/roomComponentUtils";
+import { v4 as uuidv4 } from "uuid";
 
 interface UseComponentAdditionProps {
   roomType: RoomType;
@@ -59,7 +60,7 @@ export function useComponentAddition({
   };
 
   const addComponentToRoom = (componentToAdd: { name: string; type: string; isOptional: boolean }) => {
-    const newComponentId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newComponentId = uuidv4();
     
     const updatedComponents = [
       ...components,
@@ -88,7 +89,42 @@ export function useComponentAddition({
     });
   };
 
+  // New function to add a custom component
+  const addCustomComponent = (name: string, type: string) => {
+    const newComponentId = uuidv4();
+    
+    const customType = `custom_${type}_${Date.now()}`;
+    
+    const updatedComponents = [
+      ...components,
+      {
+        id: newComponentId,
+        name: name,
+        type: customType,
+        description: "",
+        condition: "fair" as ConditionRating,
+        conditionSummary: "",
+        notes: "",
+        images: [],
+        isOptional: true,
+        isEditing: true,
+        isCustom: true,
+      } as RoomComponent
+    ];
+    
+    setComponents(updatedComponents);
+    onChange(updatedComponents);
+    
+    setExpandedComponents([...expandedComponents, newComponentId]);
+    
+    toast({
+      title: "Custom component added",
+      description: `"${name}" has been added to the room inspection.`,
+    });
+  };
+
   return {
-    handleAddComponent
+    handleAddComponent,
+    addCustomComponent
   };
 }

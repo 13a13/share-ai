@@ -4,6 +4,7 @@ import { RoomComponent, RoomType } from "@/types";
 import ComponentItem from "./ComponentItem";
 import ComponentsEmptyState from "../ComponentsEmptyState";
 import ComponentSelector from "./ComponentSelector";
+import AddCustomComponent from "./AddCustomComponent";
 
 interface ComponentListProps {
   roomType: RoomType;
@@ -14,6 +15,7 @@ interface ComponentListProps {
   availableComponents: Array<{ name: string; type: string; isOptional: boolean }>;
   onSelectComponent: (value: string) => void;
   onAddComponent: () => void;
+  onAddCustomComponent: (name: string, type: string) => void;
   onToggleExpand: (componentId: string) => void;
   onRemoveComponent: (componentId: string) => void;
   onToggleEditMode: (componentId: string) => void;
@@ -32,6 +34,7 @@ const ComponentList = ({
   availableComponents,
   onSelectComponent,
   onAddComponent,
+  onAddCustomComponent,
   onToggleExpand,
   onRemoveComponent,
   onToggleEditMode,
@@ -78,6 +81,9 @@ const ComponentList = ({
           ))}
         </Accordion>
       )}
+      
+      {/* Add the custom component interface */}
+      <AddCustomComponent onAddComponent={onAddCustomComponent} />
     </div>
   );
 };

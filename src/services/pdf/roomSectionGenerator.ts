@@ -1,262 +1,370 @@
-
 import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
+import { conditionRatingToText } from "../imageProcessingService";
 import { 
-  pdfColors, 
-  pdfFontSizes, 
-  pdfFonts, 
-  pdfMargins, 
-  getConditionColor, 
-  createElegantBox, 
-  createSeparator, 
-  formatDate 
+  defaultFont, defaultFontBold, secondaryColor, primaryColor,
+  defaultMargins, contentWidth, roomImageHeight,
+  componentImageHeight, applyLayout
 } from "./pdfStyles";
 
+// Generate a PDF section for a room inspection
 export function generateRoomSection(
   doc: jsPDF, 
-  room: Room,
+  room: Room, 
   addHeaderAndFooter: () => void
-): void {
-  const pageWidth = doc.internal.pageSize.width;
+) {
+  // Apply header and base styling
+  const { startY } = applyLayout(doc);
   
-  // Room Header - simplified
-  doc.setFillColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-  doc.rect(pdfMargins.page, pdfMargins.page, pageWidth - (pdfMargins.page * 2), 20, "F");
+  // Room heading
+  doc.setFont(defaultFontBold);
+  doc.setFontSize(16);
+  doc.setTextColor(primaryColor);
+  doc.text(room.name, defaultMargins.left, startY);
   
-  doc.setFontSize(pdfFontSizes.title);
-  doc.setFont(pdfFonts.heading, "bold");
-  doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.text(room.name, pageWidth / 2, pdfMargins.page + 13, { align: "center" });
+  let currentY = startY + 8;
   
-  // Room type badge - simplified
-  doc.setFillColor(pdfColors.accent[0], pdfColors.accent[1], pdfColors.accent[2]);
-  doc.roundedRect(pageWidth / 2 - 25, pdfMargins.page + 25, 50, 10, 3, 3, "F");
+  // Room type
+  doc.setFont(defaultFont);
+  doc.setFontSize(10);
+  doc.setTextColor(secondaryColor);
+  doc.text(
+    `Type: ${room.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`, 
+    defaultMargins.left, 
+    currentY
+  );
+  currentY += 5;
   
-  doc.setFontSize(pdfFontSizes.small);
-  doc.setFont(pdfFonts.body, "bold");
-  doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.text(room.type.replace('_', ' ').toUpperCase(), pageWidth / 2, pdfMargins.page + 31, { align: "center" });
-  
-  let yPosition = pdfMargins.page + 45;
-  
-  // General Condition Section
+  // Room general condition
   if (room.generalCondition) {
-    // Section box - simplified
-    doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-    doc.rect(pdfMargins.page, yPosition, pageWidth - (pdfMargins.page * 2), 30, "F");
+    currentY += 8;
+    doc.setFont(defaultFontBold);
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor);
+    doc.text("General Condition", defaultMargins.left, currentY);
+    currentY += 6;
     
-    doc.setFontSize(pdfFontSizes.subheader);
-    doc.setFont(pdfFonts.heading, "bold");
-    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-    doc.text("General Condition", pdfMargins.page + 10, yPosition + 10);
+    doc.setFont(defaultFont);
+    doc.setFontSize(10);
+    doc.setTextColor(secondaryColor);
     
-    // Split long text into multiple lines
-    doc.setFontSize(pdfFontSizes.normal);
-    doc.setFont(pdfFonts.body, "normal");
-    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+    const generalConditionText = doc.splitTextToSize(
+      room.generalCondition, 
+      contentWidth
+    );
     
-    const splitCondition = doc.splitTextToSize(room.generalCondition, pageWidth - (pdfMargins.page * 2) - 20);
-    doc.text(splitCondition, pdfMargins.page + 10, yPosition + 20);
+    doc.text(generalConditionText, defaultMargins.left, currentY);
+    currentY += (generalConditionText.length * 5) + 8;
   }
   
-  // Components Section - Now each component gets its own page
-  if (room.components && room.components.length > 0) {
-    // Process each component on a new page
-    for (const component of room.components) {
-      doc.addPage();
-      addHeaderAndFooter();
-      generateComponentSection(doc, component, pdfMargins.page, addHeaderAndFooter);
+  // Room images
+  if (room.images && room.images.length > 0) {
+    doc.setFont(defaultFontBold);
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor);
+    doc.text("Room Images", defaultMargins.left, currentY);
+    currentY += 8;
+    
+    // Calculate grid layout based on image count
+    const imageCount = Math.min(room.images.length, 4); // Show max 4 images
+    const imagesPerRow = imageCount > 2 ? 2 : imageCount;
+    const imageWidth = contentWidth / imagesPerRow;
+    
+    // Add images in a grid
+    for (let i = 0; i < imageCount; i++) {
+      const image = room.images[i];
+      
+      // Calculate position in grid
+      const col = i % imagesPerRow;
+      const row = Math.floor(i / imagesPerRow);
+      
+      const imgX = defaultMargins.left + (col * imageWidth);
+      const imgY = currentY + (row * (roomImageHeight + 5));
+      
+      try {
+        doc.addImage(
+          image.url, 
+          'JPEG', 
+          imgX, 
+          imgY, 
+          imageWidth - 5, 
+          roomImageHeight
+        );
+      } catch (error) {
+        console.error("Error adding image to PDF", error);
+        // Add placeholder for failed image
+        doc.setDrawColor(200, 200, 200);
+        doc.setFillColor(240, 240, 240);
+        doc.rect(
+          imgX, 
+          imgY, 
+          imageWidth - 5, 
+          roomImageHeight, 
+          'FD'
+        );
+        doc.setTextColor(150, 150, 150);
+        doc.setFontSize(8);
+        doc.text(
+          'Image unavailable', 
+          imgX + ((imageWidth - 5) / 2), 
+          imgY + (roomImageHeight / 2), 
+          { align: 'center' }
+        );
+      }
     }
-  } else {
-    // Empty state - simplified
-    doc.setFontSize(pdfFontSizes.normal);
-    doc.setFont(pdfFonts.body, "italic");
-    doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-    doc.text("No components have been added to this room.", pageWidth / 2, yPosition + 15, { align: "center" });
+    
+    // Update Y position past the images
+    const rowsNeeded = Math.ceil(imageCount / imagesPerRow);
+    currentY += (rowsNeeded * (roomImageHeight + 5)) + 5;
+  }
+  
+  // Components
+  if (room.components && room.components.length > 0) {
+    doc.setFont(defaultFontBold);
+    doc.setFontSize(14);
+    doc.setTextColor(primaryColor);
+    doc.text("Components", defaultMargins.left, currentY);
+    currentY += 8;
+    
+    // Sort components to put custom components after standard ones
+    const sortedComponents = [...room.components].sort((a, b) => {
+      // Put custom components after standard ones
+      if (a.isCustom && !b.isCustom) return 1;
+      if (!a.isCustom && b.isCustom) return -1;
+      // Otherwise sort by name
+      return a.name.localeCompare(b.name);
+    });
+    
+    // Process each component
+    for (const component of sortedComponents) {
+      // Check if we need a new page
+      if (currentY > doc.internal.pageSize.height - 50) {
+        doc.addPage();
+        addHeaderAndFooter();
+        currentY = startY;
+      }
+      
+      // Add the component
+      currentY = addComponentToReport(doc, component, currentY);
+      
+      // Add some spacing between components
+      currentY += 10;
+    }
   }
 }
 
-function generateComponentSection(
+// Add a component to the PDF report
+function addComponentToReport(
   doc: jsPDF, 
   component: RoomComponent, 
-  yPosition: number,
-  addHeaderAndFooter: () => void
+  startY: number
 ): number {
-  const pageWidth = doc.internal.pageSize.width;
-  const componentWidth = pageWidth - (pdfMargins.page * 2);
+  let currentY = startY;
   
-  // Component header - simplified
-  doc.setFillColor(pdfColors.secondary[0], pdfColors.secondary[1], pdfColors.secondary[2]);
-  doc.rect(pdfMargins.page, yPosition, componentWidth, 16, "F");
+  // Component heading with name and condition
+  doc.setFont(defaultFontBold);
+  doc.setFontSize(12);
+  doc.setTextColor(primaryColor);
   
-  // Component name
-  doc.setFontSize(pdfFontSizes.header);
-  doc.setFont(pdfFonts.heading, "bold");
-  doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-  doc.text(component.name, pdfMargins.page + 10, yPosition + 11);
+  // Show a special icon or prefix for custom components
+  const customPrefix = component.isCustom ? "🔹 " : "";
+  const componentName = `${customPrefix}${component.name}`;
   
-  // Condition badge - simplified
+  doc.text(componentName, defaultMargins.left, currentY);
+  
+  // Condition badge
   if (component.condition) {
-    const conditionColorArray = getConditionColor(component.condition);
-    const conditionText = component.condition.toUpperCase().replace('_', ' ');
-    const badgeWidth = doc.getTextWidth(conditionText) + 10;
+    const conditionText = conditionRatingToText(component.condition);
     
-    doc.setFillColor(conditionColorArray[0], conditionColorArray[1], conditionColorArray[2]);
-    doc.roundedRect(
-      pageWidth - pdfMargins.page - badgeWidth - 5, 
-      yPosition + 4, 
-      badgeWidth, 
-      8, 
-      3, 
-      3, 
-      "F"
-    );
+    // Measure text width to place badge correctly
+    const textWidth = doc.getTextWidth(componentName);
+    const badgeX = defaultMargins.left + textWidth + 5;
     
-    doc.setFontSize(pdfFontSizes.small);
-    doc.setFont(pdfFonts.body, "bold");
-    doc.setTextColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-    doc.text(
-      conditionText, 
-      pageWidth - pdfMargins.page - (badgeWidth / 2) - 5, 
-      yPosition + 9, 
-      { align: "center" }
-    );
+    // Draw condition badge
+    drawConditionBadge(doc, component.condition, badgeX, currentY - 3);
   }
   
-  yPosition += 25;
+  currentY += 5;
   
-  // Text details and image layout
-  const hasImages = component.images && component.images.length > 0;
-  const leftColWidth = hasImages ? (componentWidth / 2) - 5 : componentWidth;
-  
-  // Left column - text details
-  let textYPosition = yPosition;
-  
-  // Component description
+  // Description
   if (component.description) {
-    doc.setFontSize(pdfFontSizes.subheader);
-    doc.setFont(pdfFonts.heading, "bold");
-    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-    doc.text("Description", pdfMargins.page, textYPosition);
+    currentY += 5;
+    doc.setFont(defaultFont);
+    doc.setFontSize(10);
+    doc.setTextColor(secondaryColor);
     
-    textYPosition += 8;
+    const descriptionText = doc.splitTextToSize(
+      component.description, 
+      contentWidth
+    );
     
-    doc.setFontSize(pdfFontSizes.normal);
-    doc.setFont(pdfFonts.body, "normal");
-    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
-    
-    const splitDesc = doc.splitTextToSize(component.description, leftColWidth - 10);
-    doc.text(splitDesc, pdfMargins.page, textYPosition);
-    
-    textYPosition += splitDesc.length * 6 + 10;
+    doc.text(descriptionText, defaultMargins.left, currentY);
+    currentY += (descriptionText.length * 5) + 3;
   }
   
   // Condition summary
   if (component.conditionSummary) {
-    doc.setFontSize(pdfFontSizes.subheader);
-    doc.setFont(pdfFonts.heading, "bold");
-    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-    doc.text("Condition Summary", pdfMargins.page, textYPosition);
+    currentY += 3;
+    doc.setFont(defaultFontBold);
+    doc.setFontSize(10);
+    doc.setTextColor(secondaryColor);
+    doc.text("Condition:", defaultMargins.left, currentY);
+    currentY += 5;
     
-    textYPosition += 8;
+    doc.setFont(defaultFont);
+    const conditionText = doc.splitTextToSize(
+      component.conditionSummary, 
+      contentWidth - 10
+    );
     
-    doc.setFontSize(pdfFontSizes.normal);
-    doc.setFont(pdfFonts.body, "normal");
-    doc.setTextColor(pdfColors.black[0], pdfColors.black[1], pdfColors.black[2]);
+    doc.text(conditionText, defaultMargins.left + 5, currentY);
+    currentY += (conditionText.length * 5) + 3;
+  }
+  
+  // Condition points (bullet points)
+  if (component.conditionPoints && component.conditionPoints.length > 0) {
+    doc.setFont(defaultFont);
+    doc.setFontSize(10);
     
-    const splitSummary = doc.splitTextToSize(component.conditionSummary, leftColWidth - 10);
-    doc.text(splitSummary, pdfMargins.page, textYPosition);
+    for (const point of component.conditionPoints) {
+      if (point.trim()) {
+        currentY += 5;
+        const bulletText = `• ${point}`;
+        const wrappedText = doc.splitTextToSize(
+          bulletText, 
+          contentWidth - 10
+        );
+        
+        doc.text(wrappedText, defaultMargins.left + 5, currentY);
+        currentY += (wrappedText.length * 5);
+      }
+    }
     
-    textYPosition += splitSummary.length * 6 + 10;
+    currentY += 3;
   }
   
   // Notes
   if (component.notes) {
-    doc.setFontSize(pdfFontSizes.subheader);
-    doc.setFont(pdfFonts.heading, "bold");
-    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-    doc.text("Notes", pdfMargins.page, textYPosition);
+    currentY += 3;
+    doc.setFont(defaultFontBold);
+    doc.setFontSize(10);
+    doc.setTextColor(secondaryColor);
+    doc.text("Notes:", defaultMargins.left, currentY);
+    currentY += 5;
     
-    textYPosition += 8;
+    doc.setFont(defaultFont);
+    const notesText = doc.splitTextToSize(
+      component.notes, 
+      contentWidth - 10
+    );
     
-    doc.setFontSize(pdfFontSizes.normal);
-    doc.setFont(pdfFonts.body, "italic");
-    doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-    
-    const splitNotes = doc.splitTextToSize(component.notes, leftColWidth - 10);
-    doc.text(splitNotes, pdfMargins.page, textYPosition);
-    
-    textYPosition += splitNotes.length * 6 + 10;
+    doc.text(notesText, defaultMargins.left + 5, currentY);
+    currentY += (notesText.length * 5) + 3;
   }
   
-  // Right column - images (if any)
-  if (hasImages) {
-    const rightColX = pdfMargins.page + leftColWidth + 10;
-    let imageYPosition = yPosition;
+  // Component images
+  if (component.images && component.images.length > 0) {
+    currentY += 3;
     
-    // Images header
-    doc.setFontSize(pdfFontSizes.subheader);
-    doc.setFont(pdfFonts.heading, "bold");
-    doc.setTextColor(pdfColors.primary[0], pdfColors.primary[1], pdfColors.primary[2]);
-    doc.text("Images", rightColX, imageYPosition);
+    // Calculate grid layout based on image count
+    const imageCount = Math.min(component.images.length, 3); // Show max 3 images per component
+    const imagesPerRow = imageCount;
+    const imageWidth = contentWidth / imagesPerRow;
     
-    imageYPosition += 10;
-    
-    // Grid of images - simplified
-    const imageSize = 35; // Slightly smaller
-    const imagesPerRow = 2;
-    const spacing = 5;
-    
-    for (let i = 0; i < component.images.length; i++) {
+    // Add images in a grid
+    for (let i = 0; i < imageCount; i++) {
       const image = component.images[i];
-      const row = Math.floor(i / imagesPerRow);
+      
+      // Calculate position in grid
       const col = i % imagesPerRow;
       
-      const xPos = rightColX + (col * (imageSize + spacing));
-      const yPos = imageYPosition + (row * (imageSize + spacing + 15)); // Extra space for caption
+      const imgX = defaultMargins.left + (col * imageWidth);
+      const imgY = currentY;
       
       try {
-        // Image with simple border
-        doc.setFillColor(pdfColors.white[0], pdfColors.white[1], pdfColors.white[2]);
-        doc.rect(xPos, yPos, imageSize, imageSize, "F");
-        doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-        doc.rect(xPos, yPos, imageSize, imageSize, "S");
-        
-        // Add image to PDF
         doc.addImage(
-          image.url,  // URL or base64 string
-          'JPEG',     // Format
-          xPos + 1,   // X position
-          yPos + 1,   // Y position
-          imageSize - 2, // Width
-          imageSize - 2  // Height
+          image.url, 
+          'JPEG', 
+          imgX, 
+          imgY, 
+          imageWidth - 5, 
+          componentImageHeight
         );
-        
-        // Simple caption background
-        doc.setFillColor(pdfColors.bgGray[0], pdfColors.bgGray[1], pdfColors.bgGray[2]);
-        doc.rect(xPos, yPos + imageSize, imageSize, 10, "F");
-        
-        // Add timestamp caption - fixed formatting
-        const formattedDate = formatDate(image.timestamp);
-        
-        doc.setFontSize(pdfFontSizes.small);
-        doc.setFont(pdfFonts.body, "normal");
-        doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-        doc.text(formattedDate, xPos + (imageSize / 2), yPos + imageSize + 7, { align: "center" });
       } catch (error) {
-        console.error("Error adding image to PDF:", error);
-        
-        // Error placeholder
-        doc.setDrawColor(pdfColors.lightGray[0], pdfColors.lightGray[1], pdfColors.lightGray[2]);
-        doc.rect(xPos, yPos, imageSize, imageSize, "S");
-        
-        doc.setFont(pdfFonts.body, "italic");
-        doc.setFontSize(pdfFontSizes.small);
-        doc.setTextColor(pdfColors.gray[0], pdfColors.gray[1], pdfColors.gray[2]);
-        doc.text("Image loading error", xPos + (imageSize / 2), yPos + (imageSize / 2), { align: "center" });
+        console.error("Error adding component image to PDF", error);
+        // Add placeholder for failed image
+        doc.setDrawColor(200, 200, 200);
+        doc.setFillColor(240, 240, 240);
+        doc.rect(
+          imgX, 
+          imgY, 
+          imageWidth - 5, 
+          componentImageHeight, 
+          'FD'
+        );
+        doc.setTextColor(150, 150, 150);
+        doc.setFontSize(8);
+        doc.text(
+          'Image unavailable', 
+          imgX + ((imageWidth - 5) / 2), 
+          imgY + (componentImageHeight / 2), 
+          { align: 'center' }
+        );
       }
     }
+    
+    // Update Y position past the images
+    currentY += componentImageHeight + 5;
   }
   
-  return yPosition;
+  return currentY;
+}
+
+// Draw a condition badge on the PDF
+function drawConditionBadge(
+  doc: jsPDF, 
+  condition: string, 
+  x: number, 
+  y: number
+) {
+  let badgeColor;
+  let textColor = '#ffffff';
+  
+  // Set badge color based on condition
+  switch (condition) {
+    case 'excellent':
+      badgeColor = '#10b981'; // green
+      break;
+    case 'good':
+      badgeColor = '#3b82f6'; // blue
+      break;
+    case 'fair':
+      badgeColor = '#f59e0b'; // amber
+      break;
+    case 'poor':
+      badgeColor = '#ef4444'; // red
+      break;
+    case 'needs_replacement':
+      badgeColor = '#7f1d1d'; // dark red
+      break;
+    default:
+      badgeColor = '#6b7280'; // gray
+  }
+  
+  const conditionText = conditionRatingToText(condition);
+  
+  // Measure badge width
+  doc.setFont(defaultFont);
+  doc.setFontSize(8);
+  const textWidth = doc.getTextWidth(conditionText);
+  const badgeWidth = textWidth + 10;
+  const badgeHeight = 5;
+  
+  // Draw badge background
+  doc.setFillColor(badgeColor);
+  doc.roundedRect(x, y - 4, badgeWidth, badgeHeight + 4, 1, 1, 'F');
+  
+  // Draw text
+  doc.setTextColor(textColor);
+  doc.text(conditionText, x + 5, y);
 }

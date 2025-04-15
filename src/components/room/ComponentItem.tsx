@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
@@ -102,7 +103,7 @@ const ComponentItem = ({
     <AccordionItem 
       value={component.id}
       id={`component-${component.id}`}
-      className={`border rounded-lg overflow-hidden transition-all duration-300 ${isAnalyzed ? 'border-shareai-teal/40' : ''}`}
+      className={`border rounded-lg overflow-hidden transition-all duration-300 ${isAnalyzed ? 'border-shareai-teal/40' : ''} ${component.isCustom ? 'border-purple-300' : ''}`}
     >
       <AccordionTrigger 
         className="px-4 py-2 hover:no-underline"
@@ -114,6 +115,7 @@ const ComponentItem = ({
           condition={component.condition}
           imagesCount={component.images.length}
           isAnalyzed={isAnalyzed}
+          isCustom={component.isCustom}
         />
       </AccordionTrigger>
       <AccordionContent className="px-4 pb-4 pt-2">
@@ -157,7 +159,7 @@ const ComponentItem = ({
             <ComponentActions
               componentId={component.id}
               isEditing={!!component.isEditing}
-              isOptional={component.isOptional}
+              isOptional={component.isOptional || !!component.isCustom}
               isAnalyzed={isAnalyzed}
               onToggleEditMode={onToggleEditMode}
               onRemoveComponent={onRemoveComponent}

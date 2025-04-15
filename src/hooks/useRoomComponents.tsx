@@ -54,7 +54,8 @@ export function useRoomComponents({
 
   // Component addition hook
   const {
-    handleAddComponent
+    handleAddComponent,
+    addCustomComponent
   } = useComponentAddition({
     roomType,
     components,
@@ -87,6 +88,7 @@ export function useRoomComponents({
     // Actions
     setSelectedComponentType,
     handleAddComponent,
+    addCustomComponent,
     handleRemoveComponent,
     handleUpdateComponent,
     toggleEditMode,
