@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Apple, Facebook } from "lucide-react";
+import { Provider } from "@supabase/supabase-js";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const RegisterPage = () => {
-  const { register } = useAuth();
+  const { register, socialLogin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -19,16 +21,14 @@ const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords match.",
-        variant: "destructive",
-      });
+      setError("Passwords don't match. Please make sure both passwords match.");
       return;
     }
     
@@ -41,14 +41,18 @@ const RegisterPage = () => {
         description: "Your account has been created.",
       });
       navigate("/");
-    } catch (error) {
-      toast({
-        title: "Registration failed",
-        description: "Please check your information and try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      setError(error.message || "Registration failed. Please try again.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: Provider) => {
+    try {
+      await socialLogin(provider);
+    } catch (error: any) {
+      setError(error.message || `Registration with ${provider} failed.`);
     }
   };
   
@@ -63,6 +67,12 @@ const RegisterPage = () => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -107,6 +117,47 @@ const RegisterPage = () => {
                 required
                 minLength={6}
               />
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => handleSocialLogin('google')} 
+                className="w-full"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Google
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => handleSocialLogin('apple')} 
+                className="w-full"
+              >
+                <Apple className="h-4 w-4 mr-2" />
+                Apple
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => handleSocialLogin('facebook')} 
+                className="w-full"
+              >
+                <Facebook className="h-4 w-4 mr-2" />
+                Facebook
+              </Button>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Apple, Facebook } from "lucide-react";
+import { Provider } from "@supabase/supabase-js";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, socialLogin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,6 +20,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Get the page they were trying to visit
   const from = location.state?.from?.pathname || "/";
@@ -25,6 +28,7 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
     
     try {
       await login(email, password);
@@ -33,14 +37,19 @@ const LoginPage = () => {
         description: "Welcome back!",
       });
       navigate(from, { replace: true });
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      setError(error.message || "Login failed. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: Provider) => {
+    try {
+      await socialLogin(provider);
+      // No need for navigate or toast here as the redirect will happen automatically
+    } catch (error: any) {
+      setError(error.message || `Login with ${provider} failed.`);
     }
   };
   
@@ -55,6 +64,12 @@ const LoginPage = () => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -79,6 +94,47 @@ const LoginPage = () => {
                 required
               />
             </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => handleSocialLogin('google')} 
+                className="w-full"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Google
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => handleSocialLogin('apple')} 
+                className="w-full"
+              >
+                <Apple className="h-4 w-4 mr-2" />
+                Apple
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => handleSocialLogin('facebook')} 
+                className="w-full"
+              >
+                <Facebook className="h-4 w-4 mr-2" />
+                Facebook
+              </Button>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button
@@ -91,7 +147,7 @@ const LoginPage = () => {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
                 </>
               ) : (
-                "Sign in"
+                "Sign in with Email"
               )}
             </Button>
             <div className="text-center text-sm">

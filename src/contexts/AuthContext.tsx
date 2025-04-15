@@ -1,5 +1,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Provider } from "@supabase/supabase-js";
+import { useToast } from "@/components/ui/use-toast";
 
 // Define types
 interface User {
@@ -15,6 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
+  socialLogin: (provider: Provider) => Promise<void>;
 }
 
 // Create context with default values
@@ -25,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   register: async () => {},
   logout: () => {},
+  socialLogin: async () => {},
 });
 
 // Custom hook for using auth context
@@ -34,72 +39,112 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Check for existing user session on mount
+  // Check for existing user session on mount and set up auth state listener
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session?.user) {
+          const userData = {
+            id: session.user.id,
+            email: session.user.email || "",
+            name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "",
+          };
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const userData = {
+          id: session.user.id,
+          email: session.user.email || "",
+          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "",
+        };
+        setUser(userData);
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Login function - in a real app, this would call an API
+  // Login function
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, validate credentials with backend
-      // For demo, just check if password is at least 6 chars
-      if (password.length < 6) {
-        throw new Error("Invalid credentials");
-      }
-      
-      // Create mock user
-      const newUser = {
-        id: `user_${Date.now()}`,
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        name: email.split('@')[0],
-      };
+        password,
+      });
       
-      // Store in localStorage (in real app, you'd store a token)
-      localStorage.setItem('user', JSON.stringify(newUser));
-      setUser(newUser);
-    } catch (error) {
-      console.error("Login failed:", error);
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "An error occurred during login.",
+        variant: "destructive",
+      });
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Register function - in a real app, this would call an API
+  // Register function
   const register = async (email: string, password: string, name?: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, validate email is not taken
-      // For demo, just check if password is at least 6 chars
-      if (password.length < 6) {
-        throw new Error("Password must be at least 6 characters");
-      }
-      
-      // Create mock user
-      const newUser = {
-        id: `user_${Date.now()}`,
+      const { error } = await supabase.auth.signUp({
         email,
-        name: name || email.split('@')[0],
-      };
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      });
       
-      // Store in localStorage (in real app, you'd store a token)
-      localStorage.setItem('user', JSON.stringify(newUser));
-      setUser(newUser);
-    } catch (error) {
-      console.error("Registration failed:", error);
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error.message || "An error occurred during registration.",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Social login function
+  const socialLogin = async (provider: Provider) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Social login failed",
+        description: error.message || `Could not sign in with ${provider}.`,
+        variant: "destructive",
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -107,9 +152,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Logout function
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error: any) {
+      toast({
+        title: "Logout failed",
+        description: error.message || "An error occurred during logout.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -121,6 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
+        socialLogin,
       }}
     >
       {children}
