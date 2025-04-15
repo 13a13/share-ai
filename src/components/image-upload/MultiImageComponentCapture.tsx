@@ -17,7 +17,7 @@ interface MultiImageComponentCaptureProps {
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  onRemoveImage: (index: number) => void;
+  onRemoveImage: (imageId: string) => void; // Updated type
   disabled?: boolean;
 }
 
@@ -104,7 +104,7 @@ const MultiImageComponentCapture = ({
         
         <CurrentImagesDisplay
           currentImages={currentImages}
-          onRemoveImage={onRemoveImage}
+          onRemoveImage={onRemoveImage} // Directly pass the prop
         />
         
         <ImageUploadControls
