@@ -147,7 +147,7 @@ const ComponentItem = ({
               isProcessing={isProcessing}
               currentImages={component.images}
               onImagesProcessed={handleComponentImages}
-              onProcessingStateChange={handleComponentProcessingState}
+              onProcessingStateChange={(componentId, isProcessing) => onProcessingStateChange(componentId, isProcessing)}
               onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
               disabled={isProcessing}
             />
