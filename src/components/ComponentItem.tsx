@@ -7,7 +7,7 @@ import ComponentImages from "./component/ComponentImages";
 import ComponentEditForm from "./component/ComponentEditForm";
 import ComponentActions from "./component/ComponentActions";
 import ComponentHeader from "./component/ComponentHeader";
-import MultiImageComponentCapture from "./MultiImageComponentCapture";
+import MultiImageComponentCapture from "./image-upload/MultiImageComponentCapture";
 import {
   cleanlinessOptions,
   conditionRatingOptions
@@ -84,7 +84,6 @@ const ComponentItem = ({
 
   const handleRemoveStagingImage = (imageId: string) => {
     console.log("Remove staging image with ID", imageId);
-    // This is handled in the MultiImageComponentCapture component
   };
 
   return (
@@ -110,6 +109,7 @@ const ComponentItem = ({
               Photos ({component.images.length}/20)
             </label>
             
+            {/* Unified image display - only one place to see images */}
             <ComponentImages 
               images={component.images}
               onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
@@ -123,7 +123,7 @@ const ComponentItem = ({
               currentImages={component.images}
               onImagesProcessed={handleComponentImages}
               onProcessingStateChange={onProcessingStateChange}
-              onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
+              onRemoveImage={handleRemoveStagingImage}
             />
             
             <ComponentActions

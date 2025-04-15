@@ -13,6 +13,7 @@ import {
   cleanlinessOptions,
   conditionRatingOptions
 } from "@/services/imageProcessingService";
+import { format } from "date-fns";
 
 interface ComponentItemProps {
   component: RoomComponent & { isEditing?: boolean };
@@ -132,9 +133,11 @@ const ComponentItem = ({
               )}
             </div>
             
+            {/* Unified image display - only one place to see images */}
             <ComponentImages 
               images={component.images}
               onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
+              showTimestamps={true}
             />
             
             <MultiImageComponentCapture 

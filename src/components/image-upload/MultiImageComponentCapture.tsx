@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useImageUploadAndProcess } from "@/hooks/useImageUploadAndProcess";
 import StagingImagesGrid from "./StagingImagesGrid";
 import ProgressIndicator from "./ProgressIndicator";
-import CurrentImagesDisplay from "./CurrentImagesDisplay";
 import ImageUploadControls from "./ImageUploadControls";
 import MaxImagesWarning from "./MaxImagesWarning";
 
@@ -17,7 +16,7 @@ interface MultiImageComponentCaptureProps {
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  onRemoveImage: (imageId: string) => void; // Updated type
+  onRemoveImage: (imageId: string) => void;
   disabled?: boolean;
 }
 
@@ -100,11 +99,6 @@ const MultiImageComponentCapture = ({
           onMoveImage={moveImage}
           totalImages={totalImages}
           maxImages={maxImages}
-        />
-        
-        <CurrentImagesDisplay
-          currentImages={currentImages}
-          onRemoveImage={onRemoveImage} // Directly pass the prop
         />
         
         <ImageUploadControls
