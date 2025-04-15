@@ -30,6 +30,16 @@ export const conditionRatingOptions = [
 ];
 
 /**
+ * Convert condition rating to human-readable text
+ * @param condition Condition rating from the enum
+ * @returns Formatted text representation
+ */
+export const conditionRatingToText = (condition: string): string => {
+  const option = conditionRatingOptions.find(opt => opt.value === condition);
+  return option ? option.label : condition.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+/**
  * Processes an image using the Gemini API to analyze a component
  * @param imageUrls URL or array of URLs of the image(s) to analyze
  * @param roomType Type of room the component is in

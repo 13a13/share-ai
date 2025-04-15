@@ -16,6 +16,18 @@ export const pdfColors = {
   dangerRed: [244, 67, 54],
 };
 
+// Font constants for use in PDF
+export const defaultFont = "helvetica";
+export const defaultFontBold = "helvetica";
+export const primaryColor = "#0E345F";
+export const secondaryColor = "#2E8BC0";
+
+// Margin and size constants
+export const defaultMargins = { left: 20, right: 20, top: 20, bottom: 20 };
+export const contentWidth = 170; // A4 width (210mm) minus margins
+export const roomImageHeight = 60; // Standard height for room images
+export const componentImageHeight = 40; // Standard height for component images
+
 // PDF font size constants - simplified for better readability
 export const pdfFontSizes = {
   title: 16, // Large title (cover page, section headers)
@@ -63,6 +75,17 @@ export function getConditionColor(condition: string | undefined | null): number[
     default:
       return pdfColors.gray;
   }
+}
+
+// Helper function to apply standard layout to a page
+export function applyLayout(doc: any) {
+  // Set default font and size
+  doc.setFont(defaultFont);
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  
+  // Return starting Y position after header
+  return { startY: defaultMargins.top + 10 };
 }
 
 // Helper function to create section styling - simplified

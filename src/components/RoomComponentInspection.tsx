@@ -27,6 +27,7 @@ const RoomComponentInspection = ({
     availableComponents,
     setSelectedComponentType,
     handleAddComponent,
+    addCustomComponent,
     handleRemoveComponent,
     handleUpdateComponent,
     toggleEditMode,
@@ -51,6 +52,7 @@ const RoomComponentInspection = ({
       availableComponents={availableComponents}
       onSelectComponent={setSelectedComponentType}
       onAddComponent={handleAddComponent}
+      onAddCustomComponent={addCustomComponent}
       onToggleExpand={toggleExpandComponent}
       onRemoveComponent={handleRemoveComponent}
       onToggleEditMode={toggleEditMode}
