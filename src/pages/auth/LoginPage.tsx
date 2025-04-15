@@ -46,10 +46,18 @@ const LoginPage = () => {
 
   const handleSocialLogin = async (provider: Provider) => {
     try {
+      setError(null);
       await socialLogin(provider);
       // No need for navigate or toast here as the redirect will happen automatically
     } catch (error: any) {
-      setError(error.message || `Login with ${provider} failed.`);
+      const errorMessage = error.message || `Login with ${provider} failed.`;
+      
+      // Check for the specific validation error
+      if (errorMessage.includes('provider is not enabled')) {
+        setError(`The ${provider} login provider is not enabled in your Supabase project settings.`);
+      } else {
+        setError(errorMessage);
+      }
     }
   };
   

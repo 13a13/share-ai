@@ -138,7 +138,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        // Check for validation errors which could indicate provider not enabled
+        if (error.message.includes('validation_failed') || error.message.includes('provider is not enabled')) {
+          throw new Error(`The ${provider} provider is not enabled in your Supabase project settings.`);
+        }
+        throw error;
+      }
     } catch (error: any) {
       toast({
         title: "Social login failed",
