@@ -1,10 +1,12 @@
 
-import { ConditionRating, RoomComponent } from "@/types";
+import { useState } from "react";
+import { RoomComponent, RoomComponentImage } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 
 interface UseComponentImageProcessingProps {
   components: RoomComponent[];
   expandedComponents: string[];
-  setComponents: (components: RoomComponent[]) => void;
+  setComponents: (updatedComponents: RoomComponent[]) => void;
   setExpandedComponents: (ids: string[]) => void;
   onChange: (updatedComponents: RoomComponent[]) => void;
 }
@@ -16,77 +18,34 @@ export function useComponentImageProcessing({
   setExpandedComponents,
   onChange
 }: UseComponentImageProcessingProps) {
-  const handleImagesProcessed = (
-    componentId: string, 
-    imageUrls: string[], 
-    result: { 
-      description?: string; 
-      condition?: {
-        summary?: string;
-        points?: string[];
-        rating?: ConditionRating;
-      }; 
-      cleanliness?: string;
-      rating?: string;
-      notes?: string;
-    }
-  ) => {
+  const handleImagesProcessed = (componentId: string, imageUrls: string[], result: any) => {
+    if (!imageUrls.length) return;
+    
+    const component = components.find(c => c.id === componentId);
+    if (!component) return;
+    
+    const newImages: RoomComponentImage[] = imageUrls.map(url => ({
+      id: uuidv4(),
+      url,
+      timestamp: new Date()
+    }));
+    
     const updatedComponents = components.map(comp => {
       if (comp.id === componentId) {
-        // Create new image objects for all uploaded images
-        const newImages = imageUrls.map(url => ({
-          id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          url: url,
-          timestamp: new Date(),
-        }));
-        
-        // Map the condition rating from inventory to standard format if needed
-        let conditionValue = comp.condition;
-        if (result.condition?.rating) {
-          conditionValue = result.condition.rating;
-        } else if (result.rating) {
-          // Map inventory ratings to system ratings
-          switch (result.rating.toLowerCase()) {
-            case 'good order':
-              conditionValue = 'excellent';
-              break;
-            case 'used order':
-              conditionValue = 'good';
-              break;
-            case 'fair order':
-              conditionValue = 'fair';
-              break;
-            case 'damaged':
-              conditionValue = 'poor';
-              break;
-            default:
-              conditionValue = comp.condition;
-          }
-        }
-        
-        // Parse and convert cleanliness value if needed
-        let cleanlinessValue = result.cleanliness || comp.cleanliness;
-        if (cleanlinessValue) {
-          // Convert from "Professional Clean" format to "professional_clean" format
-          cleanlinessValue = cleanlinessValue
-            .toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^a-z0-9_]/g, '');
-        }
-        
-        // Ensure points are properly formatted
-        const conditionPoints = result.condition?.points || [];
+        // Make sure we don't exceed max images (20)
+        const currentImages = [...comp.images];
+        const combinedImages = [...currentImages, ...newImages];
+        const finalImages = combinedImages.slice(0, 20);
         
         return {
           ...comp,
+          images: finalImages,
           description: result.description || comp.description,
-          condition: conditionValue,
           conditionSummary: result.condition?.summary || comp.conditionSummary,
-          conditionPoints: conditionPoints,
-          cleanliness: cleanlinessValue,
-          notes: result.notes ? (comp.notes ? `${comp.notes}\n\n${result.notes}` : result.notes) : comp.notes,
-          images: [...comp.images, ...newImages],
-          isEditing: true
+          conditionPoints: result.condition?.points || comp.conditionPoints || [],
+          condition: result.condition?.rating || comp.condition,
+          cleanliness: result.cleanliness || comp.cleanliness,
+          notes: result.notes || comp.notes,
         };
       }
       return comp;
@@ -99,7 +58,7 @@ export function useComponentImageProcessing({
       setExpandedComponents([...expandedComponents, componentId]);
     }
   };
-
+  
   return {
     handleImagesProcessed
   };

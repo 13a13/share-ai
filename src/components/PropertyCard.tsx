@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 interface PropertyCardProps {
   property: Property;
-  onDeleteClick: (propertyId: string) => void;
+  onDeleteClick?: (propertyId: string) => void;
 }
 
 const PropertyCard = ({ property, onDeleteClick }: PropertyCardProps) => {
@@ -57,14 +57,16 @@ const PropertyCard = ({ property, onDeleteClick }: PropertyCardProps) => {
           View Details
         </Button>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-            onClick={() => onDeleteClick(property.id)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" /> Delete
-          </Button>
+          {onDeleteClick && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+              onClick={() => onDeleteClick(property.id)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" /> Delete
+            </Button>
+          )}
           <Button 
             size="sm" 
             onClick={() => navigate(`/reports/new/${property.id}`)}
