@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
 import { conditionRatingToText } from "../imageProcessingService";
 import { 
+  pdfColors, pdfFontSizes, pdfFonts, pdfMargins,
   defaultFont, defaultFontBold, secondaryColor, primaryColor,
   defaultMargins, contentWidth, roomImageHeight,
   componentImageHeight, applyLayout

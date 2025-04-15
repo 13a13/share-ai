@@ -2,16 +2,18 @@
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
-import { generateCoverPage } from "./pdf/coverPageGenerator";
-import { generateTableOfContents } from "./pdf/tableOfContentsGenerator";
-import { generateRoomSection } from "./pdf/roomSectionGenerator";
-import { generateSummaryAndDisclaimers } from "./pdf/summaryGenerator";
-import { PageUtils } from "./pdf/pageUtilities";
-import { capitalizeWords } from "./pdf/pdfStyles";
+import { generateCoverPage } from "./coverPageGenerator";
+import { generateTableOfContents } from "./tableOfContentsGenerator";
+import { generateRoomSection } from "./roomSectionGenerator";
+import { generateSummaryAndDisclaimers } from "./summaryGenerator";
+import { PageUtils } from "./pageUtilities";
+import { capitalizeWords } from "./pdfStyles";
 
 export type PDFGenerationStatus = "idle" | "generating" | "complete" | "error";
 
-// PDF generation service for reports
+/**
+ * Hook for generating PDF reports
+ */
 export const usePDFGeneration = () => {
   const { toast } = useToast();
   

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { usePDFGeneration } from "@/services/pdfGenerationService";
+import { usePDFGeneration } from "@/services/pdf";
 import { Report, Property } from "@/types";
 import { Loader2, Eye } from "lucide-react";
 import PDFPreviewDialog from "./PDFPreviewDialog";

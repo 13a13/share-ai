@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import EditablePDFPreview from "./pdf-preview/EditablePDFPreview";
 import { Report, Property } from "@/types";
-import { usePDFGeneration } from "@/services/pdfGenerationService";
+import { usePDFGeneration } from "@/services/pdf";
 import PDFViewer from "./pdf-preview/PDFViewer";
 import PDFPreviewHeader from "./pdf-preview/PDFPreviewHeader";
 import PDFPreviewFooter from "./pdf-preview/PDFPreviewFooter";
