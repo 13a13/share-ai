@@ -14,6 +14,12 @@ export const Colors = {
   SUCCESS: [50, 180, 50], // Green
   WARNING: [230, 150, 40], // Orange
   BACKGROUND: [250, 250, 250], // Off-White
+  
+  // Additional colors needed by section files
+  black: [0, 0, 0],
+  white: [255, 255, 255],
+  gray: [128, 128, 128],
+  lightGray: [200, 200, 200]
 };
 
 // Font definitions
@@ -34,4 +40,35 @@ export const pdfStyles = {
   footerFontSize: 8,
   lineWidth: 0.5,
   thinLineWidth: 0.2,
+  
+  // Add the missing properties
+  margins: {
+    page: 14,
+    small: 8
+  },
+  fonts: {
+    header: "helvetica",
+    body: "helvetica"
+  },
+  fontSizes: {
+    title: 16,
+    subtitle: 14,
+    sectionTitle: 12,
+    normal: 10,
+    small: 9,
+    footer: 8
+  },
+  colors: {
+    black: [0, 0, 0],
+    white: [255, 255, 255],
+    gray: [128, 128, 128],
+    lightGray: [200, 200, 200],
+    primary: [0, 100, 140]
+  }
+};
+
+// Extend PDF styles with additional settings for sections
+export const extendedPdfStyles = {
+  ...pdfStyles,
+  // Any additional styles that might be needed
 };

@@ -1,7 +1,7 @@
 
 import { jsPDF } from "jspdf";
 import { Report } from "@/types";
-import { Colors, Fonts } from "../styles";
+import { pdfStyles } from "../styles";
 
 /**
  * Generate the table of contents for the PDF
@@ -15,15 +15,15 @@ export const generateTableOfContents = (
   report?: Report
 ): void => {
   // Set title
-  doc.setFont(Fonts.HEADER_FONT, "bold");
+  doc.setFont(pdfStyles.fonts.header, "bold");
   doc.setFontSize(16);
-  doc.setTextColor(Colors.PRIMARY[0], Colors.PRIMARY[1], Colors.PRIMARY[2]);
+  doc.setTextColor(pdfStyles.colors.primary[0], pdfStyles.colors.primary[1], pdfStyles.colors.primary[2]);
   doc.text("Contents", 14, 30);
   
   // Set up for table of contents entries
-  doc.setFont(Fonts.BODY_FONT, "normal");
+  doc.setFont(pdfStyles.fonts.body, "normal");
   doc.setFontSize(11);
-  doc.setTextColor(Colors.TEXT[0], Colors.TEXT[1], Colors.TEXT[2]);
+  doc.setTextColor(pdfStyles.colors.black[0], pdfStyles.colors.black[1], pdfStyles.colors.black[2]);
   
   // Start position for entries
   let yPos = 45;
@@ -33,7 +33,7 @@ export const generateTableOfContents = (
     const page = pageMap[pageKey];
     if (!page) return;
     
-    doc.setFont(Fonts.BODY_FONT, "normal");
+    doc.setFont(pdfStyles.fonts.body, "normal");
     doc.text(text, 20, yPos);
     
     // Add dots
@@ -50,7 +50,7 @@ export const generateTableOfContents = (
     doc.text(dots, 20 + textWidth, yPos);
     
     // Add page number
-    doc.setFont(Fonts.BODY_FONT, "bold");
+    doc.setFont(pdfStyles.fonts.body, "bold");
     doc.text(String(page), doc.internal.pageSize.width - 20 - pageNumWidth, yPos);
     
     yPos += 8;
@@ -65,7 +65,7 @@ export const generateTableOfContents = (
   
   // Add rooms entries
   if (report) {
-    doc.setFont(Fonts.HEADER_FONT, "bold");
+    doc.setFont(pdfStyles.fonts.header, "bold");
     doc.text("Rooms", 18, yPos + 5);
     yPos += 12;
     
