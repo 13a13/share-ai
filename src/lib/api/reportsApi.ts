@@ -1,8 +1,9 @@
-
 import { Report, Room, RoomType, RoomImage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { LOCAL_STORAGE_KEYS, initializeLocalStorage } from './utils';
 import { createNewReport, createNewRoom } from '../mockData';
+import { PropertiesAPI } from './propertiesApi';
+import { uploadReportImage, deleteReportImage } from '@/utils/supabaseStorage';
 
 // Reports API
 export const ReportsAPI = {
@@ -137,9 +138,23 @@ export const ReportsAPI = {
     
     if (roomIndex === -1) return null;
     
+    // Get property details to create folder structure
+    const property = await PropertiesAPI.getById(report.propertyId);
+    if (!property) return null;
+
+    // Upload image to Supabase storage
+    const storedImageUrl = await uploadReportImage(
+      imageUrl, 
+      reportId, 
+      `${property.address}, ${property.city}, ${property.state}`, 
+      report.type
+    );
+
+    if (!storedImageUrl) return null;
+    
     const newImage: RoomImage = {
       id: uuidv4(),
-      url: imageUrl,
+      url: storedImageUrl,
       aiProcessed: false,
       timestamp: new Date(),
     };
@@ -150,7 +165,8 @@ export const ReportsAPI = {
     localStorage.setItem(LOCAL_STORAGE_KEYS.REPORTS, JSON.stringify(reports));
     return newImage;
   },
-  
+
+  // Update the delete room method to remove associated images from storage
   deleteRoom: async (reportId: string, roomId: string): Promise<void> => {
     const reports = await ReportsAPI.getAll();
     const reportIndex = reports.findIndex(r => r.id === reportId);
@@ -158,6 +174,15 @@ export const ReportsAPI = {
     if (reportIndex === -1) return;
     
     const report = reports[reportIndex];
+    const roomToDelete = report.rooms.find(room => room.id === roomId);
+    
+    if (roomToDelete) {
+      // Delete all images associated with this room from storage
+      for (const image of roomToDelete.images) {
+        await deleteReportImage(image.url);
+      }
+    }
+    
     report.rooms = report.rooms.filter(room => room.id !== roomId);
     report.updatedAt = new Date();
     
