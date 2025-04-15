@@ -1,14 +1,13 @@
 
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import ImageFileInput from "../ImageFileInput";
-import StagingImagesGrid from "./StagingImagesGrid";
-import ComponentImages from "../component/ComponentImages";
-import { Card } from "../ui/card";
-import { Progress } from "../ui/progress";
-import { ScrollArea } from "../ui/scroll-area";
 import { useEffect, useState } from "react";
 import { useImageUploadAndProcess } from "@/hooks/useImageUploadAndProcess";
+import StagingImagesGrid from "./StagingImagesGrid";
+import ProgressIndicator from "./ProgressIndicator";
+import CurrentImagesDisplay from "./CurrentImagesDisplay";
+import ImageUploadControls from "./ImageUploadControls";
+import MaxImagesWarning from "./MaxImagesWarning";
 
 interface MultiImageComponentCaptureProps {
   componentId: string;
