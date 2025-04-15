@@ -8,7 +8,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import CollapsibleRoomSection from "@/components/CollapsibleRoomSection";
 import PDFExportButton from "@/components/PDFExportButton";
-import PropertySummaryDisplay from "@/components/report/PropertySummaryDisplay";
 
 const ReportViewPage = () => {
   const navigate = useNavigate();
@@ -152,11 +151,6 @@ const ReportViewPage = () => {
           )}
         </div>
       </div>
-      
-      {/* Add property summary display */}
-      {(report.overallConditionSummary || report.overallCleaningSummary || report.summaryCategoriesData) && (
-        <PropertySummaryDisplay report={report} />
-      )}
       
       <h2 className="text-xl font-bold mb-4">Rooms</h2>
       

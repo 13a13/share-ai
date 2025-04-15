@@ -1,4 +1,3 @@
-
 export interface Property {
   id: string;
   name?: string;
@@ -35,23 +34,6 @@ export interface Report {
   completedAt: Date | null;
   property?: Property; // Joined property data (not stored in DB)
   createdBy?: string; // Add createdBy property
-  
-  // Add property summary fields
-  summaryCategoriesData?: {
-    walls?: CategorySummary;
-    ceilings?: CategorySummary;
-    floors?: CategorySummary;
-    contents?: CategorySummary;
-    lighting?: CategorySummary;
-    kitchen?: CategorySummary;
-  };
-  overallConditionSummary?: string;
-  overallCleaningSummary?: string;
-}
-
-export interface CategorySummary {
-  conditionSummary: string;
-  cleanlinessSummary: string;
 }
 
 export interface ReportInfo {

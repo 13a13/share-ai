@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -9,14 +8,11 @@ import EmptyRoomsState from "@/components/EmptyRoomsState";
 import ReportRoomForm from "@/components/ReportRoomForm";
 import ReportLoadingState from "@/components/ReportLoadingState";
 import UnifiedRoomView from "@/components/room/UnifiedRoomView";
-import ReportSummaryEditor from "@/components/report/ReportSummaryEditor";
-import { Activity } from "lucide-react";
 import { useReportEditor, ReportInfoFormValues } from "@/hooks/report/useReportEditor";
 
 const ReportEditPage = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const isMobile = useIsMobile();
-  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
   
   const {
     report,
@@ -35,12 +31,6 @@ const ReportEditPage = () => {
     handleSaveReport,
     handleCompleteReport,
     handleNavigateRoom,
-    // Summary-related functions
-    summaries,
-    isAnalyzingSummaries,
-    generateReportSummaries,
-    updateReportSummary,
-    handleSaveSummaries
   } = useReportEditor(reportId);
   
   // Show loading or error states
@@ -58,20 +48,6 @@ const ReportEditPage = () => {
     tenantName: report.reportInfo?.tenantName || "",
     additionalInfo: report.reportInfo?.additionalInfo || "",
   };
-
-  const handleAnalyzeSummary = async () => {
-    setSummaryDialogOpen(true);
-    if (!summaries) {
-      await generateReportSummaries();
-    }
-  };
-  
-  const handleSummaryDialogClose = async (save: boolean) => {
-    setSummaryDialogOpen(false);
-    if (save && summaries) {
-      await handleSaveSummaries();
-    }
-  };
   
   return (
     <div className="shareai-container pb-24 sm:pb-8">
@@ -83,17 +59,6 @@ const ReportEditPage = () => {
         onSave={handleSaveReport}
         onComplete={handleCompleteReport}
       />
-      
-      <div className="flex justify-between items-center my-4 flex-wrap gap-2">
-        <h2 className="text-xl font-bold">Report Information</h2>
-        <Button 
-          onClick={handleAnalyzeSummary}
-          className="bg-shareai-teal hover:bg-shareai-teal/90"
-        >
-          <Activity className="mr-2 h-4 w-4" />
-          Analyze Summary
-        </Button>
-      </div>
       
       <ReportInfoForm 
         defaultValues={reportInfoDefaults}
@@ -135,17 +100,6 @@ const ReportEditPage = () => {
         />
       </div>
       
-      <ReportSummaryEditor
-        open={summaryDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) handleSummaryDialogClose(true);
-          else setSummaryDialogOpen(open);
-        }}
-        summaries={summaries}
-        isAnalyzing={isAnalyzingSummaries}
-        onSummaryUpdate={updateReportSummary}
-      />
-      
       {/* Add sticky bottom bar for mobile navigation if needed */}
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-around z-40 shadow-lg">
@@ -170,3 +124,4 @@ const ReportEditPage = () => {
 };
 
 export default ReportEditPage;
+

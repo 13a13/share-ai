@@ -21,7 +21,6 @@ import AuthCallbackPage from "./pages/auth/AuthCallbackPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
-// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
 const App = () => (

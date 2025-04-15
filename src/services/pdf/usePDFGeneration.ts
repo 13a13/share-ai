@@ -8,7 +8,6 @@ import { generateDisclaimerSection } from "./sections/disclaimer";
 import { generateSummaryTables } from "./sections/summaryTables";
 import { generateRoomSection } from "./sections/roomSection";
 import { generateFinalSections } from "./sections/finalSections";
-import { generatePropertySummarySection } from "./sections/propertySummary";
 import { addHeadersAndFooters } from "./utils/headerFooter";
 
 export type PDFGenerationStatus = "idle" | "generating" | "complete" | "error";
@@ -58,20 +57,13 @@ export const usePDFGeneration = () => {
       generateTableOfContents(doc, pageMap);
       doc.addPage();
       
-      // Add property summary section if available
-      if (report.overallConditionSummary || report.overallCleaningSummary || report.summaryCategoriesData) {
-        pageMap["summary"] = currentPage++;
-        generatePropertySummarySection(doc, report);
-        doc.addPage();
-      }
-      
-      // Add disclaimer section as next page
+      // Add disclaimer section as page 3
       pageMap["disclaimer"] = currentPage++;
       generateDisclaimerSection(doc);
       doc.addPage();
       
-      // Add summaries as next page
-      pageMap["details"] = currentPage++;
+      // Add summaries as page 4
+      pageMap["summary"] = currentPage++;
       generateSummaryTables(doc, report, property);
       doc.addPage();
       

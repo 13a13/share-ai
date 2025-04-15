@@ -50,9 +50,9 @@ export async function addCompressedImage(
     
     // Add timestamp below image if available
     if (timestamp) {
-      const { pdfStyles } = await import('../styles');
-      doc.setFont(pdfStyles.fonts.body, "italic");
-      doc.setFontSize(pdfStyles.fontSizes.small);
+      const { fonts, fontSizes } = await import('../styles').then(m => m.pdfStyles);
+      doc.setFont(fonts.body, "italic");
+      doc.setFontSize(fontSizes.small);
       const timestampStr = new Date(timestamp).toLocaleString();
       doc.text(timestampStr, xPos + width / 2, yPos + height + 5, { align: "center" });
     }
