@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import { RoomComponent, RoomComponentImage } from "@/types";
 import { v4 as uuidv4 } from "uuid";
+import { useToast } from "@/components/ui/use-toast";
 
 interface UseComponentImageProcessingProps {
   components: RoomComponent[];
@@ -18,6 +18,8 @@ export function useComponentImageProcessing({
   setExpandedComponents,
   onChange
 }: UseComponentImageProcessingProps) {
+  const { toast } = useToast();
+  
   const handleImagesProcessed = (componentId: string, imageUrls: string[], result: any) => {
     if (!imageUrls.length) return;
     
@@ -46,6 +48,7 @@ export function useComponentImageProcessing({
           condition: result.condition?.rating || comp.condition,
           cleanliness: result.cleanliness || comp.cleanliness,
           notes: result.notes || comp.notes,
+          isEditing: true
         };
       }
       return comp;
@@ -57,6 +60,11 @@ export function useComponentImageProcessing({
     if (!expandedComponents.includes(componentId)) {
       setExpandedComponents([...expandedComponents, componentId]);
     }
+    
+    toast({
+      title: "AI Analysis Complete",
+      description: "The component has been analyzed and details are now available for editing.",
+    });
   };
   
   return {

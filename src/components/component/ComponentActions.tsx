@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Save } from "lucide-react";
 
 interface ComponentActionsProps {
   componentId: string;
@@ -19,15 +19,22 @@ const ComponentActions = ({
 }: ComponentActionsProps) => {
   return (
     <div className="flex flex-wrap gap-2 mt-2">
-      {!isEditing && (
-        <Button
-          variant="outline"
-          onClick={() => onToggleEditMode(componentId)}
-        >
-          <Edit className="h-4 w-4 mr-2" />
-          Edit Details
-        </Button>
-      )}
+      <Button
+        variant="outline"
+        onClick={() => onToggleEditMode(componentId)}
+      >
+        {isEditing ? (
+          <>
+            <Save className="h-4 w-4 mr-2" />
+            Save Changes
+          </>
+        ) : (
+          <>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Details
+          </>
+        )}
+      </Button>
       
       {isOptional && (
         <Button

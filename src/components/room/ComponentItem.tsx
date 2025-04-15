@@ -86,6 +86,12 @@ const ComponentItem = ({
     console.log("Remove staging image at index", index);
     // This is handled in the MultiImageComponentCapture component
   };
+  
+  // Render component details if there's any meaningful content
+  const hasDetails = component.description || 
+                     component.conditionSummary || 
+                     (component.conditionPoints && component.conditionPoints.length > 0) || 
+                     component.notes;
 
   return (
     <AccordionItem 
@@ -125,6 +131,43 @@ const ComponentItem = ({
               onProcessingStateChange={onProcessingStateChange}
               onRemoveImage={handleRemoveStagingImage}
             />
+            
+            {/* Display component details summary when not editing */}
+            {hasDetails && !component.isEditing && (
+              <div className="border rounded-md p-3 mt-2 bg-gray-50 space-y-2">
+                {component.description && (
+                  <div>
+                    <h4 className="text-sm font-medium">Description</h4>
+                    <p className="text-sm">{component.description}</p>
+                  </div>
+                )}
+                
+                {component.conditionSummary && (
+                  <div>
+                    <h4 className="text-sm font-medium">Condition Summary</h4>
+                    <p className="text-sm">{component.conditionSummary}</p>
+                  </div>
+                )}
+                
+                {component.conditionPoints && component.conditionPoints.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium">Condition Details</h4>
+                    <ul className="list-disc pl-5 text-sm">
+                      {component.conditionPoints.map((point, idx) => (
+                        <li key={idx}>{point}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {component.notes && (
+                  <div>
+                    <h4 className="text-sm font-medium">Notes</h4>
+                    <p className="text-sm italic">{component.notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
             
             <ComponentActions
               componentId={component.id}
