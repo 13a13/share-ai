@@ -20,8 +20,8 @@ interface MultiImageComponentCaptureProps {
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  onRemoveImage: (index: number) => void;
-  disabled?: boolean; // Added disabled prop
+  onRemoveImage: (imageId: string) => void; // Changed from (index: number) to (imageId: string)
+  disabled?: boolean;
 }
 
 const MultiImageComponentCapture = ({ 
@@ -33,7 +33,7 @@ const MultiImageComponentCapture = ({
   onImagesProcessed,
   onProcessingStateChange,
   onRemoveImage,
-  disabled = false // Set default value to false
+  disabled = false
 }: MultiImageComponentCaptureProps) => {
   const [imageLoadProgress, setImageLoadProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
@@ -115,13 +115,7 @@ const MultiImageComponentCapture = ({
             </div>
             <ComponentImages 
               images={currentImages}
-              onRemoveImage={(imageId) => {
-                // Find the index in the array by ID
-                const index = currentImages.findIndex(img => img.id === imageId);
-                if (index !== -1) {
-                  onRemoveImage(index);
-                }
-              }}
+              onRemoveImage={onRemoveImage} // Directly pass the onRemoveImage function
             />
           </ScrollArea>
         )}
@@ -133,7 +127,7 @@ const MultiImageComponentCapture = ({
             onChange={handleImageCapture}
             onImageCapture={handleCameraCapture}
             multiple={true}
-            disabled={!canAddMore || disabled} // Pass the disabled prop here
+            disabled={!canAddMore || disabled}
             totalImages={totalImages}
             maxImages={maxImages}
             compressionInProgress={compressionInProgress}

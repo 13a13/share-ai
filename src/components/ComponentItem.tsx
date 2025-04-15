@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
@@ -122,7 +123,7 @@ const ComponentItem = ({
               currentImages={component.images}
               onImagesProcessed={handleComponentImages}
               onProcessingStateChange={onProcessingStateChange}
-              onRemoveImage={handleRemoveStagingImage}
+              onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
             />
             
             <ComponentActions
