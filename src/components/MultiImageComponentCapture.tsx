@@ -21,6 +21,7 @@ interface MultiImageComponentCaptureProps {
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
   onRemoveImage: (index: number) => void;
+  disabled?: boolean; // Added disabled prop
 }
 
 const MultiImageComponentCapture = ({ 
@@ -31,7 +32,8 @@ const MultiImageComponentCapture = ({
   currentImages,
   onImagesProcessed,
   onProcessingStateChange,
-  onRemoveImage
+  onRemoveImage,
+  disabled = false // Set default value to false
 }: MultiImageComponentCaptureProps) => {
   const [imageLoadProgress, setImageLoadProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
@@ -131,7 +133,7 @@ const MultiImageComponentCapture = ({
             onChange={handleImageCapture}
             onImageCapture={handleCameraCapture}
             multiple={true}
-            disabled={!canAddMore}
+            disabled={!canAddMore || disabled} // Pass the disabled prop here
             totalImages={totalImages}
             maxImages={maxImages}
             compressionInProgress={compressionInProgress}

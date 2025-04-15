@@ -27,10 +27,12 @@ export function useComponentImageProcessing({
     const component = components.find(c => c.id === componentId);
     if (!component) return;
     
+    const currentTimestamp = new Date(); // Create a Date object
+    
     const newImages: RoomComponentImage[] = imageUrls.map(url => ({
       id: uuidv4(),
       url,
-      timestamp: new Date().toISOString() // Store current timestamp for "last analyzed"
+      timestamp: currentTimestamp // Use the Date object directly
     }));
     
     const updatedComponents = components.map(comp => {

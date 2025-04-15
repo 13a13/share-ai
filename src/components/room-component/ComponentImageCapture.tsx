@@ -11,6 +11,7 @@ interface ComponentImageCaptureProps {
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
   onRemovePreviewImage: (index: number) => void;
+  disabled?: boolean; // Add disabled prop
 }
 
 /**
@@ -25,7 +26,8 @@ const ComponentImageCapture = ({
   currentImages,
   onImagesProcessed,
   onProcessingStateChange,
-  onRemovePreviewImage
+  onRemovePreviewImage,
+  disabled
 }: ComponentImageCaptureProps) => {
   return (
     <MultiImageComponentCapture
@@ -37,6 +39,7 @@ const ComponentImageCapture = ({
       onImagesProcessed={onImagesProcessed}
       onProcessingStateChange={onProcessingStateChange}
       onRemoveImage={onRemovePreviewImage}
+      disabled={disabled}
     />
   );
 };
