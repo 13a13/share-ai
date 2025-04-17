@@ -262,6 +262,9 @@ async function generateComponentSection(
       } else if (typeof component.condition === 'string') {
         // If it's already a string, use it directly
         formattedCondition = component.condition;
+      } else if (typeof component.condition === 'object' && component.condition !== null && 'rating' in component.condition) {
+        // If it's an object with a rating property, use that
+        formattedCondition = conditionRatingToText(component.condition.rating);
       }
     }
     
@@ -366,7 +369,7 @@ async function generateComponentSection(
     yPosition += splitNotes.length * 6 + 5;
   }
   
-  // Component images - show all images, not just 3
+  // Component images - show all images in a standardized format
   if (component.images && component.images.length > 0) {
     // Filter out any invalid images
     const validImages = component.images.filter(img => img && img.url && img.url.trim() !== '');
@@ -385,9 +388,9 @@ async function generateComponentSection(
       }
       
       // Standard image sizes - display in a grid from left to right
-      const imagesPerRow = 3;
+      const imagesPerRow = 2; // Reduced from 3 to 2 to make them larger and more visible
       const imageWidth = (pageWidth - (margins * 2) - ((imagesPerRow - 1) * 5)) / imagesPerRow;
-      const imageHeight = 30; // Standard height for all images
+      const imageHeight = 40; // Standardized height for all images
       
       let currentY = yPosition;
       

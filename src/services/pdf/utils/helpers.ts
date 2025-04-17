@@ -1,6 +1,7 @@
 
 import { conditionRatingToText } from "../../imageProcessingService";
 import { compressDataURLImage } from "@/utils/imageCompression";
+import { pdfStyles } from "../styles";
 
 /**
  * Helper function to derive cleanliness rating from general condition text
@@ -87,9 +88,8 @@ export async function addCompressedImage(
               doc.addImage(compressedImage, imageFormat, xPos, yPos, width, newHeight);
               // Adjust timestamp position
               if (timestamp) {
-                const { fonts, fontSizes } = require('../styles').pdfStyles;
-                doc.setFont(fonts.body, "italic");
-                doc.setFontSize(fontSizes.small);
+                doc.setFont(pdfStyles.fonts.body, "italic");
+                doc.setFontSize(pdfStyles.fontSizes.small);
                 const timestampStr = new Date(timestamp).toLocaleString();
                 doc.text(timestampStr, xPos + width / 2, yPos + newHeight + 5, { align: "center" });
               }
@@ -100,9 +100,8 @@ export async function addCompressedImage(
               doc.addImage(compressedImage, imageFormat, xPos, yPos, newWidth, height);
               // Adjust timestamp position
               if (timestamp) {
-                const { fonts, fontSizes } = require('../styles').pdfStyles;
-                doc.setFont(fonts.body, "italic");
-                doc.setFontSize(fontSizes.small);
+                doc.setFont(pdfStyles.fonts.body, "italic");
+                doc.setFontSize(pdfStyles.fontSizes.small);
                 const timestampStr = new Date(timestamp).toLocaleString();
                 doc.text(timestampStr, xPos + newWidth / 2, yPos + height + 5, { align: "center" });
               }
@@ -121,9 +120,8 @@ export async function addCompressedImage(
         
         // Add timestamp below image if available
         if (timestamp) {
-          const { fonts, fontSizes } = require('../styles').pdfStyles;
-          doc.setFont(fonts.body, "italic");
-          doc.setFontSize(fontSizes.small);
+          doc.setFont(pdfStyles.fonts.body, "italic");
+          doc.setFontSize(pdfStyles.fontSizes.small);
           const timestampStr = new Date(timestamp).toLocaleString();
           doc.text(timestampStr, xPos + width / 2, yPos + height + 5, { align: "center" });
         }
@@ -162,7 +160,8 @@ export function checkPageOverflow(doc: any, yPosition: number, contentHeight: nu
  * Draw a placeholder where an image would be
  */
 function drawPlaceholder(doc: any, xPos: number, yPos: number, width: number, height: number): void {
-  const { colors } = require('../styles').pdfStyles;
+  // Get colors from the imported pdfStyles
+  const { colors } = pdfStyles;
   
   // Draw a rectangle with border
   doc.setDrawColor(colors.lightGray[0], colors.lightGray[1], colors.lightGray[2]);
