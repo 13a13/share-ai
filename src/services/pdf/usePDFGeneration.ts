@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -63,17 +62,12 @@ export const usePDFGeneration = () => {
       const pageMap: Record<string, number> = {};
       let currentPage = 2; // Cover is page 1
       
-      // Add table of contents (contents page) as page 2
-      pageMap["contents"] = currentPage++;
-      generateTableOfContents(doc, pageMap);
-      doc.addPage();
-      
-      // Add disclaimer section as page 3
+      // Add disclaimer section as page 2
       pageMap["disclaimer"] = currentPage++;
       generateDisclaimerSection(doc);
       doc.addPage();
       
-      // Add summaries as page 4
+      // Add summaries as page 3
       pageMap["summary"] = currentPage++;
       generateSummaryTables(doc, report, property);
       doc.addPage();
@@ -96,14 +90,8 @@ export const usePDFGeneration = () => {
         }
       }
       
-      // Add final sections
-      doc.addPage();
-      pageMap["final"] = currentPage++;
-      generateFinalSections(doc, report, property);
-      
-      // Go back and update table of contents with correct page numbers
-      doc.setPage(1);
-      doc.addPage();
+      // Add table of contents after tracking all page numbers
+      doc.setPage(2); // Go to page 2 (after cover)
       generateTableOfContents(doc, pageMap, report);
       
       // Add headers and footers to all pages

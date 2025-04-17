@@ -90,10 +90,10 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
       doc.text("Room Overview:", margins, yPosition);
       yPosition += 8;
       
-      // Show all room images, not just 4
-      const imagesPerRow = 2;
-      const imageWidth = (pageWidth - (margins * 2) - 10) / imagesPerRow;
-      const imageHeight = 40;
+      // Show all room images in an optimized grid
+      const imagesPerRow = 5;
+      const imageWidth = (pageWidth - (margins * 2) - ((imagesPerRow - 1) * 2)) / imagesPerRow;
+      const imageHeight = 35;
       
       let imageYPosition = yPosition;
       
@@ -102,21 +102,20 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
         const row = Math.floor(i / imagesPerRow);
         
         // Check if this row of images would overflow into footer
-        if (row > 0 && checkPageOverflow(doc, imageYPosition + (row * (imageHeight + 15)), imageHeight)) {
+        if (row > 0 && checkPageOverflow(doc, imageYPosition + (row * (imageHeight + 10)), imageHeight)) {
           doc.addPage();
           imageYPosition = margins;
-          // Reset row counter but keep column position
           i = (Math.floor(i / imagesPerRow) * imagesPerRow);
           
-          // Add room continuation header
+          // Add room continuation header with reduced spacing
           doc.setFont(pdfStyles.fonts.header, "normal");
           doc.setFontSize(pdfStyles.fontSizes.normal);
           doc.text(`${roomIndex}. ${room.name} - Room Overview (continued)`, margins, imageYPosition);
-          imageYPosition += 15;
+          imageYPosition += 5;
         }
         
-        const xPos = margins + (col * (imageWidth + 5));
-        const yPos = imageYPosition + (row * (imageHeight + 15));
+        const xPos = margins + (col * (imageWidth + 2));
+        const yPos = imageYPosition + (row * (imageHeight + 10));
         
         try {
           await addCompressedImage(
@@ -128,16 +127,16 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
             imageWidth,
             imageHeight,
             validImages[i].timestamp,
-            true // maintain aspect ratio
+            true
           );
         } catch (error) {
           console.error(`Error adding room image ${i}:`, error);
         }
       }
       
-      // Update y position after images, ensure we don't go into footer area
+      // Update y position after images
       const rowsUsed = Math.ceil(validImages.length / imagesPerRow);
-      yPosition = imageYPosition + (rowsUsed * (imageHeight + 15)) + 10;
+      yPosition = imageYPosition + (rowsUsed * (imageHeight + 10)) + 5;
     }
   }
   
@@ -391,9 +390,9 @@ async function generateComponentSection(
       }
       
       // Standard image sizes - display in a grid from left to right
-      const imagesPerRow = 2; // Reduced from 3 to 2 to make them larger and more visible
+      const imagesPerRow = 2;
       const imageWidth = (pageWidth - (margins * 2) - ((imagesPerRow - 1) * 5)) / imagesPerRow;
-      const imageHeight = 40; // Standardized height for all images
+      const imageHeight = 40;
       
       let currentY = yPosition;
       
@@ -426,7 +425,7 @@ async function generateComponentSection(
             imageWidth,
             imageHeight,
             validImages[j].timestamp,
-            true // maintain aspect ratio
+            true
           );
         } catch (error) {
           console.error(`Error adding component image ${j}:`, error);
