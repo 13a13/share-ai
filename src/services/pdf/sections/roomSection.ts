@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
 import { pdfStyles } from "../styles";
@@ -249,7 +248,7 @@ async function generateComponentSection(
     let formattedCondition = "Not specified";
     try {
       if (component.condition) {
-        formattedCondition = conditionRatingToText(component.condition);
+        formattedCondition = conditionRatingToText(typeof component.condition === 'string' ? component.condition : '');
       }
     } catch (error) {
       console.error(`Error formatting condition for component ${component.name}:`, error);
@@ -262,9 +261,13 @@ async function generateComponentSection(
       } else if (typeof component.condition === 'string') {
         // If it's already a string, use it directly
         formattedCondition = component.condition;
-      } else if (typeof component.condition === 'object' && component.condition !== null && 'rating' in component.condition) {
+      } else if (typeof component.condition === 'object' && component.condition !== null) {
         // If it's an object with a rating property, use that
-        formattedCondition = conditionRatingToText(component.condition.rating);
+        // Type-safe way to access the rating property
+        const conditionObj = component.condition as { rating?: string };
+        if (conditionObj.rating) {
+          formattedCondition = conditionRatingToText(conditionObj.rating);
+        }
       }
     }
     
