@@ -1,68 +1,75 @@
 
 import React from "react";
+import { Badge } from "@/components/ui/badge";
 
 interface ConditionIndicatorProps {
-  condition: string;
+  condition: string | { summary?: string; points?: string[]; rating?: string };
   type: "condition" | "cleanliness";
 }
 
 const ConditionIndicator = ({ condition, type }: ConditionIndicatorProps) => {
-  if (!condition) return <span>N/A</span>;
+  // Handle case where condition is an object instead of a string
+  let displayValue: string;
   
-  let label = "";
-  let color = "";
-  
-  if (type === "condition") {
-    switch(condition) {
-      case "excellent":
-        label = "Excellent";
-        color = "bg-green-500";
-        break;
-      case "good":
-        label = "Good";
-        color = "bg-blue-500";
-        break;
-      case "fair":
-        label = "Fair";
-        color = "bg-yellow-500";
-        break;
-      case "poor":
-        label = "Poor";
-        color = "bg-orange-500";
-        break;
-      case "needs_replacement":
-        label = "Needs Replacement";
-        color = "bg-red-500";
-        break;
-      default:
-        label = condition;
-        color = "bg-gray-500";
-    }
-  } else { // cleanliness
-    switch(condition) {
-      case "domestic_clean":
-        label = "Domestic Clean";
-        color = "bg-green-500";
-        break;
-      case "needs_cleaning":
-        label = "Needs Cleaning";
-        color = "bg-yellow-500";
-        break;
-      case "very_dirty":
-        label = "Very Dirty";
-        color = "bg-red-500";
-        break;
-      default:
-        label = condition;
-        color = "bg-gray-500";
-    }
+  if (typeof condition === 'object' && condition !== null) {
+    // If condition is an object, use the rating property or a default value
+    displayValue = condition.rating || "Not specified";
+  } else {
+    // If condition is already a string, use it directly
+    displayValue = condition as string;
   }
   
+  const getConditionColor = (condValue: string) => {
+    // Return appropriate color based on condition value
+    if (type === "condition") {
+      switch (condValue.toLowerCase()) {
+        case "excellent":
+        case "good order":
+          return "bg-green-500";
+        case "good":
+        case "used order":
+          return "bg-blue-500";
+        case "fair":
+        case "fair order":
+          return "bg-yellow-500";
+        case "poor":
+        case "damaged":
+          return "bg-red-500";
+        default:
+          return "bg-gray-400";
+      }
+    } else {
+      // Cleanliness colors
+      switch (condValue.toLowerCase()) {
+        case "professional_clean":
+        case "professional clean":
+          return "bg-green-500";
+        case "domestic_clean_high_level":
+        case "domestic clean to a high level":
+          return "bg-blue-500";
+        case "domestic_clean":
+        case "domestic clean":
+          return "bg-yellow-500";
+        case "not_clean":
+        case "not clean":
+          return "bg-red-500";
+        default:
+          return "bg-gray-400";
+      }
+    }
+  };
+  
+  // Format display text
+  const formatDisplayText = (text: string) => {
+    return text
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+  
   return (
-    <div className="flex items-center gap-2">
-      <span className={`h-2 w-2 rounded-full ${color}`}></span>
-      <span>{label}</span>
-    </div>
+    <Badge className={getConditionColor(displayValue)}>
+      {formatDisplayText(displayValue)}
+    </Badge>
   );
 };
 
