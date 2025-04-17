@@ -62,12 +62,17 @@ export const usePDFGeneration = () => {
       const pageMap: Record<string, number> = {};
       let currentPage = 2; // Cover is page 1
       
-      // Add disclaimer section as page 2
+      // Add table of contents as page 2
+      pageMap["contents"] = currentPage++;
+      generateTableOfContents(doc, pageMap, report);
+      doc.addPage();
+      
+      // Add disclaimer section as page 3
       pageMap["disclaimer"] = currentPage++;
       generateDisclaimerSection(doc);
       doc.addPage();
       
-      // Add summaries as page 3
+      // Add summaries as page 4
       pageMap["summary"] = currentPage++;
       generateSummaryTables(doc, report, property);
       doc.addPage();
@@ -89,10 +94,6 @@ export const usePDFGeneration = () => {
           doc.addPage();
         }
       }
-      
-      // Add table of contents after tracking all page numbers
-      doc.setPage(2); // Go to page 2 (after cover)
-      generateTableOfContents(doc, pageMap, report);
       
       // Add headers and footers to all pages
       console.log("Adding headers and footers...");

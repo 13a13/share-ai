@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import { pdfStyles } from "../styles";
 
@@ -47,17 +46,23 @@ export function generateDisclaimerSection(doc: jsPDF): void {
   doc.setFont(pdfStyles.fonts.body, "normal");
   doc.setFontSize(pdfStyles.fontSizes.normal);
   
-  // Add numbered disclaimer points with tight spacing
+  // Add numbered disclaimer points with proper text wrapping
   disclaimers.forEach((disclaimer, index) => {
     const number = index + 1;
-    const formattedText = `${number}. ${disclaimer}`;
+    const bulletWidth = doc.getTextWidth(`${number}. `);
+    const textWidth = pageWidth - (margins * 2) - bulletWidth - 2;
     
-    // Split text to fit the page width with justification
-    const splitText = doc.splitTextToSize(formattedText, pageWidth - (margins * 2));
+    // Split text to properly wrap within margins
+    const formattedText = `${number}. ${disclaimer}`;
+    const splitText = doc.splitTextToSize(formattedText, textWidth);
+    
+    // Check for page overflow
+    if (yPosition + (splitText.length * 6) > doc.internal.pageSize.height - margins) {
+      doc.addPage();
+      yPosition = margins;
+    }
     
     doc.text(splitText, margins, yPosition, { align: "justify" });
-    
-    // Increment y position for next paragraph (with tight spacing)
-    yPosition += (splitText.length * 6);
+    yPosition += (splitText.length * 6) + 2; // Reduced spacing between points
   });
 }

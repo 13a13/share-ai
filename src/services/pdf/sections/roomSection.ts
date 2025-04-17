@@ -69,7 +69,6 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
   
   // Room Images
   if (room.images && room.images.length > 0) {
-    // Safety check for empty images array
     const validImages = room.images.filter(img => img && img.url && img.url.trim() !== '');
     
     if (validImages.length > 0) {
@@ -78,22 +77,23 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
         doc.addPage();
         yPosition = margins;
         
-        // Add room continuation header
+        // Add room continuation header with minimal spacing
         doc.setFont(pdfStyles.fonts.header, "normal");
         doc.setFontSize(pdfStyles.fontSizes.normal);
         doc.text(`${roomIndex}. ${room.name} (continued)`, margins, yPosition);
-        yPosition += 15;
+        yPosition += 5;
       }
       
       doc.setFont(pdfStyles.fonts.body, "bold");
       doc.setFontSize(pdfStyles.fontSizes.normal);
       doc.text("Room Overview:", margins, yPosition);
-      yPosition += 8;
+      yPosition += 5;
       
-      // Show all room images in an optimized grid
+      // Optimize image grid layout
       const imagesPerRow = 5;
-      const imageWidth = (pageWidth - (margins * 2) - ((imagesPerRow - 1) * 2)) / imagesPerRow;
-      const imageHeight = 35;
+      const spacing = 1; // Reduced spacing between images
+      const imageWidth = (pageWidth - (margins * 2) - (spacing * (imagesPerRow - 1))) / imagesPerRow;
+      const imageHeight = 30; // Slightly reduced height for better row spacing
       
       let imageYPosition = yPosition;
       
@@ -101,21 +101,20 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
         const col = i % imagesPerRow;
         const row = Math.floor(i / imagesPerRow);
         
-        // Check if this row of images would overflow into footer
-        if (row > 0 && checkPageOverflow(doc, imageYPosition + (row * (imageHeight + 10)), imageHeight)) {
+        // Check if this row of images would overflow
+        if (row > 0 && checkPageOverflow(doc, imageYPosition + (row * (imageHeight + 5)), imageHeight)) {
           doc.addPage();
-          imageYPosition = margins;
+          imageYPosition = margins + 5; // Minimal top margin on continuation pages
           i = (Math.floor(i / imagesPerRow) * imagesPerRow);
           
-          // Add room continuation header with reduced spacing
+          // Add continuation header with minimal spacing
           doc.setFont(pdfStyles.fonts.header, "normal");
           doc.setFontSize(pdfStyles.fontSizes.normal);
-          doc.text(`${roomIndex}. ${room.name} - Room Overview (continued)`, margins, imageYPosition);
-          imageYPosition += 5;
+          doc.text(`${roomIndex}. ${room.name} - Room Overview (continued)`, margins, imageYPosition - 3);
         }
         
-        const xPos = margins + (col * (imageWidth + 2));
-        const yPos = imageYPosition + (row * (imageHeight + 10));
+        const xPos = margins + (col * (imageWidth + spacing));
+        const yPos = imageYPosition + (row * (imageHeight + 5)); // Reduced vertical spacing
         
         try {
           await addCompressedImage(
@@ -134,9 +133,9 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
         }
       }
       
-      // Update y position after images
+      // Update y position after images with minimal padding
       const rowsUsed = Math.ceil(validImages.length / imagesPerRow);
-      yPosition = imageYPosition + (rowsUsed * (imageHeight + 10)) + 5;
+      yPosition = imageYPosition + (rowsUsed * (imageHeight + 5)) + 3;
     }
   }
   
