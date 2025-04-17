@@ -91,15 +91,14 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
       doc.text("Room Overview:", margins, yPosition);
       yPosition += 8;
       
-      // Only show up to 4 images per room
-      const maxImages = Math.min(validImages.length, 4);
+      // Show all room images, not just 4
       const imagesPerRow = 2;
       const imageWidth = (pageWidth - (margins * 2) - 10) / imagesPerRow;
       const imageHeight = 40;
       
       let imageYPosition = yPosition;
       
-      for (let i = 0; i < maxImages; i++) {
+      for (let i = 0; i < validImages.length; i++) {
         const col = i % imagesPerRow;
         const row = Math.floor(i / imagesPerRow);
         
@@ -129,7 +128,8 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
             yPos,
             imageWidth,
             imageHeight,
-            validImages[i].timestamp
+            validImages[i].timestamp,
+            true // maintain aspect ratio
           );
         } catch (error) {
           console.error(`Error adding room image ${i}:`, error);
@@ -137,7 +137,7 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
       }
       
       // Update y position after images, ensure we don't go into footer area
-      const rowsUsed = Math.ceil(maxImages / imagesPerRow);
+      const rowsUsed = Math.ceil(validImages.length / imagesPerRow);
       yPosition = imageYPosition + (rowsUsed * (imageHeight + 15)) + 10;
     }
   }
@@ -366,14 +366,14 @@ async function generateComponentSection(
     yPosition += splitNotes.length * 6 + 5;
   }
   
-  // Component images
+  // Component images - show all images, not just 3
   if (component.images && component.images.length > 0) {
     // Filter out any invalid images
     const validImages = component.images.filter(img => img && img.url && img.url.trim() !== '');
     
     if (validImages.length > 0) {
       // Check if adding images would overflow into footer
-      if (checkPageOverflow(doc, yPosition, 40)) {  // 40mm is approximate height for images section
+      if (checkPageOverflow(doc, yPosition, 15)) {  // Header space
         doc.addPage();
         yPosition = margins;
         
@@ -384,15 +384,31 @@ async function generateComponentSection(
         yPosition += 10;
       }
       
-      // Only show up to 3 images per component
-      const maxImages = Math.min(validImages.length, 3);
-      const imageWidth = (pageWidth - (margins * 2) - ((maxImages - 1) * 5)) / maxImages;
-      const imageHeight = 30;
+      // Standard image sizes - display in a grid from left to right
+      const imagesPerRow = 3;
+      const imageWidth = (pageWidth - (margins * 2) - ((imagesPerRow - 1) * 5)) / imagesPerRow;
+      const imageHeight = 30; // Standard height for all images
       
-      let imageYPosition = yPosition;
+      let currentY = yPosition;
       
-      for (let j = 0; j < maxImages; j++) {
-        const xPos = margins + (j * (imageWidth + 5));
+      for (let j = 0; j < validImages.length; j++) {
+        const col = j % imagesPerRow;
+        const row = Math.floor(j / imagesPerRow);
+        
+        // Check if starting a new row would overflow into footer
+        if (col === 0 && row > 0 && checkPageOverflow(doc, currentY + (imageHeight + 15), imageHeight)) {
+          doc.addPage();
+          currentY = margins;
+          
+          // Add component continuation header
+          doc.setFont(pdfStyles.fonts.header, "normal");
+          doc.setFontSize(pdfStyles.fontSizes.normal);
+          doc.text(`${roomIndex}.${componentIndex} ${component.name} - Images (continued)`, margins, currentY);
+          currentY += 15;
+        }
+        
+        const xPos = margins + (col * (imageWidth + 5));
+        const yPos = currentY + (row * (imageHeight + 15));
         
         try {
           await addCompressedImage(
@@ -400,10 +416,11 @@ async function generateComponentSection(
             validImages[j].url,
             `component_${component.id}_image_${j}`,
             xPos,
-            imageYPosition,
+            yPos,
             imageWidth,
             imageHeight,
-            validImages[j].timestamp
+            validImages[j].timestamp,
+            true // maintain aspect ratio
           );
         } catch (error) {
           console.error(`Error adding component image ${j}:`, error);
@@ -411,7 +428,8 @@ async function generateComponentSection(
       }
       
       // Update y position after images
-      yPosition = imageYPosition + imageHeight + 15;
+      const rowsUsed = Math.ceil(validImages.length / imagesPerRow);
+      yPosition = currentY + (rowsUsed * (imageHeight + 15)) + 5;
     }
   }
   

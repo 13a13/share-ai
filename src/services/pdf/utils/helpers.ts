@@ -34,7 +34,8 @@ export async function addCompressedImage(
   yPos: number, 
   width: number, 
   height: number,
-  timestamp?: Date
+  timestamp?: Date,
+  maintainAspectRatio: boolean = true
 ): Promise<void> {
   try {
     // Check if we have a valid image URL before proceeding
@@ -68,16 +69,64 @@ export async function addCompressedImage(
         0.75 // Slightly higher quality
       );
       
-      // Add the compressed image to the document
-      doc.addImage(compressedImage, imageFormat, xPos, yPos, width, height);
-      
-      // Add timestamp below image if available
-      if (timestamp) {
-        const { fonts, fontSizes } = await import('../styles').then(m => m.pdfStyles);
-        doc.setFont(fonts.body, "italic");
-        doc.setFontSize(fontSizes.small);
-        const timestampStr = new Date(timestamp).toLocaleString();
-        doc.text(timestampStr, xPos + width / 2, yPos + height + 5, { align: "center" });
+      // If maintaining aspect ratio is enabled, calculate dimensions that preserve the original ratio
+      if (maintainAspectRatio) {
+        // Create a temporary image element to get the natural dimensions
+        const tempImg = new Image();
+        tempImg.src = compressedImage;
+        
+        // Calculate aspect ratio
+        await new Promise<void>((resolve) => {
+          tempImg.onload = () => {
+            const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
+            
+            if (aspectRatio > 1) {
+              // Landscape image
+              const newHeight = width / aspectRatio;
+              // Add the image with the calculated height that maintains aspect ratio
+              doc.addImage(compressedImage, imageFormat, xPos, yPos, width, newHeight);
+              // Adjust timestamp position
+              if (timestamp) {
+                const { fonts, fontSizes } = require('../styles').pdfStyles;
+                doc.setFont(fonts.body, "italic");
+                doc.setFontSize(fontSizes.small);
+                const timestampStr = new Date(timestamp).toLocaleString();
+                doc.text(timestampStr, xPos + width / 2, yPos + newHeight + 5, { align: "center" });
+              }
+            } else {
+              // Portrait image
+              const newWidth = height * aspectRatio;
+              // Add the image with the calculated width that maintains aspect ratio
+              doc.addImage(compressedImage, imageFormat, xPos, yPos, newWidth, height);
+              // Adjust timestamp position
+              if (timestamp) {
+                const { fonts, fontSizes } = require('../styles').pdfStyles;
+                doc.setFont(fonts.body, "italic");
+                doc.setFontSize(fontSizes.small);
+                const timestampStr = new Date(timestamp).toLocaleString();
+                doc.text(timestampStr, xPos + newWidth / 2, yPos + height + 5, { align: "center" });
+              }
+            }
+            resolve();
+          };
+          tempImg.onerror = () => {
+            // If we can't load the image to determine aspect ratio, use original dimensions
+            doc.addImage(compressedImage, imageFormat, xPos, yPos, width, height);
+            resolve();
+          };
+        });
+      } else {
+        // Add the compressed image to the document with the specified dimensions
+        doc.addImage(compressedImage, imageFormat, xPos, yPos, width, height);
+        
+        // Add timestamp below image if available
+        if (timestamp) {
+          const { fonts, fontSizes } = require('../styles').pdfStyles;
+          doc.setFont(fonts.body, "italic");
+          doc.setFontSize(fontSizes.small);
+          const timestampStr = new Date(timestamp).toLocaleString();
+          doc.text(timestampStr, xPos + width / 2, yPos + height + 5, { align: "center" });
+        }
       }
     } catch (compressionError) {
       console.error(`Compression error for image ${id}:`, compressionError);
