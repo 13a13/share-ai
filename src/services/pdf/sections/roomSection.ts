@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
 import { pdfStyles } from "../styles";
@@ -244,7 +245,25 @@ async function generateComponentSection(
       yPosition += 10;
     }
     
-    const formattedCondition = conditionRatingToText(component.condition);
+    // Fix: Check if condition is a string before calling replace
+    let formattedCondition = "Not specified";
+    try {
+      if (component.condition) {
+        formattedCondition = conditionRatingToText(component.condition);
+      }
+    } catch (error) {
+      console.error(`Error formatting condition for component ${component.name}:`, error);
+      // Fallback formatting based on condition type
+      if (typeof component.condition === 'number') {
+        // If it's a number, use a simple rating scale
+        const ratings = ["Poor", "Fair", "Average", "Good", "Excellent"];
+        const index = Math.min(Math.max(Math.floor(component.condition) - 1, 0), 4);
+        formattedCondition = ratings[index];
+      } else if (typeof component.condition === 'string') {
+        // If it's already a string, use it directly
+        formattedCondition = component.condition;
+      }
+    }
     
     doc.setFont(pdfStyles.fonts.body, "bold");
     doc.text("Condition:", margins, yPosition);

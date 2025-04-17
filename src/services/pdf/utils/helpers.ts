@@ -1,3 +1,4 @@
+
 import { conditionRatingToText } from "../../imageProcessingService";
 import { compressDataURLImage } from "@/utils/imageCompression";
 
