@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Loader2, FileText } from "lucide-react";
 
@@ -14,6 +15,11 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
     
     // If pdfUrl is already a complete data URL, use it as is
     if (pdfUrl.startsWith('data:application/pdf;base64,')) {
+      return pdfUrl;
+    }
+    
+    // If it starts with 'data:' but isn't proper PDF format (e.g., datauristring format)
+    if (pdfUrl.startsWith('data:')) {
       return pdfUrl;
     }
     
@@ -49,12 +55,17 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
     );
   }
 
+  const finalUrl = regeneratedPdfUrl || embedUrl;
+  
   return (
     <iframe 
       key={iframeKey}
-      src={regeneratedPdfUrl || embedUrl}
+      src={finalUrl}
       className="w-full h-full"
       title="PDF Preview"
+      onError={(e) => {
+        console.error("Error loading PDF in iframe:", e);
+      }}
     />
   );
 };

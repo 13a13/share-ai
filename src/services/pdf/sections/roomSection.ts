@@ -39,47 +39,48 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
   
   // Room Images
   if (room.images && room.images.length > 0) {
-    // Only show up to 4 images per room
-    const maxImages = Math.min(room.images.length, 4);
-    const imagesPerRow = 2;
-    const imageWidth = (pageWidth - (margins * 2) - 10) / imagesPerRow;
-    const imageHeight = 40;
+    // Safety check for empty images array
+    const validImages = room.images.filter(img => img && img.url && img.url.trim() !== '');
     
-    let imageYPosition = yPosition;
-    
-    for (let i = 0; i < maxImages; i++) {
-      const col = i % imagesPerRow;
-      const row = Math.floor(i / imagesPerRow);
-      const xPos = margins + (col * (imageWidth + 5));
-      const yPos = imageYPosition + (row * (imageHeight + 15));
+    if (validImages.length > 0) {
+      doc.setFont(pdfStyles.fonts.body, "bold");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text("Room Overview:", margins, yPosition);
+      yPosition += 8;
       
-      try {
-        await addCompressedImage(
-          doc,
-          room.images[i].url,
-          `room_${room.id}_image_${i}`,
-          xPos,
-          yPos,
-          imageWidth,
-          imageHeight,
-          room.images[i].timestamp
-        );
-      } catch (error) {
-        console.error(`Error adding room image ${i}:`, error);
+      // Only show up to 4 images per room
+      const maxImages = Math.min(validImages.length, 4);
+      const imagesPerRow = 2;
+      const imageWidth = (pageWidth - (margins * 2) - 10) / imagesPerRow;
+      const imageHeight = 40;
+      
+      let imageYPosition = yPosition;
+      
+      for (let i = 0; i < maxImages; i++) {
+        const col = i % imagesPerRow;
+        const row = Math.floor(i / imagesPerRow);
+        const xPos = margins + (col * (imageWidth + 5));
+        const yPos = imageYPosition + (row * (imageHeight + 15));
         
-        // Draw placeholder if image can't be loaded
-        doc.setDrawColor(pdfStyles.colors.lightGray[0], pdfStyles.colors.lightGray[1], pdfStyles.colors.lightGray[2]);
-        doc.setFillColor(pdfStyles.colors.white[0], pdfStyles.colors.white[1], pdfStyles.colors.white[2]);
-        doc.rect(xPos, yPos, imageWidth, imageHeight, 'FD');
-        
-        doc.setFont(pdfStyles.fonts.body, "italic");
-        doc.setFontSize(pdfStyles.fontSizes.small);
-        doc.text("Image not available", xPos + imageWidth / 2, yPos + imageHeight / 2, { align: "center" });
+        try {
+          await addCompressedImage(
+            doc,
+            validImages[i].url,
+            `room_${room.id}_image_${i}`,
+            xPos,
+            yPos,
+            imageWidth,
+            imageHeight,
+            validImages[i].timestamp
+          );
+        } catch (error) {
+          console.error(`Error adding room image ${i}:`, error);
+        }
       }
+      
+      // Update y position after images
+      yPosition = imageYPosition + (Math.ceil(maxImages / imagesPerRow) * (imageHeight + 15)) + 10;
     }
-    
-    // Update y position after images
-    yPosition = imageYPosition + (Math.ceil(maxImages / imagesPerRow) * (imageHeight + 15)) + 10;
   }
   
   // Components
@@ -197,43 +198,51 @@ async function generateComponentSection(
   
   // Component images
   if (component.images && component.images.length > 0) {
-    // Only show up to 3 images per component
-    const maxImages = Math.min(component.images.length, 3);
-    const imageWidth = (pageWidth - (margins * 2) - 10) / maxImages;
-    const imageHeight = 30;
+    // Filter out any invalid images
+    const validImages = component.images.filter(img => img && img.url && img.url.trim() !== '');
     
-    let imageYPosition = yPosition;
-    
-    for (let j = 0; j < maxImages; j++) {
-      const xPos = margins + (j * (imageWidth + 5));
+    if (validImages.length > 0) {
+      // Only show up to 3 images per component
+      const maxImages = Math.min(validImages.length, 3);
+      const imageWidth = (pageWidth - (margins * 2) - ((maxImages - 1) * 5)) / maxImages;
+      const imageHeight = 30;
       
-      try {
-        await addCompressedImage(
-          doc,
-          component.images[j].url,
-          `component_${component.id}_image_${j}`,
-          xPos,
-          imageYPosition,
-          imageWidth,
-          imageHeight,
-          component.images[j].timestamp
-        );
-      } catch (error) {
-        console.error(`Error adding component image ${j}:`, error);
+      // Check if we need a new page for images
+      if (yPosition + imageHeight + 15 > doc.internal.pageSize.height - margins) {
+        doc.addPage();
+        yPosition = margins;
         
-        // Draw placeholder if image can't be loaded
-        doc.setDrawColor(pdfStyles.colors.lightGray[0], pdfStyles.colors.lightGray[1], pdfStyles.colors.lightGray[2]);
-        doc.setFillColor(pdfStyles.colors.white[0], pdfStyles.colors.white[1], pdfStyles.colors.white[2]);
-        doc.rect(xPos, imageYPosition, imageWidth, imageHeight, 'FD');
-        
-        doc.setFont(pdfStyles.fonts.body, "italic");
+        // Add component continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
         doc.setFontSize(pdfStyles.fontSizes.small);
-        doc.text("Image not available", xPos + imageWidth / 2, imageYPosition + imageHeight / 2, { align: "center" });
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+        yPosition += 10;
       }
+      
+      let imageYPosition = yPosition;
+      
+      for (let j = 0; j < maxImages; j++) {
+        const xPos = margins + (j * (imageWidth + 5));
+        
+        try {
+          await addCompressedImage(
+            doc,
+            validImages[j].url,
+            `component_${component.id}_image_${j}`,
+            xPos,
+            imageYPosition,
+            imageWidth,
+            imageHeight,
+            validImages[j].timestamp
+          );
+        } catch (error) {
+          console.error(`Error adding component image ${j}:`, error);
+        }
+      }
+      
+      // Update y position after images
+      yPosition = imageYPosition + imageHeight + 15;
     }
-    
-    // Update y position after images
-    yPosition = imageYPosition + imageHeight + 15;
   }
   
   return yPosition;

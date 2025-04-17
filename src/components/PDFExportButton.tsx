@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { usePDFGeneration } from "@/services/pdf";
+import { usePDFGeneration, PDFGenerationStatus } from "@/services/pdf";
 import { Report, Property } from "@/types";
 import { Loader2, Eye } from "lucide-react";
 import PDFPreviewDialog from "./PDFPreviewDialog";
@@ -15,7 +15,7 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const { generatePDF } = usePDFGeneration();
+  const { generatePDF, status } = usePDFGeneration();
   
   const handleGeneratePDF = async () => {
     if (isGenerating) return;
@@ -59,10 +59,10 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
     <>
       <Button
         onClick={handlePreviewPDF}
-        disabled={isGenerating}
+        disabled={isGenerating || status === "generating"}
         className="bg-shareai-blue hover:bg-shareai-blue/90 text-white transition-all"
       >
-        {isGenerating ? (
+        {isGenerating || status === "generating" ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Generating Preview...
@@ -79,7 +79,7 @@ const PDFExportButton = ({ report, property }: PDFExportButtonProps) => {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         pdfUrl={downloadUrl}
-        isLoading={isGenerating}
+        isLoading={isGenerating || status === "generating"}
         downloadUrl={downloadUrl}
         reportTitle={getReportTitle()}
         report={report}

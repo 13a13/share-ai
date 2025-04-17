@@ -9,6 +9,7 @@ import { generateSummaryTables } from "./sections/summaryTables";
 import { generateRoomSection } from "./sections/roomSection";
 import { generateFinalSections } from "./sections/finalSections";
 import { addHeadersAndFooters } from "./utils/headerFooter";
+import { useState } from "react";
 
 export type PDFGenerationStatus = "idle" | "generating" | "complete" | "error";
 
@@ -17,6 +18,7 @@ export type PDFGenerationStatus = "idle" | "generating" | "complete" | "error";
  */
 export const usePDFGeneration = () => {
   const { toast } = useToast();
+  const [status, setStatus] = useState<PDFGenerationStatus>("idle");
   
   /**
    * Generate a PDF for a property report
@@ -28,7 +30,11 @@ export const usePDFGeneration = () => {
     report: Report, 
     property: Property
   ): Promise<string> => {
+    setStatus("generating");
+    
     try {
+      console.log("Starting PDF generation for report:", report.id);
+      
       // Create a new PDF document
       const doc = new jsPDF({
         orientation: "portrait",
@@ -44,7 +50,12 @@ export const usePDFGeneration = () => {
         creator: "Share.AI Property Reports"
       });
       
+      // Preload all images to avoid async issues
+      console.log("Preloading images...");
+      await preloadImages(report);
+      
       // Generate sections
+      console.log("Generating cover page...");
       await generateCoverPage(doc, report, property);
       doc.addPage();
       
@@ -68,8 +79,11 @@ export const usePDFGeneration = () => {
       doc.addPage();
       
       // Track start of rooms for table of contents
+      console.log("Generating room sections...");
       for (let i = 0; i < report.rooms.length; i++) {
         const room = report.rooms[i];
+        console.log(`Processing room ${i+1}/${report.rooms.length}: ${room.name}`);
+        
         // Record page number for this room
         pageMap[room.id] = currentPage++;
         
@@ -93,10 +107,12 @@ export const usePDFGeneration = () => {
       generateTableOfContents(doc, pageMap, report);
       
       // Add headers and footers to all pages
+      console.log("Adding headers and footers...");
       addHeadersAndFooters(doc, property.address);
       
       // Convert the PDF to base64
-      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      console.log("Finalizing PDF...");
+      const pdfBase64 = doc.output('datauristring');
       
       // Show success toast
       toast({
@@ -104,6 +120,9 @@ export const usePDFGeneration = () => {
         description: "Your inventory report is ready to download.",
         variant: "default",
       });
+      
+      setStatus("complete");
+      console.log("PDF generation complete");
       
       return pdfBase64;
     } catch (error) {
@@ -116,11 +135,72 @@ export const usePDFGeneration = () => {
         variant: "destructive",
       });
       
+      setStatus("error");
       throw error;
     }
   };
   
+  /**
+   * Preload all images from the report to ensure they're cached
+   */
+  const preloadImages = async (report: Report): Promise<void> => {
+    const imagePromises: Promise<void>[] = [];
+    
+    // Gather all image URLs from the report
+    const imageUrls: string[] = [];
+    
+    // Add room images
+    report.rooms.forEach(room => {
+      if (room.images && room.images.length > 0) {
+        room.images.forEach(img => {
+          if (img.url && img.url.trim() !== '') {
+            imageUrls.push(img.url);
+          }
+        });
+      }
+      
+      // Add component images
+      if (room.components && room.components.length > 0) {
+        room.components.forEach(component => {
+          if (component.images && component.images.length > 0) {
+            component.images.forEach(img => {
+              if (img.url && img.url.trim() !== '') {
+                imageUrls.push(img.url);
+              }
+            });
+          }
+        });
+      }
+    });
+    
+    // Preload each image
+    imageUrls.forEach(url => {
+      const promise = new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => {
+          console.warn(`Failed to preload image: ${url}`);
+          resolve();
+        };
+        img.src = url;
+      });
+      
+      imagePromises.push(promise);
+    });
+    
+    // Wait for all images to preload (or fail) with a timeout
+    const timeoutPromise = new Promise<void>(resolve => setTimeout(resolve, 5000));
+    
+    await Promise.race([
+      Promise.all(imagePromises),
+      timeoutPromise
+    ]);
+    
+    console.log(`Preloaded ${imageUrls.length} images`);
+  };
+  
   return {
     generatePDF,
+    status
   };
 };
