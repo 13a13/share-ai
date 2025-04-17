@@ -1,4 +1,3 @@
-
 import { conditionRatingToText } from "../../imageProcessingService";
 import { compressDataURLImage } from "@/utils/imageCompression";
 
@@ -44,6 +43,17 @@ export async function addCompressedImage(
       return;
     }
 
+    // Check if adding the image would overflow into footer area
+    // Get the footer start position (usually around 15mm from bottom)
+    const pageHeight = doc.internal.pageSize.height;
+    const footerMargin = 25; // Keep 25mm from bottom of page clear for footer
+    
+    // If image would extend into footer, add a new page
+    if (yPos + height > pageHeight - footerMargin) {
+      doc.addPage();
+      yPos = 20; // Reset Y position at top of new page with some margin
+    }
+
     // Handle different image formats
     const imageFormat = getImageFormat(imageUrl);
     
@@ -85,6 +95,17 @@ export async function addCompressedImage(
     console.error(`Error adding image ${id}:`, error);
     drawPlaceholder(doc, xPos, yPos, width, height);
   }
+}
+
+/**
+ * Check if content would overflow into footer area
+ * Returns true if a new page is needed
+ */
+export function checkPageOverflow(doc: any, yPosition: number, contentHeight: number): boolean {
+  const pageHeight = doc.internal.pageSize.height;
+  const footerMargin = 25; // 25mm from bottom of page reserved for footer
+  
+  return (yPosition + contentHeight) > (pageHeight - footerMargin);
 }
 
 /**

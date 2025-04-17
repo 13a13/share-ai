@@ -1,9 +1,8 @@
-
 import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
 import { pdfStyles } from "../styles";
 import { conditionRatingToText } from "../../imageProcessingService";
-import { addCompressedImage } from "../utils/helpers";
+import { addCompressedImage, checkPageOverflow } from "../utils/helpers";
 
 /**
  * Generate room section with components
@@ -26,13 +25,44 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
   
   // General room condition
   if (room.generalCondition) {
+    // Check if we need a page break before adding general condition
+    if (checkPageOverflow(doc, yPosition, 20)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add room continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}. ${room.name} (continued)`, margins, yPosition);
+      yPosition += 15;
+    }
+    
     doc.setFont(pdfStyles.fonts.body, "bold");
     doc.setFontSize(pdfStyles.fontSizes.normal);
     doc.text("General Condition:", margins, yPosition);
     
     doc.setFont(pdfStyles.fonts.body, "normal");
     const splitCondition = doc.splitTextToSize(room.generalCondition, pageWidth - (margins * 2) - 20);
+    
+    // Check if the condition text would overflow
+    if (checkPageOverflow(doc, yPosition, splitCondition.length * 6 + 10)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add room continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}. ${room.name} (continued)`, margins, yPosition);
+      yPosition += 15;
+      
+      // Re-add the "General Condition:" header
+      doc.setFont(pdfStyles.fonts.body, "bold");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text("General Condition:", margins, yPosition);
+    }
+    
     yPosition += 8;
+    doc.setFont(pdfStyles.fonts.body, "normal");
     doc.text(splitCondition, margins, yPosition);
     yPosition += splitCondition.length * 6 + 10;
   }
@@ -43,6 +73,18 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
     const validImages = room.images.filter(img => img && img.url && img.url.trim() !== '');
     
     if (validImages.length > 0) {
+      // Check if we need a page break before adding room overview
+      if (checkPageOverflow(doc, yPosition, 10)) {
+        doc.addPage();
+        yPosition = margins;
+        
+        // Add room continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}. ${room.name} (continued)`, margins, yPosition);
+        yPosition += 15;
+      }
+      
       doc.setFont(pdfStyles.fonts.body, "bold");
       doc.setFontSize(pdfStyles.fontSizes.normal);
       doc.text("Room Overview:", margins, yPosition);
@@ -59,6 +101,21 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
       for (let i = 0; i < maxImages; i++) {
         const col = i % imagesPerRow;
         const row = Math.floor(i / imagesPerRow);
+        
+        // Check if this row of images would overflow into footer
+        if (row > 0 && checkPageOverflow(doc, imageYPosition + (row * (imageHeight + 15)), imageHeight)) {
+          doc.addPage();
+          imageYPosition = margins;
+          // Reset row counter but keep column position
+          i = (Math.floor(i / imagesPerRow) * imagesPerRow);
+          
+          // Add room continuation header
+          doc.setFont(pdfStyles.fonts.header, "normal");
+          doc.setFontSize(pdfStyles.fontSizes.normal);
+          doc.text(`${roomIndex}. ${room.name} - Room Overview (continued)`, margins, imageYPosition);
+          imageYPosition += 15;
+        }
+        
         const xPos = margins + (col * (imageWidth + 5));
         const yPos = imageYPosition + (row * (imageHeight + 15));
         
@@ -78,8 +135,9 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
         }
       }
       
-      // Update y position after images
-      yPosition = imageYPosition + (Math.ceil(maxImages / imagesPerRow) * (imageHeight + 15)) + 10;
+      // Update y position after images, ensure we don't go into footer area
+      const rowsUsed = Math.ceil(maxImages / imagesPerRow);
+      yPosition = imageYPosition + (rowsUsed * (imageHeight + 15)) + 10;
     }
   }
   
@@ -97,7 +155,7 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
       const component = sortedComponents[i];
       
       // Check if we need a new page
-      if (yPosition > doc.internal.pageSize.height - 40) {
+      if (checkPageOverflow(doc, yPosition, 20)) {
         doc.addPage();
         yPosition = margins;
         
@@ -136,6 +194,12 @@ async function generateComponentSection(
   const margins = pdfStyles.margins.page;
   let yPosition = startY;
   
+  // Check if we need a new page for this component
+  if (checkPageOverflow(doc, yPosition, 20)) {
+    doc.addPage();
+    yPosition = margins;
+  }
+  
   // Section header with component number
   const componentNumber = `${roomIndex}.${componentIndex}`;
   doc.setFont(pdfStyles.fonts.header, "bold");
@@ -149,12 +213,37 @@ async function generateComponentSection(
     doc.setFontSize(pdfStyles.fontSizes.normal);
     
     const splitDescription = doc.splitTextToSize(component.description, pageWidth - (margins * 2) - 10);
+    
+    // Check if description would overflow into footer
+    if (checkPageOverflow(doc, yPosition, splitDescription.length * 6 + 5)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add component continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+    
     doc.text(splitDescription, margins, yPosition);
     yPosition += splitDescription.length * 6 + 5;
   }
   
   // Component condition
   if (component.condition) {
+    // Check if adding condition would overflow into footer
+    if (checkPageOverflow(doc, yPosition, 10)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add component continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+    
     const formattedCondition = conditionRatingToText(component.condition);
     
     doc.setFont(pdfStyles.fonts.body, "bold");
@@ -167,15 +256,52 @@ async function generateComponentSection(
   // Additional condition details
   if (component.conditionSummary) {
     const splitSummary = doc.splitTextToSize(component.conditionSummary, pageWidth - (margins * 2) - 10);
+    
+    // Check if condition summary would overflow into footer
+    if (checkPageOverflow(doc, yPosition, splitSummary.length * 6 + 3)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add component continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+    
     doc.text(splitSummary, margins, yPosition);
     yPosition += splitSummary.length * 6 + 3;
   }
   
   // Condition points as bullet points
   if (component.conditionPoints && component.conditionPoints.length > 0) {
+    // Check if points would overflow into footer
+    if (checkPageOverflow(doc, yPosition, component.conditionPoints.length * 6 + 5)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add component continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+    
     yPosition += 2;
     for (const point of component.conditionPoints) {
       if (point.trim()) {
+        // Check if this specific point would overflow into footer
+        if (checkPageOverflow(doc, yPosition, 6)) {
+          doc.addPage();
+          yPosition = margins;
+          
+          // Add component continuation header
+          doc.setFont(pdfStyles.fonts.header, "normal");
+          doc.setFontSize(pdfStyles.fontSizes.normal);
+          doc.text(`${roomIndex}.${componentIndex} ${component.name} - Points (continued)`, margins, yPosition);
+          yPosition += 10;
+        }
+        
         doc.text("• " + point, margins + 5, yPosition);
         yPosition += 6;
       }
@@ -185,6 +311,18 @@ async function generateComponentSection(
   
   // Component notes
   if (component.notes) {
+    // Check if notes header would overflow into footer
+    if (checkPageOverflow(doc, yPosition, 10)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add component continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+    
     yPosition += 2;
     doc.setFont(pdfStyles.fonts.body, "bold");
     doc.text("Notes:", margins, yPosition);
@@ -192,6 +330,19 @@ async function generateComponentSection(
     
     doc.setFont(pdfStyles.fonts.body, "normal");
     const splitNotes = doc.splitTextToSize(component.notes, pageWidth - (margins * 2) - 10);
+    
+    // Check if notes content would overflow into footer
+    if (checkPageOverflow(doc, yPosition, splitNotes.length * 6 + 5)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add component continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} - Notes (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+    
     doc.text(splitNotes, margins + 5, yPosition);
     yPosition += splitNotes.length * 6 + 5;
   }
@@ -202,22 +353,22 @@ async function generateComponentSection(
     const validImages = component.images.filter(img => img && img.url && img.url.trim() !== '');
     
     if (validImages.length > 0) {
-      // Only show up to 3 images per component
-      const maxImages = Math.min(validImages.length, 3);
-      const imageWidth = (pageWidth - (margins * 2) - ((maxImages - 1) * 5)) / maxImages;
-      const imageHeight = 30;
-      
-      // Check if we need a new page for images
-      if (yPosition + imageHeight + 15 > doc.internal.pageSize.height - margins) {
+      // Check if adding images would overflow into footer
+      if (checkPageOverflow(doc, yPosition, 40)) {  // 40mm is approximate height for images section
         doc.addPage();
         yPosition = margins;
         
         // Add component continuation header
         doc.setFont(pdfStyles.fonts.header, "normal");
-        doc.setFontSize(pdfStyles.fontSizes.small);
-        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} - Images`, margins, yPosition);
         yPosition += 10;
       }
+      
+      // Only show up to 3 images per component
+      const maxImages = Math.min(validImages.length, 3);
+      const imageWidth = (pageWidth - (margins * 2) - ((maxImages - 1) * 5)) / maxImages;
+      const imageHeight = 30;
       
       let imageYPosition = yPosition;
       
