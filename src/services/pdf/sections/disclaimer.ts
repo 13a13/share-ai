@@ -1,12 +1,11 @@
+
 import { jsPDF } from "jspdf";
 import { pdfStyles } from "../styles";
 
-/**
- * Generate disclaimer section
- */
 export function generateDisclaimerSection(doc: jsPDF): void {
   const pageWidth = doc.internal.pageSize.width;
   const margins = pdfStyles.margins.page;
+  const textWidth = pageWidth - (margins * 2); // Available width for text
   
   // Title
   doc.setFont(pdfStyles.fonts.header, "bold");
@@ -49,20 +48,30 @@ export function generateDisclaimerSection(doc: jsPDF): void {
   // Add numbered disclaimer points with proper text wrapping
   disclaimers.forEach((disclaimer, index) => {
     const number = index + 1;
-    const bulletWidth = doc.getTextWidth(`${number}. `);
-    const textWidth = pageWidth - (margins * 2) - bulletWidth - 2;
+    const bulletText = `${number}. `;
+    const bulletWidth = doc.getTextWidth(bulletText);
     
-    // Split text to properly wrap within margins
-    const formattedText = `${number}. ${disclaimer}`;
-    const splitText = doc.splitTextToSize(formattedText, textWidth);
+    // Calculate available width for text after bullet point
+    const availableWidth = textWidth - bulletWidth;
+    
+    // Split text to properly wrap within available width
+    const text = doc.splitTextToSize(disclaimer, availableWidth);
     
     // Check for page overflow
-    if (yPosition + (splitText.length * 6) > doc.internal.pageSize.height - margins) {
+    if (yPosition + (text.length * 6) > doc.internal.pageSize.height - margins) {
       doc.addPage();
       yPosition = margins;
     }
     
-    doc.text(splitText, margins, yPosition, { align: "justify" });
-    yPosition += (splitText.length * 6) + 2; // Reduced spacing between points
+    // Add bullet point
+    doc.text(bulletText, margins, yPosition);
+    
+    // Add wrapped text after bullet point
+    text.forEach((line: string, lineIndex: number) => {
+      doc.text(line, margins + bulletWidth, yPosition + (lineIndex * 6));
+    });
+    
+    // Move position for next item, accounting for number of wrapped lines
+    yPosition += (text.length * 6) + 3;
   });
 }

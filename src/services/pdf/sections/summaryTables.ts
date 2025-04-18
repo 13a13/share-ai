@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { pdfStyles } from "../styles";
@@ -10,6 +9,7 @@ import { getCleanlinessRating } from "../utils/helpers";
 export function generateSummaryTables(doc: jsPDF, report: Report, property: Property): void {
   const pageWidth = doc.internal.pageSize.width;
   const margins = pdfStyles.margins.page;
+  const textWidth = (pageWidth - (margins * 2)) / 2 - 5; // Half width for two columns, minus spacing
   
   // Title
   doc.setFont(pdfStyles.fonts.header, "bold");
@@ -46,7 +46,7 @@ export function generateSummaryTables(doc: jsPDF, report: Report, property: Prop
   doc.line(margins, yPosition, pageWidth - margins, yPosition);
   yPosition += 8;
   
-  // Table data
+  // Table data with text wrapping
   doc.setFont(pdfStyles.fonts.body, "normal");
   
   const summaryItems = [
@@ -61,9 +61,18 @@ export function generateSummaryTables(doc: jsPDF, report: Report, property: Prop
   
   for (const item of summaryItems) {
     doc.setFont(pdfStyles.fonts.body, "normal");
+    
+    // Left column (label)
     doc.text(item.label, leftColumnX, yPosition);
-    doc.text(item.value, rightColumnX, yPosition);
-    yPosition += 8;
+    
+    // Right column (value) with text wrapping
+    const wrappedValue = doc.splitTextToSize(item.value, textWidth);
+    wrappedValue.forEach((line: string, index: number) => {
+      doc.text(line, rightColumnX, yPosition + (index * 6));
+    });
+    
+    // Move to next row, accounting for wrapped text
+    yPosition += Math.max(8, wrappedValue.length * 6 + 2);
   }
   
   yPosition += 15;
