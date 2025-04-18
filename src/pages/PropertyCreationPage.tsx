@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PropertiesAPI } from "@/lib/api";
 import { Property, PropertyType } from "@/types";
 import { Loader2, ArrowLeft, Building2 } from "lucide-react";
+
 const PropertyCreationPage = () => {
   const navigate = useNavigate();
   const {
@@ -16,16 +17,17 @@ const PropertyCreationPage = () => {
   } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Omit<Property, 'id' | 'createdAt' | 'updatedAt'>>({
-    name: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
+    name: "Wills Flat",
+    address: "123 Exhibition Road",
+    city: "London",
+    state: "Westminster",
+    zipCode: "SW1",
     propertyType: "house",
     bedrooms: 0,
     bathrooms: 0,
     squareFeet: 0
   });
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {
       name,
@@ -37,12 +39,14 @@ const PropertyCreationPage = () => {
       [name]: type === 'number' ? Number(value) : value
     }));
   };
+
   const handleSelectChange = (value: string, name: string) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -64,6 +68,7 @@ const PropertyCreationPage = () => {
       setIsSubmitting(false);
     }
   };
+
   return <div className="shareai-container py-8">
       <Button variant="ghost" onClick={() => navigate("/properties")} className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -84,8 +89,8 @@ const PropertyCreationPage = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="name">Property Name</Label>
-              <Input id="name" name="name" placeholder="e.g. Beach House" value={formData.name} onChange={handleInputChange} required />
+              <Label htmlFor="name">Property Reference</Label>
+              <Input id="name" name="name" placeholder="Wills Flat" value={formData.name} onChange={handleInputChange} required />
             </div>
             
             <div>
@@ -158,4 +163,5 @@ const PropertyCreationPage = () => {
       </Card>
     </div>;
 };
+
 export default PropertyCreationPage;
