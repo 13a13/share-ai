@@ -91,9 +91,9 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
       
       // Optimize image grid layout
       const imagesPerRow = 5;
-      const spacing = 1; // Reduced spacing between images
+      const spacing = 1;
       const imageWidth = (pageWidth - (margins * 2) - (spacing * (imagesPerRow - 1))) / imagesPerRow;
-      const imageHeight = 30; // Slightly reduced height for better row spacing
+      const imageHeight = 30;
       
       let imageYPosition = yPosition;
       
@@ -104,7 +104,7 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
         // Check if this row of images would overflow
         if (row > 0 && checkPageOverflow(doc, imageYPosition + (row * (imageHeight + 5)), imageHeight)) {
           doc.addPage();
-          imageYPosition = margins + 5; // Minimal top margin on continuation pages
+          imageYPosition = margins + 5;
           i = (Math.floor(i / imagesPerRow) * imagesPerRow);
           
           // Add continuation header with minimal spacing
@@ -114,7 +114,7 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
         }
         
         const xPos = margins + (col * (imageWidth + spacing));
-        const yPos = imageYPosition + (row * (imageHeight + 5)); // Reduced vertical spacing
+        const yPos = imageYPosition + (row * (imageHeight + 5));
         
         try {
           await addCompressedImage(
@@ -133,7 +133,6 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
         }
       }
       
-      // Update y position after images with minimal padding
       const rowsUsed = Math.ceil(validImages.length / imagesPerRow);
       yPosition = imageYPosition + (rowsUsed * (imageHeight + 5)) + 3;
     }
@@ -388,10 +387,11 @@ async function generateComponentSection(
         yPosition += 10;
       }
       
-      // Standard image sizes - display in a grid from left to right
-      const imagesPerRow = 2;
-      const imageWidth = (pageWidth - (margins * 2) - ((imagesPerRow - 1) * 5)) / imagesPerRow;
-      const imageHeight = 40;
+      // Standard image sizes - updated to display in a grid with 5 images per row
+      const imagesPerRow = 5;
+      const spacing = 2;
+      const imageWidth = (pageWidth - (margins * 2) - ((imagesPerRow - 1) * spacing)) / imagesPerRow;
+      const imageHeight = 30;
       
       let currentY = yPosition;
       
@@ -400,7 +400,7 @@ async function generateComponentSection(
         const row = Math.floor(j / imagesPerRow);
         
         // Check if starting a new row would overflow into footer
-        if (col === 0 && row > 0 && checkPageOverflow(doc, currentY + (imageHeight + 15), imageHeight)) {
+        if (col === 0 && row > 0 && checkPageOverflow(doc, currentY + (imageHeight + 10), imageHeight)) {
           doc.addPage();
           currentY = margins;
           
@@ -408,11 +408,11 @@ async function generateComponentSection(
           doc.setFont(pdfStyles.fonts.header, "normal");
           doc.setFontSize(pdfStyles.fontSizes.normal);
           doc.text(`${roomIndex}.${componentIndex} ${component.name} - Images (continued)`, margins, currentY);
-          currentY += 15;
+          currentY += 10;
         }
         
-        const xPos = margins + (col * (imageWidth + 5));
-        const yPos = currentY + (row * (imageHeight + 15));
+        const xPos = margins + (col * (imageWidth + spacing));
+        const yPos = currentY + (row * (imageHeight + 8));
         
         try {
           await addCompressedImage(
@@ -431,9 +431,8 @@ async function generateComponentSection(
         }
       }
       
-      // Update y position after images
       const rowsUsed = Math.ceil(validImages.length / imagesPerRow);
-      yPosition = currentY + (rowsUsed * (imageHeight + 15)) + 5;
+      yPosition = currentY + (rowsUsed * (imageHeight + 8)) + 5;
     }
   }
   
