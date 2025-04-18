@@ -21,8 +21,8 @@ const PropertyCreationPage = () => {
     state: "",
     zipCode: "",
     propertyType: "house",
-    bedrooms: 0,
-    bathrooms: 0,
+    bedrooms: 1,
+    bathrooms: 1,
     squareFeet: 0
   });
 
@@ -163,7 +163,10 @@ const PropertyCreationPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="bedrooms">Bedrooms</Label>
-                <Select value={formData.bedrooms.toString()} onValueChange={value => handleSelectChange(value, "bedrooms")}>
+                <Select 
+                  value={formData.bedrooms.toString()} 
+                  onValueChange={value => handleSelectChange(value, "bedrooms")}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select number of bedrooms" />
                   </SelectTrigger>
@@ -176,7 +179,10 @@ const PropertyCreationPage = () => {
               </div>
               <div>
                 <Label htmlFor="bathrooms">Bathrooms</Label>
-                <Select value={formData.bathrooms.toString()} onValueChange={value => handleSelectChange(value, "bathrooms")}>
+                <Select 
+                  value={formData.bathrooms.toString()} 
+                  onValueChange={value => handleSelectChange(value, "bathrooms")}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select number of bathrooms" />
                   </SelectTrigger>
