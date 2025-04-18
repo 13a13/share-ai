@@ -17,11 +17,11 @@ const PropertyCreationPage = () => {
   } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Omit<Property, 'id' | 'createdAt' | 'updatedAt'>>({
-    name: "Wills Flat",
-    address: "123 Exhibition Road",
-    city: "London",
-    state: "Westminster",
-    zipCode: "SW1",
+    name: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
     propertyType: "house",
     bedrooms: 0,
     bathrooms: 0,
@@ -90,7 +90,7 @@ const PropertyCreationPage = () => {
           <div className="space-y-4">
             <div>
               <Label htmlFor="name">Property Reference</Label>
-              <Input id="name" name="name" placeholder="Wills Flat" value={formData.name} onChange={handleInputChange} required />
+              <Input id="name" name="name" placeholder="e.g. Beach House" value={formData.name} onChange={handleInputChange} required />
             </div>
             
             <div>
@@ -122,8 +122,7 @@ const PropertyCreationPage = () => {
                 <Input id="city" name="city" placeholder="New York" value={formData.city} onChange={handleInputChange} required />
               </div>
               <div>
-                <Label htmlFor="state">Town / Borough 
-              </Label>
+                <Label htmlFor="state">Town / Borough</Label>
                 <Input id="state" name="state" placeholder="NY" value={formData.state} onChange={handleInputChange} required />
               </div>
               <div>
