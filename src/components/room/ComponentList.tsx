@@ -44,7 +44,7 @@ const ComponentList = ({
   onProcessingStateChange
 }: ComponentListProps) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <h3 className="text-lg font-medium">Room Components</h3>
         <ComponentSelector 

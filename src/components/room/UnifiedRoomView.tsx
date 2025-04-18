@@ -73,21 +73,28 @@ const UnifiedRoomView = ({
     }
   };
 
-  const handleCardClick = () => {
-    setIsExpanded(!isExpanded);
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only toggle expansion if we're clicking the card header directly
+    // and not any of its children components that might have their own click handlers
+    if (e.currentTarget === e.target || 
+        (e.target as HTMLElement).classList.contains('card-header-clickable')) {
+      setIsExpanded(!isExpanded);
+    }
   };
 
   return (
     <Card 
       ref={cardRef}
-      onClick={handleCardClick}
-      className={`mb-4 transition-all duration-300 cursor-pointer relative ${isComplete ? 'border-green-400' : ''}`}
+      className={`mb-4 transition-all duration-300 relative ${isComplete ? 'border-green-400' : ''}`}
     >
       {showLed && (
         <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-400 animate-pulse z-50" />
       )}
       
-      <CardHeader className="py-3">
+      <CardHeader 
+        className="py-3 card-header-clickable cursor-pointer"
+        onClick={handleCardClick}
+      >
         <RoomHeader
           room={room}
           roomIndex={roomIndex}
