@@ -12,9 +12,7 @@ import { Loader2, ArrowLeft, Building2 } from "lucide-react";
 
 const PropertyCreationPage = () => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Omit<Property, 'id' | 'createdAt' | 'updatedAt'>>({
     name: "",
@@ -90,7 +88,14 @@ const PropertyCreationPage = () => {
           <div className="space-y-4">
             <div>
               <Label htmlFor="name">Property Reference</Label>
-              <Input id="name" name="name" placeholder="e.g. Beach House" value={formData.name} onChange={handleInputChange} required />
+              <Input 
+                id="name" 
+                name="name" 
+                placeholder="Wills Flat" 
+                value={formData.name} 
+                onChange={handleInputChange} 
+                required 
+              />
             </div>
             
             <div>
@@ -113,21 +118,49 @@ const PropertyCreationPage = () => {
             
             <div>
               <Label htmlFor="address">Street Address</Label>
-              <Input id="address" name="address" placeholder="123 Main St" value={formData.address} onChange={handleInputChange} required />
+              <Input 
+                id="address" 
+                name="address" 
+                placeholder="123 Exhibition Road" 
+                value={formData.address} 
+                onChange={handleInputChange} 
+                required 
+              />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="city" className="">City</Label>
-                <Input id="city" name="city" placeholder="New York" value={formData.city} onChange={handleInputChange} required />
+                <Input 
+                  id="city" 
+                  name="city" 
+                  placeholder="London" 
+                  value={formData.city} 
+                  onChange={handleInputChange} 
+                  required 
+                />
               </div>
               <div>
                 <Label htmlFor="state">Town / Borough</Label>
-                <Input id="state" name="state" placeholder="NY" value={formData.state} onChange={handleInputChange} required />
+                <Input 
+                  id="state" 
+                  name="state" 
+                  placeholder="Westminster" 
+                  value={formData.state} 
+                  onChange={handleInputChange} 
+                  required 
+                />
               </div>
               <div>
                 <Label htmlFor="zipCode">Post Code</Label>
-                <Input id="zipCode" name="zipCode" placeholder="10001" value={formData.zipCode} onChange={handleInputChange} required />
+                <Input 
+                  id="zipCode" 
+                  name="zipCode" 
+                  placeholder="SW1" 
+                  value={formData.zipCode} 
+                  onChange={handleInputChange} 
+                  required 
+                />
               </div>
             </div>
             
