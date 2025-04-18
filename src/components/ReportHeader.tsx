@@ -1,7 +1,10 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { FileCheck, Loader2, Save } from "lucide-react";
+import { FileCheck, Loader2, Save, Pen } from "lucide-react";
+import { ShimmerButton } from "./ui/shimmer-button";
+import SignatureDialog from "./SignatureDialog";
 
 interface ReportHeaderProps {
   title: string;
@@ -21,6 +24,15 @@ const ReportHeader = ({
   onComplete 
 }: ReportHeaderProps) => {
   const navigate = useNavigate();
+  const [showSignature, setShowSignature] = useState(false);
+
+  const handleSignatureSave = (data: { name: string; date: string; signature: string }) => {
+    // Here you would typically save the signature data
+    console.log("Signature data:", data);
+    if (onComplete) {
+      onComplete();
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -40,29 +52,41 @@ const ReportHeader = ({
         >
           Cancel
         </Button>
+
         {status === "pending_review" && onComplete ? (
-          <Button 
-            onClick={onComplete}
-            disabled={isSaving}
-            className="bg-shareai-teal hover:bg-shareai-teal/90"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <FileCheck className="h-4 w-4 mr-2" />
-                Complete Report
-              </>
-            )}
-          </Button>
+          <>
+            <Button 
+              onClick={() => setShowSignature(true)}
+              className="bg-shareai-teal hover:bg-shareai-teal/90"
+            >
+              <Pen className="h-4 w-4 mr-2" />
+              Add Signature
+            </Button>
+            <ShimmerButton
+              onClick={onComplete}
+              disabled={isSaving}
+              className="px-4 py-2 h-10"
+              background="rgb(20, 184, 166)"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <FileCheck className="h-4 w-4 mr-2" />
+                  Complete Report
+                </>
+              )}
+            </ShimmerButton>
+          </>
         ) : (
-          <Button 
+          <ShimmerButton
             onClick={onSave}
             disabled={isSaving}
-            className="bg-shareai-teal hover:bg-shareai-teal/90"
+            className="px-4 py-2 h-10"
+            background="rgb(20, 184, 166)"
           >
             {isSaving ? (
               <>
@@ -75,9 +99,15 @@ const ReportHeader = ({
                 Save Report
               </>
             )}
-          </Button>
+          </ShimmerButton>
         )}
       </div>
+
+      <SignatureDialog
+        open={showSignature}
+        onClose={() => setShowSignature(false)}
+        onSave={handleSignatureSave}
+      />
     </div>
   );
 };

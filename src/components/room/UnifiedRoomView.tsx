@@ -34,6 +34,7 @@ const UnifiedRoomView = ({
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [showLed, setShowLed] = useState(true);
   
   // Calculate room completion
   const { completionPercentage, isComplete: calculatedComplete } = calculateRoomCompletion(room);
@@ -45,6 +46,14 @@ const UnifiedRoomView = ({
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [isExpanded, isComplete]);
+
+  useEffect(() => {
+    // Hide LED indicator after 5 seconds
+    if (showLed) {
+      const timer = setTimeout(() => setShowLed(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showLed]);
   
   const handleDeleteRoom = async () => {
     if (window.confirm(`Are you sure you want to delete ${room.name}?`)) {
@@ -64,12 +73,21 @@ const UnifiedRoomView = ({
     }
   };
 
+  const handleCardClick = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <Card 
       ref={cardRef}
-      className={`mb-4 transition-all duration-300 ${isComplete ? 'border-green-400' : ''} ${!isComplete && !isExpanded ? 'animate-pulse-opacity' : ''}`}
+      onClick={handleCardClick}
+      className={`mb-4 transition-all duration-300 cursor-pointer relative ${isComplete ? 'border-green-400' : ''}`}
     >
-      <CardHeader className="py-3 flex flex-row justify-between items-center cursor-pointer">
+      {showLed && (
+        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-400 animate-pulse z-50" />
+      )}
+      
+      <CardHeader className="py-3">
         <RoomHeader
           room={room}
           roomIndex={roomIndex}
