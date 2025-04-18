@@ -27,11 +27,7 @@ const PropertyCreationPage = () => {
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const {
-      name,
-      value,
-      type
-    } = e.target;
+    const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'number' ? Number(value) : value
@@ -41,7 +37,7 @@ const PropertyCreationPage = () => {
   const handleSelectChange = (value: string, name: string) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'propertyType' ? value : Number(value)
     }));
   };
 
@@ -167,15 +163,42 @@ const PropertyCreationPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="bedrooms">Bedrooms</Label>
-                <Input id="bedrooms" name="bedrooms" type="number" min="0" value={formData.bedrooms} onChange={handleInputChange} required />
+                <Select value={formData.bedrooms.toString()} onValueChange={value => handleSelectChange(value, "bedrooms")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select number of bedrooms" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...Array(11)].map((_, i) => (
+                      <SelectItem key={i} value={i.toString()}>{i}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="bathrooms">Bathrooms</Label>
-                <Input id="bathrooms" name="bathrooms" type="number" min="0" step="0.5" value={formData.bathrooms} onChange={handleInputChange} required />
+                <Select value={formData.bathrooms.toString()} onValueChange={value => handleSelectChange(value, "bathrooms")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select number of bathrooms" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...Array(11)].map((_, i) => (
+                      <SelectItem key={i} value={i.toString()}>{i}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="squareFeet">Square Feet</Label>
-                <Input id="squareFeet" name="squareFeet" type="number" min="0" value={formData.squareFeet} onChange={handleInputChange} required />
+                <Input 
+                  id="squareFeet" 
+                  name="squareFeet" 
+                  type="number" 
+                  min="0" 
+                  placeholder="200" 
+                  value={formData.squareFeet} 
+                  onChange={handleInputChange} 
+                  required 
+                />
               </div>
             </div>
           </div>
