@@ -17,7 +17,7 @@ export const uploadReportImage = async (
     // Create a unique filename
     const fileExtension = typeof file === 'string' 
       ? 'jpg' 
-      : file.name.split('.').pop() || 'jpg';
+      : file.name?.split('.').pop() || 'jpg';
     const fileName = `${uuidv4()}.${fileExtension}`;
 
     // Create folder path using property address and report type
@@ -46,7 +46,7 @@ export const uploadReportImage = async (
   }
 };
 
-export const deleteReportImage = async (imageUrl: string) => {
+export const deleteReportImage = async (imageUrl: string): Promise<boolean> => {
   try {
     // Extract the file path from the public URL
     const urlParts = imageUrl.split('/');

@@ -1,61 +1,89 @@
 
 import { Property } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { LOCAL_STORAGE_KEYS, initializeLocalStorage } from './utils';
 
 // Properties API
 export const PropertiesAPI = {
   getAll: async (): Promise<Property[]> => {
-    initializeLocalStorage();
-    const properties = localStorage.getItem(LOCAL_STORAGE_KEYS.PROPERTIES);
-    return JSON.parse(properties || '[]');
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .order('updatedAt', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching properties:', error);
+      throw error;
+    }
+    
+    return data || [];
   },
   
   getById: async (id: string): Promise<Property | null> => {
-    const properties = await PropertiesAPI.getAll();
-    return properties.find(p => p.id === id) || null;
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error('Error fetching property:', error);
+      throw error;
+    }
+    
+    return data || null;
   },
   
   create: async (property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>): Promise<Property> => {
-    const properties = await PropertiesAPI.getAll();
-    const newProperty: Property = {
+    const newProperty = {
       ...property,
-      name: property.name || property.address, // Use address as fallback if name not provided
-      id: uuidv4(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      id: uuidv4(), // We'll still generate the UUID client-side
     };
     
-    properties.push(newProperty);
-    localStorage.setItem(LOCAL_STORAGE_KEYS.PROPERTIES, JSON.stringify(properties));
-    return newProperty;
+    const { data, error } = await supabase
+      .from('properties')
+      .insert(newProperty)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating property:', error);
+      throw error;
+    }
+    
+    return data;
   },
   
   update: async (id: string, updates: Partial<Property>): Promise<Property | null> => {
-    const properties = await PropertiesAPI.getAll();
-    const index = properties.findIndex(p => p.id === id);
+    const { data, error } = await supabase
+      .from('properties')
+      .update({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .eq('id', id)
+      .select()
+      .single();
     
-    if (index === -1) return null;
+    if (error) {
+      console.error('Error updating property:', error);
+      throw error;
+    }
     
-    const updatedProperty = {
-      ...properties[index],
-      ...updates,
-      updatedAt: new Date(),
-    };
-    
-    properties[index] = updatedProperty;
-    localStorage.setItem(LOCAL_STORAGE_KEYS.PROPERTIES, JSON.stringify(properties));
-    return updatedProperty;
+    return data;
   },
   
   delete: async (id: string): Promise<boolean> => {
-    const properties = await PropertiesAPI.getAll();
-    const index = properties.findIndex(p => p.id === id);
+    const { error } = await supabase
+      .from('properties')
+      .delete()
+      .eq('id', id);
     
-    if (index === -1) return false;
+    if (error) {
+      console.error('Error deleting property:', error);
+      throw error;
+    }
     
-    properties.splice(index, 1);
-    localStorage.setItem(LOCAL_STORAGE_KEYS.PROPERTIES, JSON.stringify(properties));
     return true;
   }
 };
