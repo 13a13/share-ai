@@ -13,10 +13,12 @@ import {
   Plus, 
   Home,
   Upload,
+  FileUp,
 } from "lucide-react";
 import { Property, Report } from "@/types";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import ReportCard from "@/components/ReportCard";
+import UploadReportDialog from "@/components/UploadReportDialog";
 
 const PropertyDetailsPage = () => {
   
@@ -30,6 +32,7 @@ const PropertyDetailsPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<Property>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -124,6 +127,20 @@ const PropertyDetailsPage = () => {
         variant: "destructive",
         title: "Error",
         description: "Failed to update property details.",
+      });
+    }
+  };
+  
+  const handleUploadComplete = (report: Report | null) => {
+    setIsUploadDialogOpen(false);
+    
+    if (report) {
+      // Add the new report to the list
+      setReports(prevReports => [...prevReports, report]);
+      
+      toast({
+        title: "Report Uploaded",
+        description: "Your report has been uploaded successfully.",
       });
     }
   };
@@ -396,12 +413,20 @@ const PropertyDetailsPage = () => {
               <Plus className="h-5 w-5 mr-2 text-shareai-teal" />
               Property Reports
             </CardTitle>
-            <Button
-              onClick={() => navigate(`/reports/new/${propertyId}`)}
-              className="bg-shareai-teal hover:bg-shareai-teal/90"
-            >
-              <Plus className="h-4 w-4 mr-2" /> New Report
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => setIsUploadDialogOpen(true)}
+                className="bg-shareai-teal hover:bg-shareai-teal/90"
+              >
+                <FileUp className="h-4 w-4 mr-2" /> Upload Report
+              </Button>
+              <Button
+                onClick={() => navigate(`/reports/new/${propertyId}`)}
+                className="bg-shareai-teal hover:bg-shareai-teal/90"
+              >
+                <Plus className="h-4 w-4 mr-2" /> New Report
+              </Button>
+            </div>
           </CardHeader>
           
           <CardContent>
@@ -452,6 +477,16 @@ const PropertyDetailsPage = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Upload Report Dialog */}
+      {propertyId && (
+        <UploadReportDialog
+          isOpen={isUploadDialogOpen}
+          onClose={() => setIsUploadDialogOpen(false)}
+          properties={[property].filter(Boolean) as Property[]}
+          onUploadComplete={handleUploadComplete}
+        />
+      )}
     </div>
   );
 };
