@@ -1,4 +1,3 @@
-
 export interface Property {
   id: string;
   name?: string;
@@ -25,7 +24,7 @@ export interface Report {
   id: string;
   propertyId: string;
   name?: string;
-  type: 'check_in' | 'check_out' | 'inspection';
+  type: 'check_in' | 'check_out' | 'inventory' | 'inspection' | 'routine' | 'comparison';
   status: 'draft' | 'in_progress' | 'pending_review' | 'completed' | 'archived';
   reportInfo?: ReportInfo;
   rooms: Room[];
@@ -38,13 +37,13 @@ export interface Report {
 }
 
 export interface ReportInfo {
-  reportDate?: Date;
+  reportDate?: string;
+  tenantName?: string;
+  clerk?: string;
   additionalInfo?: string;
   fileUrl?: string; // URL for uploaded document
-  clerk?: string; // Add clerk property
-  inventoryType?: string; // Add inventoryType property
-  tenantPresent?: boolean; // Add tenantPresent property
-  tenantName?: string; // Add tenantName property
+  fileName?: string;
+  comparisonText?: string; // Added for comparison reports
 }
 
 export interface Room {

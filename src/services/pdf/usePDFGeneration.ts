@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -7,6 +8,7 @@ import { generateDisclaimerSection } from "./sections/disclaimer";
 import { generateSummaryTables } from "./sections/summaryTables";
 import { generateRoomSection } from "./sections/roomSection";
 import { generateFinalSections } from "./sections/finalSections";
+import { generateComparisonSection } from "./sections/comparisonSection";
 import { addHeadersAndFooters } from "./utils/headerFooter";
 import { useState } from "react";
 
@@ -43,8 +45,10 @@ export const usePDFGeneration = () => {
       
       // Set up document metadata
       doc.setProperties({
-        title: `Inventory Report - ${property.address}`,
-        subject: `Inventory and Check In Report for ${property.address}`,
+        title: `Property Report - ${property.address}`,
+        subject: report.type === "comparison" 
+          ? `Comparison Report for ${property.address}` 
+          : `Inventory and Check In Report for ${property.address}`,
         author: report.reportInfo?.clerk || "Share.AI",
         creator: "Share.AI Property Reports"
       });
@@ -61,37 +65,56 @@ export const usePDFGeneration = () => {
       // Track page numbers for table of contents
       const pageMap: Record<string, number> = {};
       let currentPage = 2; // Cover is page 1
-      
-      // Add table of contents as page 2
-      pageMap["contents"] = currentPage++;
-      generateTableOfContents(doc, pageMap, report);
-      doc.addPage();
-      
-      // Add disclaimer section as page 3
-      pageMap["disclaimer"] = currentPage++;
-      generateDisclaimerSection(doc);
-      doc.addPage();
-      
-      // Add summaries as page 4
-      pageMap["summary"] = currentPage++;
-      generateSummaryTables(doc, report, property);
-      doc.addPage();
-      
-      // Track start of rooms for table of contents
-      console.log("Generating room sections...");
-      for (let i = 0; i < report.rooms.length; i++) {
-        const room = report.rooms[i];
-        console.log(`Processing room ${i+1}/${report.rooms.length}: ${room.name}`);
+
+      // Special handling for comparison report
+      if (report.type === "comparison" && report.reportInfo?.comparisonText) {
+        // Add table of contents as page 2
+        pageMap["contents"] = currentPage++;
+        generateTableOfContents(doc, pageMap, null); // No rooms in ToC for comparison report
+        doc.addPage();
         
-        // Record page number for this room
-        pageMap[room.id] = currentPage++;
+        // Add disclaimer section as page 3
+        pageMap["disclaimer"] = currentPage++;
+        generateDisclaimerSection(doc);
+        doc.addPage();
         
-        // Generate room section
-        await generateRoomSection(doc, room, i + 1);
+        // Add comparison section as page 4
+        pageMap["comparison"] = currentPage++;
+        generateComparisonSection(doc, report);
+      } else {
+        // Standard report processing
         
-        // Add new page for next room (except for last room)
-        if (i < report.rooms.length - 1) {
-          doc.addPage();
+        // Add table of contents as page 2
+        pageMap["contents"] = currentPage++;
+        generateTableOfContents(doc, pageMap, report);
+        doc.addPage();
+        
+        // Add disclaimer section as page 3
+        pageMap["disclaimer"] = currentPage++;
+        generateDisclaimerSection(doc);
+        doc.addPage();
+        
+        // Add summaries as page 4
+        pageMap["summary"] = currentPage++;
+        generateSummaryTables(doc, report, property);
+        doc.addPage();
+        
+        // Track start of rooms for table of contents
+        console.log("Generating room sections...");
+        for (let i = 0; i < report.rooms.length; i++) {
+          const room = report.rooms[i];
+          console.log(`Processing room ${i+1}/${report.rooms.length}: ${room.name}`);
+          
+          // Record page number for this room
+          pageMap[room.id] = currentPage++;
+          
+          // Generate room section
+          await generateRoomSection(doc, room, i + 1);
+          
+          // Add new page for next room (except for last room)
+          if (i < report.rooms.length - 1) {
+            doc.addPage();
+          }
         }
       }
       
@@ -106,7 +129,7 @@ export const usePDFGeneration = () => {
       // Show success toast
       toast({
         title: "PDF Generated Successfully",
-        description: "Your inventory report is ready to download.",
+        description: "Your report is ready to download.",
         variant: "default",
       });
       
