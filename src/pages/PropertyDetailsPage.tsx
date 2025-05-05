@@ -14,11 +14,13 @@ import {
   Home,
   Upload,
   FileUp,
+  Compare
 } from "lucide-react";
 import { Property, Report } from "@/types";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import ReportCard from "@/components/ReportCard";
 import UploadReportDialog from "@/components/UploadReportDialog";
+import CompareReportsDialog from "@/components/CompareReportsDialog";
 
 const PropertyDetailsPage = () => {
   
@@ -33,6 +35,7 @@ const PropertyDetailsPage = () => {
   const [formData, setFormData] = useState<Partial<Property>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isCompareDialogOpen, setIsCompareDialogOpen] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -415,6 +418,12 @@ const PropertyDetailsPage = () => {
             </CardTitle>
             <div className="flex space-x-2">
               <Button
+                onClick={() => setIsCompareDialogOpen(true)}
+                className="bg-shareai-teal hover:bg-shareai-teal/90"
+              >
+                <Compare className="h-4 w-4 mr-2" /> AI Compare Reports
+              </Button>
+              <Button
                 onClick={() => setIsUploadDialogOpen(true)}
                 className="bg-shareai-teal hover:bg-shareai-teal/90"
               >
@@ -486,6 +495,16 @@ const PropertyDetailsPage = () => {
           properties={[property].filter(Boolean) as Property[]}
           onUploadComplete={handleUploadComplete}
           preselectedPropertyId={propertyId}
+        />
+      )}
+      
+      {/* Compare Reports Dialog */}
+      {property && (
+        <CompareReportsDialog
+          isOpen={isCompareDialogOpen}
+          onClose={() => setIsCompareDialogOpen(false)}
+          property={property}
+          reports={reports}
         />
       )}
     </div>
