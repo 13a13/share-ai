@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { LOCAL_STORAGE_KEYS } from "@/lib/api/utils";
 import { Property, Report, Room, RoomImage } from "@/types";
@@ -43,8 +44,8 @@ export const migratePropertiesToSupabase = async (): Promise<void> => {
         type: p.propertyType || 'house',
         description: description,
         image_url: p.imageUrl || '',
-        created_at: new Date(p.createdAt),
-        updated_at: new Date(p.updatedAt)
+        created_at: new Date(p.createdAt).toISOString(),
+        updated_at: new Date(p.updatedAt).toISOString()
       };
     });
 
@@ -113,7 +114,7 @@ const migrateReportToSupabase = async (report: Report): Promise<void> => {
       }
       
       // Create the inspection in Supabase
-      // Fixed: The insert operation needs a single object
+      // Convert Date objects to ISO strings for Supabase
       const { error: inspectionError } = await supabase
         .from('inspections')
         .insert({
@@ -121,7 +122,9 @@ const migrateReportToSupabase = async (report: Report): Promise<void> => {
           room_id: room.id,
           status: report.status,
           report_url: report.reportInfo?.additionalInfo || '',
-          date: report.reportInfo?.reportDate ? new Date(report.reportInfo.reportDate) : new Date()
+          date: report.reportInfo?.reportDate 
+            ? new Date(report.reportInfo.reportDate).toISOString() 
+            : new Date().toISOString()
         });
       
       if (inspectionError) {
