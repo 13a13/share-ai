@@ -1,4 +1,3 @@
-
 import { Report, Property } from "@/types";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +8,8 @@ import {
   MoreHorizontal, 
   Copy, 
   Trash2,
-  Archive
+  Archive,
+  FileText
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -78,6 +78,9 @@ const ReportCard = ({
     return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  // Helper to check if report has uploaded document
+  const hasUploadedDocument = report.reportInfo?.fileUrl !== undefined;
+  
   const handleDuplicate = async () => {
     try {
       setIsProcessing(true);
@@ -140,6 +143,12 @@ const ReportCard = ({
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg">
               {formatReportType(report.type)} Report
+              {hasUploadedDocument && (
+                <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
+                  <FileText className="h-3 w-3 mr-1" />
+                  Document
+                </Badge>
+              )}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge className={getStatusBadgeClass(report.status)}>

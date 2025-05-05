@@ -1,4 +1,3 @@
-
 import { Report, Room, RoomType, RoomImage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { createNewReport, createNewRoom } from '../mockData';
@@ -383,6 +382,23 @@ export const ReportsAPI = {
     
     if (updates.reportInfo?.additionalInfo) {
       updateData.report_url = updates.reportInfo.additionalInfo;
+    }
+    
+    // Add support for file URLs in the report_info column (as JSON)
+    if (updates.reportInfo?.fileUrl) {
+      // Get the existing report first to preserve other properties
+      const { data: existingReport } = await supabase
+        .from('inspections')
+        .select('report_info')
+        .eq('id', id)
+        .single();
+        
+      // Create or update the report_info JSON column
+      const reportInfo = existingReport?.report_info ? 
+        { ...existingReport.report_info, fileUrl: updates.reportInfo.fileUrl } : 
+        { fileUrl: updates.reportInfo.fileUrl };
+        
+      updateData.report_info = reportInfo;
     }
     
     const { error } = await supabase

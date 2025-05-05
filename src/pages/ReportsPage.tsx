@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import ReportCard from "@/components/ReportCard";
 import EmptyState from "@/components/EmptyState";
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report } from "@/types";
 import { useEffect, useState } from "react";
-import { FileText, Plus, Search, Filter } from "lucide-react";
+import { FileText, Plus, Search, Filter, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -16,6 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import UploadReportDialog from "@/components/UploadReportDialog";
 
 const ReportsPage = () => {
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ const ReportsPage = () => {
   const [propertyFilter, setPropertyFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -103,8 +104,13 @@ const ReportsPage = () => {
       // Delete the report
       await ReportsAPI.delete(reportId);
       
-      // Update local state
-      setReports(prevReports => prevReports.filter(report => report.id !== reportId));
+      // Update local state - fix: use functional update to ensure we're working with the latest state
+      setReports(prevReports => {
+        const updatedReports = prevReports.filter(report => report.id !== reportId);
+        // Also update filtered reports to maintain UI consistency
+        setFilteredReports(prevFiltered => prevFiltered.filter(report => report.id !== reportId));
+        return updatedReports;
+      });
       
       toast({
         title: "Report Deleted",
@@ -209,13 +215,23 @@ const ReportsPage = () => {
     <div className="shareai-container">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <h1 className="text-3xl font-bold text-shareai-blue">Reports</h1>
-        <Button 
-          onClick={() => navigate("/reports/new")}
-          className="bg-shareai-teal hover:bg-shareai-teal/90 md:ml-auto"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Report
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => navigate("/reports/new")}
+            className="bg-shareai-teal hover:bg-shareai-teal/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Report
+          </Button>
+          <Button 
+            onClick={() => setIsUploadDialogOpen(true)}
+            variant="outline"
+            className="border-shareai-teal text-shareai-teal hover:bg-shareai-teal/10"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Upload Report
+          </Button>
+        </div>
       </div>
       
       {/* Filters */}
@@ -323,6 +339,20 @@ const ReportsPage = () => {
           ))}
         </div>
       )}
+      
+      {/* Upload Report Dialog */}
+      <UploadReportDialog 
+        isOpen={isUploadDialogOpen} 
+        onClose={() => setIsUploadDialogOpen(false)}
+        properties={properties}
+        onUploadComplete={(newReport) => {
+          // Add the new report to the list and close the dialog
+          if (newReport) {
+            setReports(prev => [newReport, ...prev]);
+            setIsUploadDialogOpen(false);
+          }
+        }}
+      />
     </div>
   );
 };

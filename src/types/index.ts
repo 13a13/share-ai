@@ -37,12 +37,9 @@ export interface Report {
 }
 
 export interface ReportInfo {
-  reportDate: Date;
-  clerk?: string;
-  inventoryType?: string;
-  tenantPresent?: boolean;
-  tenantName?: string;
+  reportDate?: Date;
   additionalInfo?: string;
+  fileUrl?: string; // Add this for uploaded document URLs
 }
 
 export interface Room {
