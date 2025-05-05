@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI } from "@/lib/api";
 import { Report, Room, RoomType, RoomComponent } from "@/types";
 import { v4 as uuidv4 } from 'uuid';
+import { getDefaultComponentsByRoomType } from "@/utils/roomComponentUtils";
 
 export type RoomFormValues = {
   name: string;
@@ -47,37 +47,13 @@ export const useRoomManagement = (
       );
       
       if (newRoom) {
-        let initialComponents: RoomComponent[] = [];
-        
-        if (values.type === "bathroom") {
-          initialComponents = [
-            createDefaultComponent("Walls", "walls", false),
-            createDefaultComponent("Ceiling", "ceiling", false),
-            createDefaultComponent("Flooring", "flooring", false),
-            createDefaultComponent("Doors & Frames", "doors", false),
-            createDefaultComponent("Bath/Shower", "bath", false),
-            createDefaultComponent("Toilet", "toilet", false),
-          ];
-        } else if (values.type === "kitchen") {
-          initialComponents = [
-            createDefaultComponent("Walls", "walls", false),
-            createDefaultComponent("Ceiling", "ceiling", false),
-            createDefaultComponent("Flooring", "flooring", false),
-            createDefaultComponent("Cabinetry & Countertops", "cabinetry", false),
-            createDefaultComponent("Sink & Taps", "sink", false),
-          ];
-        } else {
-          initialComponents = [
-            createDefaultComponent("Walls", "walls", false),
-            createDefaultComponent("Ceiling", "ceiling", false),
-            createDefaultComponent("Flooring", "flooring", false),
-            createDefaultComponent("Doors & Frames", "doors", false),
-          ];
-        }
+        // Get default components based on room type using the utility function
+        const defaultComponents = getDefaultComponentsByRoomType(values.type as RoomType)
+          .map(comp => createDefaultComponent(comp.name, comp.type, comp.isOptional));
         
         const updatedRoom = {
           ...newRoom,
-          components: initialComponents,
+          components: defaultComponents,
         };
         
         await ReportsAPI.updateRoom(report.id, newRoom.id, updatedRoom);

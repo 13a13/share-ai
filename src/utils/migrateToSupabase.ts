@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { LOCAL_STORAGE_KEYS } from "@/lib/api/utils";
 import { Property, Report, Room, RoomImage } from "@/types";
@@ -114,7 +113,7 @@ const migrateReportToSupabase = async (report: Report): Promise<void> => {
       }
       
       // Create the inspection in Supabase
-      // Fix: The insert operation needs a single object, not an array with object property 'id'
+      // Fixed: The insert operation needs a single object
       const { error: inspectionError } = await supabase
         .from('inspections')
         .insert({
@@ -122,9 +121,7 @@ const migrateReportToSupabase = async (report: Report): Promise<void> => {
           room_id: room.id,
           status: report.status,
           report_url: report.reportInfo?.additionalInfo || '',
-          date: report.reportInfo?.reportDate ? new Date(report.reportInfo.reportDate) : new Date(),
-          created_at: new Date(report.createdAt),
-          updated_at: new Date(report.updatedAt)
+          date: report.reportInfo?.reportDate ? new Date(report.reportInfo.reportDate) : new Date()
         });
       
       if (inspectionError) {
