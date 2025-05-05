@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,7 +15,7 @@ import {
   Home,
   Upload,
   FileUp,
-  Compare
+  GitCompare
 } from "lucide-react";
 import { Property, Report } from "@/types";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
@@ -421,7 +422,7 @@ const PropertyDetailsPage = () => {
                 onClick={() => setIsCompareDialogOpen(true)}
                 className="bg-shareai-teal hover:bg-shareai-teal/90"
               >
-                <Compare className="h-4 w-4 mr-2" /> AI Compare Reports
+                <GitCompare className="h-4 w-4 mr-2" /> AI Compare Reports
               </Button>
               <Button
                 onClick={() => setIsUploadDialogOpen(true)}

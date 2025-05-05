@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Property, Report } from "@/types";
-import { Loader2, Compare } from "lucide-react";
+import { Loader2, GitCompare } from "lucide-react";
 
 interface CompareReportsDialogProps {
   isOpen: boolean;
@@ -220,7 +219,7 @@ const CompareReportsDialog = ({
                   </>
                 ) : (
                   <>
-                    <Compare className="mr-2 h-4 w-4" />
+                    <GitCompare className="mr-2 h-4 w-4" />
                     Compare Reports
                   </>
                 )}
