@@ -30,11 +30,17 @@ export const migratePropertiesToSupabase = async (): Promise<void> => {
 
     // Prepare properties for insertion with user_id
     const propertiesToInsert = propertiesToMigrate.map((p: Property) => ({
-      ...p,
+      id: p.id,
       user_id: user.id,
+      name: p.name || '',
+      address: p.address,
+      city: p.city,
+      state: p.state,
+      zipCode: p.zipCode,
+      type: p.propertyType || 'house',
       bedrooms: p.bedrooms || 0,
       bathrooms: p.bathrooms || 0,
-      type: p.propertyType || 'house',
+      description: p.imageUrl || '',
       createdAt: new Date(p.createdAt),
       updatedAt: new Date(p.updatedAt)
     }));

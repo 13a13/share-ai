@@ -1,3 +1,4 @@
+
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -20,8 +21,16 @@ import AuthCallbackPage from "./pages/auth/AuthCallbackPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useMigration } from './hooks/useMigration';
+import { Loader2 } from "lucide-react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30000, // 30 seconds
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   const { isMigrating } = useMigration();
@@ -36,6 +45,12 @@ function App() {
             <BrowserRouter>
               <div className="flex flex-col min-h-screen">
                 <Header />
+                {isMigrating && (
+                  <div className="bg-amber-50 border-b border-amber-200 p-2 text-amber-700 text-center text-sm flex items-center justify-center">
+                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                    Syncing your data to the cloud...
+                  </div>
+                )}
                 <main className="flex-grow">
                   <Routes>
                     {/* Auth Routes */}

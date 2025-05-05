@@ -1,4 +1,3 @@
-
 import { Report, Room, RoomType, RoomImage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { createNewReport, createNewRoom } from '../mockData';
@@ -8,71 +7,164 @@ import { uploadReportImage, deleteReportImage } from '@/utils/supabaseStorage';
 // Reports API
 export const ReportsAPI = {
   getAll: async (): Promise<Report[]> => {
-    const { data, error } = await supabase
+    // First, get reports
+    const { data: reportsData, error: reportsError } = await supabase
       .from('reports')
-      .select(`
-        *,
-        property:propertyId(*)
-      `)
-      .order('updatedAt', { ascending: false });
+      .select('*')
+      .order('createdAt', { ascending: false });
     
-    if (error) {
-      console.error('Error fetching reports:', error);
-      throw error;
+    if (reportsError) {
+      console.error('Error fetching reports:', reportsError);
+      throw reportsError;
     }
     
+    if (!reportsData || reportsData.length === 0) {
+      return [];
+    }
+    
+    // Then fetch properties for these reports
+    const propertyIds = [...new Set(reportsData.map(r => r.propertyId))];
+    
+    const { data: propertiesData, error: propertiesError } = await supabase
+      .from('properties')
+      .select('*')
+      .in('id', propertyIds);
+      
+    if (propertiesError) {
+      console.error('Error fetching properties for reports:', propertiesError);
+      throw propertiesError;
+    }
+    
+    // Create a map for quick property lookup
+    const propertiesMap = (propertiesData || []).reduce((acc, prop) => {
+      acc[prop.id] = prop;
+      return acc;
+    }, {} as Record<string, any>);
+    
     // Transform the data to match our client-side model
-    const reports = data.map((item) => ({
-      ...item,
-      property: item.property,
-      rooms: item.rooms || []
+    const reports: Report[] = reportsData.map(report => ({
+      id: report.id,
+      name: report.name || '',
+      propertyId: report.propertyId,
+      property: propertiesMap[report.propertyId] ? {
+        id: propertiesMap[report.propertyId].id,
+        name: propertiesMap[report.propertyId].name || '',
+        address: propertiesMap[report.propertyId].address,
+        city: propertiesMap[report.propertyId].city,
+        state: propertiesMap[report.propertyId].state,
+        zipCode: propertiesMap[report.propertyId].zipCode,
+        propertyType: propertiesMap[report.propertyId].type,
+        bedrooms: propertiesMap[report.propertyId].bedrooms || 0,
+        bathrooms: propertiesMap[report.propertyId].bathrooms || 0,
+        squareFeet: 0,
+        imageUrl: propertiesMap[report.propertyId].description || '',
+        createdAt: new Date(propertiesMap[report.propertyId].createdAt),
+        updatedAt: new Date(propertiesMap[report.propertyId].updatedAt)
+      } : null,
+      type: report.type,
+      status: report.status,
+      reportInfo: report.reportInfo || null,
+      rooms: [], // Rooms will be loaded on demand for individual reports
+      createdAt: new Date(report.createdAt),
+      updatedAt: new Date(report.updatedAt),
+      completedAt: report.completedAt ? new Date(report.completedAt) : null,
+      disclaimers: []
     }));
     
-    return reports || [];
+    return reports;
   },
   
   getByPropertyId: async (propertyId: string): Promise<Report[]> => {
-    const { data, error } = await supabase
+    // Get reports for a specific property
+    const { data: reportsData, error } = await supabase
       .from('reports')
-      .select(`
-        *,
-        property:propertyId(*)
-      `)
+      .select('*')
       .eq('propertyId', propertyId)
-      .order('updatedAt', { ascending: false });
+      .order('createdAt', { ascending: false });
     
     if (error) {
       console.error('Error fetching reports by property:', error);
       throw error;
     }
     
+    if (!reportsData || reportsData.length === 0) {
+      return [];
+    }
+    
+    // Get the property data
+    const { data: property, error: propertyError } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', propertyId)
+      .single();
+      
+    if (propertyError) {
+      console.error('Error fetching property for reports:', propertyError);
+      throw propertyError;
+    }
+    
     // Transform the data
-    const reports = data.map((item) => ({
-      ...item,
-      property: item.property,
-      rooms: item.rooms || []
+    const propertyData = property ? {
+      id: property.id,
+      name: property.name || '',
+      address: property.address,
+      city: property.city,
+      state: property.state,
+      zipCode: property.zipCode,
+      propertyType: property.type,
+      bedrooms: property.bedrooms || 0,
+      bathrooms: property.bathrooms || 0,
+      squareFeet: 0,
+      imageUrl: property.description || '',
+      createdAt: new Date(property.createdAt),
+      updatedAt: new Date(property.updatedAt)
+    } : null;
+    
+    const reports: Report[] = reportsData.map(report => ({
+      id: report.id,
+      name: report.name || '',
+      propertyId: report.propertyId,
+      property: propertyData,
+      type: report.type,
+      status: report.status,
+      reportInfo: report.reportInfo || null,
+      rooms: [], // Rooms will be loaded on demand for individual reports
+      createdAt: new Date(report.createdAt),
+      updatedAt: new Date(report.updatedAt),
+      completedAt: report.completedAt ? new Date(report.completedAt) : null,
+      disclaimers: []
     }));
     
-    return reports || [];
+    return reports;
   },
   
   getById: async (id: string): Promise<Report | null> => {
     // Fetch the report
     const { data: reportData, error: reportError } = await supabase
       .from('reports')
-      .select(`
-        *,
-        property:propertyId(*)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
     
     if (reportError) {
       console.error('Error fetching report:', reportError);
+      if (reportError.code === 'PGRST116') return null; // Not found
       throw reportError;
     }
     
     if (!reportData) return null;
+    
+    // Fetch the property
+    const { data: property, error: propertyError } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', reportData.propertyId)
+      .single();
+      
+    if (propertyError) {
+      console.error('Error fetching property:', propertyError);
+      throw propertyError;
+    }
     
     // Fetch the rooms for this report
     const { data: roomsData, error: roomsError } = await supabase
@@ -88,33 +180,75 @@ export const ReportsAPI = {
     
     // Fetch images for all rooms
     const roomIds = roomsData.map(room => room.id);
-    const { data: imagesData, error: imagesError } = await supabase
-      .from('room_images')
-      .select('*')
-      .in('roomId', roomIds);
+    let imagesData = [];
     
-    if (imagesError) {
-      console.error('Error fetching room images:', imagesError);
-      throw imagesError;
+    if (roomIds.length > 0) {
+      const { data: roomImagesData, error: imagesError } = await supabase
+        .from('room_images')
+        .select('*')
+        .in('roomId', roomIds);
+      
+      if (imagesError) {
+        console.error('Error fetching room images:', imagesError);
+        throw imagesError;
+      }
+      
+      imagesData = roomImagesData || [];
     }
     
     // Organize images by room
     const imagesByRoom = imagesData.reduce((acc, img) => {
       if (!acc[img.roomId]) acc[img.roomId] = [];
-      acc[img.roomId].push(img);
+      acc[img.roomId].push({
+        id: img.id,
+        url: img.url,
+        timestamp: new Date(img.timestamp),
+        aiProcessed: img.aiProcessed || false,
+        aiData: img.analysis || null
+      });
       return acc;
     }, {} as Record<string, any[]>);
     
+    // Transform property
+    const propertyData = property ? {
+      id: property.id,
+      name: property.name || '',
+      address: property.address,
+      city: property.city,
+      state: property.state,
+      zipCode: property.zipCode,
+      propertyType: property.type,
+      bedrooms: property.bedrooms || 0,
+      bathrooms: property.bathrooms || 0,
+      squareFeet: 0,
+      imageUrl: property.description || '',
+      createdAt: new Date(property.createdAt),
+      updatedAt: new Date(property.updatedAt)
+    } : null;
+    
     // Assemble the full report with rooms and images
     const report: Report = {
-      ...reportData,
-      property: reportData.property,
+      id: reportData.id,
+      name: reportData.name || '',
+      propertyId: reportData.propertyId,
+      property: propertyData,
+      type: reportData.type,
+      status: reportData.status,
+      reportInfo: reportData.reportInfo || null,
       rooms: roomsData.map(room => ({
-        ...room,
+        id: room.id,
+        name: room.name,
+        type: room.type as RoomType,
+        order: room.order_index,
+        generalCondition: room.generalCondition || undefined,
         sections: room.sections || [],
         components: room.components || [],
         images: imagesByRoom[room.id] || []
-      }))
+      })),
+      createdAt: new Date(reportData.createdAt),
+      updatedAt: new Date(reportData.updatedAt),
+      completedAt: reportData.completedAt ? new Date(reportData.completedAt) : null,
+      disclaimers: []
     };
     
     return report;
@@ -398,8 +532,7 @@ export const ReportsAPI = {
     
     return data;
   },
-
-  // Update the delete room method to remove associated images from storage
+  
   deleteRoom: async (reportId: string, roomId: string): Promise<void> => {
     // Fetch all images for this room
     const { data: images, error: imagesError } = await supabase
