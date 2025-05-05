@@ -29,21 +29,25 @@ export const migratePropertiesToSupabase = async (): Promise<void> => {
     if (propertiesToMigrate.length === 0) return;
 
     // Prepare properties for insertion with user_id
-    const propertiesToInsert = propertiesToMigrate.map((p: Property) => ({
-      id: p.id,
-      user_id: user.id,
-      name: p.name || '',
-      address: p.address,
-      city: p.city,
-      state: p.state,
-      zipCode: p.zipCode,
-      type: p.propertyType || 'house',
-      bedrooms: p.bedrooms || 0,
-      bathrooms: p.bathrooms || 0,
-      description: p.imageUrl || '',
-      createdAt: new Date(p.createdAt),
-      updatedAt: new Date(p.updatedAt)
-    }));
+    const propertiesToInsert = propertiesToMigrate.map((p: Property) => {
+      // Format location string from address components
+      const location = `${p.address}, ${p.city}, ${p.state}, ${p.zipCode}`;
+      
+      // Format description to include bedrooms and bathrooms
+      const description = `Bedrooms: ${p.bedrooms}, Bathrooms: ${p.bathrooms}`;
+      
+      return {
+        id: p.id,
+        user_id: user.id,
+        name: p.name || '',
+        location: location,
+        type: p.propertyType || 'house',
+        description: description,
+        image_url: p.imageUrl || '',
+        created_at: new Date(p.createdAt),
+        updated_at: new Date(p.updatedAt)
+      };
+    });
 
     // Insert properties into Supabase
     const { error } = await supabase.from('properties').insert(propertiesToInsert);

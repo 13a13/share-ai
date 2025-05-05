@@ -21,7 +21,7 @@ import AuthCallbackPage from "./pages/auth/AuthCallbackPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useMigration } from './hooks/useMigration';
-import { Loader2 } from "lucide-react";
+import { Loader2, CloudSync } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,7 +33,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { isMigrating } = useMigration();
+  const { isMigrating, migrationComplete, migrationError } = useMigration();
 
   return (
     <React.StrictMode>
@@ -49,6 +49,17 @@ function App() {
                   <div className="bg-amber-50 border-b border-amber-200 p-2 text-amber-700 text-center text-sm flex items-center justify-center">
                     <Loader2 className="animate-spin h-4 w-4 mr-2" />
                     Syncing your data to the cloud...
+                  </div>
+                )}
+                {migrationComplete && !isMigrating && (
+                  <div className="bg-green-50 border-b border-green-200 p-2 text-green-700 text-center text-sm flex items-center justify-center">
+                    <CloudSync className="h-4 w-4 mr-2" />
+                    Your data is now synchronized across all your devices
+                  </div>
+                )}
+                {migrationError && (
+                  <div className="bg-red-50 border-b border-red-200 p-2 text-red-700 text-center text-sm flex items-center justify-center">
+                    Error syncing data: {migrationError.message}
                   </div>
                 )}
                 <main className="flex-grow">
