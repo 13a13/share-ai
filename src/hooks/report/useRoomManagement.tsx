@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI } from "@/lib/api";
@@ -47,19 +48,24 @@ export const useRoomManagement = (
       );
       
       if (newRoom) {
-        // Get default components based on room type using the utility function
+        // Get default components based on room type
         const defaultComponents = getDefaultComponentsByRoomType(values.type as RoomType)
           .map(comp => createDefaultComponent(comp.name, comp.type, comp.isOptional));
         
+        // Add components to the room object
         const updatedRoom = {
           ...newRoom,
           components: defaultComponents,
         };
         
+        // Save the updated room with components to the API
         await ReportsAPI.updateRoom(report.id, newRoom.id, updatedRoom);
         
+        // Update the report state with the new room including components
         setReport(prev => {
           if (!prev) return prev;
+          
+          // Make sure to add the updated room with components
           return {
             ...prev,
             rooms: [...prev.rooms.filter(r => r.id !== newRoom.id), updatedRoom],
@@ -68,7 +74,7 @@ export const useRoomManagement = (
         
         toast({
           title: "Room Added",
-          description: `${newRoom.name} has been added to the report with default components.`,
+          description: `${newRoom.name} has been added to the report with ${defaultComponents.length} default components.`,
         });
       }
     } catch (error) {
