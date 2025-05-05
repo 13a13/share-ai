@@ -197,7 +197,7 @@ export const ReportsAPI = {
         status: status,
         reportInfo: { 
           reportDate: new Date(),
-          additionalInfo: inspection.report_url || '' 
+          additionalInfo: inspection.report_url || ''
         },
         rooms: [], // Rooms will be loaded on demand for individual reports
         createdAt: new Date(inspection.created_at),
@@ -288,8 +288,8 @@ export const ReportsAPI = {
     }));
     
     // Get any report_info data
-    const reportInfoData = inspectionData.report_info ? inspectionData.report_info : {};
-    
+    const reportInfoData = inspectionData.report_info ? inspectionData.report_info as Record<string, any> : {};
+      
     // Map status to valid enum values
     let status: "draft" | "in_progress" | "pending_review" | "completed" | "archived" = "draft";
     if (inspectionData.status === "in_progress") status = "in_progress";
@@ -308,7 +308,7 @@ export const ReportsAPI = {
       reportInfo: { 
         reportDate: new Date(),
         additionalInfo: inspectionData.report_url || '',
-        ...reportInfoData
+        ...(reportInfoData as Partial<Report['reportInfo']>)
       },
       // For simplicity, we'll use a single room which is the one attached to the inspection
       rooms: [{
@@ -389,8 +389,8 @@ export const ReportsAPI = {
     }
     
     // Add support for file URLs in the report_info column
-    if (updates.reportInfo?.fileUrl || updates.reportInfo?.clerk || 
-        updates.reportInfo?.inventoryType || updates.reportInfo?.tenantName || 
+    if (updates.reportInfo?.fileUrl !== undefined || updates.reportInfo?.clerk !== undefined || 
+        updates.reportInfo?.inventoryType !== undefined || updates.reportInfo?.tenantName !== undefined || 
         updates.reportInfo?.tenantPresent !== undefined) {
       // Get the existing report first
       const { data: existingReport, error: fetchError } = await supabase
@@ -404,15 +404,13 @@ export const ReportsAPI = {
         throw fetchError;
       }
       
-      let reportInfo = {};
-      
-      // Check if the existing report has report_info
-      if (existingReport && existingReport.report_info) {
-        reportInfo = existingReport.report_info;
-      }
+      // Initialize report info as an empty object or use existing
+      const reportInfo = (existingReport && existingReport.report_info) 
+        ? existingReport.report_info as Record<string, any> 
+        : {};
       
       // Update with any provided report info fields
-      const updatedReportInfo = { ...reportInfo };
+      const updatedReportInfo: Record<string, any> = { ...reportInfo };
       
       if (updates.reportInfo?.fileUrl !== undefined) {
         updatedReportInfo.fileUrl = updates.reportInfo.fileUrl;
