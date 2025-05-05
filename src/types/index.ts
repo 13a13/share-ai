@@ -1,3 +1,4 @@
+
 export interface Property {
   id: string;
   name?: string;
@@ -39,7 +40,11 @@ export interface Report {
 export interface ReportInfo {
   reportDate?: Date;
   additionalInfo?: string;
-  fileUrl?: string; // Add this for uploaded document URLs
+  fileUrl?: string; // URL for uploaded document
+  clerk?: string; // Add clerk property
+  inventoryType?: string; // Add inventoryType property
+  tenantPresent?: boolean; // Add tenantPresent property
+  tenantName?: string; // Add tenantName property
 }
 
 export interface Room {

@@ -393,12 +393,20 @@ export const ReportsAPI = {
         .eq('id', id)
         .single();
         
+      let reportInfo = {};
+      
+      // Check if the existing report has report_info
+      if (existingReport && existingReport.report_info) {
+        reportInfo = existingReport.report_info;
+      }
+      
       // Create or update the report_info JSON column
-      const reportInfo = existingReport?.report_info ? 
-        { ...existingReport.report_info, fileUrl: updates.reportInfo.fileUrl } : 
-        { fileUrl: updates.reportInfo.fileUrl };
-        
-      updateData.report_info = reportInfo;
+      const updatedReportInfo = { 
+        ...reportInfo,
+        fileUrl: updates.reportInfo.fileUrl 
+      };
+      
+      updateData.report_info = updatedReportInfo;
     }
     
     const { error } = await supabase
