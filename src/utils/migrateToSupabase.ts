@@ -114,6 +114,7 @@ const migrateReportToSupabase = async (report: Report): Promise<void> => {
       }
       
       // Create the inspection in Supabase
+      // Fix: The insert operation needs a single object, not an array with object property 'id'
       const { error: inspectionError } = await supabase
         .from('inspections')
         .insert({
@@ -156,13 +157,14 @@ const migrateImagesForRoom = async (report: Report, room: Room): Promise<void> =
       return;
     }
 
-    // Extract address components
+    // Extract address components from location string
     const location = property.location || '';
     const addressParts = location.split(',').map(part => part.trim());
     const address = addressParts[0] || '';
     const city = addressParts[1] || '';
     const state = addressParts[2] || '';
 
+    // Upload each image from the room
     for (const image of room.images) {
       try {
         // Upload image to Supabase Storage
