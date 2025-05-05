@@ -67,6 +67,13 @@ export const ReportsAPI = {
     const reports: Report[] = inspectionsData.map(inspection => {
       const room = roomsMap[inspection.room_id] || {};
       const property = room.property_id ? propertiesMap[room.property_id] : null;
+
+      // Map status to valid enum values
+      let status: "draft" | "in_progress" | "pending_review" | "completed" | "archived" = "draft";
+      if (inspection.status === "in_progress") status = "in_progress";
+      else if (inspection.status === "pending_review") status = "pending_review";
+      else if (inspection.status === "completed") status = "completed";
+      else if (inspection.status === "archived") status = "archived";
       
       const propertyData = property ? {
         id: property.id,
@@ -75,7 +82,7 @@ export const ReportsAPI = {
         city: property.location ? property.location.split(',')[1]?.trim() : '',
         state: property.location ? property.location.split(',')[2]?.trim() : '',
         zipCode: property.location ? property.location.split(',')[3]?.trim() : '',
-        propertyType: property.type,
+        propertyType: (property.type || 'house') as 'house' | 'apartment' | 'condo' | 'townhouse' | 'single_family' | 'multi_family' | 'commercial',
         bedrooms: Number(property.description?.match(/Bedrooms: (\d+)/)?.[1] || 0),
         bathrooms: Number(property.description?.match(/Bathrooms: (\d+(?:\.\d+)?)/)?.[1] || 0),
         squareFeet: 0,
@@ -90,8 +97,11 @@ export const ReportsAPI = {
         propertyId: room.property_id || '',
         property: propertyData,
         type: 'inspection',
-        status: inspection.status,
-        reportInfo: { reportUrl: inspection.report_url || '' },
+        status: status,
+        reportInfo: { 
+          reportDate: new Date(),
+          additionalInfo: inspection.report_url || '' 
+        },
         rooms: [], // We'll populate rooms on-demand for individual reports
         createdAt: new Date(inspection.created_at),
         updatedAt: new Date(inspection.updated_at),
@@ -160,7 +170,7 @@ export const ReportsAPI = {
       city: property.location ? property.location.split(',')[1]?.trim() : '',
       state: property.location ? property.location.split(',')[2]?.trim() : '',
       zipCode: property.location ? property.location.split(',')[3]?.trim() : '',
-      propertyType: property.type,
+      propertyType: (property.type || 'house') as 'house' | 'apartment' | 'condo' | 'townhouse' | 'single_family' | 'multi_family' | 'commercial',
       bedrooms: Number(property.description?.match(/Bedrooms: (\d+)/)?.[1] || 0),
       bathrooms: Number(property.description?.match(/Bathrooms: (\d+(?:\.\d+)?)/)?.[1] || 0),
       squareFeet: 0,
@@ -172,14 +182,24 @@ export const ReportsAPI = {
     const reports: Report[] = (inspectionsData || []).map(inspection => {
       const room = roomsMap[inspection.room_id];
       
+      // Map status to valid enum values
+      let status: "draft" | "in_progress" | "pending_review" | "completed" | "archived" = "draft";
+      if (inspection.status === "in_progress") status = "in_progress";
+      else if (inspection.status === "pending_review") status = "pending_review";
+      else if (inspection.status === "completed") status = "completed";
+      else if (inspection.status === "archived") status = "archived";
+      
       return {
         id: inspection.id,
         name: inspection.status || '',
         propertyId: room?.property_id || '',
         property: propertyData,
         type: 'inspection',
-        status: inspection.status,
-        reportInfo: { reportUrl: inspection.report_url || '' },
+        status: status,
+        reportInfo: { 
+          reportDate: new Date(),
+          additionalInfo: inspection.report_url || '' 
+        },
         rooms: [], // Rooms will be loaded on demand for individual reports
         createdAt: new Date(inspection.created_at),
         updatedAt: new Date(inspection.updated_at),
@@ -250,7 +270,7 @@ export const ReportsAPI = {
       city: property.location ? property.location.split(',')[1]?.trim() : '',
       state: property.location ? property.location.split(',')[2]?.trim() : '',
       zipCode: property.location ? property.location.split(',')[3]?.trim() : '',
-      propertyType: property.type,
+      propertyType: (property.type || 'house') as 'house' | 'apartment' | 'condo' | 'townhouse' | 'single_family' | 'multi_family' | 'commercial',
       bedrooms: Number(property.description?.match(/Bedrooms: (\d+)/)?.[1] || 0),
       bathrooms: Number(property.description?.match(/Bathrooms: (\d+(?:\.\d+)?)/)?.[1] || 0),
       squareFeet: 0,
@@ -268,6 +288,13 @@ export const ReportsAPI = {
       aiData: img.analysis || null
     }));
     
+    // Map status to valid enum values
+    let status: "draft" | "in_progress" | "pending_review" | "completed" | "archived" = "draft";
+    if (inspectionData.status === "in_progress") status = "in_progress";
+    else if (inspectionData.status === "pending_review") status = "pending_review";
+    else if (inspectionData.status === "completed") status = "completed";
+    else if (inspectionData.status === "archived") status = "archived";
+    
     // Assemble the full report
     const report: Report = {
       id: inspectionData.id,
@@ -275,15 +302,19 @@ export const ReportsAPI = {
       propertyId: room.property_id,
       property: propertyData,
       type: 'inspection',
-      status: inspectionData.status,
-      reportInfo: { reportUrl: inspectionData.report_url || '' },
+      status: status,
+      reportInfo: { 
+        reportDate: new Date(),
+        additionalInfo: inspectionData.report_url || '' 
+      },
       // For simplicity, we'll use a single room which is the one attached to the inspection
       rooms: [{
         id: room.id,
         name: room.type,
         type: room.type as RoomType,
         order: 1,
-        images: images
+        images: images,
+        sections: [] // Add empty sections to satisfy the type
       } as Room],
       createdAt: new Date(inspectionData.created_at),
       updatedAt: new Date(inspectionData.updated_at),
@@ -331,8 +362,10 @@ export const ReportsAPI = {
       propertyId: propertyId,
       name: data.status,
       type: 'inspection',
-      status: data.status,
-      reportInfo: null,
+      status: 'draft',
+      reportInfo: {
+        reportDate: new Date()
+      },
       rooms: [],
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
@@ -348,8 +381,8 @@ export const ReportsAPI = {
       updateData.status = updates.status;
     }
     
-    if (updates.reportInfo?.reportUrl) {
-      updateData.report_url = updates.reportInfo.reportUrl;
+    if (updates.reportInfo?.additionalInfo) {
+      updateData.report_url = updates.reportInfo.additionalInfo;
     }
     
     const { error } = await supabase
@@ -448,7 +481,8 @@ export const ReportsAPI = {
       name: name,
       type: type,
       order: 1,
-      images: []
+      images: [],
+      sections: [] // Add empty sections to satisfy the type
     };
   },
   
@@ -494,7 +528,8 @@ export const ReportsAPI = {
         timestamp: new Date(img.created_at),
         aiProcessed: img.analysis !== null,
         aiData: img.analysis
-      }))
+      })),
+      sections: updates.sections || [] // Add sections from updates or empty array
     };
   },
   

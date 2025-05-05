@@ -68,88 +68,74 @@ export const migrateReportsToSupabase = async (): Promise<void> => {
     const localReports = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEYS.REPORTS) || '[]');
     if (localReports.length === 0) return;
 
-    // Check if reports already exist in Supabase
-    const { data: existingReports } = await supabase.from('reports').select('id');
-    const existingReportIds = new Set(existingReports?.map(r => r.id) || []);
+    // We don't have a reports table in Supabase yet
+    // Instead, we'll check the existing inspections
+    const { data: existingInspections } = await supabase.from('inspections').select('id');
+    const existingIds = new Set(existingInspections?.map(r => r.id) || []);
 
     // Filter to reports not already in Supabase
-    const reportsToMigrate = localReports.filter((r: Report) => !existingReportIds.has(r.id));
+    const reportsToMigrate = localReports.filter((r: Report) => !existingIds.has(r.id));
     
     // If no reports to migrate, we're done
     if (reportsToMigrate.length === 0) return;
 
-    // Prepare reports for insertion
-    const reportsToInsert = reportsToMigrate.map((r: Report) => ({
-      id: r.id,
-      propertyId: r.propertyId,
-      name: r.name || null,
-      type: r.type,
-      status: r.status,
-      reportInfo: r.reportInfo || null,
-      createdAt: new Date(r.createdAt),
-      updatedAt: new Date(r.updatedAt),
-      completedAt: r.completedAt ? new Date(r.completedAt) : null
-    }));
-
-    // Insert reports into Supabase
-    const { error: reportError } = await supabase.from('reports').insert(reportsToInsert);
-    if (reportError) throw reportError;
-
-    console.log(`Migrated ${reportsToInsert.length} reports to Supabase`);
-    
-    // Now migrate rooms for each report
+    // We'll migrate each report by creating a room and inspection in Supabase
     for (const report of reportsToMigrate) {
-      await migrateRoomsForReport(report);
+      await migrateReportToSupabase(report);
     }
+
+    console.log(`Migrated ${reportsToMigrate.length} reports to Supabase`);
   } catch (error) {
     console.error('Error migrating reports to Supabase:', error);
   }
 };
 
 /**
- * Migrate rooms for a specific report
+ * Migrate a single report to Supabase (creating room and inspection)
  */
-const migrateRoomsForReport = async (report: Report): Promise<void> => {
+const migrateReportToSupabase = async (report: Report): Promise<void> => {
   try {
-    // Check if rooms already exist for this report
-    const { data: existingRooms } = await supabase
-      .from('rooms')
-      .select('id')
-      .eq('reportId', report.id);
-    
-    if (existingRooms && existingRooms.length > 0) {
-      console.log(`Rooms for report ${report.id} already migrated`);
-      return;
-    }
-    
-    // Prepare rooms for insertion
-    const roomsToInsert = report.rooms.map((room: Room) => ({
-      id: room.id,
-      reportId: report.id,
-      name: room.name,
-      type: room.type,
-      order_index: room.order,
-      generalCondition: room.generalCondition || null,
-      sections: room.sections || [],
-      components: room.components || [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }));
-
-    // Insert rooms
-    const { error: roomsError } = await supabase.from('rooms').insert(roomsToInsert);
-    if (roomsError) throw roomsError;
-
-    console.log(`Migrated ${roomsToInsert.length} rooms for report ${report.id}`);
-
-    // Migrate images for each room
+    // For each report we need to create a room
     for (const room of report.rooms) {
-      if (room.images && room.images.length > 0) {
-        await migrateImagesForRoom(report, room);
+      // Create the room in Supabase
+      const { data: roomData, error: roomError } = await supabase
+        .from('rooms')
+        .insert({
+          id: room.id,
+          property_id: report.propertyId,
+          type: room.type
+        })
+        .select()
+        .single();
+      
+      if (roomError) {
+        console.error(`Error creating room for report ${report.id}:`, roomError);
+        continue;
       }
+      
+      // Create the inspection in Supabase
+      const { error: inspectionError } = await supabase
+        .from('inspections')
+        .insert({
+          id: report.id,
+          room_id: room.id,
+          status: report.status,
+          report_url: report.reportInfo?.additionalInfo || '',
+          date: report.reportInfo?.reportDate ? new Date(report.reportInfo.reportDate) : new Date(),
+          created_at: new Date(report.createdAt),
+          updated_at: new Date(report.updatedAt)
+        });
+      
+      if (inspectionError) {
+        console.error(`Error creating inspection for report ${report.id}:`, inspectionError);
+        continue;
+      }
+      
+      // Migrate images for the room
+      await migrateImagesForRoom(report, room);
     }
   } catch (error) {
-    console.error(`Error migrating rooms for report ${report.id}:`, error);
+    console.error(`Error migrating report ${report.id}:`, error);
   }
 };
 
@@ -161,7 +147,7 @@ const migrateImagesForRoom = async (report: Report, room: Room): Promise<void> =
     // Get property details for folder structure
     const { data: property } = await supabase
       .from('properties')
-      .select('address, city, state')
+      .select('*')
       .eq('id', report.propertyId)
       .single();
     
@@ -170,13 +156,20 @@ const migrateImagesForRoom = async (report: Report, room: Room): Promise<void> =
       return;
     }
 
+    // Extract address components
+    const location = property.location || '';
+    const addressParts = location.split(',').map(part => part.trim());
+    const address = addressParts[0] || '';
+    const city = addressParts[1] || '';
+    const state = addressParts[2] || '';
+
     for (const image of room.images) {
       try {
         // Upload image to Supabase Storage
         const newUrl = await uploadReportImage(
           image.url, 
           report.id, 
-          `${property.address}, ${property.city}, ${property.state}`, 
+          `${address}, ${city}, ${state}`, 
           report.type
         );
 
@@ -186,13 +179,11 @@ const migrateImagesForRoom = async (report: Report, room: Room): Promise<void> =
         }
 
         // Insert image record
-        const { error: imageError } = await supabase.from('room_images').insert({
+        const { error: imageError } = await supabase.from('inspection_images').insert({
           id: image.id,
-          roomId: room.id,
-          url: newUrl,
-          aiProcessed: image.aiProcessed || false,
-          analysis: image.aiData || null,
-          timestamp: new Date(image.timestamp)
+          inspection_id: report.id,
+          image_url: newUrl,
+          analysis: image.aiData || null
         });
 
         if (imageError) throw imageError;
