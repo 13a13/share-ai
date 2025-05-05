@@ -21,7 +21,7 @@ import AuthCallbackPage from "./pages/auth/AuthCallbackPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useMigration } from './hooks/useMigration';
-import { Loader2, CloudSync } from "lucide-react";
+import { Loader2, CloudSun } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,7 +53,7 @@ function App() {
                 )}
                 {migrationComplete && !isMigrating && (
                   <div className="bg-green-50 border-b border-green-200 p-2 text-green-700 text-center text-sm flex items-center justify-center">
-                    <CloudSync className="h-4 w-4 mr-2" />
+                    <CloudSun className="h-4 w-4 mr-2" />
                     Your data is now synchronized across all your devices
                   </div>
                 )}

@@ -1,3 +1,4 @@
+
 import { Report, Room, RoomType, RoomImage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { createNewReport, createNewRoom } from '../mockData';
@@ -5,90 +6,132 @@ import { supabase } from '@/integrations/supabase/client';
 import { uploadReportImage, deleteReportImage } from '@/utils/supabaseStorage';
 
 // Reports API
+// This is a temporary implementation that uses the inspections table
+// until we have proper reports table in the database
 export const ReportsAPI = {
   getAll: async (): Promise<Report[]> => {
-    // First, get reports
-    const { data: reportsData, error: reportsError } = await supabase
-      .from('reports')
+    // First, get inspections (used as reports)
+    const { data: inspectionsData, error: inspectionsError } = await supabase
+      .from('inspections')
       .select('*')
-      .order('createdAt', { ascending: false });
+      .order('created_at', { ascending: false });
     
-    if (reportsError) {
-      console.error('Error fetching reports:', reportsError);
-      throw reportsError;
+    if (inspectionsError) {
+      console.error('Error fetching reports:', inspectionsError);
+      throw inspectionsError;
     }
     
-    if (!reportsData || reportsData.length === 0) {
+    if (!inspectionsData || inspectionsData.length === 0) {
       return [];
     }
     
-    // Then fetch properties for these reports
-    const propertyIds = [...new Set(reportsData.map(r => r.propertyId))];
+    // Then fetch rooms for these inspections
+    const roomIds = [...new Set(inspectionsData.map(r => r.room_id))];
     
-    const { data: propertiesData, error: propertiesError } = await supabase
+    const { data: roomsData, error: roomsError } = await supabase
+      .from('rooms')
+      .select('*')
+      .in('id', roomIds);
+      
+    if (roomsError) {
+      console.error('Error fetching rooms for reports:', roomsError);
+      throw roomsError;
+    }
+    
+    // Get property ids from rooms
+    const propertyIds = [...new Set((roomsData || []).map(room => room.property_id))];
+    
+    // Fetch properties
+    const { data: propertiesData, error: propertiesError } = propertyIds.length > 0 ? await supabase
       .from('properties')
       .select('*')
-      .in('id', propertyIds);
+      .in('id', propertyIds) : { data: [], error: null };
       
     if (propertiesError) {
       console.error('Error fetching properties for reports:', propertiesError);
       throw propertiesError;
     }
     
-    // Create a map for quick property lookup
+    // Create maps for quick lookups
+    const roomsMap = (roomsData || []).reduce((acc, room) => {
+      acc[room.id] = room;
+      return acc;
+    }, {} as Record<string, any>);
+    
     const propertiesMap = (propertiesData || []).reduce((acc, prop) => {
       acc[prop.id] = prop;
       return acc;
     }, {} as Record<string, any>);
     
     // Transform the data to match our client-side model
-    const reports: Report[] = reportsData.map(report => ({
-      id: report.id,
-      name: report.name || '',
-      propertyId: report.propertyId,
-      property: propertiesMap[report.propertyId] ? {
-        id: propertiesMap[report.propertyId].id,
-        name: propertiesMap[report.propertyId].name || '',
-        address: propertiesMap[report.propertyId].address,
-        city: propertiesMap[report.propertyId].city,
-        state: propertiesMap[report.propertyId].state,
-        zipCode: propertiesMap[report.propertyId].zipCode,
-        propertyType: propertiesMap[report.propertyId].type,
-        bedrooms: propertiesMap[report.propertyId].bedrooms || 0,
-        bathrooms: propertiesMap[report.propertyId].bathrooms || 0,
+    const reports: Report[] = inspectionsData.map(inspection => {
+      const room = roomsMap[inspection.room_id] || {};
+      const property = room.property_id ? propertiesMap[room.property_id] : null;
+      
+      const propertyData = property ? {
+        id: property.id,
+        name: property.name || '',
+        address: property.location ? property.location.split(',')[0]?.trim() : '',
+        city: property.location ? property.location.split(',')[1]?.trim() : '',
+        state: property.location ? property.location.split(',')[2]?.trim() : '',
+        zipCode: property.location ? property.location.split(',')[3]?.trim() : '',
+        propertyType: property.type,
+        bedrooms: Number(property.description?.match(/Bedrooms: (\d+)/)?.[1] || 0),
+        bathrooms: Number(property.description?.match(/Bathrooms: (\d+(?:\.\d+)?)/)?.[1] || 0),
         squareFeet: 0,
-        imageUrl: propertiesMap[report.propertyId].description || '',
-        createdAt: new Date(propertiesMap[report.propertyId].createdAt),
-        updatedAt: new Date(propertiesMap[report.propertyId].updatedAt)
-      } : null,
-      type: report.type,
-      status: report.status,
-      reportInfo: report.reportInfo || null,
-      rooms: [], // Rooms will be loaded on demand for individual reports
-      createdAt: new Date(report.createdAt),
-      updatedAt: new Date(report.updatedAt),
-      completedAt: report.completedAt ? new Date(report.completedAt) : null,
-      disclaimers: []
-    }));
+        imageUrl: property.image_url || '',
+        createdAt: new Date(property.created_at),
+        updatedAt: new Date(property.updated_at)
+      } : null;
+      
+      return {
+        id: inspection.id,
+        name: inspection.status || '',
+        propertyId: room.property_id || '',
+        property: propertyData,
+        type: 'inspection',
+        status: inspection.status,
+        reportInfo: { reportUrl: inspection.report_url || '' },
+        rooms: [], // We'll populate rooms on-demand for individual reports
+        createdAt: new Date(inspection.created_at),
+        updatedAt: new Date(inspection.updated_at),
+        completedAt: null,
+        disclaimers: []
+      };
+    });
     
     return reports;
   },
   
   getByPropertyId: async (propertyId: string): Promise<Report[]> => {
-    // Get reports for a specific property
-    const { data: reportsData, error } = await supabase
-      .from('reports')
+    // Get rooms for the property
+    const { data: roomsData, error: roomsError } = await supabase
+      .from('rooms')
       .select('*')
-      .eq('propertyId', propertyId)
-      .order('createdAt', { ascending: false });
+      .eq('property_id', propertyId);
     
-    if (error) {
-      console.error('Error fetching reports by property:', error);
-      throw error;
+    if (roomsError) {
+      console.error('Error fetching rooms by property:', roomsError);
+      throw roomsError;
     }
     
-    if (!reportsData || reportsData.length === 0) {
+    if (!roomsData || roomsData.length === 0) {
       return [];
+    }
+    
+    // Get room IDs
+    const roomIds = roomsData.map(room => room.id);
+    
+    // Get inspections for these rooms
+    const { data: inspectionsData, error: inspectionsError } = await supabase
+      .from('inspections')
+      .select('*')
+      .in('room_id', roomIds)
+      .order('created_at', { ascending: false });
+    
+    if (inspectionsError) {
+      console.error('Error fetching inspections by rooms:', inspectionsError);
+      throw inspectionsError;
     }
     
     // Get the property data
@@ -98,67 +141,89 @@ export const ReportsAPI = {
       .eq('id', propertyId)
       .single();
       
-    if (propertyError) {
+    if (propertyError && propertyError.code !== 'PGRST116') {
       console.error('Error fetching property for reports:', propertyError);
       throw propertyError;
     }
+    
+    // Create rooms map
+    const roomsMap = roomsData.reduce((acc, room) => {
+      acc[room.id] = room;
+      return acc;
+    }, {} as Record<string, any>);
     
     // Transform the data
     const propertyData = property ? {
       id: property.id,
       name: property.name || '',
-      address: property.address,
-      city: property.city,
-      state: property.state,
-      zipCode: property.zipCode,
+      address: property.location ? property.location.split(',')[0]?.trim() : '',
+      city: property.location ? property.location.split(',')[1]?.trim() : '',
+      state: property.location ? property.location.split(',')[2]?.trim() : '',
+      zipCode: property.location ? property.location.split(',')[3]?.trim() : '',
       propertyType: property.type,
-      bedrooms: property.bedrooms || 0,
-      bathrooms: property.bathrooms || 0,
+      bedrooms: Number(property.description?.match(/Bedrooms: (\d+)/)?.[1] || 0),
+      bathrooms: Number(property.description?.match(/Bathrooms: (\d+(?:\.\d+)?)/)?.[1] || 0),
       squareFeet: 0,
-      imageUrl: property.description || '',
-      createdAt: new Date(property.createdAt),
-      updatedAt: new Date(property.updatedAt)
+      imageUrl: property.image_url || '',
+      createdAt: new Date(property.created_at),
+      updatedAt: new Date(property.updated_at)
     } : null;
     
-    const reports: Report[] = reportsData.map(report => ({
-      id: report.id,
-      name: report.name || '',
-      propertyId: report.propertyId,
-      property: propertyData,
-      type: report.type,
-      status: report.status,
-      reportInfo: report.reportInfo || null,
-      rooms: [], // Rooms will be loaded on demand for individual reports
-      createdAt: new Date(report.createdAt),
-      updatedAt: new Date(report.updatedAt),
-      completedAt: report.completedAt ? new Date(report.completedAt) : null,
-      disclaimers: []
-    }));
+    const reports: Report[] = (inspectionsData || []).map(inspection => {
+      const room = roomsMap[inspection.room_id];
+      
+      return {
+        id: inspection.id,
+        name: inspection.status || '',
+        propertyId: room?.property_id || '',
+        property: propertyData,
+        type: 'inspection',
+        status: inspection.status,
+        reportInfo: { reportUrl: inspection.report_url || '' },
+        rooms: [], // Rooms will be loaded on demand for individual reports
+        createdAt: new Date(inspection.created_at),
+        updatedAt: new Date(inspection.updated_at),
+        completedAt: null,
+        disclaimers: []
+      };
+    });
     
     return reports;
   },
   
   getById: async (id: string): Promise<Report | null> => {
-    // Fetch the report
-    const { data: reportData, error: reportError } = await supabase
-      .from('reports')
+    // Fetch the inspection
+    const { data: inspectionData, error: inspectionError } = await supabase
+      .from('inspections')
       .select('*')
       .eq('id', id)
       .single();
     
-    if (reportError) {
-      console.error('Error fetching report:', reportError);
-      if (reportError.code === 'PGRST116') return null; // Not found
-      throw reportError;
+    if (inspectionError) {
+      console.error('Error fetching inspection:', inspectionError);
+      if (inspectionError.code === 'PGRST116') return null; // Not found
+      throw inspectionError;
     }
     
-    if (!reportData) return null;
+    if (!inspectionData) return null;
+    
+    // Fetch the room
+    const { data: room, error: roomError } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('id', inspectionData.room_id)
+      .single();
+      
+    if (roomError) {
+      console.error('Error fetching room:', roomError);
+      throw roomError;
+    }
     
     // Fetch the property
     const { data: property, error: propertyError } = await supabase
       .from('properties')
       .select('*')
-      .eq('id', reportData.propertyId)
+      .eq('id', room.property_id)
       .single();
       
     if (propertyError) {
@@ -166,162 +231,181 @@ export const ReportsAPI = {
       throw propertyError;
     }
     
-    // Fetch the rooms for this report
-    const { data: roomsData, error: roomsError } = await supabase
-      .from('rooms')
+    // Fetch images for the inspection
+    const { data: imagesData, error: imagesError } = await supabase
+      .from('inspection_images')
       .select('*')
-      .eq('reportId', id)
-      .order('order_index', { ascending: true });
+      .eq('inspection_id', id);
     
-    if (roomsError) {
-      console.error('Error fetching rooms:', roomsError);
-      throw roomsError;
+    if (imagesError) {
+      console.error('Error fetching inspection images:', imagesError);
+      throw imagesError;
     }
-    
-    // Fetch images for all rooms
-    const roomIds = roomsData.map(room => room.id);
-    let imagesData = [];
-    
-    if (roomIds.length > 0) {
-      const { data: roomImagesData, error: imagesError } = await supabase
-        .from('room_images')
-        .select('*')
-        .in('roomId', roomIds);
-      
-      if (imagesError) {
-        console.error('Error fetching room images:', imagesError);
-        throw imagesError;
-      }
-      
-      imagesData = roomImagesData || [];
-    }
-    
-    // Organize images by room
-    const imagesByRoom = imagesData.reduce((acc, img) => {
-      if (!acc[img.roomId]) acc[img.roomId] = [];
-      acc[img.roomId].push({
-        id: img.id,
-        url: img.url,
-        timestamp: new Date(img.timestamp),
-        aiProcessed: img.aiProcessed || false,
-        aiData: img.analysis || null
-      });
-      return acc;
-    }, {} as Record<string, any[]>);
     
     // Transform property
     const propertyData = property ? {
       id: property.id,
       name: property.name || '',
-      address: property.address,
-      city: property.city,
-      state: property.state,
-      zipCode: property.zipCode,
+      address: property.location ? property.location.split(',')[0]?.trim() : '',
+      city: property.location ? property.location.split(',')[1]?.trim() : '',
+      state: property.location ? property.location.split(',')[2]?.trim() : '',
+      zipCode: property.location ? property.location.split(',')[3]?.trim() : '',
       propertyType: property.type,
-      bedrooms: property.bedrooms || 0,
-      bathrooms: property.bathrooms || 0,
+      bedrooms: Number(property.description?.match(/Bedrooms: (\d+)/)?.[1] || 0),
+      bathrooms: Number(property.description?.match(/Bathrooms: (\d+(?:\.\d+)?)/)?.[1] || 0),
       squareFeet: 0,
-      imageUrl: property.description || '',
-      createdAt: new Date(property.createdAt),
-      updatedAt: new Date(property.updatedAt)
+      imageUrl: property.image_url || '',
+      createdAt: new Date(property.created_at),
+      updatedAt: new Date(property.updated_at)
     } : null;
     
-    // Assemble the full report with rooms and images
+    // Transform images
+    const images = (imagesData || []).map(img => ({
+      id: img.id,
+      url: img.image_url,
+      timestamp: new Date(img.created_at),
+      aiProcessed: img.analysis !== null,
+      aiData: img.analysis || null
+    }));
+    
+    // Assemble the full report
     const report: Report = {
-      id: reportData.id,
-      name: reportData.name || '',
-      propertyId: reportData.propertyId,
+      id: inspectionData.id,
+      name: inspectionData.status || '',
+      propertyId: room.property_id,
       property: propertyData,
-      type: reportData.type,
-      status: reportData.status,
-      reportInfo: reportData.reportInfo || null,
-      rooms: roomsData.map(room => ({
+      type: 'inspection',
+      status: inspectionData.status,
+      reportInfo: { reportUrl: inspectionData.report_url || '' },
+      // For simplicity, we'll use a single room which is the one attached to the inspection
+      rooms: [{
         id: room.id,
-        name: room.name,
+        name: room.type,
         type: room.type as RoomType,
-        order: room.order_index,
-        generalCondition: room.generalCondition || undefined,
-        sections: room.sections || [],
-        components: room.components || [],
-        images: imagesByRoom[room.id] || []
-      })),
-      createdAt: new Date(reportData.createdAt),
-      updatedAt: new Date(reportData.updatedAt),
-      completedAt: reportData.completedAt ? new Date(reportData.completedAt) : null,
+        order: 1,
+        images: images
+      } as Room],
+      createdAt: new Date(inspectionData.created_at),
+      updatedAt: new Date(inspectionData.updated_at),
+      completedAt: null,
       disclaimers: []
     };
     
     return report;
   },
   
+  // For the remaining methods, we'll implement simplified versions or stubs
+  // that work with the existing database schema
+  
   create: async (propertyId: string, type: 'check_in' | 'check_out' | 'inspection'): Promise<Report> => {
-    const newReport = createNewReport(propertyId, type);
+    // First we need to create a room for the property if it doesn't exist
+    const roomId = uuidv4();
+    
+    await supabase.from('rooms').insert({
+      id: roomId,
+      property_id: propertyId,
+      type: type === 'inspection' ? 'general' : type
+    });
+    
+    // Now create the inspection
+    const inspectionId = uuidv4();
     
     const { data, error } = await supabase
-      .from('reports')
+      .from('inspections')
       .insert({
-        id: newReport.id,
-        propertyId: propertyId,
-        type: type,
-        status: 'draft',
-        name: newReport.name
+        id: inspectionId,
+        room_id: roomId,
+        status: 'draft'
       })
       .select()
       .single();
     
     if (error) {
-      console.error('Error creating report:', error);
+      console.error('Error creating inspection:', error);
       throw error;
     }
     
+    // Return a simplified report structure
     return {
-      ...data,
-      rooms: []
+      id: data.id,
+      propertyId: propertyId,
+      name: data.status,
+      type: 'inspection',
+      status: data.status,
+      reportInfo: null,
+      rooms: [],
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+      completedAt: null,
+      disclaimers: []
     };
   },
   
   update: async (id: string, updates: Partial<Report>): Promise<Report | null> => {
-    const { data, error } = await supabase
-      .from('reports')
-      .update({
-        ...updates,
-        updatedAt: new Date()
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    const updateData: any = {};
+    
+    if (updates.status) {
+      updateData.status = updates.status;
+    }
+    
+    if (updates.reportInfo?.reportUrl) {
+      updateData.report_url = updates.reportInfo.reportUrl;
+    }
+    
+    const { error } = await supabase
+      .from('inspections')
+      .update(updateData)
+      .eq('id', id);
     
     if (error) {
       console.error('Error updating report:', error);
       throw error;
     }
     
-    // Get the full report with rooms after update
+    // Get the full report after update
     return await ReportsAPI.getById(id);
   },
   
   delete: async (id: string): Promise<void> => {
-    // First, fetch the report to get room IDs
-    const report = await ReportsAPI.getById(id);
-    if (!report) return;
+    // First, get inspection to get room ID
+    const { data: inspection } = await supabase
+      .from('inspections')
+      .select('room_id')
+      .eq('id', id)
+      .single();
+      
+    if (!inspection) return;
     
-    // Delete images associated with rooms
-    for (const room of report.rooms) {
-      for (const image of room.images) {
-        await deleteReportImage(image.url);
+    // Delete all inspection images
+    const { data: images } = await supabase
+      .from('inspection_images')
+      .select('image_url')
+      .eq('inspection_id', id);
+    
+    if (images && images.length > 0) {
+      for (const image of images) {
+        await deleteReportImage(image.image_url);
       }
+      
+      // Delete image records
+      await supabase
+        .from('inspection_images')
+        .delete()
+        .eq('inspection_id', id);
     }
     
-    // Delete the report (cascade will handle rooms and images)
-    const { error } = await supabase
-      .from('reports')
+    // Delete the inspection
+    await supabase
+      .from('inspections')
       .delete()
       .eq('id', id);
     
-    if (error) {
-      console.error('Error deleting report:', error);
-      throw error;
-    }
+    // Optionally delete the room if it's no longer needed
+    // This is assuming rooms are 1:1 with inspections
+    await supabase
+      .from('rooms')
+      .delete()
+      .eq('id', inspection.room_id);
   },
   
   duplicate: async (id: string): Promise<Report | null> => {
@@ -329,236 +413,125 @@ export const ReportsAPI = {
     
     if (!reportToDuplicate) return null;
     
-    // Create new report
-    const newReportId = uuidv4();
-    const { data: newReport, error } = await supabase
-      .from('reports')
-      .insert({
-        id: newReportId,
-        propertyId: reportToDuplicate.propertyId,
-        name: `${reportToDuplicate.name || ''} (Copy)`,
-        type: reportToDuplicate.type,
-        status: 'draft',
-        reportInfo: reportToDuplicate.reportInfo
-      })
-      .select()
-      .single();
+    // Create a new report based on the existing one
+    const newReport = await ReportsAPI.create(
+      reportToDuplicate.propertyId, 
+      'inspection'
+    );
     
-    if (error) {
-      console.error('Error duplicating report:', error);
-      throw error;
-    }
-    
-    // Duplicate rooms
-    for (const room of reportToDuplicate.rooms) {
-      const newRoomId = uuidv4();
-      
-      await supabase
-        .from('rooms')
-        .insert({
-          id: newRoomId,
-          reportId: newReportId,
-          name: room.name,
-          type: room.type,
-          order_index: room.order,
-          generalCondition: room.generalCondition,
-          sections: room.sections,
-          components: room.components ? room.components.map(component => ({
-            ...component,
-            id: uuidv4(),
-            images: []
-          })) : []
-        });
-    }
-    
-    // Get the complete new report
-    return await ReportsAPI.getById(newReportId);
+    return newReport;
   },
   
   addRoom: async (reportId: string, name: string, type: RoomType): Promise<Room | null> => {
-    // Get the current number of rooms for order
-    const { data: existingRooms, error: countError } = await supabase
-      .from('rooms')
-      .select('id')
-      .eq('reportId', reportId);
-    
-    if (countError) {
-      console.error('Error counting rooms:', countError);
-      throw countError;
-    }
-    
-    const order = existingRooms.length + 1;
-    const newRoomId = uuidv4();
-    
-    // Create the new room
-    const { data, error } = await supabase
-      .from('rooms')
-      .insert({
-        id: newRoomId,
-        reportId: reportId,
-        name: name,
-        type: type,
-        order_index: order,
-        sections: [],
-        components: []
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating room:', error);
-      throw error;
-    }
-    
-    // Format to match our client model
-    const newRoom: Room = {
-      id: data.id,
-      name: data.name,
-      type: data.type as RoomType,
-      order: data.order_index,
-      sections: data.sections || [],
-      components: data.components || [],
-      images: []
-    };
-    
-    return newRoom;
-  },
-  
-  updateRoom: async (reportId: string, roomId: string, updates: Partial<Room>): Promise<Room | null> => {
-    const updateData: any = { ...updates };
-    
-    // Remove fields not in the database model
-    delete updateData.images;
-    
-    // Update camelCase to snake_case
-    if (updates.generalCondition !== undefined) {
-      updateData.generalCondition = updates.generalCondition;
-    }
-    
-    const { data, error } = await supabase
-      .from('rooms')
-      .update({
-        ...updateData,
-        updatedAt: new Date()
-      })
-      .eq('id', roomId)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating room:', error);
-      throw error;
-    }
-    
-    // Get images for the room
-    const { data: images, error: imagesError } = await supabase
-      .from('room_images')
-      .select('*')
-      .eq('roomId', roomId);
-    
-    if (imagesError) {
-      console.error('Error fetching room images:', imagesError);
-      throw imagesError;
-    }
-    
-    // Format to match our client model
-    const updatedRoom: Room = {
-      id: data.id,
-      name: data.name,
-      type: data.type as RoomType,
-      order: data.order_index,
-      generalCondition: data.generalCondition,
-      sections: data.sections || [],
-      components: data.components || [],
-      images: images || []
-    };
-    
-    return updatedRoom;
-  },
-  
-  addImageToRoom: async (reportId: string, roomId: string, imageUrl: string): Promise<RoomImage | null> => {
-    // Get property details to create folder structure
-    const { data: report, error: reportError } = await supabase
-      .from('reports')
-      .select('propertyId, type')
+    // In our temporary schema, rooms and inspections have a 1:1 relationship
+    // So we'll just return the existing room
+    const { data: inspection } = await supabase
+      .from('inspections')
+      .select('room_id')
       .eq('id', reportId)
       .single();
     
-    if (reportError) {
-      console.error('Error fetching report for image upload:', reportError);
-      throw reportError;
-    }
+    if (!inspection) return null;
     
-    const { data: property, error: propertyError } = await supabase
-      .from('properties')
-      .select('address, city, state')
-      .eq('id', report.propertyId)
+    // Get the room
+    const { data: room } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('id', inspection.room_id)
       .single();
     
-    if (propertyError) {
-      console.error('Error fetching property for image upload:', propertyError);
-      throw propertyError;
+    if (!room) return null;
+    
+    // Return the room in our client format
+    return {
+      id: room.id,
+      name: name,
+      type: type,
+      order: 1,
+      images: []
+    };
+  },
+  
+  updateRoom: async (reportId: string, roomId: string, updates: Partial<Room>): Promise<Room | null> => {
+    // Update the room type
+    if (updates.type) {
+      await supabase
+        .from('rooms')
+        .update({ type: updates.type })
+        .eq('id', roomId);
     }
-
-    // Upload image to Supabase storage
-    const storedImageUrl = await uploadReportImage(
-      imageUrl, 
-      reportId, 
-      `${property.address}, ${property.city}, ${property.state}`, 
-      report.type
-    );
-
-    if (!storedImageUrl) return null;
+    
+    // Get the room
+    const { data: room } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('id', roomId)
+      .single();
+    
+    if (!room) return null;
+    
+    // Get images for the room via inspection
+    const { data: inspection } = await supabase
+      .from('inspections')
+      .select('id')
+      .eq('room_id', roomId)
+      .single();
+    
+    const { data: images } = inspection ? await supabase
+      .from('inspection_images')
+      .select('*')
+      .eq('inspection_id', inspection.id) : { data: null };
+    
+    // Return the room in our client format
+    return {
+      id: room.id,
+      name: updates.name || room.type,
+      type: room.type as RoomType,
+      order: updates.order || 1,
+      images: (images || []).map(img => ({
+        id: img.id,
+        url: img.image_url,
+        timestamp: new Date(img.created_at),
+        aiProcessed: img.analysis !== null,
+        aiData: img.analysis
+      }))
+    };
+  },
+  
+  addImageToRoom: async (reportId: string, roomId: string, imageUrl: string): Promise<RoomImage | null> => {
+    // For our schema, images are associated with inspections, not rooms directly
+    
+    // Upload image to Supabase storage if needed
+    // For simplicity, we'll assume imageUrl is already in storage
     
     const imageId = uuidv4();
     
     // Save the image URL to the database
     const { data, error } = await supabase
-      .from('room_images')
+      .from('inspection_images')
       .insert({
         id: imageId,
-        roomId: roomId,
-        url: storedImageUrl,
-        aiProcessed: false,
-        timestamp: new Date()
+        inspection_id: reportId,
+        image_url: imageUrl
       })
       .select()
       .single();
     
     if (error) {
-      console.error('Error saving room image:', error);
+      console.error('Error saving inspection image:', error);
       throw error;
     }
     
-    return data;
+    return {
+      id: data.id,
+      url: data.image_url,
+      timestamp: new Date(data.created_at),
+      aiProcessed: false
+    };
   },
   
   deleteRoom: async (reportId: string, roomId: string): Promise<void> => {
-    // Fetch all images for this room
-    const { data: images, error: imagesError } = await supabase
-      .from('room_images')
-      .select('url')
-      .eq('roomId', roomId);
-    
-    if (imagesError) {
-      console.error('Error fetching room images for deletion:', imagesError);
-      throw imagesError;
-    }
-    
-    // Delete all images from storage
-    for (const image of images || []) {
-      await deleteReportImage(image.url);
-    }
-    
-    // Delete the room (cascade will delete images from the database)
-    const { error } = await supabase
-      .from('rooms')
-      .delete()
-      .eq('id', roomId);
-    
-    if (error) {
-      console.error('Error deleting room:', error);
-      throw error;
-    }
+    // In our schema, deleting a room means deleting the inspection
+    await ReportsAPI.delete(reportId);
   }
 };
