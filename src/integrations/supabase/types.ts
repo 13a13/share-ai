@@ -46,6 +46,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          report_info: Json | null
           report_url: string | null
           room_id: string
           status: string
@@ -55,6 +56,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          report_info?: Json | null
           report_url?: string | null
           room_id: string
           status?: string
@@ -64,6 +66,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          report_info?: Json | null
           report_url?: string | null
           room_id?: string
           status?: string

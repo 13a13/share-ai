@@ -287,6 +287,9 @@ export const ReportsAPI = {
       aiData: img.analysis || null
     }));
     
+    // Get any report_info data
+    const reportInfoData = inspectionData.report_info ? inspectionData.report_info : {};
+    
     // Map status to valid enum values
     let status: "draft" | "in_progress" | "pending_review" | "completed" | "archived" = "draft";
     if (inspectionData.status === "in_progress") status = "in_progress";
@@ -304,7 +307,8 @@ export const ReportsAPI = {
       status: status,
       reportInfo: { 
         reportDate: new Date(),
-        additionalInfo: inspectionData.report_url || '' 
+        additionalInfo: inspectionData.report_url || '',
+        ...reportInfoData
       },
       // For simplicity, we'll use a single room which is the one attached to the inspection
       rooms: [{
@@ -384,15 +388,22 @@ export const ReportsAPI = {
       updateData.report_url = updates.reportInfo.additionalInfo;
     }
     
-    // Add support for file URLs in the report_info column (as JSON)
-    if (updates.reportInfo?.fileUrl) {
-      // Get the existing report first to preserve other properties
-      const { data: existingReport } = await supabase
+    // Add support for file URLs in the report_info column
+    if (updates.reportInfo?.fileUrl || updates.reportInfo?.clerk || 
+        updates.reportInfo?.inventoryType || updates.reportInfo?.tenantName || 
+        updates.reportInfo?.tenantPresent !== undefined) {
+      // Get the existing report first
+      const { data: existingReport, error: fetchError } = await supabase
         .from('inspections')
-        .select('report_info')
+        .select('*')
         .eq('id', id)
         .single();
         
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching report for update:', fetchError);
+        throw fetchError;
+      }
+      
       let reportInfo = {};
       
       // Check if the existing report has report_info
@@ -400,11 +411,28 @@ export const ReportsAPI = {
         reportInfo = existingReport.report_info;
       }
       
-      // Create or update the report_info JSON column
-      const updatedReportInfo = { 
-        ...reportInfo,
-        fileUrl: updates.reportInfo.fileUrl 
-      };
+      // Update with any provided report info fields
+      const updatedReportInfo = { ...reportInfo };
+      
+      if (updates.reportInfo?.fileUrl !== undefined) {
+        updatedReportInfo.fileUrl = updates.reportInfo.fileUrl;
+      }
+      
+      if (updates.reportInfo?.clerk !== undefined) {
+        updatedReportInfo.clerk = updates.reportInfo.clerk;
+      }
+      
+      if (updates.reportInfo?.inventoryType !== undefined) {
+        updatedReportInfo.inventoryType = updates.reportInfo.inventoryType;
+      }
+      
+      if (updates.reportInfo?.tenantPresent !== undefined) {
+        updatedReportInfo.tenantPresent = updates.reportInfo.tenantPresent;
+      }
+      
+      if (updates.reportInfo?.tenantName !== undefined) {
+        updatedReportInfo.tenantName = updates.reportInfo.tenantName;
+      }
       
       updateData.report_info = updatedReportInfo;
     }
