@@ -32,8 +32,8 @@ export const useMigration = () => {
         setMigrationComplete(true);
         
         toast.success("Data Migration Complete", {
-          description: "Your data has been successfully migrated to the cloud. You can now access it from any device.",
-          duration: 5000
+          description: "Your data has been successfully migrated to the cloud.",
+          duration: 3000
         });
       } catch (error) {
         console.error('Migration error:', error);
