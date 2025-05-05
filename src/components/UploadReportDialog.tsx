@@ -15,16 +15,18 @@ interface UploadReportDialogProps {
   onClose: () => void;
   properties: Property[];
   onUploadComplete: (report: Report | null) => void;
+  preselectedPropertyId?: string; // New prop for preselected property
 }
 
 const UploadReportDialog = ({ 
   isOpen, 
   onClose, 
   properties, 
-  onUploadComplete 
+  onUploadComplete,
+  preselectedPropertyId
 }: UploadReportDialogProps) => {
   const { toast } = useToast();
-  const [selectedProperty, setSelectedProperty] = useState<string>("");
+  const [selectedProperty, setSelectedProperty] = useState<string>(preselectedPropertyId || "");
   const [reportType, setReportType] = useState<"check_in" | "check_out" | "inspection">("inspection");
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -33,6 +35,13 @@ const UploadReportDialog = ({
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
+  };
+  
+  const formatReportType = (type: string): string => {
+    return type
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
   
   const handleUpload = async () => {
@@ -57,19 +66,21 @@ const UploadReportDialog = ({
     setIsUploading(true);
     
     try {
+      // Format the report type for use as name
+      const reportName = formatReportType(reportType);
+      
       // Create a new report first
       const newReport = await ReportsAPI.create(selectedProperty, reportType);
       
       // Get the url for the uploaded file
-      // This would typically be uploading to Supabase storage
-      // For now, we'll simulate it by creating a data URL
       const reader = new FileReader();
       reader.onload = async (event) => {
         if (event.target && event.target.result) {
           const fileUrl = event.target.result.toString();
           
-          // Update the report with the file URL
+          // Update the report with the file URL and name
           const updatedReport = await ReportsAPI.update(newReport.id, {
+            name: reportName, // Set name based on report type
             reportInfo: {
               ...newReport.reportInfo,
               additionalInfo: file.name,
@@ -79,7 +90,7 @@ const UploadReportDialog = ({
           
           toast({
             title: "Report Uploaded",
-            description: `${file.name} has been uploaded as a ${reportType.replace("_", " ")} report.`,
+            description: `${file.name} has been uploaded as a ${reportName} report.`,
           });
           
           onUploadComplete(updatedReport);
@@ -109,26 +120,28 @@ const UploadReportDialog = ({
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="property" className="text-right">
-              Property
-            </Label>
-            <Select
-              value={selectedProperty}
-              onValueChange={setSelectedProperty}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a property" />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!preselectedPropertyId && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="property" className="text-right">
+                Property
+              </Label>
+              <Select
+                value={selectedProperty}
+                onValueChange={setSelectedProperty}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a property" />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.address}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="reportType" className="text-right">

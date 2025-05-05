@@ -1,3 +1,4 @@
+
 import { Report, Property } from "@/types";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -142,7 +143,7 @@ const ReportCard = ({
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg">
-              {formatReportType(report.type)} Report
+              {report.name || formatReportType(report.type)} Report
               {hasUploadedDocument && (
                 <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
                   <FileText className="h-3 w-3 mr-1" />

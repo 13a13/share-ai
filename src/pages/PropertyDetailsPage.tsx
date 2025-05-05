@@ -176,7 +176,7 @@ const PropertyDetailsPage = () => {
           Back
         </Button>
         <h1 className="text-3xl font-bold text-shareai-blue">
-          {property.name || property.address}
+          {property?.name || property?.address}
         </h1>
       </div>
       
@@ -485,6 +485,7 @@ const PropertyDetailsPage = () => {
           onClose={() => setIsUploadDialogOpen(false)}
           properties={[property].filter(Boolean) as Property[]}
           onUploadComplete={handleUploadComplete}
+          preselectedPropertyId={propertyId}
         />
       )}
     </div>
