@@ -126,12 +126,14 @@ export const usePDFGeneration = () => {
       console.log("Finalizing PDF...");
       const pdfBase64 = doc.output('datauristring');
       
-      // Show success toast
-      toast({
-        title: "PDF Generated Successfully",
-        description: "Your report is ready to download.",
-        variant: "default",
-      });
+      // Don't show success toast for comparison reports
+      if (report.type !== "comparison") {
+        toast({
+          title: "PDF Generated Successfully",
+          description: "Your report is ready to download.",
+          variant: "default",
+        });
+      }
       
       setStatus("complete");
       console.log("PDF generation complete");
