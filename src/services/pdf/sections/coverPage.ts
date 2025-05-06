@@ -25,15 +25,23 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
   doc.text(`${property.city}, ${property.state} ${property.zipCode}`, pageWidth / 2, 90, { align: "center" });
   
   // Date and Report Details
-  const reportDate = report.reportInfo?.reportDate 
-    ? new Date(report.reportInfo.reportDate).toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      })
-    : "Not specified";
+  let reportDateString = "Not specified";
+  if (report.reportInfo?.reportDate) {
+    // Handle both string and Date formats
+    const reportDate = typeof report.reportInfo.reportDate === 'string' 
+      ? new Date(report.reportInfo.reportDate) 
+      : report.reportInfo.reportDate;
+    
+    reportDateString = reportDate.toLocaleDateString('en-GB', {
+      day: '2-digit', 
+      month: 'long', 
+      year: 'numeric'
+    });
+  }
   
   doc.setFont(pdfStyles.fonts.body, "normal");
   doc.setFontSize(pdfStyles.fontSizes.normal);
-  doc.text(`Date: ${reportDate}`, pageWidth / 2, 110, { align: "center" });
+  doc.text(`Date: ${reportDateString}`, pageWidth / 2, 110, { align: "center" });
   
   if (report.reportInfo?.clerk) {
     doc.text(`Clerk: ${report.reportInfo.clerk}`, pageWidth / 2, 120, { align: "center" });

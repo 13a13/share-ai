@@ -33,7 +33,7 @@ export const useReportInfo = (
     try {
       const updatedReport = await ReportsAPI.update(report.id, {
         reportInfo: {
-          reportDate: new Date(values.reportDate),
+          reportDate: values.reportDate, // No need to create a new Date object
           clerk: values.clerk,
           inventoryType: values.inventoryType,
           tenantPresent: values.tenantPresent || false,

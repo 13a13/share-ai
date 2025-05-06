@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -136,7 +135,7 @@ const CompareReportsDialog = ({
       updatedAt: now,
       completedAt: now,
       reportInfo: {
-        reportDate: now.toISOString(),
+        reportDate: now.toISOString(), // Use ISO string format for date
         clerk: "AI Comparison System",
         additionalInfo: `This is an automated comparison between "${firstReport.name || firstReport.type}" (${firstReportDate}) and "${secondReport.name || secondReport.type}" (${secondReportDate}).`,
         comparisonText: comparisonText

@@ -98,7 +98,7 @@ export const ReportsAPI = {
         type: 'inspection',
         status: status,
         reportInfo: { 
-          reportDate: new Date(),
+          reportDate: new Date().toISOString(), // Use ISO string format
           additionalInfo: inspection.report_url || '' 
         },
         rooms: [], // We'll populate rooms on-demand for individual reports
@@ -196,7 +196,7 @@ export const ReportsAPI = {
         type: 'inspection',
         status: status,
         reportInfo: { 
-          reportDate: new Date(),
+          reportDate: new Date().toISOString(), // Use ISO string format
           additionalInfo: inspection.report_url || ''
         },
         rooms: [], // Rooms will be loaded on demand for individual reports
@@ -306,7 +306,7 @@ export const ReportsAPI = {
       type: 'inspection',
       status: status,
       reportInfo: { 
-        reportDate: new Date(),
+        reportDate: new Date().toISOString(), // Use ISO string format
         additionalInfo: inspectionData.report_url || '',
         ...(reportInfoData as Partial<Report['reportInfo']>)
       },
@@ -367,7 +367,7 @@ export const ReportsAPI = {
       type: 'inspection',
       status: 'draft',
       reportInfo: {
-        reportDate: new Date()
+        reportDate: new Date().toISOString() // Use ISO string format
       },
       rooms: [],
       createdAt: new Date(data.created_at),

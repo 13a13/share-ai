@@ -25,7 +25,7 @@ export interface Report {
   id: string;
   propertyId: string;
   name?: string;
-  type: 'check_in' | 'check_out' | 'inventory' | 'inspection' | 'routine' | 'comparison';
+  type: 'check_in' | 'check_out' | 'inventory' | 'inspection' | 'comparison';
   status: 'draft' | 'in_progress' | 'pending_review' | 'completed' | 'archived';
   reportInfo?: ReportInfo;
   rooms: Room[];
@@ -38,7 +38,7 @@ export interface Report {
 }
 
 export interface ReportInfo {
-  reportDate?: string;
+  reportDate?: string | Date; // Updated to accept both string and Date
   tenantName?: string;
   clerk?: string;
   additionalInfo?: string;
