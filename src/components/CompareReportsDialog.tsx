@@ -28,8 +28,8 @@ const CompareReportsDialog = ({
   const [isComparing, setIsComparing] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<string | null>(null);
   const [comparisonReport, setComparisonReport] = useState<Report | null>(null);
-  const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [comparisonPdfUrl, setComparisonPdfUrl] = useState<string | null>(null);
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
 
   // PDF generation
   const { generatePDF } = usePDFGeneration();
@@ -85,6 +85,10 @@ const CompareReportsDialog = ({
       // Create a synthetic report for PDF generation
       const syntheticReport = createComparisonReport(firstReport, secondReport, comparisonText);
       setComparisonReport(syntheticReport);
+      
+      // Generate the PDF immediately after comparison is complete
+      const pdfData = await generatePDF(syntheticReport, property);
+      setComparisonPdfUrl(pdfData);
       
       toast({
         title: "Comparison Complete",
@@ -150,24 +154,6 @@ const CompareReportsDialog = ({
     };
   };
   
-  // Handle generating the PDF
-  const handleGeneratePDF = async () => {
-    if (!comparisonReport) return;
-    
-    try {
-      const pdfData = await generatePDF(comparisonReport, property);
-      setComparisonPdfUrl(pdfData);
-      setShowPDFPreview(true);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      toast({
-        title: "PDF Generation Failed",
-        description: "There was an error generating the PDF. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
   // Generate a dummy comparison for demonstration purposes
   const generateDummyComparison = (firstReport: Report, secondReport: Report) => {
     return `
@@ -203,6 +189,7 @@ Several minor damages were identified between the check-in and check-out reports
     `;
   };
   
+  // Get the title for the comparison report
   const getComparisonTitle = () => {
     if (!comparisonReport) return "Comparison Report";
     
@@ -212,6 +199,12 @@ Several minor damages were identified between the check-in and check-out reports
     if (!firstReport || !secondReport) return "Comparison Report";
     
     return `${firstReport.name || firstReport.type} vs ${secondReport.name || secondReport.type}`;
+  };
+  
+  // Handle opening PDF preview
+  const handleViewPdf = () => {
+    if (!comparisonReport || !comparisonPdfUrl) return;
+    setShowPDFPreview(true);
   };
   
   return (
@@ -322,10 +315,18 @@ Several minor damages were identified between the check-in and check-out reports
                   Back to Selection
                 </Button>
                 <Button 
-                  onClick={handleGeneratePDF}
+                  onClick={handleViewPdf}
                   className="bg-shareai-teal hover:bg-shareai-teal/90"
+                  disabled={!comparisonPdfUrl}
                 >
-                  Preview as PDF
+                  {!comparisonPdfUrl ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating PDF...
+                    </>
+                  ) : (
+                    <>View in PDF Preview</>
+                  )}
                 </Button>
               </>
             )}
@@ -334,7 +335,7 @@ Several minor damages were identified between the check-in and check-out reports
       </Dialog>
 
       {/* PDF Preview Dialog */}
-      {comparisonReport && (
+      {comparisonReport && comparisonPdfUrl && (
         <PDFPreviewDialog
           open={showPDFPreview}
           onOpenChange={setShowPDFPreview}
