@@ -1,10 +1,11 @@
-
+import { useState, useEffect } from "react";
 import { Property } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Home, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ReportsAPI } from "@/lib/api";
 
 interface PropertyCardProps {
   property: Property;
@@ -13,6 +14,20 @@ interface PropertyCardProps {
 
 const PropertyCard = ({ property, onDeleteClick }: PropertyCardProps) => {
   const navigate = useNavigate();
+  const [reportCount, setReportCount] = useState<number>(0);
+  
+  useEffect(() => {
+    const fetchReportCount = async () => {
+      try {
+        const reports = await ReportsAPI.getByPropertyId(property.id);
+        setReportCount(reports.length);
+      } catch (error) {
+        console.error("Error fetching report count:", error);
+      }
+    };
+    
+    fetchReportCount();
+  }, [property.id]);
   
   return (
     <Card className="overflow-hidden card-hover">
@@ -29,9 +44,14 @@ const PropertyCard = ({ property, onDeleteClick }: PropertyCardProps) => {
             <Home className="h-12 w-12 text-shareai-teal" />
           </div>
         )}
-        <Badge className="absolute top-2 right-2 bg-shareai-blue text-white">
-          {property.propertyType}
-        </Badge>
+        <div className="absolute top-2 right-2 flex gap-2">
+          <Badge className="bg-shareai-blue text-white">
+            {property.propertyType}
+          </Badge>
+          <Badge className="bg-shareai-teal text-white">
+            {reportCount} {reportCount === 1 ? 'Report' : 'Reports'}
+          </Badge>
+        </div>
       </div>
       
       <CardHeader className="pb-2">
