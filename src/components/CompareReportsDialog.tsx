@@ -219,7 +219,7 @@ Several minor damages were identified between the check-in and check-out reports
       <Dialog open={isOpen} onOpenChange={(open) => {
         if (!open) onClose();
       }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-4xl">
           <div className="text-xl font-semibold mb-1">Compare Reports</div>
           
           <div className="grid gap-4 py-4">
