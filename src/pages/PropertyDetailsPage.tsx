@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -22,6 +21,7 @@ import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import ReportCard from "@/components/ReportCard";
 import UploadReportDialog from "@/components/UploadReportDialog";
 import CompareReportsDialog from "@/components/CompareReportsDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PropertyDetailsPage = () => {
   
@@ -37,6 +37,8 @@ const PropertyDetailsPage = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isCompareDialogOpen, setIsCompareDialogOpen] = useState(false);
+  
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const fetchData = async () => {
@@ -417,26 +419,54 @@ const PropertyDetailsPage = () => {
               <Plus className="h-5 w-5 mr-2 text-shareai-teal" />
               Property Reports
             </CardTitle>
-            <div className="flex space-x-2">
-              <Button
-                onClick={() => setIsCompareDialogOpen(true)}
-                className="bg-shareai-teal hover:bg-shareai-teal/90"
-              >
-                <GitCompare className="h-4 w-4 mr-2" /> AI Compare Reports
-              </Button>
-              <Button
-                onClick={() => setIsUploadDialogOpen(true)}
-                className="bg-shareai-teal hover:bg-shareai-teal/90"
-              >
-                <FileUp className="h-4 w-4 mr-2" /> Upload Report
-              </Button>
-              <Button
-                onClick={() => navigate(`/reports/new/${propertyId}`)}
-                className="bg-shareai-teal hover:bg-shareai-teal/90"
-              >
-                <Plus className="h-4 w-4 mr-2" /> New Report
-              </Button>
-            </div>
+            
+            {/* Responsive buttons container */}
+            {isMobile ? (
+              <div className="flex flex-col space-y-2">
+                <Button
+                  size="sm"
+                  onClick={() => setIsCompareDialogOpen(true)}
+                  className="bg-shareai-teal hover:bg-shareai-teal/90 w-full"
+                >
+                  <GitCompare className="h-4 w-4 mr-2" /> Compare
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setIsUploadDialogOpen(true)}
+                  className="bg-shareai-teal hover:bg-shareai-teal/90 w-full"
+                >
+                  <FileUp className="h-4 w-4 mr-2" /> Upload
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => navigate(`/reports/new/${propertyId}`)}
+                  className="bg-shareai-teal hover:bg-shareai-teal/90 w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> New
+                </Button>
+              </div>
+            ) : (
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setIsCompareDialogOpen(true)}
+                  className="bg-shareai-teal hover:bg-shareai-teal/90"
+                >
+                  <GitCompare className="h-4 w-4 mr-2" /> AI Compare Reports
+                </Button>
+                <Button
+                  onClick={() => setIsUploadDialogOpen(true)}
+                  className="bg-shareai-teal hover:bg-shareai-teal/90"
+                >
+                  <FileUp className="h-4 w-4 mr-2" /> Upload Report
+                </Button>
+                <Button
+                  onClick={() => navigate(`/reports/new/${propertyId}`)}
+                  className="bg-shareai-teal hover:bg-shareai-teal/90"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> New Report
+                </Button>
+              </div>
+            )}
           </CardHeader>
           
           <CardContent>
