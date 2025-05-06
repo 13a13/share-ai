@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -89,11 +88,6 @@ const CompareReportsDialog = ({
       // Generate the PDF immediately after comparison is complete
       const pdfData = await generatePDF(syntheticReport, property);
       setComparisonPdfUrl(pdfData);
-      
-      toast({
-        title: "Comparison Complete",
-        description: "The reports have been compared successfully.",
-      });
     } catch (error) {
       console.error("Error comparing reports:", error);
       toast({
