@@ -10,11 +10,14 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
   
-  // Title - INVENTORY & CHECK IN
+  // Title - INVENTORY & CHECK IN or PROPERTY COMPARISON
   doc.setFont(pdfStyles.fonts.header, "bold");
   doc.setFontSize(pdfStyles.fontSizes.title + 6);
   doc.setTextColor(pdfStyles.colors.black[0], pdfStyles.colors.black[1], pdfStyles.colors.black[2]);
-  doc.text("INVENTORY & CHECK IN", pageWidth / 2, 60, { align: "center" });
+  
+  // Use appropriate title based on report type
+  const title = report.type === "comparison" ? "PROPERTY COMPARISON" : "INVENTORY & CHECK IN";
+  doc.text(title, pageWidth / 2, 60, { align: "center" });
   
   // Property Address - centered and prominent
   doc.setFontSize(pdfStyles.fontSizes.subtitle);
@@ -34,6 +37,11 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
   
   if (report.reportInfo?.clerk) {
     doc.text(`Clerk: ${report.reportInfo.clerk}`, pageWidth / 2, 120, { align: "center" });
+  }
+  
+  // Add comparison-specific info if applicable
+  if (report.type === "comparison") {
+    doc.text("Report Type: Comparison Analysis", pageWidth / 2, 130, { align: "center" });
   }
   
   // Logo placeholder - box for logo

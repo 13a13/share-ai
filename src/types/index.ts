@@ -1,3 +1,4 @@
+
 export interface Property {
   id: string;
   name?: string;
@@ -44,6 +45,8 @@ export interface ReportInfo {
   fileUrl?: string; // URL for uploaded document
   fileName?: string;
   comparisonText?: string; // Added for comparison reports
+  inventoryType?: string; // Optional field for backward compatibility
+  tenantPresent?: boolean; // Optional field for backward compatibility
 }
 
 export interface Room {

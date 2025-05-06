@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
@@ -105,8 +105,13 @@ const CompareReportsDialog = ({
   // Create a synthetic report for PDF generation
   const createComparisonReport = (firstReport: Report, secondReport: Report, comparisonText: string): Report => {
     // Extract key details from both reports
-    const firstReportDate = new Date(firstReport.createdAt).toLocaleDateString();
-    const secondReportDate = new Date(secondReport.createdAt).toLocaleDateString();
+    const firstReportDate = firstReport.createdAt instanceof Date
+      ? firstReport.createdAt.toLocaleDateString()
+      : new Date(firstReport.createdAt).toLocaleDateString();
+      
+    const secondReportDate = secondReport.createdAt instanceof Date
+      ? secondReport.createdAt.toLocaleDateString()
+      : new Date(secondReport.createdAt).toLocaleDateString();
     
     // Combine room data from both reports
     const allRooms = [...firstReport.rooms];
@@ -117,6 +122,8 @@ const CompareReportsDialog = ({
         allRooms.push(secondRoom);
       }
     });
+
+    const now = new Date();
     
     // Create a synthetic report with the comparison data
     return {
@@ -125,10 +132,11 @@ const CompareReportsDialog = ({
       type: "comparison",
       status: "completed",
       name: `Comparison: ${firstReport.name || firstReport.type} vs ${secondReport.name || secondReport.type}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
+      completedAt: now,
       reportInfo: {
-        reportDate: new Date().toISOString(),
+        reportDate: now.toISOString(),
         clerk: "AI Comparison System",
         additionalInfo: `This is an automated comparison between "${firstReport.name || firstReport.type}" (${firstReportDate}) and "${secondReport.name || secondReport.type}" (${secondReportDate}).`,
         comparisonText: comparisonText
@@ -163,35 +171,35 @@ const CompareReportsDialog = ({
   // Generate a dummy comparison for demonstration purposes
   const generateDummyComparison = (firstReport: Report, secondReport: Report) => {
     return `
-      ## Property Condition Comparison Report
+## Property Condition Comparison Report
 
-      ### Summary
-      This report compares the "${firstReport.name || firstReport.type}" report from ${new Date(firstReport.createdAt).toLocaleDateString()} with the "${secondReport.name || secondReport.type}" report from ${new Date(secondReport.createdAt).toLocaleDateString()} for the property at ${property.address}.
+### Summary
+This report compares the "${firstReport.name || firstReport.type}" report from ${new Date(firstReport.createdAt).toLocaleDateString()} with the "${secondReport.name || secondReport.type}" report from ${new Date(secondReport.createdAt).toLocaleDateString()} for the property at ${property.address}.
 
-      ### Key Differences
+### Key Differences
       
-      #### Living Areas
-      - **Living Room**: Condition changed from Good to Fair. 
-      - **Dining Room**: No significant changes noted.
+#### Living Areas
+- **Living Room**: Condition changed from Good to Fair. 
+- **Dining Room**: No significant changes noted.
       
-      #### Kitchen
-      - **Appliances**: Refrigerator shows new scratches on door.
-      - **Countertops**: New stain detected on counter near sink.
-      - **Cleanliness**: Reduced from "Excellent" to "Fair".
+#### Kitchen
+- **Appliances**: Refrigerator shows new scratches on door.
+- **Countertops**: New stain detected on counter near sink.
+- **Cleanliness**: Reduced from "Excellent" to "Fair".
       
-      #### Bathrooms
-      - **Master Bathroom**: Sink has a new chip on the edge.
-      - **Guest Bathroom**: No significant changes.
+#### Bathrooms
+- **Master Bathroom**: Sink has a new chip on the edge.
+- **Guest Bathroom**: No significant changes.
       
-      #### Bedrooms
-      - **Master Bedroom**: Carpet shows new stains near the window.
-      - **Bedroom 2**: Wall has small holes from picture mounting.
+#### Bedrooms
+- **Master Bedroom**: Carpet shows new stains near the window.
+- **Bedroom 2**: Wall has small holes from picture mounting.
       
-      ### Cleanliness Assessment
-      Overall cleanliness has deteriorated from "Excellent" to "Fair", with particular concerns in the kitchen and master bathroom areas.
+### Cleanliness Assessment
+Overall cleanliness has deteriorated from "Excellent" to "Fair", with particular concerns in the kitchen and master bathroom areas.
       
-      ### Damage Assessment
-      Several minor damages were identified between the check-in and check-out reports, primarily in the kitchen and bedrooms. These may require attention before the next tenant.
+### Damage Assessment
+Several minor damages were identified between the check-in and check-out reports, primarily in the kitchen and bedrooms. These may require attention before the next tenant.
     `;
   };
   
@@ -212,9 +220,7 @@ const CompareReportsDialog = ({
         if (!open) onClose();
       }}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Compare Reports</DialogTitle>
-          </DialogHeader>
+          <div className="text-xl font-semibold mb-1">Compare Reports</div>
           
           <div className="grid gap-4 py-4">
             {!comparisonResult ? (
@@ -286,7 +292,7 @@ const CompareReportsDialog = ({
             )}
           </div>
           
-          <DialogFooter>
+          <div className="flex justify-end mt-4 space-x-2">
             {!comparisonResult ? (
               <>
                 <Button variant="outline" onClick={onClose}>
@@ -323,7 +329,7 @@ const CompareReportsDialog = ({
                 </Button>
               </>
             )}
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
