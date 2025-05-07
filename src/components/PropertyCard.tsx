@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Property } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
