@@ -62,9 +62,14 @@ const ReportCreationPage = () => {
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
+    console.log("Creating report with values:", values);
     
     try {
       const newReport = await ReportsAPI.create(values.propertyId, values.type);
+      
+      if (!newReport) {
+        throw new Error("Failed to create report - no report data returned");
+      }
       
       toast({
         title: "Report Created",

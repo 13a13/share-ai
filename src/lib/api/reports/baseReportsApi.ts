@@ -250,19 +250,26 @@ export const BaseReportsAPI = {
    */
   create: async (propertyId: string, type: string): Promise<Report | null> => {
     try {
+      console.log(`Creating new report for property ${propertyId} of type ${type}`);
+      
       // Create a new room for the report
       const roomId = crypto.randomUUID();
       
-      await supabase.from('rooms').insert({
+      const { error: roomError } = await supabase.from('rooms').insert({
         id: roomId,
         property_id: propertyId,
         type: 'living_room' // Default room type
       });
       
+      if (roomError) {
+        console.error('Error creating room:', roomError);
+        throw roomError;
+      }
+      
       // Create a new inspection
       const reportId = crypto.randomUUID();
       
-      await supabase.from('inspections').insert({
+      const { error: inspectionError } = await supabase.from('inspections').insert({
         id: reportId,
         room_id: roomId,
         inspection_type: type,
@@ -276,39 +283,51 @@ export const BaseReportsAPI = {
         })
       });
       
+      if (inspectionError) {
+        console.error('Error creating inspection:', inspectionError);
+        throw inspectionError;
+      }
+      
       // Get the property
-      const { data: property } = await supabase
+      const { data: property, error: propertyError } = await supabase
         .from('properties')
         .select('*')
         .eq('id', propertyId)
         .single();
         
-      if (!property) {
-        console.error('Property not found:', propertyId);
-        return null;
+      if (propertyError || !property) {
+        console.error('Property not found:', propertyId, propertyError);
+        throw new Error(`Property not found: ${propertyId}`);
       }
       
       // Get the room
-      const { data: room } = await supabase
+      const { data: room, error: roomFetchError } = await supabase
         .from('rooms')
         .select('*')
         .eq('id', roomId)
         .single();
       
+      if (roomFetchError || !room) {
+        console.error('Room not found after creation:', roomId, roomFetchError);
+        throw new Error('Failed to retrieve created room');
+      }
+      
       // Get the inspection
-      const { data: inspection } = await supabase
+      const { data: inspection, error: inspectionFetchError } = await supabase
         .from('inspections')
         .select('*')
         .eq('id', reportId)
         .single();
         
-      if (!inspection || !room) {
-        console.error('Failed to load created report');
-        return null;
+      if (inspectionFetchError || !inspection) {
+        console.error('Inspection not found after creation:', reportId, inspectionFetchError);
+        throw new Error('Failed to retrieve created inspection');
       }
       
       // Transform to client format
-      return transformInspectionToReport(inspection, room, property);
+      const report = transformInspectionToReport(inspection, room, property);
+      console.log('Created report:', report);
+      return report;
     } catch (error) {
       console.error('Error creating report:', error);
       return null;
