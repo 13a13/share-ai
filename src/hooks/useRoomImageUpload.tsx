@@ -77,15 +77,17 @@ export const useRoomImageUpload = ({
   
   const processImage = async (imageUrl: string) => {
     try {
-      // Add the image to the room
+      console.log("Adding image to room:", roomId);
+      
+      // Add the image to the room - this will handle storage of the image
       const image = await ReportsAPI.addImageToRoom(reportId, roomId, imageUrl);
       
       if (image) {
         setUploadedImageId(image.id);
-        setUploadedImage(imageUrl);
+        setUploadedImage(image.url);
         toast({
           title: "Image uploaded",
-          description: "Image has been added to the room",
+          description: "Image has been added to the room and stored in Supabase",
         });
       }
       

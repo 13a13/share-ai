@@ -71,6 +71,8 @@ export const useReportInfo = (
     setIsSaving(true);
     
     try {
+      console.log("Saving report with rooms:", report.rooms.length);
+      
       let updatedStatus = report.status;
       
       if (updatedStatus === "draft") {
@@ -84,12 +86,26 @@ export const useReportInfo = (
         updatedStatus = "pending_review";
       }
       
+      // Save each room first to ensure they are all preserved
+      for (const room of report.rooms) {
+        console.log(`Saving room: ${room.name}`);
+        await ReportsAPI.updateRoom(report.id, room.id, room);
+      }
+      
+      // Then update the report status
       const updatedReport = await ReportsAPI.update(report.id, {
         status: updatedStatus,
       });
       
       if (updatedReport) {
-        setReport(updatedReport);
+        // Make sure we preserve all rooms from the current state as
+        // the API doesn't return the full updated room details
+        const completeReport = {
+          ...updatedReport,
+          rooms: report.rooms
+        };
+        
+        setReport(completeReport);
         
         toast({
           title: "Report Saved",
@@ -116,13 +132,25 @@ export const useReportInfo = (
     setIsSaving(true);
     
     try {
+      // Save each room first to ensure they are all preserved
+      for (const room of report.rooms) {
+        console.log(`Saving room for completion: ${room.name}`);
+        await ReportsAPI.updateRoom(report.id, room.id, room);
+      }
+      
       const updatedReport = await ReportsAPI.update(report.id, {
         status: "completed",
         completedAt: new Date(),
       });
       
       if (updatedReport) {
-        setReport(updatedReport);
+        // Make sure we preserve all rooms from the current state
+        const completeReport = {
+          ...updatedReport,
+          rooms: report.rooms
+        };
+        
+        setReport(completeReport);
         
         toast({
           title: "Report Completed",
