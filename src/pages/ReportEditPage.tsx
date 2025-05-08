@@ -49,6 +49,9 @@ const ReportEditPage = () => {
     additionalInfo: report.reportInfo?.additionalInfo || "",
   };
   
+  // Ensure report.rooms is always defined
+  const hasRooms = report.rooms && report.rooms.length > 0;
+  
   return (
     <div className="shareai-container pb-24 sm:pb-8">
       <ReportHeader 
@@ -71,7 +74,7 @@ const ReportEditPage = () => {
           <h2 className="text-xl font-bold">Rooms</h2>
         </div>
         
-        {report.rooms.length === 0 ? (
+        {!hasRooms ? (
           <EmptyRoomsState />
         ) : (
           <div className="space-y-4 mb-6">

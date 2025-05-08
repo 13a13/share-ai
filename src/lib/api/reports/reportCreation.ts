@@ -30,7 +30,6 @@ export const createReport = async (propertyId: string, type: string): Promise<Re
     // Store the report type in the report_info
     const reportInfo = {
       reportDate: new Date().toISOString(),
-      roomName: 'Living Room', // Default room name
       clerk: 'Inspector',
       sections: [],
       components: [],
@@ -85,8 +84,9 @@ export const createReport = async (propertyId: string, type: string): Promise<Re
       throw new Error('Failed to retrieve created inspection');
     }
     
-    // Transform to client format
+    // Transform to client format, but don't include the placeholder room in the rooms array
     const report = transformInspectionToReport(inspection, room, property);
+    report.rooms = []; // Clear the default room from the UI display
     console.log('Created report:', report);
     return report;
   } catch (error) {

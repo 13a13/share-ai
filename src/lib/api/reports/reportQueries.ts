@@ -136,15 +136,27 @@ export const getReportById = async (reportId: string): Promise<Report | null> =>
     const { parseReportInfo, formatRoomType } = await import('./reportTransformers');
     const reportInfo = parseReportInfo(inspection.report_info);
     
-    // Add main room
-    const mainRoom = await processMainRoom(reportId, room, reportInfo, formatRoomType);
+    // Initialize with an empty rooms array - don't add the main room by default
+    report.rooms = [];
+    
+    // Only add main room if it has content (generalCondition or components)
+    if (reportInfo.generalCondition || (reportInfo.components && reportInfo.components.length > 0)) {
+      const mainRoom = await processMainRoom(reportId, room, reportInfo, formatRoomType);
+      report.rooms.push(mainRoom);
+    }
     
     // Process additional rooms from report_info
     const additionalRooms = await processAdditionalRooms(reportId, reportInfo);
     
-    // Sort rooms by order
-    const allRooms = [mainRoom, ...additionalRooms].sort((a, b) => a.order - b.order);
-    report.rooms = allRooms;
+    // Add additional rooms to the report
+    if (additionalRooms.length > 0) {
+      report.rooms = [...report.rooms, ...additionalRooms];
+    }
+    
+    // Sort rooms by order if there are any rooms
+    if (report.rooms.length > 0) {
+      report.rooms.sort((a, b) => a.order - b.order);
+    }
     
     return report;
   } catch (error) {
