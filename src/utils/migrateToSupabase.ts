@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { LOCAL_STORAGE_KEYS } from "@/lib/api/utils";
 import { Property, Report, Room, RoomImage } from "@/types";
@@ -167,12 +166,11 @@ const migrateImagesForRoom = async (report: Report, room: Room): Promise<void> =
     // Upload each image from the room
     for (const image of room.images) {
       try {
-        // Upload image to Supabase Storage
+        // FIX: Remove the fourth argument (report.type) as it's not expected by the function
         const newUrl = await uploadReportImage(
           image.url, 
           report.id, 
-          `${address}, ${city}, ${state}`, 
-          report.type
+          room.id
         );
 
         if (!newUrl) {

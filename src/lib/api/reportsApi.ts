@@ -1,3 +1,4 @@
+
 import { Report, Room, RoomType, RoomImage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { createNewReport, createNewRoom } from '../mockData';
@@ -686,9 +687,11 @@ export const ReportsAPI = {
       });
       
       // Return the room in our client format
+      // FIX: Use room.name if available, otherwise use room.type as the name
+      const roomName = room.name || room.type;
       return {
         id: room.id,
-        name: updates.name || room.name || room.type,
+        name: roomName,
         type: room.type as RoomType,
         order: updates.order || 1,
         generalCondition: updates.generalCondition || '',

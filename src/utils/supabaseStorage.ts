@@ -69,8 +69,9 @@ export const uploadReportImage = async (
  */
 export const deleteReportImage = async (imageUrl: string): Promise<void> => {
   try {
-    // Check if this is a Supabase storage URL
-    if (!imageUrl.includes(supabase.storageUrl) || !imageUrl.includes('reports/')) {
+    // FIX: Check if this is a Supabase storage URL without directly accessing protected storageUrl property
+    // Instead check using a common URL pattern for Supabase storage URLs
+    if (!imageUrl.includes('/storage/v1/object/public/reports/') && !imageUrl.includes('reports/')) {
       console.log("Not a Supabase storage URL, skipping deletion");
       return;
     }
