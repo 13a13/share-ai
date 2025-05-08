@@ -1,8 +1,10 @@
 
-// This is an extension for handleUpdateGeneralCondition in useRoomManagement.tsx
-// Since the full file is too long, add this to the existing function
+import { Report, Room, RoomComponent } from "@/types";
+import { ReportsAPI } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
-const handleUpdateGeneralCondition = async (roomId: string, generalCondition: string) => {
+const handleUpdateGeneralCondition = async (roomId: string, generalCondition: string, report: Report, setReport: React.Dispatch<React.SetStateAction<Report | null>>) => {
   if (!report) return;
   
   const currentRoom = report.rooms.find(room => room.id === roomId);
@@ -49,6 +51,7 @@ const handleUpdateGeneralCondition = async (roomId: string, generalCondition: st
     }
   } catch (error) {
     console.error("Error saving general condition:", error);
+    const { toast } = useToast();
     toast({
       title: "Error",
       description: "Failed to save general condition. Please try again.",
@@ -56,3 +59,5 @@ const handleUpdateGeneralCondition = async (roomId: string, generalCondition: st
     });
   }
 };
+
+export { handleUpdateGeneralCondition };

@@ -313,17 +313,21 @@ export const ReportsAPI = {
       // For simplicity, we'll use a single room which is the one attached to the inspection
       rooms: [{
         id: room.id,
-        name: room.type,
+        name: room.name || room.type,
         type: room.type as RoomType,
         order: 1,
+        generalCondition: reportInfoData.generalCondition || '',
         images: images,
-        sections: [] // Add empty sections to satisfy the type
+        sections: reportInfoData.sections || [], 
+        components: reportInfoData.components
       } as Room],
       createdAt: new Date(inspectionData.created_at),
       updatedAt: new Date(inspectionData.updated_at),
       completedAt: null,
       disclaimers: []
     };
+    
+    console.log("Loaded report with components:", components.length);
     
     return report;
   },
@@ -563,7 +567,7 @@ export const ReportsAPI = {
     // Get images for the room via inspection
     const { data: inspection } = await supabase
       .from('inspections')
-      .select('id')
+      .select('id, report_info')
       .eq('room_id', roomId)
       .single();
     
@@ -571,6 +575,11 @@ export const ReportsAPI = {
       console.error("No inspection found for room:", roomId);
       return null;
     }
+
+    // Get current components from report_info or use empty array
+    const reportInfo = inspection.report_info ? inspection.report_info : {};
+    const currentComponents = Array.isArray(reportInfo.components) ? 
+      reportInfo.components : [];
     
     // Save the report_info with the components data if it exists
     if (updates.components) {
@@ -581,7 +590,8 @@ export const ReportsAPI = {
         .from('inspections')
         .update({
           report_info: {
-            ...(inspection.report_info || {}),
+            ...((inspection.report_info && typeof inspection.report_info === 'object') ? 
+              inspection.report_info : {}),
             components: updates.components
           }
         })
@@ -665,9 +675,10 @@ export const ReportsAPI = {
         .single();
       
       if (!inspection) return false;
-      
+
       // Get current components from report_info or use empty array
-      const currentComponents = inspection.report_info?.components || [];
+      const currentComponents = inspection.report_info ? 
+        (inspection.report_info.components || []) : [];
       
       // Update the component with the new analysis
       const updatedComponents = currentComponents.map(component => {
@@ -692,7 +703,8 @@ export const ReportsAPI = {
         .from('inspections')
         .update({
           report_info: {
-            ...inspection.report_info,
+            ...((inspection.report_info && typeof inspection.report_info === 'object') ? 
+              inspection.report_info : {}),
             components: updatedComponents
           }
         })

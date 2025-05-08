@@ -1,9 +1,12 @@
 
+import { Report, Room, RoomType, RoomImage } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+
 // This is an extension for the getById method in ReportsAPI
 // Since the full file is too long to include, just add this 
 // to the getById method in reportsApi.ts
 
-getById: async (id: string): Promise<Report | null> => {
+const getById = async (id: string): Promise<Report | null> => {
   // Fetch the inspection
   const { data: inspectionData, error: inspectionError } = await supabase
     .from('inspections')
@@ -124,4 +127,6 @@ getById: async (id: string): Promise<Report | null> => {
   console.log("Loaded report with components:", components.length);
   
   return report;
-}
+};
+
+export { getById };
