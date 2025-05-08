@@ -2,7 +2,7 @@
 import { Room, RoomType, RoomImage } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadReportImage } from '@/utils/supabaseStorage';
-import { parseReportInfo } from './reportTransformers';
+import { parseReportInfo, formatRoomType } from './reportTransformers';
 
 /**
  * API functions for room operations
@@ -168,10 +168,18 @@ export const RoomOperationsAPI = {
           aiData: img.analysis
         }));
         
+        // Use proper room name or format the room type if no name is available
+        const roomName = updatedReportInfo.roomName || 
+                         (room.name && room.name !== 'check_in' && 
+                          room.name !== 'check_out' && 
+                          room.name !== 'general' ? 
+                           room.name : 
+                           formatRoomType(room.type));
+        
         // Return the updated room
         return {
           id: roomId,
-          name: updates.name || (reportInfo.roomName ? String(reportInfo.roomName) : String(room.type)), // Use the updated name
+          name: roomName,
           type: room.type as RoomType,
           order: updates.order || 1,
           generalCondition: updatedReportInfo.generalCondition || '',
@@ -241,11 +249,14 @@ export const RoomOperationsAPI = {
           aiProcessed: img.analysis !== null,
           aiData: img.analysis
         }));
+
+        // Use the name from additional rooms data or format type as fallback
+        const roomName = additionalRooms[roomIndex].name || formatRoomType(additionalRooms[roomIndex].type);
         
         // Return the updated room
         return {
           id: roomId,
-          name: additionalRooms[roomIndex].name,
+          name: roomName,
           type: additionalRooms[roomIndex].type as RoomType,
           order: updates.order || additionalRooms[roomIndex].order || roomIndex + 1,
           generalCondition: additionalRooms[roomIndex].generalCondition || '',

@@ -22,6 +22,14 @@ export const transformInspectionToReport = (
       ? JSON.parse(inspection.report_info) 
       : inspection.report_info) as Record<string, any>
     : {};
+  
+  // Extract proper room name or use a formatted version of the type
+  const roomName = reportInfoData.roomName || 
+                  (room.name && room.name !== 'check_in' && 
+                   room.name !== 'check_out' && 
+                   room.name !== 'general' ? 
+                    room.name : 
+                    formatRoomType(room.type));
 
   return {
     id: inspection.id,
@@ -59,4 +67,16 @@ export const parseReportInfo = (reportInfo: any): Record<string, any> => {
   }
   
   return reportInfo as Record<string, any>;
+};
+
+/**
+ * Format a room type string to be more readable
+ * e.g. 'living_room' -> 'Living Room'
+ */
+export const formatRoomType = (type: string): string => {
+  if (!type) return 'Room';
+  
+  return type
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
 };
