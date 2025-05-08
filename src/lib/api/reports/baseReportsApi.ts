@@ -269,18 +269,21 @@ export const BaseReportsAPI = {
       // Create a new inspection
       const reportId = crypto.randomUUID();
       
+      // Fixed: Store the report type in the report_info instead of non-existent inspection_type column
+      const reportInfo = {
+        reportDate: new Date().toISOString(),
+        roomName: 'Living Room', // Default room name
+        clerk: 'Inspector',
+        sections: [],
+        components: [],
+        reportType: type // Store the report type here
+      };
+      
       const { error: inspectionError } = await supabase.from('inspections').insert({
         id: reportId,
         room_id: roomId,
-        inspection_type: type,
         status: 'draft',
-        report_info: JSON.stringify({
-          reportDate: new Date().toISOString(),
-          roomName: 'Living Room', // Default room name
-          clerk: 'Inspector',
-          sections: [],
-          components: []
-        })
+        report_info: JSON.stringify(reportInfo)
       });
       
       if (inspectionError) {

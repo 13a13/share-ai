@@ -26,6 +26,7 @@ const ReportCreationPage = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,6 +63,7 @@ const ReportCreationPage = () => {
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
+    setSubmissionError(null);
     console.log("Creating report with values:", values);
     
     try {
@@ -80,9 +82,18 @@ const ReportCreationPage = () => {
       navigate(`/reports/${newReport.id}/edit`);
     } catch (error) {
       console.error("Error creating report:", error);
+      
+      // Extract a user-friendly error message
+      let errorMessage = "Failed to create report. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setSubmissionError(errorMessage);
+      
       toast({
         title: "Error",
-        description: "Failed to create report. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -169,6 +180,12 @@ const ReportCreationPage = () => {
                     </FormItem>
                   )}
                 />
+                
+                {submissionError && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+                    {submissionError}
+                  </div>
+                )}
                 
                 <div className="flex justify-end pt-4">
                   <Button

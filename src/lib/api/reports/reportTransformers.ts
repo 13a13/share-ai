@@ -31,12 +31,15 @@ export const transformInspectionToReport = (
                     room.name : 
                     formatRoomType(room.type));
 
+  // Get report type from report_info or fallback to "inspection"
+  const reportType = reportInfoData.reportType || "inspection";
+  
   return {
     id: inspection.id,
     name: inspection.status || '',
     propertyId: room?.property_id || '',
     property: property,
-    type: 'inspection',
+    type: reportType as any, // Use the stored report type
     status: status,
     reportInfo: { 
       reportDate: new Date().toISOString(), // Use ISO string format
