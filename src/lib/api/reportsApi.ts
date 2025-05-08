@@ -687,12 +687,14 @@ export const ReportsAPI = {
       });
       
       // Return the room in our client format
-      // FIX: Use room.name if available, otherwise use room.type as the name
-      const roomName = room.name || room.type;
+      // The room object from Supabase might not have a 'name' property
+      // Use type as fallback if name doesn't exist
+      const roomType = room.type as string;
+      
       return {
         id: room.id,
-        name: roomName,
-        type: room.type as RoomType,
+        name: ('name' in room ? room.name : roomType) as string,
+        type: roomType as RoomType,
         order: updates.order || 1,
         generalCondition: updates.generalCondition || '',
         sections: updates.sections || [],
