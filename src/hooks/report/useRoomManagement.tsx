@@ -46,7 +46,7 @@ export const useRoomManagement = (
       // Create a new room with the provided name and type
       const newRoom = await ReportsAPI.addRoom(
         report.id,
-        values.name,
+        values.name, // Pass the name explicitly
         values.type as RoomType
       );
       
@@ -72,7 +72,7 @@ export const useRoomManagement = (
         setReport(prev => {
           if (!prev) return prev;
           
-          // FIX: Make sure to preserve existing rooms while adding the new one
+          // Make sure to preserve existing rooms while adding the new one
           return {
             ...prev,
             rooms: [...prev.rooms, savedRoom || updatedRoom],

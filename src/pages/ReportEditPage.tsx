@@ -124,4 +124,3 @@ const ReportEditPage = () => {
 };
 
 export default ReportEditPage;
-
