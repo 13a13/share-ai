@@ -1,3 +1,4 @@
+
 import { Report, Room, RoomType, RoomImage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { createNewReport, createNewRoom } from '../mockData';
@@ -586,6 +587,9 @@ export const ReportsAPI = {
     if (updates.components) {
       console.log("Saving components to inspection:", inspection.id, updates.components);
       
+      // FIX: Serialize the components before storing them in the report_info JSON field
+      const serializableComponents = JSON.parse(JSON.stringify(updates.components));
+      
       // Update inspection with components in the report_info column
       await supabase
         .from('inspections')
@@ -593,7 +597,7 @@ export const ReportsAPI = {
           report_info: {
             ...((inspection.report_info && typeof inspection.report_info === 'object') ? 
               inspection.report_info as Record<string, any> : {}),
-            components: updates.components
+            components: serializableComponents
           }
         })
         .eq('id', inspection.id);
@@ -607,7 +611,8 @@ export const ReportsAPI = {
     // Return the room in our client format
     return {
       id: room.id,
-      name: updates.name || room.name || room.type,
+      // FIX: Use the type property as a fallback for the name since name doesn't exist on the room object
+      name: updates.name || room.type,
       type: room.type as RoomType,
       order: updates.order || 1,
       generalCondition: updates.generalCondition || '',
@@ -699,6 +704,9 @@ export const ReportsAPI = {
         return component;
       });
       
+      // FIX: Serialize the components before storing them in the report_info JSON field
+      const serializableComponents = JSON.parse(JSON.stringify(updatedComponents));
+      
       // Save back to the inspection
       await supabase
         .from('inspections')
@@ -706,7 +714,7 @@ export const ReportsAPI = {
           report_info: {
             ...((inspection.report_info && typeof inspection.report_info === 'object') ? 
               inspection.report_info as Record<string, any> : {}),
-            components: updatedComponents
+            components: serializableComponents
           }
         })
         .eq('id', inspection.id);
