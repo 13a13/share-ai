@@ -124,4 +124,4 @@ getById: async (id: string): Promise<Report | null> => {
   console.log("Loaded report with components:", components.length);
   
   return report;
-},
+}
