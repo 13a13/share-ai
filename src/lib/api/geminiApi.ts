@@ -5,7 +5,7 @@
  */
 import { Room } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { ReportsAPI } from './reportsApi';
+import { ReportsAPI } from './index'; // Updated import path to point to the index file
 import { LOCAL_STORAGE_KEYS } from './utils';
 
 // Gemini API implementation
