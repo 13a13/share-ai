@@ -1,4 +1,3 @@
-
 import { Room, RoomType, RoomImage } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadReportImage } from '@/utils/supabaseStorage';
@@ -168,13 +167,9 @@ export const RoomOperationsAPI = {
           aiData: img.analysis
         }));
         
-        // Use proper room name or format the room type if no name is available
-        const roomName = updatedReportInfo.roomName || 
-                         (room.name && room.name !== 'check_in' && 
-                          room.name !== 'check_out' && 
-                          room.name !== 'general' ? 
-                           room.name : 
-                           formatRoomType(room.type));
+        // Use proper room name from reportInfo or format the room type if no name is available
+        // Fix: Don't access the 'name' property on the room object since it doesn't exist
+        const roomName = updatedReportInfo.roomName || formatRoomType(room.type);
         
         // Return the updated room
         return {
