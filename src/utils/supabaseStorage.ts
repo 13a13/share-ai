@@ -33,7 +33,7 @@ export const uploadReportImage = async (
       console.log("Created new bucket: inspection-images");
     }
     
-    // Generate a unique filename
+    // Generate a unique filename with property and room folder structure
     const fileExt = dataUrl.substring(dataUrl.indexOf('/') + 1, dataUrl.indexOf(';base64'));
     const fileName = `${reportId}/${roomId}/${uuidv4()}.${fileExt || 'jpg'}`;
     
