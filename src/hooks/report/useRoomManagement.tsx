@@ -72,10 +72,10 @@ export const useRoomManagement = (
         setReport(prev => {
           if (!prev) return prev;
           
-          // Make sure to add the updated room with components
+          // FIX: Make sure to preserve existing rooms while adding the new one
           return {
             ...prev,
-            rooms: [...prev.rooms.filter(r => r.id !== newRoom.id), savedRoom || updatedRoom],
+            rooms: [...prev.rooms, savedRoom || updatedRoom],
           };
         });
         

@@ -10,6 +10,8 @@ const handleUpdateGeneralCondition = async (roomId: string, generalCondition: st
   const currentRoom = report.rooms.find(room => room.id === roomId);
   if (!currentRoom) return;
   
+  const { toast } = useToast();
+  
   try {
     // Get the inspection for this room
     const { data: inspection } = await supabase
@@ -52,7 +54,6 @@ const handleUpdateGeneralCondition = async (roomId: string, generalCondition: st
     }
   } catch (error) {
     console.error("Error saving general condition:", error);
-    const { toast } = useToast();
     toast({
       title: "Error",
       description: "Failed to save general condition. Please try again.",

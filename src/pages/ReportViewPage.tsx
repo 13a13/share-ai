@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, FileText, Download } from "lucide-react";
+import { Loader2, FileText, Download, Eye } from "lucide-react";
 import CollapsibleRoomSection from "@/components/CollapsibleRoomSection";
 import PDFExportButton from "@/components/PDFExportButton";
 
@@ -108,28 +107,11 @@ const ReportViewPage = () => {
           >
             Edit Report
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              // This would be handled by the PDFExportButton with directDownload=true
-              const pdfButton = document.getElementById('pdf-download-button');
-              if (pdfButton) {
-                (pdfButton as HTMLButtonElement).click();
-              }
-            }}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
-          </Button>
-          {report && property && (
-            <div className="hidden">
-              <PDFExportButton 
-                report={report} 
-                property={property} 
-                directDownload={true}
-              />
-            </div>
-          )}
+          <PDFExportButton 
+            report={report} 
+            property={property} 
+            directDownload={false}
+          />
         </div>
       </div>
       
