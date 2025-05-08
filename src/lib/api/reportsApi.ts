@@ -585,184 +585,183 @@ export const ReportsAPI = {
           })
           .eq('id', roomId);
       
-      console.log(`Updated room name to "${updates.name}" and type to "${updates.type}"`);
-    }
+        console.log(`Updated room name to "${updates.name}" and type to "${updates.type}"`);
+      }
     
-    // Get the room
-    const { data: room } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('id', roomId)
-      .single();
+      // Get the room
+      const { data: room } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', roomId)
+        .single();
     
-    if (!room) {
-      console.error("Room not found:", roomId);
+      if (!room) {
+        console.error("Room not found:", roomId);
+        return null;
+      }
+    
+      // Get the inspection for this room
+      const { data: inspection } = await supabase
+        .from('inspections')
+        .select('id, report_info')
+        .eq('room_id', roomId)
+        .single();
+    
+      if (!inspection) {
+        // Check if we need to create a new inspection for this room
+        // This is needed for additional rooms that were added
+        console.log("No inspection found for room, creating new inspection:", roomId);
+        
+        const { data: newInspection, error: newInspectionError } = await supabase
+          .from('inspections')
+          .insert({
+            id: uuidv4(),
+            room_id: roomId,
+            status: 'in_progress',
+            report_info: {}
+          })
+          .select()
+          .single();
+          
+        if (newInspectionError) {
+          console.error("Error creating inspection for room:", newInspectionError);
+          return null;
+        }
+        
+        // Save the report_info with components and general condition
+        if (updates.components || updates.generalCondition) {
+          const reportInfo: Record<string, any> = {};
+          
+          if (updates.generalCondition) {
+            reportInfo.generalCondition = updates.generalCondition;
+          }
+          
+          if (updates.components) {
+            reportInfo.components = JSON.parse(JSON.stringify(updates.components));
+          }
+          
+          await supabase
+            .from('inspections')
+            .update({
+              report_info: reportInfo
+            })
+            .eq('id', newInspection.id);
+            
+          console.log("Created new inspection with components for room:", roomId);
+        }
+      } else {
+        // Handle existing inspection
+        // Get current components from report_info or use empty array
+        const reportInfo = inspection.report_info ? inspection.report_info as Record<string, any> : {};
+        
+        // Save the report_info with components data if it exists
+        if (updates.components || updates.generalCondition) {
+          const updatedReportInfo: Record<string, any> = {
+            ...((inspection.report_info && typeof inspection.report_info === 'object') ? 
+              inspection.report_info as Record<string, any> : {})
+          };
+          
+          if (updates.generalCondition !== undefined) {
+            updatedReportInfo.generalCondition = updates.generalCondition;
+          }
+          
+          if (updates.components) {
+            // Serialize the components before storing them in the report_info JSON field
+            updatedReportInfo.components = JSON.parse(JSON.stringify(updates.components));
+          }
+          
+          await supabase
+            .from('inspections')
+            .update({
+              report_info: updatedReportInfo
+            })
+            .eq('id', inspection.id);
+            
+          console.log("Updated existing inspection with components for room:", roomId);
+        }
+      }
+    
+      // Get images for the room via inspection
+      const { data: imageData } = await supabase
+        .from('inspection_images')
+        .select('*')
+        .eq('inspection_id', reportId);
+    
+      const roomImages = (imageData || []).filter(img => {
+        // Process image URLs to identify which ones belong to this room
+        const belongsToRoom = img.image_url.includes(`/${roomId}/`) || 
+          (updates.components && updates.components.some(comp => 
+            comp.images.some(image => image.url === img.image_url)
+          ));
+        return belongsToRoom;
+      });
+    
+      // Return the room in our client format
+      // Make sure we preserve the room name if it exists
+      const roomType = room.type as string;
+      
+      return {
+        id: room.id,
+        name: room.name || roomType as string,
+        type: roomType as RoomType,
+        order: updates.order || 1,
+        generalCondition: updates.generalCondition || '',
+        sections: updates.sections || [],
+        components: updates.components || [],
+        images: roomImages.map(img => ({
+          id: img.id,
+          url: img.image_url,
+          timestamp: new Date(img.created_at),
+          aiProcessed: img.analysis !== null,
+          aiData: img.analysis
+        }))
+      };
+    } catch (error) {
+      console.error("Error updating room:", error);
       return null;
     }
+  },
+  
+  addImageToRoom: async (reportId: string, roomId: string, imageUrl: string): Promise<RoomImage | null> => {
+    // For our schema, images are associated with inspections, not rooms directly
     
-    // Get the inspection for this room
-    const { data: inspection } = await supabase
-      .from('inspections')
-      .select('id, report_info')
-      .eq('room_id', roomId)
-      .single();
-    
-    if (!inspection) {
-      // Check if we need to create a new inspection for this room
-      // This is needed for additional rooms that were added
-      console.log("No inspection found for room, creating new inspection:", roomId);
+    try {
+      // Store the image in Supabase Storage if it's a data URL
+      let finalImageUrl = imageUrl;
       
-      const { data: newInspection, error: newInspectionError } = await supabase
-        .from('inspections')
+      if (imageUrl.startsWith('data:')) {
+        finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId);
+      }
+      
+      const imageId = uuidv4();
+      
+      // Save the image URL to the database
+      const { data, error } = await supabase
+        .from('inspection_images')
         .insert({
-          id: uuidv4(),
-          room_id: roomId,
-          status: 'in_progress',
-          report_info: {}
+          id: imageId,
+          inspection_id: reportId,
+          image_url: finalImageUrl
         })
         .select()
         .single();
-        
-      if (newInspectionError) {
-        console.error("Error creating inspection for room:", newInspectionError);
-        return null;
+      
+      if (error) {
+        console.error('Error saving inspection image:', error);
+        throw error;
       }
       
-      // Save the report_info with components and general condition
-      if (updates.components || updates.generalCondition) {
-        const reportInfo: Record<string, any> = {};
-        
-        if (updates.generalCondition) {
-          reportInfo.generalCondition = updates.generalCondition;
-        }
-        
-        if (updates.components) {
-          reportInfo.components = JSON.parse(JSON.stringify(updates.components));
-        }
-        
-        await supabase
-          .from('inspections')
-          .update({
-            report_info: reportInfo
-          })
-          .eq('id', newInspection.id);
-          
-        console.log("Created new inspection with components for room:", roomId);
-      }
-    } else {
-      // Handle existing inspection
-      // Get current components from report_info or use empty array
-      const reportInfo = inspection.report_info ? inspection.report_info as Record<string, any> : {};
-      
-      // Save the report_info with components data if it exists
-      if (updates.components || updates.generalCondition) {
-        const updatedReportInfo: Record<string, any> = {
-          ...((inspection.report_info && typeof inspection.report_info === 'object') ? 
-            inspection.report_info as Record<string, any> : {})
-        };
-        
-        if (updates.generalCondition !== undefined) {
-          updatedReportInfo.generalCondition = updates.generalCondition;
-        }
-        
-        if (updates.components) {
-          // Serialize the components before storing them in the report_info JSON field
-          updatedReportInfo.components = JSON.parse(JSON.stringify(updates.components));
-        }
-        
-        await supabase
-          .from('inspections')
-          .update({
-            report_info: updatedReportInfo
-          })
-          .eq('id', inspection.id);
-          
-        console.log("Updated existing inspection with components for room:", roomId);
-      }
+      return {
+        id: data.id,
+        url: data.image_url,
+        timestamp: new Date(data.created_at),
+        aiProcessed: false
+      };
+    } catch (error) {
+      console.error("Error adding image to room:", error);
+      return null;
     }
-    
-    // Get images for the room via inspection
-    const { data: imageData } = await supabase
-      .from('inspection_images')
-      .select('*')
-      .eq('inspection_id', reportId);
-    
-    const roomImages = (imageData || []).filter(img => {
-      // Process image URLs to identify which ones belong to this room
-      const belongsToRoom = img.image_url.includes(`/${roomId}/`) || 
-        (updates.components && updates.components.some(comp => 
-          comp.images.some(image => image.url === img.image_url)
-        ));
-      return belongsToRoom;
-    });
-    
-    // Return the room in our client format
-    // Make sure we preserve the room name if it exists
-    const roomType = room.type as string;
-    
-    return {
-      id: room.id,
-      name: room.name || roomType as string,
-      type: roomType as RoomType,
-      order: updates.order || 1,
-      generalCondition: updates.generalCondition || '',
-      sections: updates.sections || [],
-      components: updates.components || [],
-      images: roomImages.map(img => ({
-        id: img.id,
-        url: img.image_url,
-        timestamp: new Date(img.created_at),
-        aiProcessed: img.analysis !== null,
-        aiData: img.analysis
-      }))
-    };
-  } catch (error) {
-    console.error("Error updating room:", error);
-    return null;
-  }
-};
-
-export const addImageToRoom = async (reportId: string, roomId: string, imageUrl: string): Promise<RoomImage | null> => {
-  // For our schema, images are associated with inspections, not rooms directly
-  
-  try {
-    // Store the image in Supabase Storage if it's a data URL
-    let finalImageUrl = imageUrl;
-    
-    if (imageUrl.startsWith('data:')) {
-      finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId);
-    }
-    
-    const imageId = uuidv4();
-    
-    // Save the image URL to the database
-    const { data, error } = await supabase
-      .from('inspection_images')
-      .insert({
-        id: imageId,
-        inspection_id: reportId,
-        image_url: finalImageUrl
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error saving inspection image:', error);
-      throw error;
-    }
-    
-    return {
-      id: data.id,
-      url: data.image_url,
-      timestamp: new Date(data.created_at),
-      aiProcessed: false
-    };
-  } catch (error) {
-    console.error("Error adding image to room:", error);
-    return null;
-  }
-};
-
+  },
   
   deleteRoom: async (reportId: string, roomId: string): Promise<void> => {
     // In our schema, deleting a room means deleting the inspection
