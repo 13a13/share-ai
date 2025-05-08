@@ -93,6 +93,7 @@ export const useRoomImageUpload = ({
       
       setIsUploading(false);
     } catch (error) {
+      console.error("Error uploading image:", error);
       toast({
         title: "Upload failed",
         description: "There was a problem uploading your image",

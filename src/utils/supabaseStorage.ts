@@ -17,19 +17,20 @@ export const uploadReportImage = async (
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     
-    // Check if the reports bucket exists, create if it doesn't
+    // Check if the inspection-images bucket exists, create if it doesn't
     const { data: buckets } = await supabase.storage.listBuckets();
-    const reportsBucket = buckets?.find(b => b.name === 'reports');
+    const reportsBucket = buckets?.find(b => b.name === 'inspection-images');
     
     if (!reportsBucket) {
-      const { error: createBucketError } = await supabase.storage.createBucket('reports', {
+      const { error: createBucketError } = await supabase.storage.createBucket('inspection-images', {
         public: true
       });
       
       if (createBucketError) {
-        console.error("Error creating reports bucket:", createBucketError);
+        console.error("Error creating inspection-images bucket:", createBucketError);
         throw createBucketError;
       }
+      console.log("Created new bucket: inspection-images");
     }
     
     // Generate a unique filename
@@ -38,7 +39,7 @@ export const uploadReportImage = async (
     
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
-      .from('reports')
+      .from('inspection-images')
       .upload(fileName, blob, {
         contentType: blob.type,
         cacheControl: '3600',
@@ -52,7 +53,7 @@ export const uploadReportImage = async (
     
     // Get the public URL
     const { data: publicUrlData } = supabase.storage
-      .from('reports')
+      .from('inspection-images')
       .getPublicUrl(data.path);
     
     console.log("Image uploaded successfully:", publicUrlData.publicUrl);
@@ -69,9 +70,8 @@ export const uploadReportImage = async (
  */
 export const deleteReportImage = async (imageUrl: string): Promise<void> => {
   try {
-    // FIX: Check if this is a Supabase storage URL without directly accessing protected storageUrl property
-    // Instead check using a common URL pattern for Supabase storage URLs
-    if (!imageUrl.includes('/storage/v1/object/public/reports/') && !imageUrl.includes('reports/')) {
+    // Check if this is a Supabase storage URL by looking for the bucket name in the URL
+    if (!imageUrl.includes('/storage/v1/object/public/inspection-images/') && !imageUrl.includes('inspection-images/')) {
       console.log("Not a Supabase storage URL, skipping deletion");
       return;
     }
@@ -79,7 +79,7 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
     // Extract the path from the URL
     const urlPath = new URL(imageUrl).pathname;
     const pathParts = urlPath.split('/');
-    const fileName = pathParts.slice(pathParts.indexOf('reports') + 1).join('/');
+    const fileName = pathParts.slice(pathParts.indexOf('inspection-images') + 1).join('/');
     
     if (!fileName) {
       console.log("Could not extract file path from URL:", imageUrl);
@@ -88,7 +88,7 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
     
     // Delete from storage
     const { error } = await supabase.storage
-      .from('reports')
+      .from('inspection-images')
       .remove([fileName]);
     
     if (error) {

@@ -46,7 +46,13 @@ export const useReportInfo = (
       });
       
       if (updatedReport) {
-        setReport(updatedReport);
+        // Important: preserve the rooms from the current state
+        const completeReport = {
+          ...updatedReport,
+          rooms: report.rooms
+        };
+        
+        setReport(completeReport);
         
         toast({
           title: "Report Info Saved",
@@ -86,10 +92,13 @@ export const useReportInfo = (
         updatedStatus = "pending_review";
       }
       
-      // Save each room first to ensure they are all preserved
+      // Save each room individually before updating the report
       for (const room of report.rooms) {
-        console.log(`Saving room: ${room.name}`);
-        await ReportsAPI.updateRoom(report.id, room.id, room);
+        console.log(`Saving room: ${room.name} (${room.id})`);
+        const savedRoom = await ReportsAPI.updateRoom(report.id, room.id, room);
+        if (!savedRoom) {
+          console.error(`Failed to save room: ${room.name} (${room.id})`);
+        }
       }
       
       // Then update the report status
@@ -98,8 +107,7 @@ export const useReportInfo = (
       });
       
       if (updatedReport) {
-        // Make sure we preserve all rooms from the current state as
-        // the API doesn't return the full updated room details
+        // Make sure we preserve all rooms from the current state
         const completeReport = {
           ...updatedReport,
           rooms: report.rooms
@@ -112,6 +120,7 @@ export const useReportInfo = (
           description: "Your report has been saved successfully.",
         });
         
+        // Navigate to the report view page
         navigate(`/reports/${report.id}`);
       }
     } catch (error) {
@@ -132,10 +141,13 @@ export const useReportInfo = (
     setIsSaving(true);
     
     try {
-      // Save each room first to ensure they are all preserved
+      // Save each room individually before completing the report
       for (const room of report.rooms) {
-        console.log(`Saving room for completion: ${room.name}`);
-        await ReportsAPI.updateRoom(report.id, room.id, room);
+        console.log(`Saving room for completion: ${room.name} (${room.id})`);
+        const savedRoom = await ReportsAPI.updateRoom(report.id, room.id, room);
+        if (!savedRoom) {
+          console.error(`Failed to save room for completion: ${room.name} (${room.id})`);
+        }
       }
       
       const updatedReport = await ReportsAPI.update(report.id, {
