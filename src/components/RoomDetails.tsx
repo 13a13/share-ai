@@ -70,7 +70,7 @@ const RoomDetails = ({
   };
 
   return (
-    <Card className="transition-none">
+    <Card className="transition-none" data-report-id={reportId} data-room-id={room.id}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
           <CardTitle className="text-xl">{room.name}</CardTitle>

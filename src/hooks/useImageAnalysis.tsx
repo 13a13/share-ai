@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
+import { uploadReportImage } from "@/utils/supabaseStorage";
 
 interface UseImageAnalysisProps {
   componentId: string;
@@ -24,15 +25,37 @@ export function useImageAnalysis({
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
 
   const processImages = async (stagingImages: string[]) => {
-    if (stagingImages.length === 0) return;
+    if (stagingImages.length === 0) return false;
     
     onProcessingStateChange(componentId, true);
     setAnalysisInProgress(true);
     
     try {
-      // Process all images together with the component name
-      const result = await processComponentImage(stagingImages, roomType, componentName, true);
-      onImagesProcessed(componentId, stagingImages, result);
+      // First, get reportId and roomId from the DOM
+      const reportElement = document.querySelector('[data-report-id]');
+      const roomElement = document.querySelector('[data-room-id]');
+      
+      if (!reportElement || !roomElement) {
+        console.error("Could not find report-id or room-id in DOM");
+        throw new Error("Report or room ID not found");
+      }
+      
+      const reportId = reportElement.getAttribute('data-report-id');
+      const roomId = roomElement.getAttribute('data-room-id');
+      
+      if (!reportId || !roomId) {
+        console.error("Invalid report-id or room-id in DOM");
+        throw new Error("Invalid report or room ID");
+      }
+      
+      // Upload all images to Supabase Storage
+      const storedImageUrls = await Promise.all(
+        stagingImages.map(imageUrl => uploadReportImage(imageUrl, reportId, roomId))
+      );
+      
+      // Process stored images with AI
+      const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
+      onImagesProcessed(componentId, storedImageUrls, result);
       
       toast({
         title: "Images processed successfully",
@@ -48,16 +71,36 @@ export function useImageAnalysis({
       });
       
       // Even if AI fails, still add the images without AI data
-      onImagesProcessed(componentId, stagingImages, {
-        description: "",
-        condition: {
-          summary: "",
-          points: [],
-          rating: "fair"
-        },
-        cleanliness: "domestic_clean",
-        notes: "AI analysis failed - please add description manually"
-      });
+      try {
+        const reportElement = document.querySelector('[data-report-id]');
+        const roomElement = document.querySelector('[data-room-id]');
+        
+        if (reportElement && roomElement) {
+          const reportId = reportElement.getAttribute('data-report-id');
+          const roomId = roomElement.getAttribute('data-room-id');
+          
+          if (reportId && roomId) {
+            // Upload images to Supabase Storage even if AI fails
+            const storedImageUrls = await Promise.all(
+              stagingImages.map(imageUrl => uploadReportImage(imageUrl, reportId, roomId))
+            );
+            
+            onImagesProcessed(componentId, storedImageUrls, {
+              description: "",
+              condition: {
+                summary: "",
+                points: [],
+                rating: "fair"
+              },
+              cleanliness: "domestic_clean",
+              notes: "AI analysis failed - please add description manually"
+            });
+          }
+        }
+      } catch (uploadError) {
+        console.error("Error uploading images after AI failure:", uploadError);
+      }
+      
       return false;
     } finally {
       onProcessingStateChange(componentId, false);

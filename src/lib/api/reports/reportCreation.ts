@@ -87,7 +87,7 @@ export const createReport = async (propertyId: string, type: string): Promise<Re
     // Transform to client format, but don't include the placeholder room in the rooms array
     const report = transformInspectionToReport(inspection, room, property);
     report.rooms = []; // Clear the default room from the UI display
-    console.log('Created report:', report);
+    console.log('Created report with empty rooms array:', report);
     return report;
   } catch (error) {
     console.error('Error creating report:', error);

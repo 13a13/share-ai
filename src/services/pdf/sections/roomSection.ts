@@ -138,10 +138,18 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
     }
   }
   
-  // Components
+  // Components - ONLY include components that have analyzed images
   if (room.components && room.components.length > 0) {
+    // Filter components to only include those with analyzed images
+    const analyzedComponents = room.components.filter(component => {
+      // Only include components with images and some details (description, condition, etc.)
+      return component.images && 
+             component.images.length > 0 && 
+             (component.description || component.conditionSummary || component.notes);
+    });
+    
     // Sort components - standard ones first, then custom ones
-    const sortedComponents = [...room.components].sort((a, b) => {
+    const sortedComponents = [...analyzedComponents].sort((a, b) => {
       if (a.isCustom && !b.isCustom) return 1;
       if (!a.isCustom && b.isCustom) return -1;
       return a.name.localeCompare(b.name);
@@ -165,6 +173,14 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
       
       // Generate component content
       yPosition = await generateComponentSection(doc, component, roomIndex, i+1, yPosition);
+    }
+    
+    // Show message if we filtered out all components
+    if (analyzedComponents.length === 0 && room.components.length > 0) {
+      doc.setFont(pdfStyles.fonts.body, "italic");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text("No analyzed components found in this room.", margins, yPosition);
+      yPosition += 10;
     }
   } else {
     // No components found

@@ -11,7 +11,7 @@ export const uploadReportImage = async (
   roomId: string
 ): Promise<string> => {
   try {
-    console.log("Uploading image to storage for room:", roomId);
+    console.log("Uploading image to storage for report:", reportId, "room:", roomId);
     
     // Convert data URL to blob
     const res = await fetch(dataUrl);
@@ -37,13 +37,15 @@ export const uploadReportImage = async (
     const fileExt = dataUrl.substring(dataUrl.indexOf('/') + 1, dataUrl.indexOf(';base64'));
     const fileName = `${reportId}/${roomId}/${uuidv4()}.${fileExt || 'jpg'}`;
     
+    console.log("Uploading to path:", fileName);
+    
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('inspection-images')
       .upload(fileName, blob, {
         contentType: blob.type,
         cacheControl: '3600',
-        upsert: false
+        upsert: true // Change to true to ensure file is always uploaded
       });
     
     if (error) {
@@ -79,12 +81,21 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
     // Extract the path from the URL
     const urlPath = new URL(imageUrl).pathname;
     const pathParts = urlPath.split('/');
-    const fileName = pathParts.slice(pathParts.indexOf('inspection-images') + 1).join('/');
+    const bucketIndex = pathParts.indexOf('inspection-images');
+    
+    if (bucketIndex === -1) {
+      console.log("Could not find bucket name in URL:", imageUrl);
+      return;
+    }
+    
+    const fileName = pathParts.slice(bucketIndex + 1).join('/');
     
     if (!fileName) {
       console.log("Could not extract file path from URL:", imageUrl);
       return;
     }
+    
+    console.log("Deleting file:", fileName);
     
     // Delete from storage
     const { error } = await supabase.storage

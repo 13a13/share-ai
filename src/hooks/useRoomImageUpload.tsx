@@ -4,6 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
 import { Room } from "@/types";
 import { compressImageFile } from "@/utils/imageCompression";
+import { uploadReportImage } from "@/utils/supabaseStorage";
 
 interface UseRoomImageUploadProps {
   reportId: string;
@@ -44,6 +45,7 @@ export const useRoomImageUpload = ({
       // Process the compressed image
       await processImage(compressedDataUrl);
     } catch (error) {
+      console.error("Error compressing image:", error);
       toast({
         title: "Upload failed",
         description: "There was a problem processing your image",
@@ -66,6 +68,7 @@ export const useRoomImageUpload = ({
       
       await processImage(compressedDataUrl);
     } catch (error) {
+      console.error("Error processing camera image:", error);
       toast({
         title: "Upload failed",
         description: "There was a problem processing your image",
@@ -77,14 +80,21 @@ export const useRoomImageUpload = ({
   
   const processImage = async (imageUrl: string) => {
     try {
-      console.log("Adding image to room:", roomId);
+      console.log("Processing and uploading image for room:", roomId, "in report:", reportId);
       
-      // Add the image to the room - this will handle storage of the image
-      const image = await ReportsAPI.addImageToRoom(reportId, roomId, imageUrl);
+      // Upload to Supabase Storage first
+      const storedImageUrl = await uploadReportImage(imageUrl, reportId, roomId);
+      
+      if (!storedImageUrl) {
+        throw new Error("Failed to get stored image URL");
+      }
+      
+      // Add the image to the room using the stored URL
+      const image = await ReportsAPI.addImageToRoom(reportId, roomId, storedImageUrl);
       
       if (image) {
         setUploadedImageId(image.id);
-        setUploadedImage(image.url);
+        setUploadedImage(storedImageUrl); // Use the stored URL
         toast({
           title: "Image uploaded",
           description: "Image has been added to the room and stored in Supabase",
@@ -96,7 +106,7 @@ export const useRoomImageUpload = ({
       console.error("Error uploading image:", error);
       toast({
         title: "Upload failed",
-        description: "There was a problem uploading your image",
+        description: "There was a problem uploading your image to storage",
         variant: "destructive",
       });
       setIsUploading(false);
