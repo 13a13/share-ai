@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { RoomComponent, RoomComponentImage } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
+import { ReportsAPI } from "@/lib/api";
 
 interface UseComponentImageProcessingProps {
   components: RoomComponent[];
@@ -32,7 +33,9 @@ export function useComponentImageProcessing({
     const newImages: RoomComponentImage[] = imageUrls.map(url => ({
       id: uuidv4(),
       url,
-      timestamp: currentTimestamp // Use the Date object directly
+      timestamp: currentTimestamp,
+      aiProcessed: true,
+      aiData: result
     }));
     
     const updatedComponents = components.map(comp => {
@@ -42,7 +45,8 @@ export function useComponentImageProcessing({
         const combinedImages = [...currentImages, ...newImages];
         const finalImages = combinedImages.slice(0, 20);
         
-        return {
+        // Create updated component with all the analysis data
+        const updatedComponent = {
           ...comp,
           images: finalImages,
           description: result.description || comp.description,
@@ -53,6 +57,33 @@ export function useComponentImageProcessing({
           notes: result.notes || comp.notes,
           isEditing: true // Automatically open edit mode after analysis
         };
+        
+        // Try to save the component analysis to database as well
+        try {
+          // We need to get reportId and roomId from the DOM or context
+          const reportElement = document.querySelector('[data-report-id]');
+          const roomElement = document.querySelector('[data-room-id]');
+          
+          if (reportElement && roomElement) {
+            const reportId = reportElement.getAttribute('data-report-id');
+            const roomId = roomElement.getAttribute('data-room-id');
+            
+            if (reportId && roomId) {
+              // Call the new method to save component analysis
+              ReportsAPI.updateComponentAnalysis(
+                reportId,
+                roomId,
+                componentId,
+                result,
+                imageUrls
+              );
+            }
+          }
+        } catch (err) {
+          console.error("Failed to save component analysis:", err);
+        }
+        
+        return updatedComponent;
       }
       return comp;
     });

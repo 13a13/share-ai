@@ -31,9 +31,12 @@ export const useReportInfo = (
     setIsSaving(true);
     
     try {
+      console.log("Saving report info with values:", values);
+      
       const updatedReport = await ReportsAPI.update(report.id, {
         reportInfo: {
-          reportDate: values.reportDate, // No need to create a new Date object
+          ...report.reportInfo,
+          reportDate: values.reportDate, 
           clerk: values.clerk,
           inventoryType: values.inventoryType,
           tenantPresent: values.tenantPresent || false,

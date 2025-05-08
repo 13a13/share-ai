@@ -42,7 +42,11 @@ const RoomContent = ({
   });
 
   return (
-    <div className="px-4 py-3 space-y-4">
+    <div 
+      className="px-4 py-3 space-y-4" 
+      data-report-id={reportId}
+      data-room-id={room.id}
+    >
       <div className="space-y-2">
         <h3 className="text-sm font-medium">General Condition</h3>
         <Textarea 

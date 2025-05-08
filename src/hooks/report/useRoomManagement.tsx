@@ -41,6 +41,9 @@ export const useRoomManagement = (
     setIsSubmittingRoom(true);
     
     try {
+      console.log("Adding room with values:", values);
+      
+      // Create a new room with the provided name and type
       const newRoom = await ReportsAPI.addRoom(
         report.id,
         values.name,
@@ -52,14 +55,18 @@ export const useRoomManagement = (
         const defaultComponents = getDefaultComponentsByRoomType(values.type as RoomType)
           .map(comp => createDefaultComponent(comp.name, comp.type, comp.isOptional));
         
-        // Add components to the room object
+        // Add components to the room object and ensure name is set correctly
         const updatedRoom = {
           ...newRoom,
+          name: values.name, // Ensure name is set explicitly
+          type: values.type as RoomType, // Ensure type is set explicitly
           components: defaultComponents,
         };
         
+        console.log("Updating room with:", updatedRoom);
+        
         // Save the updated room with components to the API
-        await ReportsAPI.updateRoom(report.id, newRoom.id, updatedRoom);
+        const savedRoom = await ReportsAPI.updateRoom(report.id, newRoom.id, updatedRoom);
         
         // Update the report state with the new room including components
         setReport(prev => {
@@ -68,13 +75,13 @@ export const useRoomManagement = (
           // Make sure to add the updated room with components
           return {
             ...prev,
-            rooms: [...prev.rooms.filter(r => r.id !== newRoom.id), updatedRoom],
+            rooms: [...prev.rooms.filter(r => r.id !== newRoom.id), savedRoom || updatedRoom],
           };
         });
         
         toast({
           title: "Room Added",
-          description: `${newRoom.name} has been added to the report with ${defaultComponents.length} default components.`,
+          description: `${updatedRoom.name} has been added to the report with ${defaultComponents.length} default components.`,
         });
       }
     } catch (error) {

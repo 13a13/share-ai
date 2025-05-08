@@ -537,11 +537,17 @@ export const ReportsAPI = {
   },
   
   updateRoom: async (reportId: string, roomId: string, updates: Partial<Room>): Promise<Room | null> => {
+    console.log("Updating room with:", { reportId, roomId, updates });
+    
     // Update the room type
     if (updates.type) {
       await supabase
         .from('rooms')
-        .update({ type: updates.type })
+        .update({ 
+          type: updates.type,
+          // Also update room name if it exists
+          ...(updates.name ? { name: updates.name } : {})
+        })
         .eq('id', roomId);
     }
     
@@ -561,25 +567,48 @@ export const ReportsAPI = {
       .eq('room_id', roomId)
       .single();
     
-    const { data: images } = inspection ? await supabase
+    if (!inspection) {
+      console.error("No inspection found for room:", roomId);
+      return null;
+    }
+    
+    // Save the report_info with the components data if it exists
+    if (updates.components) {
+      console.log("Saving components to inspection:", inspection.id, updates.components);
+      
+      // Update inspection with components in the report_info column
+      await supabase
+        .from('inspections')
+        .update({
+          report_info: {
+            ...(inspection.report_info || {}),
+            components: updates.components
+          }
+        })
+        .eq('id', inspection.id);
+    }
+    
+    const { data: images } = await supabase
       .from('inspection_images')
       .select('*')
-      .eq('inspection_id', inspection.id) : { data: null };
+      .eq('inspection_id', inspection.id);
     
     // Return the room in our client format
     return {
       id: room.id,
-      name: updates.name || room.type,
+      name: updates.name || room.name || room.type,
       type: room.type as RoomType,
       order: updates.order || 1,
+      generalCondition: updates.generalCondition || '',
+      sections: updates.sections || [],
+      components: updates.components || [],
       images: (images || []).map(img => ({
         id: img.id,
         url: img.image_url,
         timestamp: new Date(img.created_at),
         aiProcessed: img.analysis !== null,
         aiData: img.analysis
-      })),
-      sections: updates.sections || [] // Add sections from updates or empty array
+      }))
     };
   },
   
@@ -618,5 +647,61 @@ export const ReportsAPI = {
   deleteRoom: async (reportId: string, roomId: string): Promise<void> => {
     // In our schema, deleting a room means deleting the inspection
     await ReportsAPI.delete(reportId);
+  },
+  
+  updateComponentAnalysis: async (
+    reportId: string, 
+    roomId: string, 
+    componentId: string, 
+    analysis: any,
+    imageUrls: string[]
+  ): Promise<boolean> => {
+    try {
+      // Get the inspection for this room
+      const { data: inspection } = await supabase
+        .from('inspections')
+        .select('id, report_info')
+        .eq('room_id', roomId)
+        .single();
+      
+      if (!inspection) return false;
+      
+      // Get current components from report_info or use empty array
+      const currentComponents = inspection.report_info?.components || [];
+      
+      // Update the component with the new analysis
+      const updatedComponents = currentComponents.map(component => {
+        if (component.id === componentId) {
+          return {
+            ...component,
+            analysis,
+            images: [...(component.images || []), ...imageUrls.map(url => ({
+              id: uuidv4(),
+              url,
+              timestamp: new Date(),
+              aiProcessed: true,
+              aiData: analysis
+            }))]
+          };
+        }
+        return component;
+      });
+      
+      // Save back to the inspection
+      await supabase
+        .from('inspections')
+        .update({
+          report_info: {
+            ...inspection.report_info,
+            components: updatedComponents
+          }
+        })
+        .eq('id', inspection.id);
+      
+      return true;
+    } catch (error) {
+      console.error("Error updating component analysis:", error);
+      return false;
+    }
   }
 };
