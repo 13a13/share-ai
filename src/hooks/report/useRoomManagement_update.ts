@@ -24,7 +24,8 @@ const handleUpdateGeneralCondition = async (roomId: string, generalCondition: st
         .from('inspections')
         .update({
           report_info: {
-            ...(inspection.report_info || {}),
+            // Fix: Check if inspection.report_info is an object before spreading
+            ...(inspection.report_info && typeof inspection.report_info === 'object' ? inspection.report_info : {}),
             generalCondition
           }
         })

@@ -313,13 +313,13 @@ export const ReportsAPI = {
       // For simplicity, we'll use a single room which is the one attached to the inspection
       rooms: [{
         id: room.id,
-        name: room.name || room.type,
+        name: room.type, // Use room type as default if name is undefined
         type: room.type as RoomType,
         order: 1,
         generalCondition: reportInfoData.generalCondition || '',
         images: images,
         sections: reportInfoData.sections || [], 
-        components: reportInfoData.components
+        components: reportInfoData.components || []  // Add || [] to ensure it's always an array
       } as Room],
       createdAt: new Date(inspectionData.created_at),
       updatedAt: new Date(inspectionData.updated_at),
@@ -327,7 +327,9 @@ export const ReportsAPI = {
       disclaimers: []
     };
     
-    console.log("Loaded report with components:", components.length);
+    // Add console log for debugging component count
+    const componentsCount = Array.isArray(reportInfoData.components) ? reportInfoData.components.length : 0;
+    console.log("Loaded report with components:", componentsCount);
     
     return report;
   },
@@ -577,9 +579,8 @@ export const ReportsAPI = {
     }
 
     // Get current components from report_info or use empty array
-    const reportInfo = inspection.report_info ? inspection.report_info : {};
-    const currentComponents = Array.isArray(reportInfo.components) ? 
-      reportInfo.components : [];
+    const reportInfo = inspection.report_info ? inspection.report_info as Record<string, any> : {};
+    const currentComponents = reportInfo && reportInfo.components ? reportInfo.components : [];
     
     // Save the report_info with the components data if it exists
     if (updates.components) {
@@ -591,7 +592,7 @@ export const ReportsAPI = {
         .update({
           report_info: {
             ...((inspection.report_info && typeof inspection.report_info === 'object') ? 
-              inspection.report_info : {}),
+              inspection.report_info as Record<string, any> : {}),
             components: updates.components
           }
         })
@@ -677,8 +678,8 @@ export const ReportsAPI = {
       if (!inspection) return false;
 
       // Get current components from report_info or use empty array
-      const currentComponents = inspection.report_info ? 
-        (inspection.report_info.components || []) : [];
+      const reportInfoData = inspection.report_info ? inspection.report_info as Record<string, any> : {};
+      const currentComponents = reportInfoData && reportInfoData.components ? reportInfoData.components : [];
       
       // Update the component with the new analysis
       const updatedComponents = currentComponents.map(component => {
@@ -704,7 +705,7 @@ export const ReportsAPI = {
         .update({
           report_info: {
             ...((inspection.report_info && typeof inspection.report_info === 'object') ? 
-              inspection.report_info : {}),
+              inspection.report_info as Record<string, any> : {}),
             components: updatedComponents
           }
         })

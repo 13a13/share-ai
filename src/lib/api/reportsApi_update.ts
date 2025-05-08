@@ -110,7 +110,7 @@ const getById = async (id: string): Promise<Report | null> => {
     // For simplicity, we'll use a single room which is the one attached to the inspection
     rooms: [{
       id: room.id,
-      name: room.name || room.type,
+      name: room.type, // Fix: Using room.type as name if room.name is undefined
       type: room.type as RoomType,
       order: 1,
       generalCondition: reportInfoData.generalCondition || '',
