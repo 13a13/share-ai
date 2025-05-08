@@ -289,7 +289,11 @@ export const ReportsAPI = {
     }));
     
     // Get any report_info data including components
-    const reportInfoData = inspectionData.report_info ? inspectionData.report_info as Record<string, any> : {};
+    const reportInfoData = inspectionData.report_info ? 
+      (typeof inspectionData.report_info === 'string' 
+        ? JSON.parse(inspectionData.report_info) 
+        : inspectionData.report_info) as Record<string, any> 
+      : {};
     
     // Get components from report_info, ensuring it's an array
     const components = Array.isArray(reportInfoData.components) ? reportInfoData.components : [];
@@ -317,7 +321,7 @@ export const ReportsAPI = {
       // For simplicity, we'll use a single room which is the one attached to the inspection
       rooms: [{
         id: room.id,
-        name: reportInfoData.roomName || room.type as string, // Use roomName from report_info if available, otherwise use type
+        name: reportInfoData.roomName || String(room.type), // Use roomName from report_info if available, otherwise use type
         type: room.type as RoomType,
         order: 1,
         generalCondition: reportInfoData.generalCondition || '',
@@ -334,6 +338,20 @@ export const ReportsAPI = {
     // Add console log for debugging component count
     const componentsCount = Array.isArray(components) ? components.length : 0;
     console.log("Loaded report with components:", componentsCount);
+    
+    // Get additional rooms from report_info
+    if (reportInfoData.additionalRooms && Array.isArray(reportInfoData.additionalRooms) && reportInfoData.additionalRooms.length > 0) {
+      report.rooms = [...report.rooms, ...reportInfoData.additionalRooms.map((room: any) => ({
+        id: room.id,
+        name: room.name || String(room.type),
+        type: room.type as RoomType,
+        order: room.order || 0,
+        generalCondition: room.generalCondition || '',
+        images: [],
+        sections: room.sections || [],
+        components: room.components || []
+      } as Room))];
+    }
     
     return report;
   },
@@ -416,7 +434,9 @@ export const ReportsAPI = {
       
       // Initialize report info as an empty object or use existing
       const reportInfo = (existingReport && existingReport.report_info) 
-        ? existingReport.report_info as Record<string, any> 
+        ? (typeof existingReport.report_info === 'string'
+            ? JSON.parse(existingReport.report_info)
+            : existingReport.report_info) as Record<string, any> 
         : {};
       
       // Update with any provided report info fields
@@ -444,13 +464,32 @@ export const ReportsAPI = {
       
       // Add any rooms if they exist in updates
       if (updates.rooms && updates.rooms.length > 0) {
-        updatedReportInfo.additionalRooms = updates.rooms.map(room => ({
-          id: room.id,
-          name: room.name,
-          type: room.type,
-          generalCondition: room.generalCondition,
-          components: room.components || []
-        }));
+        // Get the main room ID - first room is always the main one linked to the inspection
+        const mainRoomId = updates.rooms[0]?.id;
+        
+        // Separate main room from additional rooms
+        const additionalRooms = updates.rooms
+          .filter(room => room.id !== mainRoomId)
+          .map(room => ({
+            id: room.id,
+            name: room.name,
+            type: room.type,
+            generalCondition: room.generalCondition,
+            components: room.components || []
+          }));
+        
+        // Get the main room for direct properties
+        const mainRoom = updates.rooms.find(room => room.id === mainRoomId);
+        
+        if (mainRoom) {
+          updatedReportInfo.roomName = mainRoom.name;
+          updatedReportInfo.generalCondition = mainRoom.generalCondition;
+          updatedReportInfo.components = mainRoom.components || [];
+          updatedReportInfo.sections = mainRoom.sections || [];
+        }
+        
+        // Add additional rooms
+        updatedReportInfo.additionalRooms = additionalRooms;
       }
       
       updateData.report_info = updatedReportInfo;
@@ -567,8 +606,15 @@ export const ReportsAPI = {
       console.log(`Created new room with ID: ${roomId}`);
       
       // Store the room name and other data in the report_info of the inspection
-      const existingReportInfo = inspection.report_info || {};
-      const additionalRooms = existingReportInfo.additionalRooms || [];
+      const existingReportInfo = inspection.report_info ? 
+        (typeof inspection.report_info === 'string' 
+          ? JSON.parse(inspection.report_info) 
+          : inspection.report_info) as Record<string, any> 
+        : {};
+        
+      const additionalRooms = Array.isArray(existingReportInfo.additionalRooms) 
+        ? existingReportInfo.additionalRooms 
+        : [];
       
       additionalRooms.push({
         id: roomId,
@@ -635,7 +681,11 @@ export const ReportsAPI = {
         }
         
         // Update the room data in report_info
-        const reportInfo = inspection.report_info || {};
+        const reportInfo = inspection.report_info ? 
+          (typeof inspection.report_info === 'string' 
+            ? JSON.parse(inspection.report_info) 
+            : inspection.report_info) as Record<string, any> 
+          : {};
         
         // Update the relevant fields
         const updatedReportInfo = {
@@ -680,7 +730,7 @@ export const ReportsAPI = {
         // Return the updated room
         return {
           id: roomId,
-          name: updates.name || reportInfo.roomName || room.type as string, // Use the updated name
+          name: updates.name || (reportInfo.roomName ? String(reportInfo.roomName) : String(room.type)), // Use the updated name
           type: room.type as RoomType,
           order: updates.order || 1,
           generalCondition: updatedReportInfo.generalCondition || '',
@@ -690,8 +740,15 @@ export const ReportsAPI = {
         };
       } else {
         // This is an additional room
-        const reportInfo = inspection.report_info || {};
-        const additionalRooms = reportInfo.additionalRooms || [];
+        const reportInfo = inspection.report_info ? 
+          (typeof inspection.report_info === 'string' 
+            ? JSON.parse(inspection.report_info) 
+            : inspection.report_info) as Record<string, any> 
+          : {};
+        
+        const additionalRooms = Array.isArray(reportInfo.additionalRooms) 
+          ? reportInfo.additionalRooms 
+          : [];
         
         // Find the room in the additional rooms array
         const roomIndex = additionalRooms.findIndex((room: any) => room.id === roomId);
@@ -824,7 +881,11 @@ export const ReportsAPI = {
       // Check if this is the main room
       if (inspection.room_id === roomId) {
         // Can't delete the main room, just clear its data
-        const reportInfo = inspection.report_info || {};
+        const reportInfo = inspection.report_info ? 
+          (typeof inspection.report_info === 'string' 
+            ? JSON.parse(inspection.report_info) 
+            : inspection.report_info) as Record<string, any> 
+          : {};
         
         await supabase
           .from('inspections')
@@ -838,8 +899,15 @@ export const ReportsAPI = {
           .eq('id', reportId);
       } else {
         // Remove the room from additionalRooms
-        const reportInfo = inspection.report_info || {};
-        let additionalRooms = reportInfo.additionalRooms || [];
+        const reportInfo = inspection.report_info ? 
+          (typeof inspection.report_info === 'string' 
+            ? JSON.parse(inspection.report_info) 
+            : inspection.report_info) as Record<string, any> 
+          : {};
+          
+        let additionalRooms = Array.isArray(reportInfo.additionalRooms) 
+          ? reportInfo.additionalRooms 
+          : [];
         
         additionalRooms = additionalRooms.filter((room: any) => room.id !== roomId);
         
@@ -886,11 +954,18 @@ export const ReportsAPI = {
       
       // Check if this is the main room or an additional room
       const isMainRoom = inspection.room_id === roomId;
-      const reportInfo = inspection.report_info || {};
+      const reportInfo = inspection.report_info ? 
+        (typeof inspection.report_info === 'string' 
+          ? JSON.parse(inspection.report_info) 
+          : inspection.report_info) as Record<string, any> 
+        : {};
       
       if (isMainRoom) {
         // Update component in main room
-        const components = reportInfo.components || [];
+        const components = Array.isArray(reportInfo.components) 
+          ? reportInfo.components 
+          : [];
+          
         const updatedComponents = components.map((comp: any) => {
           if (comp.id === componentId) {
             return {
@@ -919,7 +994,10 @@ export const ReportsAPI = {
           .eq('id', reportId);
       } else {
         // Update component in additional room
-        const additionalRooms = reportInfo.additionalRooms || [];
+        const additionalRooms = Array.isArray(reportInfo.additionalRooms) 
+          ? reportInfo.additionalRooms 
+          : [];
+          
         const roomIndex = additionalRooms.findIndex((room: any) => room.id === roomId);
         
         if (roomIndex === -1) {
@@ -928,7 +1006,9 @@ export const ReportsAPI = {
         }
         
         const room = additionalRooms[roomIndex];
-        const components = room.components || [];
+        const components = Array.isArray(room.components) 
+          ? room.components 
+          : [];
         
         const updatedComponents = components.map((comp: any) => {
           if (comp.id === componentId) {
