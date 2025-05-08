@@ -1,4 +1,3 @@
-
 import { Report, Room, RoomType, RoomImage } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { createNewReport, createNewRoom } from '../mockData';
@@ -317,7 +316,7 @@ export const ReportsAPI = {
       // For simplicity, we'll use a single room which is the one attached to the inspection
       rooms: [{
         id: room.id,
-        name: room.type || 'Room', // Use room type as default if name is undefined
+        name: room.type as string, // Using room.type as name since name doesn't exist in the schema
         type: room.type as RoomType,
         order: 1,
         generalCondition: reportInfoData.generalCondition || '',
@@ -698,13 +697,13 @@ export const ReportsAPI = {
       });
     
       // Return the room in our client format
-      // Make sure we preserve the room name if it exists
+      // The type assertion is necessary because the room from Supabase doesn't have all the fields
+      // our Room type expects
       const roomType = room.type as string;
-      const roomName = room.name || roomType; // Use name if available, otherwise use type
       
       return {
         id: room.id,
-        name: roomName,
+        name: room.type as string, // Use type as the name since 'name' doesn't exist in the schema
         type: roomType as RoomType,
         order: updates.order || 1,
         generalCondition: updates.generalCondition || '',
