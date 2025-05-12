@@ -41,17 +41,6 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
       return pdfData;
     } catch (error) {
       console.error("Error generating PDF:", error);
-      
-      // Even if there was an error, we might still have a fallback PDF
-      if (status === "complete" && downloadUrl) {
-        if (directDownload) {
-          triggerDownload(downloadUrl);
-        }
-      } else {
-        // Show fallback error message if no PDF is available at all
-        alert("Could not generate PDF. Please try again later.");
-      }
-      
       return null;
     } finally {
       setIsGenerating(false);
