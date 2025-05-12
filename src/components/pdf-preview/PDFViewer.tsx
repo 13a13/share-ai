@@ -29,8 +29,14 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
 
   // Set up a key to force iframe refresh when URL changes
   const [iframeKey, setIframeKey] = useState(0);
+  // Check if the user is on iOS
+  const [isIOS, setIsIOS] = useState(false);
   
   useEffect(() => {
+    // Detect iOS devices
+    const checkIsIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(checkIsIOS);
+    
     // Refresh iframe when embedUrl changes
     if (embedUrl) {
       setIframeKey(prev => prev + 1);
@@ -57,6 +63,28 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
 
   const finalUrl = regeneratedPdfUrl || embedUrl;
   
+  // For iOS devices, we display a message about download only
+  if (isIOS) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-4">
+        <FileText className="h-16 w-16 text-shareai-teal mb-4" />
+        <h3 className="text-xl font-semibold text-shareai-blue mb-2">PDF Ready</h3>
+        <p className="text-center text-gray-600 mb-4">
+          PDF preview is limited on iOS devices. Please use the download button below to view your PDF.
+        </p>
+        <div className="w-full max-w-md bg-gray-100 rounded-lg p-4">
+          <h4 className="font-medium mb-2">Tips for iOS users:</h4>
+          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+            <li>Use the Download button to save the PDF</li>
+            <li>Open the PDF in Apple's Books or Files app</li>
+            <li>For best experience, view on desktop or use the Share.AI mobile app</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+  
+  // For non-iOS devices, show the regular iframe preview
   return (
     <iframe 
       key={iframeKey}

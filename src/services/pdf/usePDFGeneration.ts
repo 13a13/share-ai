@@ -1,31 +1,23 @@
 
-import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
-import { generateCoverPage } from "./sections/coverPage";
-import { generateTableOfContents } from "./sections/tableOfContents";
-import { generateDisclaimerSection } from "./sections/disclaimer";
-import { generateSummaryTables } from "./sections/summaryTables";
-import { generateRoomSection } from "./sections/roomSection";
-import { generateFinalSections } from "./sections/finalSections";
-import { generateComparisonSection } from "./sections/comparisonSection";
-import { addHeadersAndFooters } from "./utils/headerFooter";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export type PDFGenerationStatus = "idle" | "generating" | "complete" | "error";
 
 /**
- * Hook for generating PDF reports in Green Kite style
+ * Hook for generating PDF reports using LaTeX
  */
 export const usePDFGeneration = () => {
   const { toast } = useToast();
   const [status, setStatus] = useState<PDFGenerationStatus>("idle");
   
   /**
-   * Generate a PDF for a property report
+   * Generate a PDF for a property report using LaTeX
    * @param report The report data
    * @param property The property data
-   * @returns Promise with the download URL
+   * @returns Promise with the PDF data as a string
    */
   const generatePDF = async (
     report: Report, 
@@ -34,97 +26,28 @@ export const usePDFGeneration = () => {
     setStatus("generating");
     
     try {
-      console.log("Starting PDF generation for report:", report.id);
-      
-      // Create a new PDF document
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-      
-      // Set up document metadata
-      doc.setProperties({
-        title: `Property Report - ${property.address}`,
-        subject: report.type === "comparison" 
-          ? `Comparison Report for ${property.address}` 
-          : `Inventory and Check In Report for ${property.address}`,
-        author: report.reportInfo?.clerk || "Share.AI",
-        creator: "Share.AI Property Reports"
-      });
+      console.log("Starting LaTeX PDF generation for report:", report.id);
       
       // Preload all images to avoid async issues
       console.log("Preloading images...");
       await preloadImages(report);
       
-      // Generate sections
-      console.log("Generating cover page...");
-      await generateCoverPage(doc, report, property);
-      doc.addPage();
+      // Call the Supabase Edge Function to generate the PDF
+      const { data, error } = await supabase.functions.invoke('generate-latex-pdf', {
+        body: { report, property }
+      });
       
-      // Track page numbers for table of contents
-      const pageMap: Record<string, number> = {};
-      let currentPage = 2; // Cover is page 1
-
-      // Special handling for comparison report
-      if (report.type === "comparison" && report.reportInfo?.comparisonText) {
-        // Add table of contents as page 2
-        pageMap["contents"] = currentPage++;
-        generateTableOfContents(doc, pageMap, null); // No rooms in ToC for comparison report
-        doc.addPage();
-        
-        // Add disclaimer section as page 3
-        pageMap["disclaimer"] = currentPage++;
-        generateDisclaimerSection(doc);
-        doc.addPage();
-        
-        // Add comparison section as page 4
-        pageMap["comparison"] = currentPage++;
-        generateComparisonSection(doc, report);
-      } else {
-        // Standard report processing
-        
-        // Add table of contents as page 2
-        pageMap["contents"] = currentPage++;
-        generateTableOfContents(doc, pageMap, report);
-        doc.addPage();
-        
-        // Add disclaimer section as page 3
-        pageMap["disclaimer"] = currentPage++;
-        generateDisclaimerSection(doc);
-        doc.addPage();
-        
-        // Add summaries as page 4
-        pageMap["summary"] = currentPage++;
-        generateSummaryTables(doc, report, property);
-        doc.addPage();
-        
-        // Track start of rooms for table of contents
-        console.log("Generating room sections...");
-        for (let i = 0; i < report.rooms.length; i++) {
-          const room = report.rooms[i];
-          console.log(`Processing room ${i+1}/${report.rooms.length}: ${room.name}`);
-          
-          // Record page number for this room
-          pageMap[room.id] = currentPage++;
-          
-          // Generate room section
-          await generateRoomSection(doc, room, i + 1);
-          
-          // Add new page for next room (except for last room)
-          if (i < report.rooms.length - 1) {
-            doc.addPage();
-          }
-        }
+      if (error) {
+        console.error("Error from LaTeX PDF generation function:", error);
+        throw new Error(`LaTeX generation failed: ${error.message}`);
       }
       
-      // Add headers and footers to all pages
-      console.log("Adding headers and footers...");
-      addHeadersAndFooters(doc, property.address);
+      if (!data || !data.success || !data.pdfData) {
+        console.error("Invalid response from LaTeX PDF generation:", data);
+        throw new Error("Failed to generate PDF: Invalid response from server");
+      }
       
-      // Convert the PDF to base64
-      console.log("Finalizing PDF...");
-      const pdfBase64 = doc.output('datauristring');
+      console.log("Successfully received PDF data");
       
       // Don't show success toast for comparison reports
       if (report.type !== "comparison") {
@@ -136,9 +59,7 @@ export const usePDFGeneration = () => {
       }
       
       setStatus("complete");
-      console.log("PDF generation complete");
-      
-      return pdfBase64;
+      return data.pdfData;
     } catch (error) {
       console.error("Error generating PDF:", error);
       
