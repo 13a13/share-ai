@@ -41,7 +41,7 @@ const PDFPreviewDialog = ({
   }, [report]);
 
   // Regenerate PDF functionality
-  const { generatePDF } = usePDFGeneration();
+  const { generatePDF, status, lastError } = usePDFGeneration();
   const [regeneratingPdf, setRegeneratingPdf] = useState(false);
   const [regeneratedPdfUrl, setRegeneratedPdfUrl] = useState<string | null>(null);
   
@@ -56,8 +56,24 @@ const PDFPreviewDialog = ({
     try {
       const newPdfData = await generatePDF(editedReport, property);
       setRegeneratedPdfUrl(newPdfData);
+      // Switch to PDF view automatically when regenerating
+      setViewMode("pdf");
     } catch (error) {
       console.error("Error regenerating PDF:", error);
+    } finally {
+      setRegeneratingPdf(false);
+    }
+  };
+
+  // Handle retry when PDF generation fails
+  const handleRetryGeneration = async () => {
+    setRegeneratingPdf(true);
+    try {
+      // Force client-side generation as a fallback
+      const newPdfData = await generatePDF(editedReport, property, true);
+      setRegeneratedPdfUrl(newPdfData);
+    } catch (error) {
+      console.error("Error in fallback PDF generation:", error);
     } finally {
       setRegeneratingPdf(false);
     }
@@ -83,7 +99,9 @@ const PDFPreviewDialog = ({
             <PDFViewer 
               pdfUrl={pdfUrl}
               regeneratedPdfUrl={regeneratedPdfUrl}
-              isLoading={isLoading}
+              isLoading={isLoading || regeneratingPdf}
+              error={lastError}
+              onRetry={handleRetryGeneration}
             />
           )}
         </div>

@@ -38,4 +38,3 @@ enabled = false
 [functions]
 [functions.generate-latex-pdf]
 verify_jwt = true
-
