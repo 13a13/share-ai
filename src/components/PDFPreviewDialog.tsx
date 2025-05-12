@@ -69,11 +69,11 @@ const PDFPreviewDialog = ({
   const handleRetryGeneration = async () => {
     setRegeneratingPdf(true);
     try {
-      // Force client-side generation as a fallback
-      const newPdfData = await generatePDF(editedReport, property, true);
+      // Regenerate PDF
+      const newPdfData = await generatePDF(editedReport, property);
       setRegeneratedPdfUrl(newPdfData);
     } catch (error) {
-      console.error("Error in fallback PDF generation:", error);
+      console.error("Error in PDF regeneration:", error);
     } finally {
       setRegeneratingPdf(false);
     }

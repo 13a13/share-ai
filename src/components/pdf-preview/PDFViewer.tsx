@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Loader2, FileText, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -109,7 +108,7 @@ const PDFViewer = ({
           {errorMessage ? 'PDF Generation Error' : 'No Preview Available'}
         </h3>
         <p className="text-gray-600 text-center mb-6 max-w-md">
-          {errorMessage || "Could not generate a PDF preview. The LaTeX service may be temporarily unavailable."}
+          {errorMessage || "Could not generate a PDF preview. Please try again."}
         </p>
         
         {onRetry && (
@@ -120,16 +119,6 @@ const PDFViewer = ({
             Try Again
           </Button>
         )}
-        
-        <div className="w-full max-w-md bg-gray-100 rounded-lg p-4 mt-6">
-          <h4 className="font-medium mb-2">Troubleshooting tips:</h4>
-          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
-            <li>Try refreshing the page and generating the PDF again</li>
-            <li>Check if your internet connection is stable</li>
-            <li>If you have many images, try generating a report with fewer images</li>
-            <li>For best results, use the Download button which creates a simpler PDF</li>
-          </ul>
-        </div>
       </div>
     );
   }
