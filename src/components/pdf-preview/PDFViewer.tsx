@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Loader2, FileText } from "lucide-react";
 
@@ -13,35 +12,66 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
   const embedUrl = React.useMemo(() => {
     if (!pdfUrl) return null;
     
-    // If pdfUrl is already a complete data URL, use it as is
-    if (pdfUrl.startsWith('data:application/pdf;base64,')) {
-      return pdfUrl;
+    try {
+      // If pdfUrl is already a complete data URL, use it as is
+      if (pdfUrl.startsWith('data:application/pdf;base64,')) {
+        return pdfUrl;
+      }
+      
+      // If it starts with 'data:' but isn't proper PDF format (e.g., datauristring format)
+      if (pdfUrl.startsWith('data:')) {
+        return pdfUrl;
+      }
+      
+      // Otherwise, convert it to a proper data URL
+      return `data:application/pdf;base64,${pdfUrl}`;
+    } catch (error) {
+      console.error("Error processing PDF URL:", error);
+      return null;
     }
-    
-    // If it starts with 'data:' but isn't proper PDF format (e.g., datauristring format)
-    if (pdfUrl.startsWith('data:')) {
-      return pdfUrl;
-    }
-    
-    // Otherwise, convert it to a proper data URL
-    return `data:application/pdf;base64,${pdfUrl}`;
   }, [pdfUrl]);
+
+  // Process regenerated PDF URL similarly
+  const regeneratedEmbedUrl = React.useMemo(() => {
+    if (!regeneratedPdfUrl) return null;
+    
+    try {
+      if (regeneratedPdfUrl.startsWith('data:application/pdf;base64,')) {
+        return regeneratedPdfUrl;
+      }
+      
+      if (regeneratedPdfUrl.startsWith('data:')) {
+        return regeneratedPdfUrl;
+      }
+      
+      return `data:application/pdf;base64,${regeneratedPdfUrl}`;
+    } catch (error) {
+      console.error("Error processing regenerated PDF URL:", error);
+      return null;
+    }
+  }, [regeneratedPdfUrl]);
 
   // Set up a key to force iframe refresh when URL changes
   const [iframeKey, setIframeKey] = useState(0);
   // Check if the user is on iOS
   const [isIOS, setIsIOS] = useState(false);
+  // Track PDF loading errors
+  const [hasError, setHasError] = useState(false);
   
   useEffect(() => {
     // Detect iOS devices
     const checkIsIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(checkIsIOS);
     
+    // Reset error state when URL changes
+    setHasError(false);
+    
     // Refresh iframe when embedUrl changes
-    if (embedUrl) {
+    const currentUrl = regeneratedEmbedUrl || embedUrl;
+    if (currentUrl) {
       setIframeKey(prev => prev + 1);
     }
-  }, [embedUrl]);
+  }, [embedUrl, regeneratedEmbedUrl]);
 
   if (isLoading) {
     return (
@@ -52,16 +82,23 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
     );
   }
 
-  if (!embedUrl && !regeneratedPdfUrl) {
+  if (hasError || (!embedUrl && !regeneratedEmbedUrl)) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <FileText className="h-16 w-16 text-gray-400 mb-4" />
-        <p className="text-gray-500">No preview available</p>
+        <p className="text-gray-500">
+          {hasError ? "Error loading PDF preview" : "No preview available"}
+        </p>
+        {hasError && (
+          <p className="text-sm text-gray-400 mt-2">
+            Please try regenerating the PDF or downloading it directly
+          </p>
+        )}
       </div>
     );
   }
 
-  const finalUrl = regeneratedPdfUrl || embedUrl;
+  const finalUrl = regeneratedEmbedUrl || embedUrl;
   
   // For iOS devices, we display a message about download only
   if (isIOS) {
@@ -93,6 +130,7 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
       title="PDF Preview"
       onError={(e) => {
         console.error("Error loading PDF in iframe:", e);
+        setHasError(true);
       }}
     />
   );
