@@ -1,30 +1,51 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get the session from URL hash params
-        const { error } = await supabase.auth.getSession();
+        setIsProcessing(true);
         
-        if (error) {
-          throw error;
+        // Get the code from URL query params
+        const code = searchParams.get('code');
+        
+        if (!code) {
+          throw new Error('No code provided in the callback URL');
         }
-
+        
+        console.log('Processing OAuth callback with code');
+        
+        // Exchange the code for a session
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        
+        if (exchangeError) {
+          console.error('Error exchanging code for session:', exchangeError);
+          throw exchangeError;
+        }
+        
+        if (!data.session) {
+          throw new Error('No session returned after code exchange');
+        }
+        
+        console.log('Authentication successful');
+        
         toast({
           title: "Login successful",
           description: "Welcome back!",
         });
         
+        // Redirect to home or requested page
         navigate("/", { replace: true });
       } catch (err: any) {
         console.error("Error during OAuth callback:", err);
@@ -40,11 +61,13 @@ const AuthCallbackPage = () => {
         setTimeout(() => {
           navigate("/login", { replace: true });
         }, 3000);
+      } finally {
+        setIsProcessing(false);
       }
     };
 
     handleCallback();
-  }, [navigate, toast]);
+  }, [navigate, searchParams, toast]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -58,7 +81,7 @@ const AuthCallbackPage = () => {
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-shareai-teal mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Completing your login...</h2>
-          <p className="text-gray-500">Please wait while we authenticate you.</p>
+          <p className="text-gray-500">{isProcessing ? "Please wait while we authenticate you." : "Authentication complete, redirecting..."}</p>
         </div>
       )}
     </div>

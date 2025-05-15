@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Provider } from "@supabase/supabase-js";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // Define types
 interface User {
@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event);
         if (session?.user) {
           const userData = {
             id: session.user.id,
@@ -131,7 +132,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const socialLogin = async (provider: Provider) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log(`Initiating ${provider} OAuth login flow`);
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -139,12 +141,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (error) {
+        console.error(`${provider} OAuth error:`, error);
         // Check for validation errors which could indicate provider not enabled
         if (error.message.includes('validation_failed') || error.message.includes('provider is not enabled')) {
           throw new Error(`The ${provider} provider is not enabled in your Supabase project settings.`);
         }
         throw error;
       }
+      
+      console.log(`${provider} OAuth initiated, redirecting:`, data);
     } catch (error: any) {
       toast({
         title: "Social login failed",

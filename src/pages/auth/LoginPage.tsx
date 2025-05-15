@@ -48,9 +48,11 @@ const LoginPage = () => {
   const handleFacebookLogin = async () => {
     try {
       setError(null);
+      console.log("Initiating Facebook login");
       await socialLogin('facebook');
       // The redirect will happen automatically through Supabase
     } catch (error: any) {
+      console.error("Facebook login error:", error);
       const errorMessage = error.message || "Login with Facebook failed.";
       
       // Check for specific errors
