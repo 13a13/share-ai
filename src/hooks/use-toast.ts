@@ -1,14 +1,17 @@
 
 "use client";
 
-import { toast as sonnerToast, ToasterToast, Toast } from "sonner";
+import { toast as sonnerToast, ToastT, Toast as SonnerToast } from "sonner";
 import * as React from "react";
 
 // Define a consistent interface that works with our existing code
-export type ToastProps = Omit<ToasterToast, "id"> & {
+export type ToastProps = {
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: React.ReactElement;
+  variant?: "default" | "destructive";
+  duration?: number;
+  id?: string | number;
 };
 
 // Create a toast function that provides the same API but uses Sonner under the hood
@@ -51,3 +54,4 @@ const useToast = () => {
 };
 
 export { useToast, toast };
+

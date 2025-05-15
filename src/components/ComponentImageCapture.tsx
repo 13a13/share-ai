@@ -18,7 +18,7 @@ const ComponentImageCapture = ({
   currentImages,
   onImagesProcessed,
   onProcessingStateChange,
-  onRemovePreviewImage,
+  onRemoveImage,
   disabled
 }: ComponentImageCaptureProps) => {
   return (
@@ -30,10 +30,11 @@ const ComponentImageCapture = ({
       currentImages={currentImages}
       onImagesProcessed={onImagesProcessed}
       onProcessingStateChange={onProcessingStateChange}
-      onRemoveImage={onRemovePreviewImage}
+      onRemoveImage={onRemoveImage}
       disabled={disabled}
     />
   );
 };
 
 export default ComponentImageCapture;
+
