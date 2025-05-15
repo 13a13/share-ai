@@ -45,6 +45,23 @@ const LoginPage = () => {
     }
   };
 
+  const handleFacebookLogin = async () => {
+    try {
+      setError(null);
+      await socialLogin('facebook');
+      // The redirect will happen automatically through Supabase
+    } catch (error: any) {
+      const errorMessage = error.message || "Login with Facebook failed.";
+      
+      // Check for specific errors
+      if (errorMessage.includes('provider is not enabled')) {
+        setError("Facebook login is not enabled in your Supabase project settings.");
+      } else {
+        setError(errorMessage);
+      }
+    }
+  };
+
   const handleSocialLogin = async (provider: Provider) => {
     try {
       setError(null);
@@ -137,7 +154,7 @@ const LoginPage = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => handleSocialLogin('facebook')} 
+                onClick={() => handleFacebookLogin()} 
                 className="w-full"
               >
                 <Facebook className="h-4 w-4 mr-2" />
