@@ -54,11 +54,11 @@ const Dashboard = () => {
   }, [searchQuery, properties]);
   
   return (
-    <div className="shareai-container py-8">
+    <div className="verifyvision-container py-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2 text-shareai-blue">Welcome, {user?.name || user?.email?.split('@')[0]}</h1>
-          <p className="text-gray-600">Manage your property inventory reports efficiently with Share.AI</p>
+          <h1 className="text-3xl font-bold mb-2 text-verifyvision-blue">Welcome, {user?.name || user?.email?.split('@')[0]}</h1>
+          <p className="text-gray-600">Manage your property inventory reports efficiently with VerifyVision AI</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
           <div className="relative">
@@ -73,7 +73,7 @@ const Dashboard = () => {
           </div>
           <Button 
             onClick={() => navigate("/properties/new")}
-            className="bg-shareai-teal hover:bg-shareai-teal/90"
+            className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Property
@@ -105,7 +105,7 @@ const Dashboard = () => {
             description="Add your first property to get started with creating reports."
             actionLabel="Add Property"
             onAction={() => navigate("/properties/new")}
-            icon={<Home className="h-12 w-12 text-shareai-teal mb-4" />}
+            icon={<Home className="h-12 w-12 text-verifyvision-teal mb-4" />}
           />
         )
       ) : (

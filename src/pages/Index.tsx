@@ -45,7 +45,7 @@ const Index = () => {
             onClick={() => navigate("/properties/new")}
             className="flex items-center justify-center gap-2"
             shimmerColor="rgba(255,255,255,0.2)"
-            background="linear-gradient(135deg, rgb(16, 163, 127) 0%, rgb(12, 143, 112) 100%)"
+            background="linear-gradient(135deg, rgb(155, 135, 245) 0%, rgb(126, 105, 171) 100%)"
           >
             <PlusCircle className="h-5 w-5" />
             Add New Property
@@ -69,8 +69,8 @@ const Index = () => {
           {features.map((feature, index) => (
             <Card key={index} className="transition-all hover:shadow-md cursor-pointer" onClick={feature.action}>
               <CardHeader>
-                <div className="p-2 rounded-full bg-shareai-teal/10 w-fit mb-2">
-                  <feature.icon className="h-6 w-6 text-shareai-teal" />
+                <div className="p-2 rounded-full bg-verifyvision-teal/10 w-fit mb-2">
+                  <feature.icon className="h-6 w-6 text-verifyvision-teal" />
                 </div>
                 <CardTitle>{feature.title}</CardTitle>
               </CardHeader>
@@ -85,7 +85,7 @@ const Index = () => {
       {/* Quick Stats Section */}
       <section className="mb-12">
         <h2 className="text-2xl font-semibold mb-6 text-center">Getting Started</h2>
-        <div className="bg-gradient-to-r from-shareai-teal/10 to-shareai-blue/10 p-8 rounded-lg text-center">
+        <div className="bg-gradient-to-r from-verifyvision-teal/10 to-verifyvision-blue/10 p-8 rounded-lg text-center">
           <h3 className="text-xl font-medium mb-4">Welcome to Your Inspection Assistant</h3>
           <p className="mb-6">
             Start by adding your first property, then create inspection reports with detailed room assessments.
@@ -93,7 +93,7 @@ const Index = () => {
           <Button 
             variant="default" 
             onClick={() => navigate(user ? "/properties" : "/login")}
-            className="bg-shareai-teal hover:bg-shareai-teal/90"
+            className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
           >
             {user ? "Go to Dashboard" : "Login to Get Started"}
           </Button>

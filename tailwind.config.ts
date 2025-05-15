@@ -60,6 +60,16 @@ export default {
 					light: '#F5F7FA',
 					dark: '#1E293B'
 				},
+				verifyvision: {
+					blue: '#0F3460',    // Keeping the same color values for now
+					teal: '#2E8BC0',    // but with the new namespace
+					orange: '#FF5722',
+					light: '#F5F7FA',
+					dark: '#1E293B',
+					primary: '#9b87f5', // Adding some new VerifyVision specific colors
+					secondary: '#7E69AB',
+					accent: '#6E59A5',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

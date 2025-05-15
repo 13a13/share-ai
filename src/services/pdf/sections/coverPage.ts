@@ -63,7 +63,7 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
   doc.setFont(pdfStyles.fonts.body, "italic");
   doc.setFontSize(pdfStyles.fontSizes.small);
   doc.text(
-    "This inventory report was created using Share.AI Property Reports", 
+    "This inventory report was created using VerifyVision AI Property Reports", 
     pageWidth / 2, 
     pageHeight - 20, 
     { align: "center" }

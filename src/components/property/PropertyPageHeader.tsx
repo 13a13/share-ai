@@ -26,7 +26,7 @@ const PropertyPageHeader = ({
           {backLabel}
         </Button>
       )}
-      <h1 className="text-3xl font-bold text-shareai-blue flex items-center">
+      <h1 className="text-3xl font-bold text-verifyvision-blue flex items-center">
         <Building2 className="h-7 w-7 mr-2" />
         {title}
       </h1>

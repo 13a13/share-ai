@@ -37,7 +37,7 @@ const ReportHeader = ({
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
       <div>
-        <h1 className="text-3xl font-bold text-shareai-blue">
+        <h1 className="text-3xl font-bold text-verifyvision-blue">
           {title}
         </h1>
         <p className="text-gray-600">
@@ -57,7 +57,7 @@ const ReportHeader = ({
           <>
             <Button 
               onClick={() => setShowSignature(true)}
-              className="bg-shareai-teal hover:bg-shareai-teal/90"
+              className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
             >
               <Pen className="h-4 w-4 mr-2" />
               Add Signature
@@ -66,7 +66,7 @@ const ReportHeader = ({
               onClick={onComplete}
               disabled={isSaving}
               className="px-4 py-2 h-10"
-              background="rgb(20, 184, 166)"
+              background="rgb(155, 135, 245)"
             >
               {isSaving ? (
                 <>
@@ -86,7 +86,7 @@ const ReportHeader = ({
             onClick={onSave}
             disabled={isSaving}
             className="px-4 py-2 h-10"
-            background="rgb(20, 184, 166)"
+            background="rgb(155, 135, 245)"
           >
             {isSaving ? (
               <>
