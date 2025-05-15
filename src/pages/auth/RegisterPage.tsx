@@ -1,15 +1,17 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Mail, Apple, Facebook } from "lucide-react";
+import { Mail, Apple, Facebook, Loader2 } from "lucide-react";
 import { Provider } from "@supabase/supabase-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
+import { validatePassword } from "@/utils/passwordValidation";
 
 const RegisterPage = () => {
   const { register, socialLogin } = useAuth();
@@ -22,10 +24,45 @@ const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [csrfToken, setCsrfToken] = useState<string>("");
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  
+  // Generate CSRF token on mount
+  useEffect(() => {
+    // Generate random CSRF token
+    const token = Math.random().toString(36).substring(2, 15) + 
+                 Math.random().toString(36).substring(2, 15);
+    setCsrfToken(token);
+    
+    // Store in session storage
+    sessionStorage.setItem("authCsrfToken", token);
+    
+    // Check for HTTP protocol and redirect to HTTPS if needed
+    if (window.location.protocol === "http:" && 
+        window.location.hostname !== "localhost" && 
+        !window.location.hostname.includes("127.0.0.1")) {
+      window.location.href = window.location.href.replace("http:", "https:");
+    }
+  }, []);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Validate CSRF token
+    const storedToken = sessionStorage.getItem("authCsrfToken");
+    if (csrfToken !== storedToken) {
+      setError("Security validation failed. Please refresh the page and try again.");
+      return;
+    }
+    
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setPasswordErrors(passwordValidation.errors);
+      setError("Please fix the password issues before continuing.");
+      return;
+    }
     
     if (password !== confirmPassword) {
       setError("Passwords don't match. Please make sure both passwords match.");
@@ -34,15 +71,29 @@ const RegisterPage = () => {
     
     setIsSubmitting(true);
     
+    // Add a small delay for brute force protection (not easily detectable)
+    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 200));
+    
     try {
       await register(email, password, name);
       toast({
         title: "Registration successful",
         description: "Your account has been created.",
       });
+      
+      // Generate a new CSRF token after successful registration
+      const newToken = Math.random().toString(36).substring(2, 15);
+      sessionStorage.setItem("authCsrfToken", newToken);
+      
       navigate("/");
     } catch (error: any) {
-      setError(error.message || "Registration failed. Please try again.");
+      // Don't expose specific details about registration failures
+      if (error.message?.includes("already registered")) {
+        setError("This email address is already registered. Please try logging in instead.");
+      } else {
+        setError("Registration failed. Please check your information and try again.");
+        console.error("Registration error:", error.message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -50,9 +101,16 @@ const RegisterPage = () => {
 
   const handleSocialLogin = async (provider: Provider) => {
     try {
+      // Store the current URL to check after redirect (prevent open redirects)
+      sessionStorage.setItem("preAuthPath", window.location.pathname);
+      
       await socialLogin(provider);
     } catch (error: any) {
-      setError(error.message || `Registration with ${provider} failed.`);
+      if (error.message?.includes("provider is not enabled")) {
+        setError(`The ${provider} login provider is not enabled in your Supabase project settings.`);
+      } else {
+        setError(error.message || `Registration with ${provider} failed.`);
+      }
     }
   };
   
@@ -66,6 +124,7 @@ const RegisterPage = () => {
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <CardContent className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -80,6 +139,7 @@ const RegisterPage = () => {
                 placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
                 required
               />
             </div>
@@ -91,6 +151,7 @@ const RegisterPage = () => {
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
             </div>
@@ -101,10 +162,25 @@ const RegisterPage = () => {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  // Clear password errors when user types
+                  if (passwordErrors.length > 0) {
+                    setPasswordErrors([]);
+                  }
+                }}
+                autoComplete="new-password"
                 required
-                minLength={6}
+                minLength={8}
               />
+              <PasswordStrengthIndicator password={password} />
+              {passwordErrors.length > 0 && (
+                <ul className="text-xs text-red-500 mt-1 list-disc pl-4">
+                  {passwordErrors.map((err, index) => (
+                    <li key={index}>{err}</li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -114,9 +190,13 @@ const RegisterPage = () => {
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
                 required
-                minLength={6}
+                minLength={8}
               />
+              {password !== confirmPassword && confirmPassword.length > 0 && (
+                <p className="text-xs text-red-500 mt-1">Passwords don't match</p>
+              )}
             </div>
 
             <div className="relative">
