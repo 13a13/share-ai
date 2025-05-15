@@ -8,7 +8,10 @@
  * @returns boolean indicating if the device is iOS
  */
 export const isIosDevice = (): boolean => {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  // Using navigator.userAgent to detect iOS devices
+  // MSStream check is important to exclude IE11 which may have iPad in user agent
+  // Need to handle the TypeScript error by using type assertion
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 };
 
 /**
