@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -21,7 +21,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useMigration } from './hooks/useMigration';
 import { Loader2 } from "lucide-react";
-import SecurityHeaders from "./components/security/SecurityHeaders";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,23 +33,9 @@ const queryClient = new QueryClient({
 
 function App() {
   const { isMigrating, migrationError } = useMigration();
-  
-  // Force HTTPS redirect for non-localhost environments
-  useEffect(() => {
-    if (
-      window.location.protocol === "http:" &&
-      window.location.hostname !== "localhost" &&
-      !window.location.hostname.includes("127.0.0.1")
-    ) {
-      window.location.href = window.location.href.replace("http:", "https:");
-    }
-  }, []);
 
   return (
     <React.StrictMode>
-      {/* Add security headers */}
-      <SecurityHeaders />
-      
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>

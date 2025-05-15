@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Apple, Facebook, X } from "lucide-react";
+import { Mail, Apple, Facebook } from "lucide-react";
 import { Provider } from "@supabase/supabase-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
@@ -22,44 +22,14 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [csrfToken, setCsrfToken] = useState<string>("");
   
   // Get the page they were trying to visit
   const from = location.state?.from?.pathname || "/";
   
-  // Generate CSRF token on mount
-  useEffect(() => {
-    // Generate random CSRF token
-    const token = Math.random().toString(36).substring(2, 15) + 
-                 Math.random().toString(36).substring(2, 15);
-    setCsrfToken(token);
-    
-    // Store in session storage
-    sessionStorage.setItem("authCsrfToken", token);
-    
-    // Check for HTTP protocol and redirect to HTTPS if needed
-    if (window.location.protocol === "http:" && 
-        window.location.hostname !== "localhost" && 
-        !window.location.hostname.includes("127.0.0.1")) {
-      window.location.href = window.location.href.replace("http:", "https:");
-    }
-  }, []);
-  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate CSRF token
-    const storedToken = sessionStorage.getItem("authCsrfToken");
-    if (csrfToken !== storedToken) {
-      setError("Security validation failed. Please refresh the page and try again.");
-      return;
-    }
-    
     setIsSubmitting(true);
     setError(null);
-    
-    // Add a small delay for brute force protection (not easily detectable)
-    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 200));
     
     try {
       await login(email, password);
@@ -67,21 +37,9 @@ const LoginPage = () => {
         title: "Login successful",
         description: "Welcome back!",
       });
-      
-      // Generate a new CSRF token after successful login
-      const newToken = Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem("authCsrfToken", newToken);
-      
-      // Redirect to original destination or home
       navigate(from, { replace: true });
     } catch (error: any) {
-      const errorMessage = error.message || "Login failed. Please check your credentials.";
-      
-      // Don't expose specific authentication errors
-      setError("Invalid email or password. Please try again.");
-      
-      // Log the actual error for debugging
-      console.error("Authentication error:", errorMessage);
+      setError(error.message || "Login failed. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
     }
@@ -90,10 +48,6 @@ const LoginPage = () => {
   const handleSocialLogin = async (provider: Provider) => {
     try {
       setError(null);
-      
-      // Store the current URL to check after redirect (prevent open redirects)
-      sessionStorage.setItem("preAuthPath", window.location.pathname);
-      
       await socialLogin(provider);
       // No need for navigate or toast here as the redirect will happen automatically
     } catch (error: any) {
@@ -118,7 +72,6 @@ const LoginPage = () => {
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <input type="hidden" name="csrfToken" value={csrfToken} />
           <CardContent className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -134,19 +87,12 @@ const LoginPage = () => {
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
                 required
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link 
-                  to="/reset-password" 
-                  className="text-sm text-shareai-teal hover:underline"
-                >
-                  Forgot password?
-                </Link>
               </div>
               <Input
                 id="password"
@@ -154,7 +100,6 @@ const LoginPage = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
                 required
               />
             </div>
