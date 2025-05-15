@@ -1,7 +1,7 @@
 
 "use client";
 
-import { toast as sonnerToast, ToastT, Toast as SonnerToast } from "sonner";
+import { toast as sonnerToast } from "sonner";
 import * as React from "react";
 
 // Define a consistent interface that works with our existing code
@@ -54,4 +54,3 @@ const useToast = () => {
 };
 
 export { useToast, toast };
-
