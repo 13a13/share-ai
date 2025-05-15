@@ -11,6 +11,7 @@ import { generateFinalSections } from "./sections/finalSections";
 import { generateComparisonSection } from "./sections/comparisonSection";
 import { addHeadersAndFooters } from "./utils/headerFooter";
 import { useState } from "react";
+import { isIosDevice } from "@/utils/pdfUtils";
 
 export type PDFGenerationStatus = "idle" | "generating" | "complete" | "error";
 
@@ -145,7 +146,9 @@ export const usePDFGeneration = () => {
       // Show error toast
       toast({
         title: "PDF Generation Failed",
-        description: "There was an error generating your PDF. Please try again.",
+        description: isIosDevice() 
+          ? "There was an error generating your PDF. iOS has limitations with large PDFs. Try with fewer images or rooms."
+          : "There was an error generating your PDF. Please try again.",
         variant: "destructive",
       });
       
@@ -156,6 +159,7 @@ export const usePDFGeneration = () => {
   
   /**
    * Preload all images from the report to ensure they're cached
+   * Uses a dynamic timeout based on image count and device capabilities
    */
   const preloadImages = async (report: Report): Promise<void> => {
     const imagePromises: Promise<void>[] = [];
@@ -187,14 +191,43 @@ export const usePDFGeneration = () => {
       }
     });
     
+    // Skip if no images to preload
+    if (imageUrls.length === 0) {
+      return;
+    }
+    
+    // Calculate dynamic timeout based on number of images and device
+    // iOS devices may need more time due to performance constraints
+    const baseTimeout = 5000; // Base 5 seconds
+    const perImageTime = 500; // 0.5 second per image
+    const iosMultiplier = isIosDevice() ? 1.5 : 1; // 50% more time for iOS
+    
+    const dynamicTimeout = Math.min(
+      30000, // Cap at 30 seconds max
+      Math.max(
+        baseTimeout,
+        (imageUrls.length * perImageTime * iosMultiplier) + baseTimeout
+      )
+    );
+    
+    console.log(`Dynamic image preload timeout set to ${dynamicTimeout}ms for ${imageUrls.length} images`);
+    
+    // Track preloaded images for retry logic
+    const preloadedImages = new Set<string>();
+    const failedImages = new Set<string>();
+    
     // Preload each image
     imageUrls.forEach(url => {
       const promise = new Promise<void>((resolve) => {
         const img = new Image();
-        img.onload = () => resolve();
+        img.onload = () => {
+          preloadedImages.add(url);
+          resolve();
+        };
         img.onerror = () => {
           console.warn(`Failed to preload image: ${url}`);
-          resolve();
+          failedImages.add(url);
+          resolve(); // Resolve anyway to continue the process
         };
         img.src = url;
       });
@@ -202,15 +235,57 @@ export const usePDFGeneration = () => {
       imagePromises.push(promise);
     });
     
-    // Wait for all images to preload (or fail) with a timeout
-    const timeoutPromise = new Promise<void>(resolve => setTimeout(resolve, 5000));
+    // Wait for all images to preload (or fail) with dynamic timeout
+    const timeoutPromise = new Promise<void>(resolve => setTimeout(() => {
+      const loadedCount = preloadedImages.size;
+      const failedCount = failedImages.size;
+      const totalCount = imageUrls.length;
+      
+      console.log(`Preload timed out: ${loadedCount}/${totalCount} images loaded, ${failedCount} failed`);
+      resolve();
+    }, dynamicTimeout));
     
     await Promise.race([
       Promise.all(imagePromises),
       timeoutPromise
     ]);
     
-    console.log(`Preloaded ${imageUrls.length} images`);
+    // Try one more time with failed images if there aren't too many
+    if (failedImages.size > 0 && failedImages.size <= 5) {
+      console.log(`Retrying ${failedImages.size} failed images...`);
+      const retryPromises = Array.from(failedImages).map(url => {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            console.log(`Successfully loaded image on retry: ${url}`);
+            resolve();
+          };
+          img.onerror = () => {
+            console.warn(`Failed to load image on retry: ${url}`);
+            resolve();
+          };
+          img.src = url;
+        });
+      });
+      
+      // Short timeout for retry attempts
+      const retryTimeout = new Promise<void>(resolve => 
+        setTimeout(resolve, Math.min(3000, failedImages.size * 1000))
+      );
+      
+      await Promise.race([
+        Promise.all(retryPromises),
+        retryTimeout
+      ]);
+    }
+    
+    const finalLoadedCount = preloadedImages.size;
+    console.log(`Preloaded ${finalLoadedCount}/${imageUrls.length} images`);
+    
+    // iOS-specific warning for large numbers of images
+    if (isIosDevice() && imageUrls.length > 50) {
+      console.warn(`Large number of images (${imageUrls.length}) may cause performance issues on iOS`);
+    }
   };
   
   return {

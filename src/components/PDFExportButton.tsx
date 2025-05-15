@@ -5,6 +5,7 @@ import { usePDFGeneration, PDFGenerationStatus } from "@/services/pdf";
 import { Report, Property } from "@/types";
 import { Loader2, Eye, Download } from "lucide-react";
 import PDFPreviewDialog from "./PDFPreviewDialog";
+import { downloadPdf, isIosDevice } from "@/utils/pdfUtils";
 
 interface PDFExportButtonProps {
   report: Report;
@@ -35,7 +36,8 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
       
       // If direct download is requested, trigger the download
       if (directDownload) {
-        triggerDownload(pdfData);
+        const fileName = `${getReportTitle()}.pdf`;
+        downloadPdf(pdfData, fileName);
       }
       
       return pdfData;
@@ -47,18 +49,9 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
     }
   };
   
-  const triggerDownload = (pdfData: string) => {
-    // Create a temporary link to initiate download
-    const link = document.createElement('a');
-    const dataUrl = pdfData.startsWith('data:') 
-      ? pdfData
-      : `data:application/pdf;base64,${pdfData}`;
-    
-    link.href = dataUrl;
-    link.setAttribute('download', `${getReportTitle()}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Determine report title
+  const getReportTitle = () => {
+    return `Inventory & Check In - ${property.address.replace(/\s+/g, '_')}`;
   };
   
   const handlePreviewPDF = async () => {
@@ -69,11 +62,6 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
     if (pdfData) {
       setPreviewOpen(true);
     }
-  };
-  
-  // Determine report title
-  const getReportTitle = () => {
-    return `Inventory & Check In - ${property.address.replace(/\s+/g, '_')}`;
   };
   
   return (
@@ -94,7 +82,7 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
             {directDownload ? (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Download PDF
+                {isIosDevice() ? "Generate PDF" : "Download PDF"}
               </>
             ) : (
               <>

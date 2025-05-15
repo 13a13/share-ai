@@ -2,6 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
+import { downloadPdf, isIosDevice } from "@/utils/pdfUtils";
 
 interface PDFPreviewFooterProps {
   onClose: () => void;
@@ -27,17 +28,8 @@ const PDFPreviewFooter = ({
   const handleDownload = () => {
     if (!currentPdfUrl) return;
     
-    // Create a temporary link to initiate download
-    const link = document.createElement('a');
-    const dataUrl = currentPdfUrl.startsWith('data:') 
-      ? currentPdfUrl
-      : `data:application/pdf;base64,${currentPdfUrl}`;
-    
-    link.href = dataUrl;
-    link.setAttribute('download', `${reportTitle.replace(/\s+/g, '_')}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const fileName = `${reportTitle.replace(/\s+/g, '_')}.pdf`;
+    downloadPdf(currentPdfUrl, fileName);
   };
 
   return (
@@ -72,7 +64,7 @@ const PDFPreviewFooter = ({
           onClick={handleDownload}
         >
           <Download className="mr-2 h-4 w-4" />
-          Download
+          {isIosDevice() ? "View PDF" : "Download"}
         </Button>
       )}
     </div>
