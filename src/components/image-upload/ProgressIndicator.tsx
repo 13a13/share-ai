@@ -1,20 +1,18 @@
 
-import { Progress } from "../ui/progress";
+import { ProgressIndicator } from "../ui/progress-indicator";
 
 interface ProgressIndicatorProps {
   progress: number;
 }
 
-const ProgressIndicator = ({ progress }: ProgressIndicatorProps) => {
+const ImageUploadProgress = ({ progress }: ProgressIndicatorProps) => {
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs">
-        <span>Preparing images...</span>
-        <span>{Math.round(progress)}%</span>
-      </div>
-      <Progress value={progress} className="h-1" />
-    </div>
+    <ProgressIndicator 
+      value={progress} 
+      text="Preparing images..." 
+      showPercentage={true} 
+    />
   );
 };
 
-export default ProgressIndicator;
+export default ImageUploadProgress;

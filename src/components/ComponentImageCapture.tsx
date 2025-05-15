@@ -1,20 +1,13 @@
-import { ConditionRating } from "@/types";
-import MultiImageComponentCapture from "@/components/image-upload/MultiImageComponentCapture";
 
-interface ComponentImageCaptureProps {
-  componentId: string;
-  roomType: string;
+import { ConditionRating } from "@/types";
+import ImageCapture, { ImageCaptureProps } from "@/components/common/ImageCapture";
+
+type ComponentImageCaptureProps = Omit<ImageCaptureProps, 'componentName'> & {
   componentType: string;
-  isProcessing: boolean;
-  currentImages: { id: string, url: string, timestamp: Date }[];
-  onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
-  onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  onRemovePreviewImage: (imageId: string) => void;
-  disabled?: boolean; // Added optional disabled prop
 }
 
 /**
- * Wrapper component that uses MultiImageComponentCapture for component-level image capture
+ * Wrapper component that uses ImageCapture for component-level image capture
  * with compression functionality
  */
 const ComponentImageCapture = ({
@@ -26,10 +19,10 @@ const ComponentImageCapture = ({
   onImagesProcessed,
   onProcessingStateChange,
   onRemovePreviewImage,
-  disabled // Added disabled prop
+  disabled
 }: ComponentImageCaptureProps) => {
   return (
-    <MultiImageComponentCapture
+    <ImageCapture
       componentId={componentId}
       componentName={componentType}
       roomType={roomType}

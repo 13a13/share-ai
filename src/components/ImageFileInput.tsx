@@ -1,7 +1,8 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, Loader2, ImagePlus } from "lucide-react";
+import { Camera, Upload, ImagePlus } from "lucide-react";
+import { ProgressIndicator } from "@/components/ui/progress-indicator";
 
 interface ImageFileInputProps {
   id: string;
@@ -143,8 +144,8 @@ const ImageFileInput = ({
               >
                 {compressionInProgress ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Compressing...
+                    <ProgressIndicator variant="inline" size="sm" />
+                    <span className="ml-2">Compressing...</span>
                   </>
                 ) : (
                   isCaptureSeries ? "Take Photo" : "Capture"
@@ -162,7 +163,7 @@ const ImageFileInput = ({
             className="flex-1 flex items-center gap-2"
           >
             {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <ProgressIndicator variant="inline" size="sm" />
             ) : (
               <Camera className="h-4 w-4" />
             )}
@@ -175,7 +176,7 @@ const ImageFileInput = ({
             className="flex-1 flex items-center gap-2"
           >
             {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <ProgressIndicator variant="inline" size="sm" />
             ) : (
               multiple ? (
                 <ImagePlus className="h-4 w-4" />

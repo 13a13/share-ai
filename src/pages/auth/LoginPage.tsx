@@ -1,15 +1,16 @@
 
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Mail, Apple, Facebook } from "lucide-react";
+import { Mail, Apple, Facebook } from "lucide-react";
 import { Provider } from "@supabase/supabase-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ProgressIndicator } from "@/components/ui/progress-indicator";
 
 const LoginPage = () => {
   const { login, socialLogin } = useAuth();
@@ -152,7 +153,8 @@ const LoginPage = () => {
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
+                  <ProgressIndicator variant="inline" size="sm" className="mr-2" />
+                  Signing in...
                 </>
               ) : (
                 "Sign in with Email"
