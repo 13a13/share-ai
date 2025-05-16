@@ -1,8 +1,9 @@
 
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import ZoomControls from "./ZoomControls";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface CameraViewProps {
   errorMessage: string | null;
@@ -48,7 +49,8 @@ const CameraView: React.FC<CameraViewProps> = ({
           ref={videoRef}
           autoPlay
           playsInline
-          className="max-h-full max-w-full object-cover transform"
+          muted
+          className="h-full w-full object-cover"
         />
         <ZoomControls
           zoomLevels={zoomLevels}
@@ -61,8 +63,8 @@ const CameraView: React.FC<CameraViewProps> = ({
 
   if (isProcessing) {
     return (
-      <div className="text-white text-center p-4">
-        <div className="h-10 w-10 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto mb-4"></div>
+      <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
+        <LoadingSpinner size="lg" className="mb-4 text-white" />
         <p>Accessing camera...</p>
       </div>
     );
@@ -83,7 +85,7 @@ const CameraView: React.FC<CameraViewProps> = ({
   }
 
   return (
-    <div className="text-white text-center p-4">
+    <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
       <Button
         onClick={onStartCamera}
         className="bg-shareai-teal hover:bg-shareai-teal/90 mb-4 flex items-center gap-2"

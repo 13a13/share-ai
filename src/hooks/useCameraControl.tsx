@@ -71,16 +71,47 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
         audio: false
       };
 
+      console.log("Starting camera with constraints:", constraints);
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
+        console.log("Camera stream obtained, attaching to video element");
         videoRef.current.srcObject = mediaStream;
+        
+        // Ensure the video starts playing
+        try {
+          await videoRef.current.play();
+          console.log("Video playback started successfully");
+        } catch (playError) {
+          console.error("Error playing video:", playError);
+        }
+        
+        // Handle video element loaded successfully
         videoRef.current.onloadedmetadata = () => {
+          console.log("Video element metadata loaded");
           setStream(mediaStream);
           setCameraActive(true);
           setIsProcessing(false);
           setPermissionState('granted');
         };
+        
+        // Additional event listener for successful video load
+        videoRef.current.oncanplay = () => {
+          console.log("Video can play - camera is ready");
+          setCameraActive(true);
+          setIsProcessing(false);
+        };
+        
+        // Handle errors in the video element
+        videoRef.current.onerror = (err) => {
+          console.error("Video element error:", err);
+          setErrorMessage("Failed to initialize camera. Please try again.");
+          setIsProcessing(false);
+        };
+      } else {
+        console.error("Video reference is not available");
+        setErrorMessage("Camera initialization failed. Please reload and try again.");
+        setIsProcessing(false);
       }
     } catch (error) {
       console.error("Error accessing camera:", error);

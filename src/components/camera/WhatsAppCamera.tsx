@@ -19,7 +19,7 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Use our new camera control hook
+  // Use our camera control hook
   const {
     videoRef,
     isCameraActive,
@@ -41,6 +41,16 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
   useEffect(() => {
     checkMultipleCameras();
     checkCameraPermission();
+    
+    // Just in case the camera doesn't initialize automatically, try again after a short delay
+    const initTimeout = setTimeout(() => {
+      if (!isCameraActive && !isProcessing && !errorMessage) {
+        console.log("Attempting automatic camera initialization");
+        startCamera();
+      }
+    }, 1000);
+    
+    return () => clearTimeout(initTimeout);
   }, []);
 
   // Take a photo
@@ -55,6 +65,8 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
       const context = canvas.getContext('2d');
       
       if (!context) return;
+      
+      console.log("Taking photo with dimensions:", video.videoWidth, "x", video.videoHeight);
       
       // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
