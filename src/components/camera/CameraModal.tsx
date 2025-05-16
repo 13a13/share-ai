@@ -5,7 +5,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Check, X, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useCamera } from "@/hooks/useCamera";
 import Shutter from "./Shutter";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -49,7 +49,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
   maxPhotos = 20,
   title = "Camera"
 }) => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   
@@ -307,7 +307,6 @@ const CameraModal: React.FC<CameraModalProps> = ({
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent
         className="max-w-full sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[80vw] w-full h-[90vh] p-0 bg-black text-white"
-        hideCloseButton
       >
         {renderHeader()}
         {renderCameraContent()}
