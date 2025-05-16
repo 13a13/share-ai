@@ -50,10 +50,6 @@ const AuthCallbackPage = () => {
         
         if (exchangeError) {
           console.error('Error exchanging code for session:', exchangeError);
-          // Special handling for Google errors
-          if (provider === 'google' && exchangeError.message) {
-            console.error('Google authentication error:', exchangeError.message);
-          }
           throw exchangeError;
         }
         
@@ -62,7 +58,7 @@ const AuthCallbackPage = () => {
           throw new Error('No session returned after authentication. Please try again.');
         }
         
-        console.log('Authentication successful');
+        console.log('Authentication successful, user:', data.session.user);
         
         // Special success messaging for Google
         const successMessage = provider === 'google' 

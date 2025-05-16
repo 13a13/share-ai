@@ -128,21 +128,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Social login function with enhanced Google support
+  // Social login function
   const socialLogin = async (provider: Provider) => {
     setIsLoading(true);
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
       
       // Use the appropriate redirect URL for the current environment
-      // Make sure this matches the URL configured in both Supabase and Google Cloud Console
       const redirectTo = window.location.hostname === 'localhost' 
         ? `${window.location.origin}/auth/callback`
-        : "https://share-ai.lovable.app/auth/callback";
+        : `${window.location.origin}/auth/callback`;
       
       console.log(`Using redirect URL: ${redirectTo}`);
       
-      // Google-specific logging
       if (provider === 'google') {
         console.log('Google Sign-In initiated with redirect URL:', redirectTo);
       }
@@ -151,32 +149,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         provider,
         options: {
           redirectTo,
-          // Set appropriate scopes
-          scopes: provider === 'apple' 
-            ? 'name email' 
-            : provider === 'google' 
-              ? 'profile email' 
-              : undefined,
+          scopes: provider === 'google' ? 'profile email' : undefined,
         },
       });
       
       if (error) {
         console.error(`${provider} OAuth error:`, error);
-        
-        // Enhanced Google-specific error handling
-        if (provider === 'google') {
-          if (error.message.includes('provider is not enabled')) {
-            throw new Error('Google Sign-In is not properly configured in your Supabase project settings. Please check your configuration.');
-          }
-          
-          console.error('Google Sign-In failed with error:', error);
-          throw new Error(`Google Sign-In failed: ${error.message}. Please verify your Google Cloud Console settings.`);
-        }
-        
-        // Check for validation errors which could indicate provider not enabled
-        if (error.message.includes('validation_failed') || error.message.includes('provider is not enabled')) {
-          throw new Error(`The ${provider} provider is not enabled in your Supabase project settings.`);
-        }
         throw error;
       }
       

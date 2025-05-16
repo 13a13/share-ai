@@ -58,14 +58,7 @@ const LoginPage = () => {
     } catch (error: any) {
       console.error("Google login error:", error);
       setGoogleLoading(false);
-      const errorMessage = error.message || "Login with Google failed.";
-      
-      // Check for specific errors
-      if (errorMessage.includes('provider is not enabled')) {
-        setError("Google login is not enabled in your Supabase project settings.");
-      } else {
-        setError(errorMessage);
-      }
+      setError(error.message || "Login with Google failed.");
     }
   };
 
@@ -79,14 +72,7 @@ const LoginPage = () => {
     } catch (error: any) {
       console.error("Facebook login error:", error);
       setFacebookLoading(false);
-      const errorMessage = error.message || "Login with Facebook failed.";
-      
-      // Check for specific errors
-      if (errorMessage.includes('provider is not enabled')) {
-        setError("Facebook login is not enabled in your Supabase project settings.");
-      } else {
-        setError(errorMessage);
-      }
+      setError(error.message || "Login with Facebook failed.");
     }
   };
 
@@ -100,8 +86,7 @@ const LoginPage = () => {
     } catch (error: any) {
       console.error("Apple Sign-In error:", error);
       setAppleLoading(false);
-      const errorMessage = error.message || "Apple Sign-In failed.";
-      setError(errorMessage);
+      setError(error.message || "Apple Sign-In failed.");
     }
   };
 
