@@ -188,7 +188,9 @@ export const useCamera = (options: UseCameraOptions = {}) => {
       // Primary constraints with preferred facing mode
       const constraints = {
         video: {
-          facingMode: { ideal: facingMode }
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         },
         audio: false
       };
@@ -300,7 +302,7 @@ export const useCamera = (options: UseCameraOptions = {}) => {
       ctx.drawImage(video, 0, 0);
       
       // Get the data URL and try to compress it
-      const rawDataUrl = canvas.toDataURL('image/jpeg');
+      const rawDataUrl = canvas.toDataURL('image/jpeg', 0.9);
       let finalDataUrl: string;
       
       try {

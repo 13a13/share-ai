@@ -1,65 +1,67 @@
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ThumbnailStripProps {
   /**
-   * Array of captured photo data URLs to display
+   * Array of captured photo data URLs
    */
   photos: string[];
   
   /**
-   * Callback when a photo is removed
+   * Called when a photo is deleted
    */
-  onRemovePhoto: (index: number) => void;
+  onDelete: (index: number) => void;
 }
 
 /**
- * A horizontal scrollable strip showing captured photo thumbnails
+ * A horizontally scrollable strip of thumbnails with delete buttons
  */
-const ThumbnailStrip: React.FC<ThumbnailStripProps> = ({ 
-  photos,
-  onRemovePhoto
-}) => {
-  const stripRef = useRef<HTMLDivElement>(null);
+const ThumbnailStrip: React.FC<ThumbnailStripProps> = ({ photos, onDelete }) => {
+  // Reference to the scrollable container
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   // Scroll to the end when a new photo is added
-  React.useEffect(() => {
-    if (stripRef.current && photos.length > 0) {
-      stripRef.current.scrollLeft = stripRef.current.scrollWidth;
+  useEffect(() => {
+    if (scrollRef.current && photos.length > 0) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
     }
   }, [photos.length]);
   
+  // Don't render if there are no photos
   if (photos.length === 0) {
     return null;
   }
   
   return (
     <div 
-      ref={stripRef}
-      className="w-full overflow-x-auto pb-2 px-4 scrollbar-hide"
-      style={{ scrollBehavior: 'smooth' }}
+      ref={scrollRef}
+      className="flex gap-2 overflow-x-auto px-4 py-2 scroll-smooth scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+      aria-label="Captured photos"
     >
-      <div className="flex gap-2">
-        {photos.map((photo, index) => (
-          <div key={index} className="relative flex-shrink-0">
-            <div className="h-16 w-16 rounded-md overflow-hidden border border-white/30">
-              <img 
-                src={photo} 
-                alt={`Captured photo ${index + 1}`} 
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <button
-              className="absolute -top-1 -right-1 bg-black/70 rounded-full p-1"
-              onClick={() => onRemovePhoto(index)}
-              aria-label={`Remove photo ${index + 1}`}
-            >
-              <X size={12} className="text-white" />
-            </button>
-          </div>
-        ))}
-      </div>
+      {photos.map((photo, index) => (
+        <div 
+          key={index} 
+          className="relative flex-shrink-0 w-16 h-16 rounded-md overflow-hidden group"
+        >
+          <img 
+            src={photo} 
+            alt={`Captured photo ${index + 1}`}
+            className="w-full h-full object-cover"
+          />
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-0 right-0 w-6 h-6 p-1 bg-black/60 text-white opacity-60 hover:opacity-100 group-hover:opacity-100"
+            onClick={() => onDelete(index)}
+            aria-label={`Delete photo ${index + 1}`}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
     </div>
   );
 };

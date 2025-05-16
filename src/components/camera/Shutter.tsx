@@ -1,78 +1,53 @@
 
 import React from "react";
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ShutterProps {
   /**
-   * Whether the shutter button is disabled
-   */
-  disabled?: boolean;
-  
-  /**
-   * Whether the camera is currently capturing a photo
-   */
-  isCapturing?: boolean;
-  
-  /**
-   * Callback when the shutter button is pressed
+   * Function called when the shutter button is pressed
    */
   onCapture: () => void;
   
   /**
-   * Size of the shutter button (in pixels)
+   * Whether the camera is currently capturing a photo
    */
-  size?: number;
+  isCapturing: boolean;
+  
+  /**
+   * Whether the shutter button is disabled
+   */
+  disabled?: boolean;
 }
 
 /**
- * A circular shutter button for the camera
+ * A circular shutter button that shows a loading state when capturing
  */
-const Shutter: React.FC<ShutterProps> = ({
-  disabled = false,
-  isCapturing = false,
+const Shutter: React.FC<ShutterProps> = ({ 
   onCapture,
-  size = 70
+  isCapturing,
+  disabled = false
 }) => {
   return (
     <button
-      className={cn(
-        "relative rounded-full flex items-center justify-center",
-        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-      )}
-      disabled={disabled || isCapturing}
+      className="relative flex items-center justify-center w-20 h-20"
       onClick={onCapture}
+      disabled={disabled || isCapturing}
       aria-label="Take photo"
-      style={{ 
-        width: `${size}px`, 
-        height: `${size}px` 
-      }}
     >
-      {/* Outer ring */}
-      <div 
-        className="absolute rounded-full border-2 border-white"
-        style={{ 
-          width: `${size}px`, 
-          height: `${size}px` 
-        }}
-      />
-      
-      {/* Inner circle */}
-      <div 
-        className={cn(
-          "rounded-full bg-white transition-all",
-          isCapturing ? "scale-90" : ""
-        )}
-        style={{ 
-          width: `${size * 0.8}px`, 
-          height: `${size * 0.8}px` 
-        }}
-      />
-      
-      {/* Loading spinner */}
-      {isCapturing && (
+      {isCapturing ? (
+        // Show loading state
         <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 text-black animate-spin" />
+          <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+            <Skeleton className="w-14 h-14 rounded-full" />
+          </div>
+        </div>
+      ) : (
+        // Show normal shutter button
+        <div className="relative w-16 h-16">
+          {/* Outer ring */}
+          <div className="absolute inset-0 rounded-full border-2 border-white" />
+          {/* Inner circle */}
+          <div className="absolute inset-2 rounded-full bg-white" />
         </div>
       )}
     </button>
