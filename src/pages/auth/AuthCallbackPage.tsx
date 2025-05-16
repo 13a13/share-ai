@@ -22,10 +22,6 @@ const AuthCallbackPage = () => {
         const errorParam = searchParams.get('error');
         const errorDescription = searchParams.get('error_description');
         const provider = searchParams.get('provider');
-        const fullUrl = window.location.href;
-        
-        console.log('Auth callback received with URL:', fullUrl);
-        console.log('Search params:', Object.fromEntries(searchParams.entries()));
         
         // If there's an error parameter in the URL, handle it
         if (errorParam) {
@@ -33,59 +29,92 @@ const AuthCallbackPage = () => {
           throw new Error(errorDescription || `Authentication failed with error: ${errorParam}`);
         }
         
-        if (!code) {
-          console.error('No code provided in the callback URL:', fullUrl);
-          throw new Error('Authentication code missing from callback. Please try logging in again.');
+        // For social logins (like Google), sometimes the code might not be in the URL yet
+        // but the provider will be mentioned - we should wait a moment before showing an error
+        if (!code && provider) {
+          // Wait briefly to see if code arrives (common issue with social auth redirects)
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Check params again after brief delay
+          const codeAfterDelay = new URLSearchParams(window.location.search).get('code');
+          
+          if (!codeAfterDelay) {
+            // If we still don't have a code but we know which provider was used, 
+            // the user may have been authenticated already - let's check
+            const { data: sessionData } = await supabase.auth.getSession();
+            
+            if (sessionData.session) {
+              // User is already authenticated, redirect to home
+              console.log('No code in URL but user already has a valid session');
+              toast({
+                title: `${provider} Sign-In successful!`,
+                description: "Welcome back!",
+              });
+              
+              navigate("/", { replace: true });
+              return;
+            } else {
+              // Only throw error if we don't have a session either
+              throw new Error('Authentication code missing from callback. Please try logging in again.');
+            }
+          }
         }
         
-        // Extra logging for Google auth
-        if (provider === 'google') {
-          console.log('Processing Google OAuth callback');
+        // If we have a code, exchange it for a session
+        if (code) {
+          console.log('Processing OAuth callback with code');
+          
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            console.error('Error exchanging code for session:', exchangeError);
+            throw exchangeError;
+          }
+          
+          if (!data.session) {
+            console.error('No session returned after code exchange');
+            throw new Error('No session returned after authentication. Please try again.');
+          }
+          
+          console.log('Authentication successful, user:', data.session.user);
+          
+          // Special success messaging for Google
+          const successMessage = provider === 'google' 
+            ? 'Google Sign-In successful!' 
+            : 'Login successful';
+          
+          toast({
+            title: successMessage,
+            description: "Welcome back!",
+          });
+          
+          // Redirect to home
+          navigate("/", { replace: true });
         }
-        
-        console.log('Processing OAuth callback with code');
-        
-        // Exchange the code for a session
-        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        
-        if (exchangeError) {
-          console.error('Error exchanging code for session:', exchangeError);
-          throw exchangeError;
-        }
-        
-        if (!data.session) {
-          console.error('No session returned after code exchange');
-          throw new Error('No session returned after authentication. Please try again.');
-        }
-        
-        console.log('Authentication successful, user:', data.session.user);
-        
-        // Special success messaging for Google
-        const successMessage = provider === 'google' 
-          ? 'Google Sign-In successful!' 
-          : 'Login successful';
-        
-        toast({
-          title: successMessage,
-          description: "Welcome back!",
-        });
-        
-        // Redirect to home or requested page
-        navigate("/", { replace: true });
       } catch (err: any) {
         console.error("Error during OAuth callback:", err);
         setError(err.message || "Authentication failed. Please try again.");
         
-        toast({
-          title: "Authentication failed",
-          description: err.message || "Could not complete login. Please try again.",
-          variant: "destructive",
-        });
+        // Check if we have a session despite the error
+        const { data: sessionData } = await supabase.auth.getSession();
         
-        // Redirect to login page after a delay
-        setTimeout(() => {
-          navigate("/login", { replace: true });
-        }, 3000);
+        if (sessionData.session) {
+          // If we have a session despite the error, just redirect to home
+          console.log('Error occurred but user has a valid session, redirecting to home');
+          navigate("/", { replace: true });
+        } else {
+          // Only show error toast and redirect to login if no session exists
+          toast({
+            title: "Authentication failed",
+            description: err.message || "Could not complete login. Please try again.",
+            variant: "destructive",
+          });
+          
+          // Redirect to login after a delay
+          setTimeout(() => {
+            navigate("/login", { replace: true });
+          }, 3000);
+        }
       } finally {
         setIsProcessing(false);
       }
@@ -96,19 +125,11 @@ const AuthCallbackPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      {error ? (
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Authentication Error</h2>
-          <p className="text-gray-700 mb-4">{error}</p>
-          <p className="text-gray-500">Redirecting you back to login...</p>
-        </div>
-      ) : (
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-shareai-teal mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Completing your login...</h2>
-          <p className="text-gray-500">{isProcessing ? "Please wait while we authenticate you." : "Authentication complete, redirecting..."}</p>
-        </div>
-      )}
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-shareai-teal mx-auto mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Completing your login...</h2>
+        <p className="text-gray-500">Please wait while we authenticate you.</p>
+      </div>
     </div>
   );
 };
