@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Check for existing user session on mount and set up auth state listener
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener first to ensure we don't miss auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state changed:", event);
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for existing session
+    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const userData = {
@@ -128,16 +128,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Social login function
+  // Social login function with improved redirect handling
   const socialLogin = async (provider: Provider) => {
     setIsLoading(true);
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
       
-      // Use the appropriate redirect URL for the current environment
-      const redirectTo = window.location.hostname === 'localhost' 
-        ? `${window.location.origin}/auth/callback`
-        : `${window.location.origin}/auth/callback`;
+      // Use the absolute URL for redirect to avoid path issues
+      const redirectTo = `${window.location.origin}/auth/callback`;
       
       console.log(`Using redirect URL: ${redirectTo}`);
       
@@ -149,6 +147,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         provider,
         options: {
           redirectTo,
+          // Only specify scopes where needed
           scopes: provider === 'google' ? 'profile email' : undefined,
         },
       });
@@ -176,6 +175,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await supabase.auth.signOut();
       setUser(null);
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out.",
+      });
     } catch (error: any) {
       toast({
         title: "Logout failed",
