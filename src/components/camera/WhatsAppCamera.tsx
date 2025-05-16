@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from "react";
-import { Camera, X, ZoomIn, ZoomOut, Check, CircleX } from "lucide-react";
+import { Camera, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { compressDataURLImage } from "@/utils/imageCompression";
 import { useToast } from "@/hooks/use-toast";
@@ -29,18 +29,8 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   
   const currentZoom = ZOOM_LEVELS[currentZoomIndex];
+  const [showInitialButton, setShowInitialButton] = useState(true);
 
-  // Initialize camera when component mounts
-  useEffect(() => {
-    startCamera();
-    checkMultipleCameras();
-    
-    // Clean up when component unmounts
-    return () => {
-      stopCamera();
-    };
-  }, [facingMode]);
-  
   // Check if device has multiple cameras
   const checkMultipleCameras = async () => {
     try {
@@ -57,6 +47,7 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
     try {
       setErrorMessage(null);
       setIsProcessing(true);
+      setShowInitialButton(false);
       
       // Get user media with appropriate constraints
       const constraints: MediaStreamConstraints = {
@@ -80,10 +71,21 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
       setErrorMessage(
         "Could not access camera. Please ensure you've granted camera permissions."
       );
+      setShowInitialButton(true);
     } finally {
       setIsProcessing(false);
     }
   };
+
+  // Automatically initialize the camera when component mounts if permission already granted
+  useEffect(() => {
+    checkMultipleCameras();
+    
+    // Clean up when component unmounts
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   // Stop the camera
   const stopCamera = () => {
@@ -99,33 +101,30 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
   const switchCamera = () => {
     stopCamera();
     setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    // Restart camera with new facing mode
+    setTimeout(startCamera, 300);
   };
 
   // Apply digital zoom
   const applyZoom = (zoomLevel: number) => {
     const videoTrack = stream?.getVideoTracks()[0];
-    if (!videoTrack || !('getConstraints' in videoTrack)) return;
+    if (!videoTrack) return;
 
-    // Try to apply zoom using CSS scaling instead of constraints
-    // This is more widely supported across browsers
+    // First apply CSS zoom for universal support
     if (videoRef.current) {
       videoRef.current.style.transform = `scale(${zoomLevel})`;
       videoRef.current.style.transformOrigin = 'center';
     }
 
-    // Some browsers support zoom through constraints
+    // Then try hardware zoom if supported
     try {
-      const capabilities = videoTrack.getCapabilities();
+      const capabilities = videoTrack.getCapabilities?.();
       if (capabilities && 'zoom' in capabilities) {
-        // Use "as any" as a workaround for TypeScript's lack of zoom type definition
-        // This is a known issue with MediaTrackConstraints type definition
-        const zoomConstraints = {} as any;
-        
-        // Only set zoom if the camera supports it
-        if ('zoom' in capabilities) {
-          zoomConstraints.zoom = zoomLevel;
-          videoTrack.applyConstraints(zoomConstraints);
-        }
+        const constraints = {} as any; // Use type assertion for zoom constraint
+        constraints.zoom = zoomLevel;
+        videoTrack.applyConstraints(constraints).catch(e => {
+          console.log("Could not apply zoom constraint, using CSS zoom only:", e);
+        });
       }
     } catch (error) {
       console.error("Error applying zoom:", error);
@@ -265,16 +264,21 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
               onZoomChange={handleZoomChange}
             />
           </>
-        ) : (
+        ) : showInitialButton ? (
           <div className="text-white text-center p-4">
             <Button
               onClick={startCamera}
-              className="bg-shareai-teal hover:bg-shareai-teal/90 mb-4"
+              className="bg-shareai-teal hover:bg-shareai-teal/90 mb-4 flex items-center gap-2"
             >
-              <Camera className="h-5 w-5 mr-2" />
+              <Camera className="h-5 w-5" />
               Open Camera
             </Button>
             <p className="text-sm text-gray-400">Grant camera permissions when prompted</p>
+          </div>
+        ) : (
+          <div className="text-white text-center p-4">
+            <div className="h-10 w-10 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto mb-4"></div>
+            <p>Accessing camera...</p>
           </div>
         )}
 
