@@ -21,7 +21,6 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useMigration } from './hooks/useMigration';
 import { Loader2 } from "lucide-react";
-import Index from "./pages/Index";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,13 +62,13 @@ const AppRoutes = () => {
       )}
       <main className="flex-grow">
         <Routes>
-          {/* Auth Routes - accessible when not authenticated */}
-          <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
-          <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          {/* Redirect root to dashboard or login */}
+          <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
           
-          {/* Landing page route */}
-          <Route path="/" element={<Index />} />
+          {/* Auth Routes - accessible when not authenticated */}
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+          <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           
           {/* Protected Routes - require authentication */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
