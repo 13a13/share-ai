@@ -17,11 +17,6 @@ interface ShutterProps {
    * Whether the shutter button is disabled
    */
   disabled?: boolean;
-
-  /**
-   * Whether to display the shutter as an overlay
-   */
-  overlay?: boolean;
 }
 
 /**
@@ -30,17 +25,16 @@ interface ShutterProps {
 const Shutter: React.FC<ShutterProps> = ({ 
   onCapture,
   isCapturing,
-  disabled = false,
-  overlay = false
+  disabled = false
 }) => {
   return (
     <button
-      className={`
-        relative flex items-center justify-center w-20 h-20
+      className="
+        relative flex items-center justify-center w-16 h-16
         transition-opacity duration-150 hover:opacity-100 active:opacity-80
         ring-2 ring-white/60 focus:outline-none focus:ring-4 focus:ring-white
-        ${overlay ? 'fixed bottom-28 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur p-1 rounded-full z-20' : ''}
-      `}
+        shadow-md
+      "
       onClick={onCapture}
       disabled={disabled || isCapturing}
       aria-label="Take photo"

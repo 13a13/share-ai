@@ -208,35 +208,36 @@ const CameraModal: React.FC<CameraModalProps> = ({
               onDelete={handleDeletePhoto} 
             />
           </div>
+        </div>
+
+        {/* Footer with counter, shutter, and done button */}
+        <footer className="
+          fixed bottom-0 left-0 w-full
+          bg-black flex items-center justify-between
+          px-6 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]
+        ">
+          <span className="text-white/80 text-sm">
+            {capturedPhotos.length} / {maxPhotos} photos
+          </span>
           
-          {/* Shutter button overlay */}
           <Shutter 
             onCapture={handleCapture} 
             isCapturing={isCapturing}
             disabled={!isReady || capturedPhotos.length >= maxPhotos}
-            overlay={true}
           />
-        </div>
-
-        {/* Footer with counter and done button */}
-        <div className="bg-black px-6 py-4 flex justify-between items-center">
-          {/* Counter */}
-          <div className="text-white/80 text-sm">
-            {capturedPhotos.length} / {maxPhotos} photos
-          </div>
           
-          {/* Confirm button */}
-          {capturedPhotos.length > 0 && (
-            <Button
-              className="rounded-full bg-white text-black hover:bg-white/90"
-              onClick={handleConfirm}
-              aria-label="Confirm photos"
-            >
-              <Check className="h-5 w-5 mr-2" />
-              Done
-            </Button>
-          )}
-        </div>
+          <button
+            aria-label="Finish"
+            onClick={handleConfirm}
+            disabled={!capturedPhotos.length}
+            className="
+              text-white text-base font-medium
+              disabled:opacity-40 disabled:pointer-events-none
+            "
+          >
+            Done
+          </button>
+        </footer>
       </div>
     );
   };

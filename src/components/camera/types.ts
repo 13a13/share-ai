@@ -87,11 +87,6 @@ export interface ShutterProps {
    * Whether the shutter is disabled
    */
   disabled?: boolean;
-  
-  /**
-   * Whether to display the shutter as an overlay
-   */
-  overlay?: boolean;
 }
 
 /**
