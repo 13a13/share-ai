@@ -17,13 +17,21 @@ const AuthCallbackPage = () => {
       try {
         setIsProcessing(true);
         
-        // Get the code from URL query params
+        // Get the parameters from URL query params
         const code = searchParams.get('code');
+        const errorParam = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
         const provider = searchParams.get('provider');
         const fullUrl = window.location.href;
         
         console.log('Auth callback received with URL:', fullUrl);
         console.log('Search params:', Object.fromEntries(searchParams.entries()));
+        
+        // If there's an error parameter in the URL, handle it
+        if (errorParam) {
+          console.error(`Auth error returned from provider: ${errorParam} - ${errorDescription}`);
+          throw new Error(errorDescription || `Authentication failed with error: ${errorParam}`);
+        }
         
         if (!code) {
           console.error('No code provided in the callback URL:', fullUrl);
