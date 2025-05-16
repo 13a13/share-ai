@@ -9,15 +9,41 @@ import { compressDataURLImage } from "@/utils/imageCompression";
 const DEFAULT_ZOOM_LEVELS = [0.5, 1, 2, 3];
 
 /**
+ * Options for the useCamera hook
+ */
+interface UseCameraOptions {
+  initialFacingMode?: 'user' | 'environment';
+  timeoutMs?: number;
+}
+
+/**
+ * Declare extending types for MediaTrackCapabilities to include zoom
+ */
+interface ExtendedMediaTrackCapabilities extends MediaTrackCapabilities {
+  zoom?: {
+    min: number;
+    max: number;
+    step: number;
+  };
+}
+
+/**
+ * Declare extending types for MediaTrackConstraintSet to include zoom
+ */
+interface ExtendedMediaTrackConstraintSet extends MediaTrackConstraintSet {
+  zoom?: number;
+}
+
+/**
  * Hook to manage camera functionality including stream initialization,
  * photo capture, zoom controls, and camera switching
  * 
- * @param {Object} options - Configuration options
+ * @param {UseCameraOptions} options - Configuration options
  * @param {string} [options.initialFacingMode='environment'] - Initial camera facing mode
  * @param {number} [options.timeoutMs=3000] - Timeout for camera initialization
  * @returns Camera control methods and state
  */
-export const useCamera = (options = {}) => {
+export const useCamera = (options: UseCameraOptions = {}) => {
   const {
     initialFacingMode = 'environment',
     timeoutMs = 3000,
@@ -33,9 +59,7 @@ export const useCamera = (options = {}) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>(
-    initialFacingMode as 'user' | 'environment'
-  );
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>(initialFacingMode);
   const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   
   // Zoom functionality
@@ -50,7 +74,7 @@ export const useCamera = (options = {}) => {
     let zoomLevels = [1]; 
     
     try {
-      const capabilities = track.getCapabilities?.();
+      const capabilities = track.getCapabilities?.() as ExtendedMediaTrackCapabilities;
       if (capabilities?.zoom) {
         const { min, max } = capabilities.zoom;
         // Only include zoom levels that are supported by the device
@@ -86,9 +110,9 @@ export const useCamera = (options = {}) => {
       if (!track) return;
 
       // Try hardware zoom first
-      if (track.getCapabilities?.()?.zoom) {
+      if ((track.getCapabilities?.() as ExtendedMediaTrackCapabilities)?.zoom) {
         track.applyConstraints({ 
-          advanced: [{ zoom }] 
+          advanced: [{ zoom } as ExtendedMediaTrackConstraintSet] 
         }).catch(() => {
           // Silently fail and fall back to CSS zoom
         });
