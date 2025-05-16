@@ -37,23 +37,18 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
     setIsProcessing
   } = useCameraControl({ maxPhotos });
 
-  // Initialize camera on component mount and handle cleanup
+  // Initialize camera on component mount
   useEffect(() => {
     // Check for cameras and permissions
     checkMultipleCameras();
-    checkCameraPermission();
     
-    // Automatic initialization after a short delay if needed
-    const initTimeout = setTimeout(() => {
-      if (!isCameraActive && !isProcessing && !errorMessage) {
-        console.log("Attempting automatic camera initialization");
-        startCamera();
-      }
-    }, 1000);
+    // Start requesting permission immediately
+    console.log("WhatsAppCamera mounted - starting camera");
+    startCamera();
     
     // Return cleanup function
     return () => {
-      clearTimeout(initTimeout);
+      console.log("WhatsAppCamera unmounting - cleaning up");
     };
   }, []);
 

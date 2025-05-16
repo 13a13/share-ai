@@ -1,6 +1,5 @@
 
 import React from "react";
-import { ZoomIn, ZoomOut } from "lucide-react";
 
 interface ZoomControlsProps {
   zoomLevels: number[];
@@ -25,7 +24,7 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
               : "bg-transparent"
           }`}
         >
-          {zoom < 1 ? `${zoom}x` : zoom === 1 ? "1x" : `${zoom}x`}
+          {zoom}x
         </button>
       ))}
     </div>

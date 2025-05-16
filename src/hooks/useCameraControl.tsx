@@ -16,8 +16,8 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [permissionState, setPermissionState] = useState<'prompt'|'granted'|'denied'>('prompt');
   
-  const ZOOM_LEVELS = [0.5, 1, 2, 3];
-  const [currentZoomIndex, setCurrentZoomIndex] = useState(1); // Default to 1x zoom (index 1)
+  const ZOOM_LEVELS = [1, 2, 3, 4];
+  const [currentZoomIndex, setCurrentZoomIndex] = useState(0); // Default to 1x zoom (index 0)
 
   // Check if device has multiple cameras
   const checkMultipleCameras = async () => {
@@ -38,19 +38,15 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
         const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
         setPermissionState(result.state as 'prompt'|'granted'|'denied');
         
+        // Only auto-start if we're definitely granted
+        // (iOS Safari can return 'prompt' even after permission is granted)
         if (result.state === 'granted') {
-          // If we already have permission, start camera right away
           startCamera();
         }
-      } else {
-        // If permissions API not available, try to start camera directly
-        // This will trigger the permission prompt if needed
-        startCamera();
       }
     } catch (error) {
       console.error("Error checking camera permission:", error);
-      // If permissions API fails, try to start camera directly
-      startCamera();
+      // Permissions API not available, we'll just try starting the camera directly
     }
   };
 
@@ -72,13 +68,12 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
     try {
       setErrorMessage(null);
       setIsProcessing(true);
-      setPermissionState('prompt');
       
       // Get user media with appropriate constraints
       // We use "ideal" rather than "exact" for better compatibility
       const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: facingMode,
+          facingMode: { ideal: facingMode },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -99,45 +94,69 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
       // Set the stream to video element
       console.log("Camera stream obtained, attaching to video element");
       videoRef.current.srcObject = mediaStream;
+      videoRef.current.muted = true;
+      videoRef.current.playsInline = true;
       
-      // Ensure the video loads and plays
-      videoRef.current.onloadedmetadata = () => {
-        console.log("Video metadata loaded successfully");
-        if (videoRef.current) {
-          videoRef.current.play()
-            .then(() => {
-              console.log("Camera video is now playing");
-              setStream(mediaStream);
-              setCameraActive(true);
-              setIsProcessing(false);
-              setPermissionState('granted');
-            })
-            .catch(playError => {
-              console.error("Error playing video:", playError);
-              throw playError;
-            });
-        }
-      };
+      // Set up event listeners BEFORE attempting to play
+      const videoEl = videoRef.current;
       
-      // Handle errors in video element
-      videoRef.current.onerror = (event) => {
-        console.error("Video element error:", event);
-        setErrorMessage("Failed to display camera feed. Please try again.");
+      // Create a function to handle successful camera initialization
+      const handleVideoReady = () => {
+        console.log("Video is ready and can play");
+        setStream(mediaStream);
+        setCameraActive(true);
         setIsProcessing(false);
+        setPermissionState('granted');
+        
+        // Apply initial zoom level
+        applyZoom(ZOOM_LEVELS[currentZoomIndex]);
+        
+        // Remove the event listeners
+        videoEl.removeEventListener('canplay', handleVideoReady);
+        videoEl.removeEventListener('loadedmetadata', handleVideoReady);
       };
       
-      // Set a timeout to handle cases where onloadedmetadata doesn't fire
+      // Add event listeners for both canplay and loadedmetadata
+      videoEl.addEventListener('canplay', handleVideoReady, { once: true });
+      videoEl.addEventListener('loadedmetadata', handleVideoReady, { once: true });
+      
+      // Set a timeout to handle cases where events don't fire
       const timeoutId = setTimeout(() => {
-        if (isProcessing && videoRef.current) {
+        if (isProcessing) {
           console.log("Timeout reached - forcing camera activation");
+          
+          // Try to force play the video
+          videoEl.play().catch(err => console.warn("Could not auto-play video:", err));
+          
+          // Force UI update even if play() fails
           setStream(mediaStream);
           setCameraActive(true);
           setIsProcessing(false);
           setPermissionState('granted');
+          
+          // Apply initial zoom
+          applyZoom(ZOOM_LEVELS[currentZoomIndex]);
+          
+          // Remove event listeners if they haven't fired yet
+          videoEl.removeEventListener('canplay', handleVideoReady);
+          videoEl.removeEventListener('loadedmetadata', handleVideoReady);
         }
       }, 3000);
       
-      return () => clearTimeout(timeoutId);
+      // Start playing the video
+      try {
+        await videoEl.play();
+        console.log("Video play() called successfully");
+      } catch (playError) {
+        console.warn("Error playing video initially:", playError);
+        // We'll rely on the event listeners or timeout to handle this
+      }
+      
+      return () => {
+        clearTimeout(timeoutId);
+        videoEl.removeEventListener('canplay', handleVideoReady);
+        videoEl.removeEventListener('loadedmetadata', handleVideoReady);
+      };
       
     } catch (error: any) {
       // Handle specific error cases
@@ -165,10 +184,33 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
           const basicStream = await navigator.mediaDevices.getUserMedia(basicConstraints);
           if (videoRef.current) {
             videoRef.current.srcObject = basicStream;
-            setStream(basicStream);
-            setCameraActive(true);
-            setIsProcessing(false);
-            setPermissionState('granted');
+            
+            // Setup event handling for fallback stream
+            const videoEl = videoRef.current;
+            
+            const handleFallbackReady = () => {
+              setStream(basicStream);
+              setCameraActive(true);
+              setIsProcessing(false);
+              setPermissionState('granted');
+              videoEl.removeEventListener('canplay', handleFallbackReady);
+            };
+            
+            videoEl.addEventListener('canplay', handleFallbackReady, { once: true });
+            
+            // Try to play and set up fallback timeout
+            videoEl.play().catch(e => console.warn("Could not auto-play fallback video:", e));
+            
+            setTimeout(() => {
+              if (isProcessing) {
+                setStream(basicStream);
+                setCameraActive(true);
+                setIsProcessing(false);
+                setPermissionState('granted');
+                videoEl.removeEventListener('canplay', handleFallbackReady);
+              }
+            }, 3000);
+            
             return; // Exit here since we've recovered
           }
         } catch (fallbackError) {
@@ -192,7 +234,9 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
 
   // Apply digital zoom
   const applyZoom = (zoomLevel: number) => {
-    const videoTrack = stream?.getVideoTracks()[0];
+    if (!stream) return;
+    
+    const videoTrack = stream.getVideoTracks()[0];
     if (!videoTrack) return;
 
     // First apply CSS zoom for universal support
@@ -206,9 +250,9 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
       const capabilities = videoTrack.getCapabilities?.();
       if (capabilities && 'zoom' in capabilities) {
         const constraints = {} as any; // Use type assertion for zoom constraint
-        constraints.zoom = zoomLevel;
+        constraints.advanced = [{ zoom: zoomLevel }];
         videoTrack.applyConstraints(constraints).catch(e => {
-          console.log("Could not apply zoom constraint, using CSS zoom only:", e);
+          console.warn("Could not apply zoom constraint, using CSS zoom only:", e);
         });
       }
     } catch (error) {

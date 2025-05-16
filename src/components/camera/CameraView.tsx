@@ -28,22 +28,9 @@ const CameraView: React.FC<CameraViewProps> = ({
   onZoomChange,
   onStartCamera,
 }) => {
-  // Add effect for ensuring video plays once camera is active
-  useEffect(() => {
-    const playVideo = async () => {
-      if (isCameraActive && videoRef.current && videoRef.current.paused) {
-        try {
-          await videoRef.current.play();
-          console.log("Video playback started by effect");
-        } catch (error) {
-          console.error("Error auto-playing video:", error);
-        }
-      }
-    };
-    
-    playVideo();
-  }, [isCameraActive, videoRef]);
-
+  // This component only handles display, not video initialization
+  // That's handled in the hook now with better event handling
+  
   if (errorMessage) {
     return (
       <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
@@ -58,6 +45,7 @@ const CameraView: React.FC<CameraViewProps> = ({
     );
   }
 
+  // Show video if camera is active
   if (isCameraActive) {
     return (
       <>
@@ -67,7 +55,6 @@ const CameraView: React.FC<CameraViewProps> = ({
           playsInline
           muted
           className="h-full w-full object-cover"
-          style={{ transform: `scale(${zoomLevels[currentZoomIndex]})` }}
         />
         <ZoomControls
           zoomLevels={zoomLevels}
@@ -78,6 +65,7 @@ const CameraView: React.FC<CameraViewProps> = ({
     );
   }
 
+  // Show loading spinner while processing
   if (isProcessing) {
     return (
       <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
@@ -87,6 +75,7 @@ const CameraView: React.FC<CameraViewProps> = ({
     );
   }
 
+  // Show permission denied message
   if (permissionState === 'denied') {
     return (
       <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
@@ -101,6 +90,7 @@ const CameraView: React.FC<CameraViewProps> = ({
     );
   }
 
+  // Show initial camera access button
   return (
     <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
       <Button
