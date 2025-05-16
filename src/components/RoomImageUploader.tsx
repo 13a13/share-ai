@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useRef, useState } from "react";
-import CameraCapture from "./CameraCapture";
+import WhatsAppCamera from "./camera/WhatsAppCamera";
 import { Upload } from "lucide-react";
 import { useRoomImageUpload } from "@/hooks/useRoomImageUpload";
 import UploadPrompt from "./room-uploader/UploadPrompt";
@@ -42,20 +42,14 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
     }
   };
 
-  const handleCaptureComplete = (imageData: string) => {
-    setCameraOpen(false);
-    handleCameraCapture(imageData);
+  // Handle multiple photos from WhatsApp camera
+  const handleMultiplePhotosCapture = (imageData: string[]) => {
+    if (imageData.length > 0) {
+      // For now, just use the first photo
+      // In a future enhancement, we could allow multiple room photos
+      handleCameraCapture(imageData[0]);
+    }
   };
-  
-  if (cameraOpen) {
-    return (
-      <CameraCapture 
-        onCapture={handleCaptureComplete} 
-        onCancel={() => setCameraOpen(false)} 
-        isProcessing={isUploading}
-      />
-    );
-  }
   
   return (
     <div className="w-full">
@@ -66,6 +60,14 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
         accept="image/*"
         className="hidden"
       />
+      
+      {cameraOpen && (
+        <WhatsAppCamera 
+          onClose={() => setCameraOpen(false)}
+          onPhotosCapture={handleMultiplePhotosCapture}
+          maxPhotos={1} // For room photo, only allow 1 for now
+        />
+      )}
       
       {!uploadedImage ? (
         <UploadPrompt

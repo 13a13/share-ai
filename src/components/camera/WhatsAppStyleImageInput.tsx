@@ -3,13 +3,13 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, ImagePlus } from "lucide-react";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
-import WhatsAppCamera from "./camera/WhatsAppCamera";
+import WhatsAppCamera from "./WhatsAppCamera";
 
-interface ImageFileInputProps {
+interface WhatsAppStyleImageInputProps {
   id: string;
   isProcessing: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onImageCapture: (imageData: string) => void;
+  onImageCapture: (imagesData: string[]) => void;
   multiple?: boolean;
   disabled?: boolean;
   totalImages?: number;
@@ -17,36 +17,36 @@ interface ImageFileInputProps {
   compressionInProgress?: boolean;
 }
 
-const ImageFileInput = ({ 
-  id, 
-  isProcessing, 
-  onChange, 
+const WhatsAppStyleImageInput = ({
+  id,
+  isProcessing,
+  onChange,
   onImageCapture,
-  multiple = false,
+  multiple = true,
   disabled = false,
   totalImages = 0,
   maxImages = 20,
   compressionInProgress = false
-}: ImageFileInputProps) => {
+}: WhatsAppStyleImageInputProps) => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Open file picker
   const openFilePicker = () => {
     fileInputRef.current?.click();
   };
-  
-  // Handle photos from WhatsApp camera
-  const handleWhatsAppCameraPhotos = (photos: string[]) => {
-    if (photos.length > 0) {
-      // For backward compatibility, just use the first photo when onImageCapture expects a single image
-      onImageCapture(photos[0]);
-    }
+
+  // Handle photos captured from WhatsApp-style camera
+  const handlePhotosCaptured = (photos: string[]) => {
+    // Pass all captured photos to parent
+    photos.forEach(photo => {
+      onImageCapture(photo);
+    });
   };
-  
+
   const remainingImages = maxImages - totalImages;
   const hasReachedLimit = remainingImages <= 0;
-  
+
   return (
     <div>
       <input
@@ -64,11 +64,12 @@ const ImageFileInput = ({
       {isCameraOpen && (
         <WhatsAppCamera
           onClose={() => setIsCameraOpen(false)}
-          onPhotosCapture={handleWhatsAppCameraPhotos}
+          onPhotosCapture={handlePhotosCaptured}
           maxPhotos={remainingImages}
         />
       )}
 
+      {/* Button controls */}
       <div className="flex flex-col sm:flex-row gap-2">
         <Button
           onClick={() => setIsCameraOpen(true)}
@@ -112,4 +113,4 @@ const ImageFileInput = ({
   );
 };
 
-export default ImageFileInput;
+export default WhatsAppStyleImageInput;

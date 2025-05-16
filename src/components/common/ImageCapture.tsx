@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useImageUploadAndProcess } from "@/hooks/useImageUploadAndProcess";
 import StagingImagesGrid from "../image-upload/StagingImagesGrid";
 import { ProgressIndicator } from "../ui/progress-indicator";
-import ImageUploadControls from "../image-upload/ImageUploadControls";
+import WhatsAppStyleImageUploadControls from "../image-upload/WhatsAppStyleImageUploadControls";
 import MaxImagesWarning from "../image-upload/MaxImagesWarning";
 import { ScrollArea } from "../ui/scroll-area";
 import ComponentImages from "../component/ComponentImages";
@@ -129,7 +129,7 @@ const ImageCapture = ({
           </ScrollArea>
         )}
         
-        <ImageUploadControls
+        <WhatsAppStyleImageUploadControls
           componentId={componentId}
           isProcessing={isProcessing}
           compressionInProgress={compressionInProgress}
