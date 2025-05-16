@@ -31,21 +31,7 @@ const CameraView: React.FC<CameraViewProps> = ({
   // This component only handles display, not video initialization
   // That's handled in the hook now with better event handling
   
-  if (errorMessage) {
-    return (
-      <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
-        <p className="mb-4">{errorMessage}</p>
-        <Button
-          onClick={() => onStartCamera()}
-          className="bg-shareai-teal hover:bg-shareai-teal/90"
-        >
-          Try Again
-        </Button>
-      </div>
-    );
-  }
-
-  // Show video if camera is active
+  // 1️⃣  show video if we have it
   if (isCameraActive) {
     return (
       <>
@@ -62,6 +48,21 @@ const CameraView: React.FC<CameraViewProps> = ({
           onZoomChange={onZoomChange}
         />
       </>
+    );
+  }
+
+  // 2️⃣  show error screen only when NOT active
+  if (errorMessage) {
+    return (
+      <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
+        <p className="mb-4">{errorMessage}</p>
+        <Button
+          onClick={onStartCamera}
+          className="bg-shareai-teal hover:bg-shareai-teal/90"
+        >
+          Try Again
+        </Button>
+      </div>
     );
   }
 

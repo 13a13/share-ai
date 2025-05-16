@@ -107,6 +107,7 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
         setCameraActive(true);
         setIsProcessing(false);
         setPermissionState('granted');
+        setErrorMessage(null); // camera is live, drop any old errors
         
         // Apply initial zoom level
         applyZoom(ZOOM_LEVELS[currentZoomIndex]);
@@ -133,6 +134,7 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
           setCameraActive(true);
           setIsProcessing(false);
           setPermissionState('granted');
+          setErrorMessage(null); // camera is live, drop any old errors
           
           // Apply initial zoom
           applyZoom(ZOOM_LEVELS[currentZoomIndex]);
@@ -193,6 +195,7 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
               setCameraActive(true);
               setIsProcessing(false);
               setPermissionState('granted');
+              setErrorMessage(null); // camera is live, drop any old errors
               videoEl.removeEventListener('canplay', handleFallbackReady);
             };
             
@@ -207,6 +210,7 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
                 setCameraActive(true);
                 setIsProcessing(false);
                 setPermissionState('granted');
+                setErrorMessage(null); // camera is live, drop any old errors
                 videoEl.removeEventListener('canplay', handleFallbackReady);
               }
             }, 3000);
@@ -226,6 +230,7 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
 
   // Flip between front and rear cameras
   const switchCamera = () => {
+    setErrorMessage(null);
     stopCamera();
     setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
     // Restart camera with new facing mode
