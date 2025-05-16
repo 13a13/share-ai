@@ -9,7 +9,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useCamera } from "@/hooks/useCamera";
 import Shutter from "./Shutter";
 import ThumbnailStrip from "./ThumbnailStrip";
-import ZoomButtons from "./ZoomButtons";
 
 interface CameraModalProps {
   /**
@@ -61,9 +60,6 @@ const CameraModal: React.FC<CameraModalProps> = ({
     errorMessage,
     permissionState,
     facingMode,
-    zoomLevels,
-    currentZoomIndex,
-    zoomTo,
     flipCamera,
     takePhoto,
     stopCamera
@@ -205,15 +201,6 @@ const CameraModal: React.FC<CameraModalProps> = ({
             </div>
           )}
 
-          {/* Zoom buttons */}
-          <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-10">
-            <ZoomButtons 
-              zoomLevels={zoomLevels}
-              currentIndex={currentZoomIndex}
-              onZoomChange={zoomTo}
-            />
-          </div>
-
           {/* Thumbnail strip */}
           <div className="absolute top-0 left-0 right-0 z-10">
             <ThumbnailStrip 
@@ -221,27 +208,40 @@ const CameraModal: React.FC<CameraModalProps> = ({
               onDelete={handleDeletePhoto} 
             />
           </div>
-        </div>
-
-        {/* Footer with shutter and counter */}
-        <div className="bg-black p-4 flex flex-col items-center">
-          {/* Counter */}
-          <div className="text-white/80 text-sm mb-2">
-            {capturedPhotos.length} / {maxPhotos} photos
-          </div>
-
-          {/* Shutter button */}
+          
+          {/* Shutter button overlay */}
           <Shutter 
             onCapture={handleCapture} 
             isCapturing={isCapturing}
             disabled={!isReady || capturedPhotos.length >= maxPhotos}
+            overlay={true}
           />
+        </div>
+
+        {/* Footer with counter and done button */}
+        <div className="bg-black px-6 py-4 flex justify-between items-center">
+          {/* Counter */}
+          <div className="text-white/80 text-sm">
+            {capturedPhotos.length} / {maxPhotos} photos
+          </div>
+          
+          {/* Confirm button */}
+          {capturedPhotos.length > 0 && (
+            <Button
+              className="rounded-full bg-white text-black hover:bg-white/90"
+              onClick={handleConfirm}
+              aria-label="Confirm photos"
+            >
+              <Check className="h-5 w-5 mr-2" />
+              Done
+            </Button>
+          )}
         </div>
       </div>
     );
   };
 
-  // Render header with title, close and confirm buttons
+  // Render header with title, close and flip camera buttons
   const renderHeader = () => (
     <div className="flex items-center justify-between bg-black text-white p-4">
       <Button 
@@ -269,24 +269,6 @@ const CameraModal: React.FC<CameraModalProps> = ({
     </div>
   );
 
-  // Render confirm button (visible when photos are captured)
-  const renderConfirmButton = () => {
-    if (capturedPhotos.length === 0) {
-      return null;
-    }
-
-    return (
-      <Button
-        className="absolute bottom-4 right-4 rounded-full bg-white text-black hover:bg-white/90 z-20"
-        onClick={handleConfirm}
-        aria-label="Confirm photos"
-      >
-        <Check className="h-5 w-5 mr-2" />
-        Done
-      </Button>
-    );
-  };
-
   // Use Sheet for mobile and Dialog for desktop
   if (isMobile) {
     return (
@@ -297,7 +279,6 @@ const CameraModal: React.FC<CameraModalProps> = ({
         >
           {renderHeader()}
           {renderCameraContent()}
-          {renderConfirmButton()}
         </SheetContent>
       </Sheet>
     );
@@ -310,7 +291,6 @@ const CameraModal: React.FC<CameraModalProps> = ({
       >
         {renderHeader()}
         {renderCameraContent()}
-        {renderConfirmButton()}
       </DialogContent>
     </Dialog>
   );

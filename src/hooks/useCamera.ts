@@ -3,12 +3,6 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { compressDataURLImage } from "@/utils/imageCompression";
 
 /**
- * Zoom levels for the camera (0.5x, 1x, 2x, 3x)
- * Only levels supported by the device will be shown
- */
-const DEFAULT_ZOOM_LEVELS = [0.5, 1, 2, 3];
-
-/**
  * Options for the useCamera hook
  */
 interface UseCameraOptions {
@@ -17,26 +11,8 @@ interface UseCameraOptions {
 }
 
 /**
- * Declare extending types for MediaTrackCapabilities to include zoom
- */
-interface ExtendedMediaTrackCapabilities extends MediaTrackCapabilities {
-  zoom?: {
-    min: number;
-    max: number;
-    step: number;
-  };
-}
-
-/**
- * Declare extending types for MediaTrackConstraintSet to include zoom
- */
-interface ExtendedMediaTrackConstraintSet extends MediaTrackConstraintSet {
-  zoom?: number;
-}
-
-/**
  * Hook to manage camera functionality including stream initialization,
- * photo capture, zoom controls, and camera switching
+ * photo capture, and camera switching
  * 
  * @param {UseCameraOptions} options - Configuration options
  * @param {string} [options.initialFacingMode='environment'] - Initial camera facing mode
@@ -61,82 +37,6 @@ export const useCamera = (options: UseCameraOptions = {}) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>(initialFacingMode);
   const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-  
-  // Zoom functionality
-  const [supportedZoomLevels, setSupportedZoomLevels] = useState<number[]>([1]);
-  const [currentZoomIndex, setCurrentZoomIndex] = useState(0);
-
-  /**
-   * Checks which zoom levels are supported by the device and sets the available options
-   */
-  const detectSupportedZoomLevels = useCallback((track: MediaStreamTrack) => {
-    // Default to just 1x zoom
-    let zoomLevels = [1]; 
-    
-    try {
-      const capabilities = track.getCapabilities?.() as ExtendedMediaTrackCapabilities;
-      if (capabilities?.zoom) {
-        const { min, max } = capabilities.zoom;
-        // Only include zoom levels that are supported by the device
-        zoomLevels = DEFAULT_ZOOM_LEVELS.filter(level => 
-          level >= (min || 0.5) && level <= (max || 3)
-        );
-        // Ensure we always have at least 1x zoom
-        if (!zoomLevels.includes(1)) {
-          zoomLevels.push(1);
-          zoomLevels.sort((a, b) => a - b);
-        }
-      }
-    } catch (error) {
-      console.warn("Failed to detect zoom capabilities:", error);
-    }
-    
-    setSupportedZoomLevels(zoomLevels);
-    // Set initial zoom to 1x or closest available
-    const defaultIndex = zoomLevels.indexOf(1);
-    setCurrentZoomIndex(defaultIndex >= 0 ? defaultIndex : 0);
-    
-    return zoomLevels;
-  }, []);
-
-  /**
-   * Applies the specified zoom level to the camera
-   */
-  const applyZoom = useCallback((zoom: number) => {
-    if (!streamRef.current || !videoRef.current) return;
-    
-    try {
-      const track = streamRef.current.getVideoTracks()[0];
-      if (!track) return;
-
-      // Try hardware zoom first
-      if ((track.getCapabilities?.() as ExtendedMediaTrackCapabilities)?.zoom) {
-        track.applyConstraints({ 
-          advanced: [{ zoom } as ExtendedMediaTrackConstraintSet] 
-        }).catch(() => {
-          // Silently fail and fall back to CSS zoom
-        });
-      }
-      
-      // Always apply CSS zoom as a fallback or enhancement
-      if (videoRef.current) {
-        videoRef.current.style.transform = `scale(${zoom})`;
-        videoRef.current.style.transformOrigin = 'center';
-      }
-    } catch (error) {
-      console.warn("Error applying zoom:", error);
-    }
-  }, []);
-
-  /**
-   * Changes the zoom level to the specified index in the supportedZoomLevels array
-   */
-  const zoomTo = useCallback((index: number) => {
-    if (index < 0 || index >= supportedZoomLevels.length) return;
-    
-    setCurrentZoomIndex(index);
-    applyZoom(supportedZoomLevels[index]);
-  }, [applyZoom, supportedZoomLevels]);
 
   /**
    * Stops all tracks in the current stream and cleans up resources
@@ -234,14 +134,6 @@ export const useCamera = (options: UseCameraOptions = {}) => {
       }
       
       videoRef.current.srcObject = stream;
-      
-      // Detect zoom capabilities and set initial zoom
-      const track = stream.getVideoTracks()[0];
-      if (track) {
-        const zoomLevels = detectSupportedZoomLevels(track);
-        // Apply initial zoom level
-        applyZoom(zoomLevels[currentZoomIndex]);
-      }
 
       // Set up event listeners for video readiness
       const handleVideoReady = () => {
@@ -274,7 +166,7 @@ export const useCamera = (options: UseCameraOptions = {}) => {
       setIsProcessing(false);
       setIsReady(false);
     }
-  }, [facingMode, stopStream, timeoutMs, applyZoom, detectSupportedZoomLevels, currentZoomIndex]);
+  }, [facingMode, stopStream, timeoutMs]);
 
   /**
    * Captures a photo from the current video stream
@@ -352,11 +244,6 @@ export const useCamera = (options: UseCameraOptions = {}) => {
     errorMessage,
     permissionState,
     facingMode,
-    
-    // Zoom controls
-    zoomLevels: supportedZoomLevels,
-    currentZoomIndex,
-    zoomTo,
     
     // Camera controls
     startCamera,

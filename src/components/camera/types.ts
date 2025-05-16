@@ -67,21 +67,6 @@ export interface CameraViewProps {
    * Function to start the camera
    */
   onStartCamera: () => void;
-  
-  /**
-   * Array of available zoom levels
-   */
-  zoomLevels: number[];
-  
-  /**
-   * Index of the currently selected zoom level
-   */
-  currentZoomIndex: number;
-  
-  /**
-   * Function called when zoom level is changed
-   */
-  onZoomChange: (index: number) => void;
 }
 
 /**
@@ -102,6 +87,11 @@ export interface ShutterProps {
    * Whether the shutter is disabled
    */
   disabled?: boolean;
+  
+  /**
+   * Whether to display the shutter as an overlay
+   */
+  overlay?: boolean;
 }
 
 /**
