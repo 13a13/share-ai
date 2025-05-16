@@ -50,42 +50,7 @@ export async function addCompressedImage(
       
       // If maintaining aspect ratio is enabled, calculate dimensions that preserve the original ratio
       if (maintainAspectRatio) {
-        // Create a temporary image element to get the natural dimensions
-        const tempImg = new Image();
-        tempImg.src = compressedImage;
-        
-        // Calculate aspect ratio
-        await new Promise<void>((resolve) => {
-          tempImg.onload = () => {
-            const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
-            
-            if (aspectRatio > 1) {
-              // Landscape image
-              const newHeight = width / aspectRatio;
-              // Add the image with the calculated height that maintains aspect ratio
-              doc.addImage(compressedImage, imageFormat, xPos, yPos, width, newHeight);
-              // Adjust timestamp position
-              if (timestamp) {
-                addTimestampToImage(doc, timestampStr(timestamp), xPos + width / 2, yPos + newHeight + 5);
-              }
-            } else {
-              // Portrait image
-              const newWidth = height * aspectRatio;
-              // Add the image with the calculated width that maintains aspect ratio
-              doc.addImage(compressedImage, imageFormat, xPos, yPos, newWidth, height);
-              // Adjust timestamp position
-              if (timestamp) {
-                addTimestampToImage(doc, timestampStr(timestamp), xPos + newWidth / 2, yPos + height + 5);
-              }
-            }
-            resolve();
-          };
-          tempImg.onerror = () => {
-            // If we can't load the image to determine aspect ratio, use original dimensions
-            doc.addImage(compressedImage, imageFormat, xPos, yPos, width, height);
-            resolve();
-          };
-        });
+        await addImageWithAspectRatio(doc, compressedImage, imageFormat, xPos, yPos, width, height, timestamp);
       } else {
         // Add the compressed image to the document with the specified dimensions
         doc.addImage(compressedImage, imageFormat, xPos, yPos, width, height);
@@ -112,6 +77,57 @@ export async function addCompressedImage(
     console.error(`Error adding image ${id}:`, error);
     drawPlaceholder(doc, xPos, yPos, width, height);
   }
+}
+
+/**
+ * Add image to document while maintaining its aspect ratio
+ */
+async function addImageWithAspectRatio(
+  doc: any,
+  imageUrl: string,
+  imageFormat: string,
+  xPos: number,
+  yPos: number,
+  width: number,
+  height: number,
+  timestamp?: Date
+): Promise<void> {
+  // Create a temporary image element to get the natural dimensions
+  const tempImg = new Image();
+  tempImg.src = imageUrl;
+  
+  // Calculate aspect ratio
+  await new Promise<void>((resolve) => {
+    tempImg.onload = () => {
+      const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
+      
+      if (aspectRatio > 1) {
+        // Landscape image
+        const newHeight = width / aspectRatio;
+        // Add the image with the calculated height that maintains aspect ratio
+        doc.addImage(imageUrl, imageFormat, xPos, yPos, width, newHeight);
+        // Adjust timestamp position
+        if (timestamp) {
+          addTimestampToImage(doc, timestampStr(timestamp), xPos + width / 2, yPos + newHeight + 5);
+        }
+      } else {
+        // Portrait image
+        const newWidth = height * aspectRatio;
+        // Add the image with the calculated width that maintains aspect ratio
+        doc.addImage(imageUrl, imageFormat, xPos, yPos, newWidth, height);
+        // Adjust timestamp position
+        if (timestamp) {
+          addTimestampToImage(doc, timestampStr(timestamp), xPos + newWidth / 2, yPos + height + 5);
+        }
+      }
+      resolve();
+    };
+    tempImg.onerror = () => {
+      // If we can't load the image to determine aspect ratio, use original dimensions
+      doc.addImage(imageUrl, imageFormat, xPos, yPos, width, height);
+      resolve();
+    };
+  });
 }
 
 /**
