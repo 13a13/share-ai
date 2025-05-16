@@ -3,31 +3,51 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
-import { Clipboard, Home, FileSpreadsheet, Calendar, PlusCircle } from "lucide-react";
+import { Clipboard, Home, FileSpreadsheet, Calendar, PlusCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  // Auto-redirect to dashboard if authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
+  // If still checking authentication, show loading spinner
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-shareai-teal mx-auto mb-4" />
+          <h2 className="text-xl font-medium">Loading your account...</h2>
+        </div>
+      </div>
+    );
+  }
 
   const features = [
     {
       title: "Property Management",
       description: "Create and manage properties with details like bedrooms, bathrooms, and type.",
       icon: Home,
-      action: () => navigate("/properties")
+      action: () => navigate(isAuthenticated ? "/properties" : "/login")
     },
     {
       title: "Inspection Reports",
       description: "Generate detailed inspection reports with photos and component analysis.",
       icon: Clipboard,
-      action: () => navigate("/reports")
+      action: () => navigate(isAuthenticated ? "/reports" : "/login")
     },
     {
       title: "Room Components",
       description: "Document individual components with condition assessments and photos.",
       icon: FileSpreadsheet,
-      action: () => navigate("/reports")
+      action: () => navigate(isAuthenticated ? "/reports" : "/login")
     }
   ];
 
@@ -42,22 +62,22 @@ const Index = () => {
         
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <ShimmerButton
-            onClick={() => navigate("/properties/new")}
+            onClick={() => navigate(isAuthenticated ? "/properties/new" : "/login")}
             className="flex items-center justify-center gap-2"
             shimmerColor="rgba(255,255,255,0.2)"
             background="linear-gradient(135deg, rgb(155, 135, 245) 0%, rgb(126, 105, 171) 100%)"
           >
             <PlusCircle className="h-5 w-5" />
-            Add New Property
+            {isAuthenticated ? "Add New Property" : "Get Started"}
           </ShimmerButton>
 
           <Button
             variant="outline"
-            onClick={() => navigate("/reports")}
+            onClick={() => navigate(isAuthenticated ? "/reports" : "/login")}
             className="flex items-center justify-center gap-2"
           >
             <Calendar className="h-5 w-5" />
-            View Reports
+            {isAuthenticated ? "View Reports" : "Learn More"}
           </Button>
         </div>
       </section>
@@ -82,7 +102,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Quick Stats Section */}
+      {/* Getting Started Section */}
       <section className="mb-12">
         <h2 className="text-2xl font-semibold mb-6 text-center">Getting Started</h2>
         <div className="bg-gradient-to-r from-verifyvision-teal/10 to-verifyvision-blue/10 p-8 rounded-lg text-center">
@@ -92,10 +112,10 @@ const Index = () => {
           </p>
           <Button 
             variant="default" 
-            onClick={() => navigate(user ? "/properties" : "/login")}
+            onClick={() => navigate(isAuthenticated ? "/dashboard" : "/login")}
             className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
           >
-            {user ? "Go to Dashboard" : "Login to Get Started"}
+            {isAuthenticated ? "Go to Dashboard" : "Login to Get Started"}
           </Button>
         </div>
       </section>

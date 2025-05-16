@@ -51,7 +51,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userData = {
             id: session.user.id,
             email: session.user.email || "",
-            name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "",
+            name: session.user.user_metadata?.name || 
+                  session.user.user_metadata?.full_name || 
+                  session.user.email?.split('@')[0] || "",
           };
           setUser(userData);
         } else {
@@ -67,7 +69,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userData = {
           id: session.user.id,
           email: session.user.email || "",
-          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "",
+          name: session.user.user_metadata?.name || 
+                session.user.user_metadata?.full_name || 
+                session.user.email?.split('@')[0] || "",
         };
         setUser(userData);
       }

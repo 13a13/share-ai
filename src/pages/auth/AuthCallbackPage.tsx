@@ -35,7 +35,7 @@ const AuthCallbackPage = () => {
         
         if (!code) {
           console.error('No code provided in the callback URL:', fullUrl);
-          throw new Error('No authentication code received. This can happen if the authentication process was interrupted or if there\'s a configuration mismatch between Supabase and the provider.');
+          throw new Error('Authentication code missing from callback. Please try logging in again.');
         }
         
         // Extra logging for Google auth
