@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 const AuthCallbackPage = () => {
@@ -26,13 +26,13 @@ const AuthCallbackPage = () => {
         console.log('Search params:', Object.fromEntries(searchParams.entries()));
         
         if (!code) {
-          console.error('No code provided in the callback URL');
-          throw new Error('No authentication code received. Please try again.');
+          console.error('No code provided in the callback URL:', fullUrl);
+          throw new Error('No authentication code received. This can happen if the authentication process was interrupted or if there\'s a configuration mismatch between Supabase and the provider.');
         }
         
-        // Extra logging for Apple auth
-        if (provider === 'apple') {
-          console.log('Processing Apple OAuth callback');
+        // Extra logging for Google auth
+        if (provider === 'google') {
+          console.log('Processing Google OAuth callback');
         }
         
         console.log('Processing OAuth callback with code');
@@ -42,9 +42,9 @@ const AuthCallbackPage = () => {
         
         if (exchangeError) {
           console.error('Error exchanging code for session:', exchangeError);
-          // Special handling for Apple errors
-          if (provider === 'apple' && exchangeError.message) {
-            console.error('Apple authentication error:', exchangeError.message);
+          // Special handling for Google errors
+          if (provider === 'google' && exchangeError.message) {
+            console.error('Google authentication error:', exchangeError.message);
           }
           throw exchangeError;
         }
@@ -56,9 +56,9 @@ const AuthCallbackPage = () => {
         
         console.log('Authentication successful');
         
-        // Special success messaging for Apple
-        const successMessage = provider === 'apple' 
-          ? 'Apple Sign-In successful!' 
+        // Special success messaging for Google
+        const successMessage = provider === 'google' 
+          ? 'Google Sign-In successful!' 
           : 'Login successful';
         
         toast({

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Apple, Facebook } from "lucide-react";
+import { Mail, Apple, Facebook, Loader2 } from "lucide-react";
 import { Provider } from "@supabase/supabase-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
@@ -23,6 +23,8 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [facebookLoading, setFacebookLoading] = useState(false);
   
   // Get the page they were trying to visit
   const from = location.state?.from?.pathname || "/";
@@ -46,14 +48,37 @@ const LoginPage = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      setError(null);
+      setGoogleLoading(true);
+      console.log("Initiating Google login");
+      await socialLogin('google');
+      // The redirect will happen automatically through Supabase
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      setGoogleLoading(false);
+      const errorMessage = error.message || "Login with Google failed.";
+      
+      // Check for specific errors
+      if (errorMessage.includes('provider is not enabled')) {
+        setError("Google login is not enabled in your Supabase project settings.");
+      } else {
+        setError(errorMessage);
+      }
+    }
+  };
+
   const handleFacebookLogin = async () => {
     try {
       setError(null);
+      setFacebookLoading(true);
       console.log("Initiating Facebook login");
       await socialLogin('facebook');
       // The redirect will happen automatically through Supabase
     } catch (error: any) {
       console.error("Facebook login error:", error);
+      setFacebookLoading(false);
       const errorMessage = error.message || "Login with Facebook failed.";
       
       // Check for specific errors
@@ -74,31 +99,19 @@ const LoginPage = () => {
       // The redirect happens automatically through Supabase
     } catch (error: any) {
       console.error("Apple Sign-In error:", error);
+      setAppleLoading(false);
       const errorMessage = error.message || "Apple Sign-In failed.";
       setError(errorMessage);
-    } finally {
-      setAppleLoading(false);
     }
   };
 
   const handleSocialLogin = async (provider: Provider) => {
     if (provider === 'apple') {
       return handleAppleLogin();
-    }
-    
-    try {
-      setError(null);
-      await socialLogin(provider);
-      // No need for navigate or toast here as the redirect will happen automatically
-    } catch (error: any) {
-      const errorMessage = error.message || `Login with ${provider} failed.`;
-      
-      // Check for the specific validation error
-      if (errorMessage.includes('provider is not enabled')) {
-        setError(`The ${provider} login provider is not enabled in your Supabase project settings.`);
-      } else {
-        setError(errorMessage);
-      }
+    } else if (provider === 'google') {
+      return handleGoogleLogin();
+    } else if (provider === 'facebook') {
+      return handleFacebookLogin();
     }
   };
   
@@ -161,8 +174,13 @@ const LoginPage = () => {
                 variant="outline" 
                 onClick={() => handleSocialLogin('google')} 
                 className="w-full"
+                disabled={googleLoading}
               >
-                <Mail className="h-4 w-4 mr-2" />
+                {googleLoading ? (
+                  <ProgressIndicator variant="inline" size="sm" className="mr-2" />
+                ) : (
+                  <Mail className="h-4 w-4 mr-2" />
+                )}
                 Google
               </Button>
               <Button 
@@ -182,10 +200,15 @@ const LoginPage = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => handleFacebookLogin()} 
+                onClick={() => handleSocialLogin('facebook')} 
                 className="w-full"
+                disabled={facebookLoading}
               >
-                <Facebook className="h-4 w-4 mr-2" />
+                {facebookLoading ? (
+                  <ProgressIndicator variant="inline" size="sm" className="mr-2" />
+                ) : (
+                  <Facebook className="h-4 w-4 mr-2" />
+                )}
                 Facebook
               </Button>
             </div>

@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Provider } from "@supabase/supabase-js";
@@ -128,45 +127,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Social login function with enhanced Apple support
+  // Social login function with enhanced Google support
   const socialLogin = async (provider: Provider) => {
     setIsLoading(true);
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
       
       // Use the appropriate redirect URL for the current environment
-      // Make sure this matches the URL configured in both Supabase and Apple Developer Console
+      // Make sure this matches the URL configured in both Supabase and Google Cloud Console
       const redirectTo = window.location.hostname === 'localhost' 
         ? `${window.location.origin}/auth/callback`
         : "https://share-ai.lovable.app/auth/callback";
       
       console.log(`Using redirect URL: ${redirectTo}`);
       
-      // Apple-specific logging
-      if (provider === 'apple') {
-        console.log('Apple Sign-In initiated with redirect URL:', redirectTo);
+      // Google-specific logging
+      if (provider === 'google') {
+        console.log('Google Sign-In initiated with redirect URL:', redirectTo);
       }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
-          // For Apple, we need specific scopes
-          scopes: provider === 'apple' ? 'name email' : undefined,
+          // Set appropriate scopes
+          scopes: provider === 'apple' 
+            ? 'name email' 
+            : provider === 'google' 
+              ? 'profile email' 
+              : undefined,
         },
       });
       
       if (error) {
         console.error(`${provider} OAuth error:`, error);
         
-        // Enhanced Apple-specific error handling
-        if (provider === 'apple') {
+        // Enhanced Google-specific error handling
+        if (provider === 'google') {
           if (error.message.includes('provider is not enabled')) {
-            throw new Error('Apple Sign-In is not enabled in your Supabase project settings. Please check your configuration.');
+            throw new Error('Google Sign-In is not properly configured in your Supabase project settings. Please check your configuration.');
           }
           
-          console.error('Apple Sign-In failed with error:', error);
-          throw new Error(`Apple Sign-In failed: ${error.message}. Please verify your Apple Developer account settings.`);
+          console.error('Google Sign-In failed with error:', error);
+          throw new Error(`Google Sign-In failed: ${error.message}. Please verify your Google Cloud Console settings.`);
         }
         
         // Check for validation errors which could indicate provider not enabled
