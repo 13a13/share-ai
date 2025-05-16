@@ -1,6 +1,8 @@
 
-import { useRef, useState, useCallback, useEffect } from "react";
-import { compressDataURLImage } from "@/utils/imageCompression";
+import { useState, useEffect, useCallback } from "react";
+import { useCameraPermissions } from "./camera/useCameraPermissions";
+import { useCameraStream } from "./camera/useCameraStream";
+import { useCameraCapture } from "./camera/useCameraCapture";
 
 /**
  * Options for the useCamera hook
@@ -25,196 +27,20 @@ export const useCamera = (options: UseCameraOptions = {}) => {
     timeoutMs = 3000,
   } = options;
 
-  // Core refs and state
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Camera state management
-  const [isReady, setIsReady] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Camera facing mode state
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>(initialFacingMode);
-  const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-
-  /**
-   * Stops all tracks in the current stream and cleans up resources
-   */
-  const stopStream = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    
-    setIsReady(false);
-  }, []);
-
-  /**
-   * Starts the camera with the specified facing mode
-   */
-  const startCamera = useCallback(async () => {
-    // Clean up any existing stream first
-    stopStream();
-    
-    setIsProcessing(true);
-    setErrorMessage(null);
-
-    try {
-      // Check permissions if the API is available
-      try {
-        if (navigator.permissions) {
-          const permResult = await navigator.permissions.query({ name: 'camera' as any });
-          setPermissionState(permResult.state as any);
-          
-          if (permResult.state === 'denied') {
-            throw new Error("Camera permission denied");
-          }
-        }
-      } catch (permError) {
-        // Ignore permission query errors, we'll try getUserMedia anyway
-        console.warn("Permission query failed:", permError);
-      }
-
-      // Primary constraints with preferred facing mode
-      const constraints = {
-        video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      };
-
-      // Set up timeout for camera initialization
-      const timeoutPromise = new Promise<MediaStream>((_, reject) => {
-        timeoutRef.current = setTimeout(() => {
-          setIsProcessing(false); // Stop the spinner even if we don't have video yet
-          // Don't reject - we still want to wait for the stream
-        }, timeoutMs);
-      });
-
-      // Try to get the stream with the preferred constraints
-      const stream = await Promise.race([
-        navigator.mediaDevices.getUserMedia(constraints),
-        timeoutPromise
-      ]).catch(async (error) => {
-        console.warn("Initial camera constraint failed:", error);
-        
-        // If we got an OverconstrainedError, retry with basic constraints
-        if (error.name === 'OverconstrainedError') {
-          return navigator.mediaDevices.getUserMedia({ 
-            video: true,
-            audio: false
-          });
-        }
-        throw error;
-      });
-
-      // Clear the timeout if it hasn't fired yet
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-
-      // Store the stream and set up the video element
-      streamRef.current = stream;
-      
-      if (!videoRef.current) {
-        throw new Error("Video element not found");
-      }
-      
-      videoRef.current.srcObject = stream;
-
-      // Set up event listeners for video readiness
-      const handleVideoReady = () => {
-        setIsReady(true);
-        setIsProcessing(false);
-        setErrorMessage(null);
-        
-        if (videoRef.current) {
-          videoRef.current.removeEventListener('canplay', handleVideoReady);
-        }
-      };
-
-      videoRef.current.addEventListener('canplay', handleVideoReady);
-      
-      // Automatically attempt to play the video
-      try {
-        await videoRef.current.play();
-      } catch (playError) {
-        console.warn("Auto-play failed:", playError);
-        // This is OK - user may need to interact first on some browsers
-      }
-
-    } catch (error) {
-      console.error("Camera initialization error:", error);
-      setErrorMessage(
-        error instanceof Error 
-          ? error.message 
-          : "Failed to access camera. Please check permissions."
-      );
-      setIsProcessing(false);
-      setIsReady(false);
-    }
-  }, [facingMode, stopStream, timeoutMs]);
-
-  /**
-   * Captures a photo from the current video stream
-   * @returns Promise resolving to a base64 data URL of the captured image
-   */
-  const takePhoto = useCallback(async (): Promise<string> => {
-    if (!videoRef.current || !isReady) {
-      throw new Error("Camera not ready");
-    }
-
-    try {
-      setIsCapturing(true);
-      
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        throw new Error("Could not create canvas context");
-      }
-      
-      // Draw the current video frame to the canvas
-      ctx.drawImage(video, 0, 0);
-      
-      // Get the data URL and try to compress it
-      const rawDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      let finalDataUrl: string;
-      
-      try {
-        // Generate a unique filename with timestamp
-        const timestamp = new Date().getTime();
-        const filename = `photo-${timestamp}.jpg`;
-        
-        // Compress the image
-        finalDataUrl = await compressDataURLImage(rawDataUrl, filename);
-      } catch (compressionError) {
-        console.warn("Image compression failed:", compressionError);
-        // Fall back to uncompressed image
-        finalDataUrl = rawDataUrl;
-      }
-      
-      return finalDataUrl;
-    } finally {
-      setIsCapturing(false);
-    }
-  }, [isReady]);
+  
+  // Use our smaller, focused hooks
+  const { permissionState, checkPermissions } = useCameraPermissions();
+  const { 
+    videoRef, 
+    isReady, 
+    isProcessing, 
+    errorMessage, 
+    startStream, 
+    stopStream 
+  } = useCameraStream({ facingMode, timeoutMs });
+  const { isCapturing, takePhoto } = useCameraCapture(videoRef, isReady);
 
   /**
    * Switches between front and back cameras
@@ -223,6 +49,14 @@ export const useCamera = (options: UseCameraOptions = {}) => {
     setFacingMode(current => current === 'environment' ? 'user' : 'environment');
     // Camera will restart in useEffect when facingMode changes
   }, []);
+
+  /**
+   * Start the camera with the current facing mode
+   */
+  const startCamera = useCallback(async () => {
+    const permissionGranted = await checkPermissions();
+    await startStream(permissionGranted);
+  }, [checkPermissions, startStream]);
 
   // Start/stop the camera when the component mounts/unmounts or facingMode changes
   useEffect(() => {
