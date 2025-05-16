@@ -1,38 +1,44 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { X, Check } from "lucide-react";
+import { X, RotateCcw } from "lucide-react";
 
 interface CameraHeaderProps {
+  title: string;
   onClose: () => void;
-  onDone: () => void;
-  hasCapturedPhotos: boolean;
+  onFlipCamera: () => void;
+  isReady: boolean;
 }
 
 const CameraHeader: React.FC<CameraHeaderProps> = ({
+  title,
   onClose,
-  onDone,
-  hasCapturedPhotos,
+  onFlipCamera,
+  isReady
 }) => {
   return (
-    <div className="flex justify-between items-center p-4 bg-black text-white">
-      <Button
-        variant="ghost"
+    <div className="flex items-center justify-between bg-black text-white p-4">
+      <Button 
+        variant="ghost" 
         size="icon"
-        onClick={onClose}
-        className="text-white hover:bg-gray-800"
+        onClick={onClose} 
+        className="rounded-full hover:bg-white/10"
+        aria-label="Close camera"
       >
         <X className="h-6 w-6" />
       </Button>
-      <h2 className="text-xl font-semibold">Camera</h2>
+
+      <h2 className="text-lg font-medium">{title}</h2>
+
       <Button
         variant="ghost"
         size="icon"
-        onClick={onDone}
-        disabled={!hasCapturedPhotos}
-        className="text-white hover:bg-gray-800"
+        className="rounded-full hover:bg-white/10"
+        onClick={onFlipCamera}
+        disabled={!isReady}
+        aria-label="Switch camera"
       >
-        <Check className="h-6 w-6" />
+        <RotateCcw className="h-5 w-5" />
       </Button>
     </div>
   );

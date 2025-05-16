@@ -1,14 +1,13 @@
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Check, X, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCamera } from "@/hooks/useCamera";
-import Shutter from "./Shutter";
-import ThumbnailStrip from "./ThumbnailStrip";
+import CameraHeader from "./CameraHeader";
+import CameraContent from "./CameraContent";
+import CameraFooter from "./CameraFooter";
 
 interface CameraModalProps {
   /**
@@ -131,143 +130,37 @@ const CameraModal: React.FC<CameraModalProps> = ({
     onClose();
   }, [capturedPhotos, onClose, onPhotosCapture]);
 
-  // Render different states based on permissions and errors
-  const renderCameraContent = () => {
-    // Show error state
-    if (errorMessage) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full text-white p-4 text-center">
-          <p className="mb-4">{errorMessage}</p>
-          <Button 
-            onClick={() => window.location.reload()}
-            className="bg-white text-black hover:bg-white/90 mb-2"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" /> Reload Page
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={onClose}
-            className="border-white text-white hover:bg-white/10"
-          >
-            Cancel
-          </Button>
-        </div>
-      );
-    }
-
-    // Show permission denied state
-    if (permissionState === 'denied') {
-      return (
-        <div className="flex flex-col items-center justify-center h-full text-white p-4 text-center">
-          <p className="mb-4">
-            Camera access denied. Please enable camera permissions in your browser settings and try again.
-          </p>
-          <Button 
-            onClick={onClose}
-            className="bg-white text-black hover:bg-white/90"
-          >
-            Close
-          </Button>
-        </div>
-      );
-    }
-
-    // Show loading state or camera view
-    return (
-      <div className="relative flex flex-col h-full">
-        {/* Camera view */}
-        <div className="relative flex-1 bg-black overflow-hidden">
-          {/* Video element */}
-          <div 
-            className={`absolute inset-0 ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
-            style={{ 
-              // Apply in-line styles for orientation 
-              transform: facingMode === 'user' ? 'scaleX(-1)' : 'none'
-            }}
-          >
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline 
-              muted
-              className="h-full w-full object-cover"
-            />
-          </div>
-
-          {/* Loading overlay */}
-          {isProcessing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
-              <p className="text-white text-lg">Accessing camera...</p>
-            </div>
-          )}
-
-          {/* Thumbnail strip */}
-          <div className="absolute top-0 left-0 right-0 z-10">
-            <ThumbnailStrip 
-              photos={capturedPhotos} 
-              onDelete={handleDeletePhoto} 
-            />
-          </div>
-        </div>
-
-        {/* Footer with counter, shutter, and done button */}
-        <footer className="
-          fixed bottom-0 left-0 w-full
-          bg-black flex items-center justify-between
-          px-6 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]
-        ">
-          <span className="text-white/80 text-sm">
-            {capturedPhotos.length} / {maxPhotos} photos
-          </span>
-          
-          <Shutter 
-            onCapture={handleCapture} 
-            isCapturing={isCapturing}
-            disabled={!isReady || capturedPhotos.length >= maxPhotos}
-          />
-          
-          <button
-            aria-label="Finish"
-            onClick={handleConfirm}
-            disabled={!capturedPhotos.length}
-            className="
-              text-white text-base font-medium
-              disabled:opacity-40 disabled:pointer-events-none
-            "
-          >
-            Done
-          </button>
-        </footer>
-      </div>
-    );
-  };
-
-  // Render header with title, close and flip camera buttons
-  const renderHeader = () => (
-    <div className="flex items-center justify-between bg-black text-white p-4">
-      <Button 
-        variant="ghost" 
-        size="icon"
-        onClick={onClose} 
-        className="rounded-full hover:bg-white/10"
-        aria-label="Close camera"
-      >
-        <X className="h-6 w-6" />
-      </Button>
-
-      <h2 className="text-lg font-medium">{title}</h2>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className="rounded-full hover:bg-white/10"
-        onClick={flipCamera}
-        disabled={!isReady}
-        aria-label="Switch camera"
-      >
-        <RotateCcw className="h-5 w-5" />
-      </Button>
-    </div>
+  // Render wrapper for camera components
+  const renderCameraComponents = () => (
+    <>
+      <CameraHeader 
+        title={title} 
+        onClose={onClose} 
+        onFlipCamera={flipCamera}
+        isReady={isReady} 
+      />
+      
+      <CameraContent
+        videoRef={videoRef}
+        isReady={isReady}
+        isProcessing={isProcessing}
+        errorMessage={errorMessage}
+        permissionState={permissionState}
+        facingMode={facingMode}
+        capturedPhotos={capturedPhotos}
+        onClose={onClose}
+        onDeletePhoto={handleDeletePhoto}
+      />
+      
+      <CameraFooter
+        capturedPhotos={capturedPhotos}
+        maxPhotos={maxPhotos}
+        isReady={isReady}
+        isCapturing={isCapturing}
+        onCapture={handleCapture}
+        onConfirm={handleConfirm}
+      />
+    </>
   );
 
   // Use Sheet for mobile and Dialog for desktop
@@ -278,8 +171,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
           side="bottom"
           className="p-0 h-[100dvh] max-h-[100dvh] bg-black text-white"
         >
-          {renderHeader()}
-          {renderCameraContent()}
+          {renderCameraComponents()}
         </SheetContent>
       </Sheet>
     );
@@ -290,8 +182,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
       <DialogContent
         className="max-w-full sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[80vw] w-full h-[90vh] p-0 bg-black text-white"
       >
-        {renderHeader()}
-        {renderCameraContent()}
+        {renderCameraComponents()}
       </DialogContent>
     </Dialog>
   );
