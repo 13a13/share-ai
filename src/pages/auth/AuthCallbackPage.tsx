@@ -19,6 +19,7 @@ const AuthCallbackPage = () => {
         
         // Get the code from URL query params
         const code = searchParams.get('code');
+        const provider = searchParams.get('provider');
         const fullUrl = window.location.href;
         
         console.log('Auth callback received with URL:', fullUrl);
@@ -29,6 +30,11 @@ const AuthCallbackPage = () => {
           throw new Error('No authentication code received. Please try again.');
         }
         
+        // Extra logging for Apple auth
+        if (provider === 'apple') {
+          console.log('Processing Apple OAuth callback');
+        }
+        
         console.log('Processing OAuth callback with code');
         
         // Exchange the code for a session
@@ -36,6 +42,10 @@ const AuthCallbackPage = () => {
         
         if (exchangeError) {
           console.error('Error exchanging code for session:', exchangeError);
+          // Special handling for Apple errors
+          if (provider === 'apple' && exchangeError.message) {
+            console.error('Apple authentication error:', exchangeError.message);
+          }
           throw exchangeError;
         }
         
@@ -46,8 +56,13 @@ const AuthCallbackPage = () => {
         
         console.log('Authentication successful');
         
+        // Special success messaging for Apple
+        const successMessage = provider === 'apple' 
+          ? 'Apple Sign-In successful!' 
+          : 'Login successful';
+        
         toast({
-          title: "Login successful",
+          title: successMessage,
           description: "Welcome back!",
         });
         

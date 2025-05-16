@@ -22,6 +22,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appleLoading, setAppleLoading] = useState(false);
   
   // Get the page they were trying to visit
   const from = location.state?.from?.pathname || "/";
@@ -64,7 +65,27 @@ const LoginPage = () => {
     }
   };
 
+  const handleAppleLogin = async () => {
+    try {
+      setError(null);
+      setAppleLoading(true);
+      console.log("Initiating Apple Sign-In");
+      await socialLogin('apple');
+      // The redirect happens automatically through Supabase
+    } catch (error: any) {
+      console.error("Apple Sign-In error:", error);
+      const errorMessage = error.message || "Apple Sign-In failed.";
+      setError(errorMessage);
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   const handleSocialLogin = async (provider: Provider) => {
+    if (provider === 'apple') {
+      return handleAppleLogin();
+    }
+    
     try {
       setError(null);
       await socialLogin(provider);
@@ -149,8 +170,13 @@ const LoginPage = () => {
                 variant="outline" 
                 onClick={() => handleSocialLogin('apple')} 
                 className="w-full"
+                disabled={appleLoading}
               >
-                <Apple className="h-4 w-4 mr-2" />
+                {appleLoading ? (
+                  <ProgressIndicator variant="inline" size="sm" className="mr-2" />
+                ) : (
+                  <Apple className="h-4 w-4 mr-2" />
+                )}
                 Apple
               </Button>
               <Button 

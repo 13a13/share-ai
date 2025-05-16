@@ -128,26 +128,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Social login function
+  // Social login function with enhanced Apple support
   const socialLogin = async (provider: Provider) => {
     setIsLoading(true);
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
       
-      // Use the hardcoded redirect URL that matches Supabase configuration
-      const redirectTo = "https://share-ai.lovable.app/auth/callback";
+      // Use the hardcoded redirect URL that will work for both development and production
+      // Make sure this matches the URL configured in both Supabase and Apple Developer Console
+      const redirectTo = window.location.hostname === 'localhost' 
+        ? `${window.location.origin}/auth/callback`
+        : "https://share-ai.lovable.app/auth/callback";
       
       console.log(`Using redirect URL: ${redirectTo}`);
+      
+      // Apple-specific logging
+      if (provider === 'apple') {
+        console.log('Apple Sign-In initiated with redirect URL:', redirectTo);
+      }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
+          // For Apple, we might need specific scopes
+          scopes: provider === 'apple' ? 'name email' : undefined,
         },
       });
       
       if (error) {
         console.error(`${provider} OAuth error:`, error);
+        
+        // Enhanced Apple-specific error handling
+        if (provider === 'apple') {
+          if (error.message.includes('provider is not enabled')) {
+            throw new Error('Apple Sign-In is not enabled in your Supabase project settings. Please check your configuration.');
+          }
+          
+          console.error('Apple Sign-In failed with error:', error);
+          throw new Error(`Apple Sign-In failed: ${error.message}. Please verify your Apple Developer account settings.`);
+        }
+        
         // Check for validation errors which could indicate provider not enabled
         if (error.message.includes('validation_failed') || error.message.includes('provider is not enabled')) {
           throw new Error(`The ${provider} provider is not enabled in your Supabase project settings.`);
