@@ -1,11 +1,11 @@
-
 import React, { useRef, useState, useEffect } from "react";
-import { Camera, X, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { compressDataURLImage } from "@/utils/imageCompression";
 import { useToast } from "@/hooks/use-toast";
+import { compressDataURLImage } from "@/utils/imageCompression";
 import CapturedPhotosGallery from "./CapturedPhotosGallery";
-import ZoomControls from "./ZoomControls";
+import CameraHeader from "./CameraHeader";
+import CameraView from "./CameraView";
+import CameraControls from "./CameraControls";
+import { useCameraControl } from "@/hooks/useCameraControl";
 
 interface WhatsAppCameraProps {
   onClose: () => void;
@@ -13,155 +13,33 @@ interface WhatsAppCameraProps {
   maxPhotos?: number;
 }
 
-const ZOOM_LEVELS = [0.5, 1, 2, 3];
-
 const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCameraProps) => {
   const { toast } = useToast();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [isCameraActive, setCameraActive] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentZoomIndex, setCurrentZoomIndex] = useState(1); // Default to 1x zoom (index 1)
-  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const currentZoom = ZOOM_LEVELS[currentZoomIndex];
-  const [permissionState, setPermissionState] = useState<'prompt'|'granted'|'denied'>('prompt');
+  // Use our new camera control hook
+  const {
+    videoRef,
+    isCameraActive,
+    errorMessage,
+    isProcessing,
+    hasMultipleCameras,
+    permissionState,
+    currentZoomIndex,
+    ZOOM_LEVELS,
+    checkMultipleCameras,
+    checkCameraPermission,
+    startCamera,
+    switchCamera,
+    handleZoomChange,
+  } = useCameraControl({ maxPhotos });
 
-  // Check if device has multiple cameras
-  const checkMultipleCameras = async () => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      setHasMultipleCameras(videoDevices.length > 1);
-    } catch (error) {
-      console.error("Error checking for multiple cameras:", error);
-    }
-  };
-
-  // Check if we already have camera permission
-  const checkCameraPermission = async () => {
-    try {
-      // Try to query permission state if supported
-      if (navigator.permissions && navigator.permissions.query) {
-        const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
-        setPermissionState(result.state as 'prompt'|'granted'|'denied');
-        
-        if (result.state === 'granted') {
-          // If we already have permission, start camera right away
-          startCamera();
-        }
-      } else {
-        // If permissions API not available, try to start camera directly
-        // This will trigger the permission prompt if needed
-        startCamera();
-      }
-    } catch (error) {
-      console.error("Error checking camera permission:", error);
-      // If permissions API fails, try to start camera directly
-      startCamera();
-    }
-  };
-
-  // Start the camera with current settings
-  const startCamera = async () => {
-    try {
-      setErrorMessage(null);
-      setIsProcessing(true);
-      
-      // Get user media with appropriate constraints
-      const constraints: MediaStreamConstraints = {
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false
-      };
-
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          setStream(mediaStream);
-          setCameraActive(true);
-          setIsProcessing(false);
-        };
-      }
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-      setErrorMessage(
-        "Could not access camera. Please ensure you've granted camera permissions."
-      );
-      setPermissionState('denied');
-      setIsProcessing(false);
-    }
-  };
-
-  // Automatically initialize the camera when component mounts
+  // Initialize camera on component mount
   useEffect(() => {
     checkMultipleCameras();
     checkCameraPermission();
-    
-    // Clean up when component unmounts
-    return () => {
-      stopCamera();
-    };
   }, []);
-
-  // Stop the camera
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      if (videoRef.current) videoRef.current.srcObject = null;
-      setStream(null);
-      setCameraActive(false);
-    }
-  };
-
-  // Flip between front and rear cameras
-  const switchCamera = () => {
-    stopCamera();
-    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
-    // Restart camera with new facing mode
-    setTimeout(startCamera, 300);
-  };
-
-  // Apply digital zoom
-  const applyZoom = (zoomLevel: number) => {
-    const videoTrack = stream?.getVideoTracks()[0];
-    if (!videoTrack) return;
-
-    // First apply CSS zoom for universal support
-    if (videoRef.current) {
-      videoRef.current.style.transform = `scale(${zoomLevel})`;
-      videoRef.current.style.transformOrigin = 'center';
-    }
-
-    // Then try hardware zoom if supported
-    try {
-      const capabilities = videoTrack.getCapabilities?.();
-      if (capabilities && 'zoom' in capabilities) {
-        const constraints = {} as any; // Use type assertion for zoom constraint
-        constraints.zoom = zoomLevel;
-        videoTrack.applyConstraints(constraints).catch(e => {
-          console.log("Could not apply zoom constraint, using CSS zoom only:", e);
-        });
-      }
-    } catch (error) {
-      console.error("Error applying zoom:", error);
-    }
-  };
-
-  // Change zoom level
-  const handleZoomChange = (zoomIndex: number) => {
-    setCurrentZoomIndex(zoomIndex);
-    applyZoom(ZOOM_LEVELS[zoomIndex]);
-  };
 
   // Take a photo
   const takePhoto = async () => {
@@ -234,26 +112,11 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
       {/* Header */}
-      <div className="flex justify-between items-center p-4 bg-black text-white">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="text-white hover:bg-gray-800"
-        >
-          <X className="h-6 w-6" />
-        </Button>
-        <h2 className="text-xl font-semibold">Camera</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleDone}
-          disabled={capturedPhotos.length === 0}
-          className="text-white hover:bg-gray-800"
-        >
-          <Check className="h-6 w-6" />
-        </Button>
-      </div>
+      <CameraHeader 
+        onClose={onClose}
+        onDone={handleDone}
+        hasCapturedPhotos={capturedPhotos.length > 0}
+      />
 
       {/* Captured Photos Gallery */}
       {capturedPhotos.length > 0 && (
@@ -265,119 +128,31 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
 
       {/* Camera View */}
       <div className="relative flex-grow flex items-center justify-center bg-black overflow-hidden">
-        {errorMessage ? (
-          <div className="text-white text-center p-4">
-            <p className="mb-4">{errorMessage}</p>
-            <Button
-              onClick={() => {
-                setPermissionState('prompt');
-                startCamera();
-              }}
-              className="bg-shareai-teal hover:bg-shareai-teal/90"
-            >
-              Try Again
-            </Button>
-          </div>
-        ) : isCameraActive ? (
-          <>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="max-h-full max-w-full object-cover transform"
-            />
-            {/* Zoom controls */}
-            <ZoomControls
-              zoomLevels={ZOOM_LEVELS}
-              currentZoomIndex={currentZoomIndex}
-              onZoomChange={handleZoomChange}
-            />
-          </>
-        ) : isProcessing ? (
-          <div className="text-white text-center p-4">
-            <div className="h-10 w-10 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto mb-4"></div>
-            <p>Accessing camera...</p>
-          </div>
-        ) : permissionState === 'denied' ? (
-          <div className="text-white text-center p-4">
-            <p className="mb-4">Camera access denied. Please enable camera permission in your browser settings.</p>
-            <Button
-              onClick={() => {
-                setPermissionState('prompt');
-                startCamera();
-              }}
-              className="bg-shareai-teal hover:bg-shareai-teal/90"
-            >
-              Try Again
-            </Button>
-          </div>
-        ) : (
-          <div className="text-white text-center p-4">
-            <Button
-              onClick={startCamera}
-              className="bg-shareai-teal hover:bg-shareai-teal/90 mb-4 flex items-center gap-2"
-            >
-              <Camera className="h-5 w-5" />
-              Open Camera
-            </Button>
-            <p className="text-sm text-gray-400">Grant camera permissions when prompted</p>
-          </div>
-        )}
+        <CameraView
+          errorMessage={errorMessage}
+          isCameraActive={isCameraActive}
+          isProcessing={isProcessing}
+          permissionState={permissionState}
+          videoRef={videoRef}
+          zoomLevels={ZOOM_LEVELS}
+          currentZoomIndex={currentZoomIndex}
+          onZoomChange={handleZoomChange}
+          onStartCamera={startCamera}
+        />
 
         <canvas ref={canvasRef} className="hidden" />
       </div>
 
       {/* Footer with controls */}
-      {isCameraActive && (
-        <div className="p-4 bg-black">
-          <div className="flex items-center justify-between">
-            {/* Camera switch button (only show if multiple cameras detected) */}
-            <div className="w-12">
-              {hasMultipleCameras && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={switchCamera}
-                  className="text-white hover:bg-gray-800"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M16 7h.01"></path>
-                    <rect width="18" height="14" x="3" y="3" rx="2"></rect>
-                    <path d="m9 11 3-3 3 3"></path>
-                    <path d="M12 14v-6"></path>
-                  </svg>
-                </Button>
-              )}
-            </div>
-            
-            {/* Shutter button */}
-            <Button
-              onClick={takePhoto}
-              disabled={isProcessing || capturedPhotos.length >= maxPhotos}
-              size="icon"
-              className={`rounded-full w-16 h-16 ${
-                isProcessing
-                  ? "bg-gray-600"
-                  : "bg-white hover:bg-gray-200"
-              }`}
-            >
-              {isProcessing ? (
-                <div className="h-14 w-14 rounded-full border-2 border-gray-400 border-t-transparent animate-spin"></div>
-              ) : (
-                <div className="h-14 w-14 rounded-full border-4 border-gray-900"></div>
-              )}
-            </Button>
-            
-            {/* Empty space to balance layout */}
-            <div className="w-12"></div>
-          </div>
-          
-          {/* Photos counter */}
-          <div className="text-white text-center mt-4 text-sm">
-            {capturedPhotos.length}/{maxPhotos} photos
-          </div>
-        </div>
-      )}
+      <CameraControls 
+        isCameraActive={isCameraActive}
+        isProcessing={isProcessing}
+        hasMultipleCameras={hasMultipleCameras}
+        capturedPhotos={capturedPhotos}
+        maxPhotos={maxPhotos}
+        onTakePhoto={takePhoto}
+        onSwitchCamera={switchCamera}
+      />
     </div>
   );
 };
