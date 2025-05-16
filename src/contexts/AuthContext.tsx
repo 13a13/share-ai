@@ -133,10 +133,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
+      
+      // Use the hardcoded redirect URL that matches Supabase configuration
+      const redirectTo = "https://share-ai.lovable.app/auth/callback";
+      
+      console.log(`Using redirect URL: ${redirectTo}`);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo,
         },
       });
       

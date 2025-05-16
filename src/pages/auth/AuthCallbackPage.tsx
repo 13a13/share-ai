@@ -19,9 +19,14 @@ const AuthCallbackPage = () => {
         
         // Get the code from URL query params
         const code = searchParams.get('code');
+        const fullUrl = window.location.href;
+        
+        console.log('Auth callback received with URL:', fullUrl);
+        console.log('Search params:', Object.fromEntries(searchParams.entries()));
         
         if (!code) {
-          throw new Error('No code provided in the callback URL');
+          console.error('No code provided in the callback URL');
+          throw new Error('No authentication code received. Please try again.');
         }
         
         console.log('Processing OAuth callback with code');
@@ -35,7 +40,8 @@ const AuthCallbackPage = () => {
         }
         
         if (!data.session) {
-          throw new Error('No session returned after code exchange');
+          console.error('No session returned after code exchange');
+          throw new Error('No session returned after authentication. Please try again.');
         }
         
         console.log('Authentication successful');
