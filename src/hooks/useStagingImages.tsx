@@ -87,7 +87,7 @@ export function useStagingImages({ maxImages, currentImagesCount }: UseStagingIm
     }
   };
 
-  const handleCameraCapture = async (imageData: string) => {
+  const handleCameraCapture = async (imageData: string[]) => {
     if (totalImages >= maxImages) {
       toast({
         title: "Maximum images reached",
@@ -97,18 +97,33 @@ export function useStagingImages({ maxImages, currentImagesCount }: UseStagingIm
       return;
     }
     
+    const availableSlots = maxImages - totalImages;
+    const imagesToAdd = imageData.slice(0, availableSlots);
+    
     setCompressionInProgress(true);
     
     try {
-      // Compress the camera-captured image
-      const fileName = `camera-${Date.now()}.jpg`;
-      const compressedDataUrl = await compressDataURLImage(imageData, fileName);
-      setStagingImages([...stagingImages, compressedDataUrl]);
+      // Compress each camera-captured image
+      const compressedImages = await Promise.all(
+        imagesToAdd.map(async (img, index) => {
+          const fileName = `camera-${Date.now()}-${index}.jpg`;
+          return compressDataURLImage(img, fileName);
+        })
+      );
+      
+      setStagingImages([...stagingImages, ...compressedImages]);
+      
+      if (imageData.length > availableSlots) {
+        toast({
+          title: "Not all images added",
+          description: `Only ${availableSlots} of ${imageData.length} images were added due to the limit.`,
+        });
+      }
     } catch (error) {
-      console.error("Error processing camera image:", error);
+      console.error("Error processing camera images:", error);
       toast({
-        title: "Error processing image",
-        description: "The captured image could not be processed. Please try again.",
+        title: "Error processing images",
+        description: "The captured images could not be processed. Please try again.",
         variant: "destructive",
       });
     } finally {

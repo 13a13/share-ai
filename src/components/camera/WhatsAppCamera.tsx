@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import { Camera, X, ZoomIn, ZoomOut, Check, CircleX } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -106,19 +105,24 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
     const videoTrack = stream?.getVideoTracks()[0];
     if (!videoTrack || !('getConstraints' in videoTrack)) return;
 
-    // Some browsers support zoom through advanced constraints
+    // Try to apply zoom using CSS scaling instead of constraints
+    // This is more widely supported across browsers
+    if (videoRef.current) {
+      videoRef.current.style.transform = `scale(${zoomLevel})`;
+      videoRef.current.style.transformOrigin = 'center';
+    }
+
+    // Some browsers support zoom through constraints
     try {
       const capabilities = videoTrack.getCapabilities();
       if (capabilities && 'zoom' in capabilities) {
-        const constraints = {
-          advanced: [{ zoom: zoomLevel }]
-        };
-        videoTrack.applyConstraints(constraints);
-      } else {
-        // For browsers without zoom capability, we'll simulate zoom with CSS
-        if (videoRef.current) {
-          const scale = 1 / zoomLevel;
-          videoRef.current.style.transform = `scale(${zoomLevel})`;
+        // Create a properly typed constraint object
+        const zoomConstraints: MediaTrackConstraints = {};
+        
+        // Only set zoom if the camera supports it
+        if ('zoom' in capabilities) {
+          zoomConstraints.zoom = zoomLevel;
+          videoTrack.applyConstraints(zoomConstraints);
         }
       }
     } catch (error) {

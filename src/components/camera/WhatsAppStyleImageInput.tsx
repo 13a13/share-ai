@@ -39,9 +39,7 @@ const WhatsAppStyleImageInput = ({
   // Handle photos captured from WhatsApp-style camera
   const handlePhotosCaptured = (photos: string[]) => {
     // Pass all captured photos to parent
-    photos.forEach(photo => {
-      onImageCapture(photo);
-    });
+    onImageCapture(photos);
   };
 
   const remainingImages = maxImages - totalImages;

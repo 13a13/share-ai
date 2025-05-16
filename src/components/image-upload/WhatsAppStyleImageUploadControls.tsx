@@ -6,7 +6,7 @@ interface WhatsAppStyleImageUploadControlsProps {
   isProcessing: boolean;
   compressionInProgress: boolean;
   handleImageCapture: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  handleCameraCapture: (imageData: string) => void;
+  handleCameraCapture: (imageData: string[]) => void;
   canAddMore: boolean;
   disabled: boolean;
   totalImages: number;
