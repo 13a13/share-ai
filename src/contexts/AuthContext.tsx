@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
       
-      // Use the hardcoded redirect URL that will work for both development and production
+      // Use the appropriate redirect URL for the current environment
       // Make sure this matches the URL configured in both Supabase and Apple Developer Console
       const redirectTo = window.location.hostname === 'localhost' 
         ? `${window.location.origin}/auth/callback`
@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         provider,
         options: {
           redirectTo,
-          // For Apple, we might need specific scopes
+          // For Apple, we need specific scopes
           scopes: provider === 'apple' ? 'name email' : undefined,
         },
       });
