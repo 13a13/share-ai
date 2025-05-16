@@ -29,7 +29,7 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   
   const currentZoom = ZOOM_LEVELS[currentZoomIndex];
-  const [showInitialButton, setShowInitialButton] = useState(true);
+  const [permissionState, setPermissionState] = useState<'prompt'|'granted'|'denied'>('prompt');
 
   // Check if device has multiple cameras
   const checkMultipleCameras = async () => {
@@ -42,12 +42,35 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
     }
   };
 
+  // Check if we already have camera permission
+  const checkCameraPermission = async () => {
+    try {
+      // Try to query permission state if supported
+      if (navigator.permissions && navigator.permissions.query) {
+        const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        setPermissionState(result.state as 'prompt'|'granted'|'denied');
+        
+        if (result.state === 'granted') {
+          // If we already have permission, start camera right away
+          startCamera();
+        }
+      } else {
+        // If permissions API not available, try to start camera directly
+        // This will trigger the permission prompt if needed
+        startCamera();
+      }
+    } catch (error) {
+      console.error("Error checking camera permission:", error);
+      // If permissions API fails, try to start camera directly
+      startCamera();
+    }
+  };
+
   // Start the camera with current settings
   const startCamera = async () => {
     try {
       setErrorMessage(null);
       setIsProcessing(true);
-      setShowInitialButton(false);
       
       // Get user media with appropriate constraints
       const constraints: MediaStreamConstraints = {
@@ -63,23 +86,26 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        setStream(mediaStream);
-        setCameraActive(true);
+        videoRef.current.onloadedmetadata = () => {
+          setStream(mediaStream);
+          setCameraActive(true);
+          setIsProcessing(false);
+        };
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
       setErrorMessage(
         "Could not access camera. Please ensure you've granted camera permissions."
       );
-      setShowInitialButton(true);
-    } finally {
+      setPermissionState('denied');
       setIsProcessing(false);
     }
   };
 
-  // Automatically initialize the camera when component mounts if permission already granted
+  // Automatically initialize the camera when component mounts
   useEffect(() => {
     checkMultipleCameras();
+    checkCameraPermission();
     
     // Clean up when component unmounts
     return () => {
@@ -243,7 +269,10 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
           <div className="text-white text-center p-4">
             <p className="mb-4">{errorMessage}</p>
             <Button
-              onClick={startCamera}
+              onClick={() => {
+                setPermissionState('prompt');
+                startCamera();
+              }}
               className="bg-shareai-teal hover:bg-shareai-teal/90"
             >
               Try Again
@@ -264,7 +293,25 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
               onZoomChange={handleZoomChange}
             />
           </>
-        ) : showInitialButton ? (
+        ) : isProcessing ? (
+          <div className="text-white text-center p-4">
+            <div className="h-10 w-10 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto mb-4"></div>
+            <p>Accessing camera...</p>
+          </div>
+        ) : permissionState === 'denied' ? (
+          <div className="text-white text-center p-4">
+            <p className="mb-4">Camera access denied. Please enable camera permission in your browser settings.</p>
+            <Button
+              onClick={() => {
+                setPermissionState('prompt');
+                startCamera();
+              }}
+              className="bg-shareai-teal hover:bg-shareai-teal/90"
+            >
+              Try Again
+            </Button>
+          </div>
+        ) : (
           <div className="text-white text-center p-4">
             <Button
               onClick={startCamera}
@@ -274,11 +321,6 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
               Open Camera
             </Button>
             <p className="text-sm text-gray-400">Grant camera permissions when prompted</p>
-          </div>
-        ) : (
-          <div className="text-white text-center p-4">
-            <div className="h-10 w-10 rounded-full border-2 border-white border-t-transparent animate-spin mx-auto mb-4"></div>
-            <p>Accessing camera...</p>
           </div>
         )}
 

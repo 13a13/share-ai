@@ -65,7 +65,7 @@ const ImageFileInput = ({
         <WhatsAppCamera
           onClose={() => setIsCameraOpen(false)}
           onPhotosCapture={handleWhatsAppCameraPhotos}
-          maxPhotos={remainingImages}
+          maxPhotos={1} // Limit to 1 for single image capture
         />
       )}
 

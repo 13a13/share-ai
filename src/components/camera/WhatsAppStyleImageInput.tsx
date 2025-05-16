@@ -40,6 +40,7 @@ const WhatsAppStyleImageInput = ({
   const handlePhotosCaptured = (photos: string[]) => {
     // Pass all captured photos to parent
     onImageCapture(photos);
+    setIsCameraOpen(false);
   };
 
   const remainingImages = maxImages - totalImages;
