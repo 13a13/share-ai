@@ -54,14 +54,28 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
     }
   };
 
+  // Stop the camera
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
+      setStream(null);
+      setCameraActive(false);
+    }
+  };
+
   // Start the camera with current settings
   const startCamera = async () => {
+    // First, stop any existing camera to ensure clean initialization
+    stopCamera();
+    
     try {
       setErrorMessage(null);
       setIsProcessing(true);
       setPermissionState('prompt');
       
       // Get user media with appropriate constraints
+      // We use "ideal" rather than "exact" for better compatibility
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: facingMode,
@@ -72,64 +86,99 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
       };
 
       console.log("Starting camera with constraints:", constraints);
+      
+      // Request camera access
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      if (videoRef.current) {
-        console.log("Camera stream obtained, attaching to video element");
-        videoRef.current.srcObject = mediaStream;
-        
-        // Ensure the video starts playing
-        try {
-          await videoRef.current.play();
-          console.log("Video playback started successfully");
-        } catch (playError) {
-          console.error("Error playing video:", playError);
+      // Check if videoRef exists
+      if (!videoRef.current) {
+        console.error("Video element reference is not available");
+        throw new Error("Camera element is not ready. Please try again.");
+      }
+      
+      // Set the stream to video element
+      console.log("Camera stream obtained, attaching to video element");
+      videoRef.current.srcObject = mediaStream;
+      
+      // Ensure the video loads and plays
+      videoRef.current.onloadedmetadata = () => {
+        console.log("Video metadata loaded successfully");
+        if (videoRef.current) {
+          videoRef.current.play()
+            .then(() => {
+              console.log("Camera video is now playing");
+              setStream(mediaStream);
+              setCameraActive(true);
+              setIsProcessing(false);
+              setPermissionState('granted');
+            })
+            .catch(playError => {
+              console.error("Error playing video:", playError);
+              throw playError;
+            });
         }
-        
-        // Handle video element loaded successfully
-        videoRef.current.onloadedmetadata = () => {
-          console.log("Video element metadata loaded");
+      };
+      
+      // Handle errors in video element
+      videoRef.current.onerror = (event) => {
+        console.error("Video element error:", event);
+        setErrorMessage("Failed to display camera feed. Please try again.");
+        setIsProcessing(false);
+      };
+      
+      // Set a timeout to handle cases where onloadedmetadata doesn't fire
+      const timeoutId = setTimeout(() => {
+        if (isProcessing && videoRef.current) {
+          console.log("Timeout reached - forcing camera activation");
           setStream(mediaStream);
           setCameraActive(true);
           setIsProcessing(false);
           setPermissionState('granted');
-        };
-        
-        // Additional event listener for successful video load
-        videoRef.current.oncanplay = () => {
-          console.log("Video can play - camera is ready");
-          setCameraActive(true);
-          setIsProcessing(false);
-        };
-        
-        // Handle errors in the video element
-        videoRef.current.onerror = (err) => {
-          console.error("Video element error:", err);
-          setErrorMessage("Failed to initialize camera. Please try again.");
-          setIsProcessing(false);
-        };
-      } else {
-        console.error("Video reference is not available");
-        setErrorMessage("Camera initialization failed. Please reload and try again.");
-        setIsProcessing(false);
-      }
-    } catch (error) {
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timeoutId);
+      
+    } catch (error: any) {
+      // Handle specific error cases
       console.error("Error accessing camera:", error);
-      setErrorMessage(
-        "Could not access camera. Please ensure you've granted camera permissions."
-      );
-      setPermissionState('denied');
+      
+      let friendlyMessage = "Could not access camera. Please ensure you've granted camera permissions.";
+      
+      // Handle specific error cases
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        friendlyMessage = "Camera access denied. Please enable camera permission in your browser settings.";
+        setPermissionState('denied');
+      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        friendlyMessage = "No camera detected. Please connect a camera and try again.";
+      } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
+        friendlyMessage = "Camera is in use by another application. Please close other apps using the camera.";
+      } else if (error.name === "OverconstrainedError") {
+        friendlyMessage = "Camera doesn't support the requested settings. Trying with default settings...";
+        // Fall back to basic constraints
+        const basicConstraints = { 
+          video: true, 
+          audio: false 
+        };
+        
+        try {
+          const basicStream = await navigator.mediaDevices.getUserMedia(basicConstraints);
+          if (videoRef.current) {
+            videoRef.current.srcObject = basicStream;
+            setStream(basicStream);
+            setCameraActive(true);
+            setIsProcessing(false);
+            setPermissionState('granted');
+            return; // Exit here since we've recovered
+          }
+        } catch (fallbackError) {
+          console.error("Fallback camera access also failed:", fallbackError);
+          friendlyMessage = "Could not access any camera. Please check your device.";
+        }
+      }
+      
+      setErrorMessage(friendlyMessage);
       setIsProcessing(false);
-    }
-  };
-
-  // Stop the camera
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      if (videoRef.current) videoRef.current.srcObject = null;
-      setStream(null);
-      setCameraActive(false);
     }
   };
 
@@ -197,6 +246,6 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
     stopCamera,
     switchCamera,
     handleZoomChange,
-    setIsProcessing // Export this function so WhatsAppCamera can use it
+    setIsProcessing
   };
 }

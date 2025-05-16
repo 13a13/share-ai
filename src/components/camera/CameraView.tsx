@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import ZoomControls from "./ZoomControls";
@@ -28,9 +28,25 @@ const CameraView: React.FC<CameraViewProps> = ({
   onZoomChange,
   onStartCamera,
 }) => {
+  // Add effect for ensuring video plays once camera is active
+  useEffect(() => {
+    const playVideo = async () => {
+      if (isCameraActive && videoRef.current && videoRef.current.paused) {
+        try {
+          await videoRef.current.play();
+          console.log("Video playback started by effect");
+        } catch (error) {
+          console.error("Error auto-playing video:", error);
+        }
+      }
+    };
+    
+    playVideo();
+  }, [isCameraActive, videoRef]);
+
   if (errorMessage) {
     return (
-      <div className="text-white text-center p-4">
+      <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
         <p className="mb-4">{errorMessage}</p>
         <Button
           onClick={() => onStartCamera()}
@@ -51,6 +67,7 @@ const CameraView: React.FC<CameraViewProps> = ({
           playsInline
           muted
           className="h-full w-full object-cover"
+          style={{ transform: `scale(${zoomLevels[currentZoomIndex]})` }}
         />
         <ZoomControls
           zoomLevels={zoomLevels}
@@ -72,7 +89,7 @@ const CameraView: React.FC<CameraViewProps> = ({
 
   if (permissionState === 'denied') {
     return (
-      <div className="text-white text-center p-4">
+      <div className="text-white text-center p-4 flex flex-col items-center justify-center h-full">
         <p className="mb-4">Camera access denied. Please enable camera permission in your browser settings.</p>
         <Button
           onClick={() => onStartCamera()}

@@ -34,15 +34,16 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
     startCamera,
     switchCamera,
     handleZoomChange,
-    setIsProcessing // <-- We need this from the hook
+    setIsProcessing
   } = useCameraControl({ maxPhotos });
 
-  // Initialize camera on component mount
+  // Initialize camera on component mount and handle cleanup
   useEffect(() => {
+    // Check for cameras and permissions
     checkMultipleCameras();
     checkCameraPermission();
     
-    // Just in case the camera doesn't initialize automatically, try again after a short delay
+    // Automatic initialization after a short delay if needed
     const initTimeout = setTimeout(() => {
       if (!isCameraActive && !isProcessing && !errorMessage) {
         console.log("Attempting automatic camera initialization");
@@ -50,23 +51,34 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
       }
     }, 1000);
     
-    return () => clearTimeout(initTimeout);
+    // Return cleanup function
+    return () => {
+      clearTimeout(initTimeout);
+    };
   }, []);
 
   // Take a photo
   const takePhoto = async () => {
     if (!canvasRef.current || !videoRef.current || capturedPhotos.length >= maxPhotos) return;
     
-    setIsProcessing(true); // Now using the proper state setter from the hook
+    setIsProcessing(true);
     
     try {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       
-      if (!context) return;
+      if (!context) {
+        throw new Error("Could not get canvas context");
+      }
       
       console.log("Taking photo with dimensions:", video.videoWidth, "x", video.videoHeight);
+      
+      // Make sure we have valid dimensions
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.error("Invalid video dimensions:", video.videoWidth, video.videoHeight);
+        throw new Error("Camera not ready. Please try again.");
+      }
       
       // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
@@ -95,11 +107,11 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
       console.error("Error capturing photo:", error);
       toast({
         title: "Error capturing photo",
-        description: "There was a problem capturing your photo.",
+        description: "There was a problem capturing your photo. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false); // Now using the proper state setter from the hook
+      setIsProcessing(false);
     }
   };
 

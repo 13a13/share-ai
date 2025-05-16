@@ -27,4 +27,3 @@ const LoadingSpinner = ({ size = "md", className, text }: LoadingSpinnerProps) =
 };
 
 export default LoadingSpinner;
-
