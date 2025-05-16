@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import { Camera, X, ZoomIn, ZoomOut, Check, CircleX } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -116,8 +117,9 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
     try {
       const capabilities = videoTrack.getCapabilities();
       if (capabilities && 'zoom' in capabilities) {
-        // Create a properly typed constraint object
-        const zoomConstraints: MediaTrackConstraints = {};
+        // Use "as any" as a workaround for TypeScript's lack of zoom type definition
+        // This is a known issue with MediaTrackConstraints type definition
+        const zoomConstraints = {} as any;
         
         // Only set zoom if the camera supports it
         if ('zoom' in capabilities) {
