@@ -166,5 +166,6 @@ export function useCameraControl({ maxPhotos }: UseCameraControlProps) {
     stopCamera,
     switchCamera,
     handleZoomChange,
+    setIsProcessing // Export this function so WhatsAppCamera can use it
   };
 }

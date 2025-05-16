@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { compressDataURLImage } from "@/utils/imageCompression";
@@ -33,6 +34,7 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
     startCamera,
     switchCamera,
     handleZoomChange,
+    setIsProcessing // <-- We need this from the hook
   } = useCameraControl({ maxPhotos });
 
   // Initialize camera on component mount
@@ -45,7 +47,7 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
   const takePhoto = async () => {
     if (!canvasRef.current || !videoRef.current || capturedPhotos.length >= maxPhotos) return;
     
-    setIsProcessing(true);
+    setIsProcessing(true); // Now using the proper state setter from the hook
     
     try {
       const video = videoRef.current;
@@ -85,7 +87,7 @@ const WhatsAppCamera = ({ onClose, onPhotosCapture, maxPhotos = 20 }: WhatsAppCa
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false); // Now using the proper state setter from the hook
     }
   };
 
