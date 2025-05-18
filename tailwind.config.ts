@@ -61,14 +61,16 @@ export default {
 					dark: '#1E293B'
 				},
 				verifyvision: {
-					blue: '#0F3460',    // Keeping the same color values for now
-					teal: '#2E8BC0',    // but with the new namespace
-					orange: '#FF5722',
+					blue: '#0F3460',    // Dark blue base
+					teal: '#2E8BC0',    // Medium blue
+					orange: '#FF5722',   // Keeping accent color
 					light: '#F5F7FA',
 					dark: '#1E293B',
-					primary: '#9b87f5', // Adding some new VerifyVision specific colors
-					secondary: '#7E69AB',
+					primary: '#2F80ED', // Bright blue from logo
+					secondary: '#7E69AB', 
 					accent: '#6E59A5',
+					purple: '#8851FB',  // Purple from logo gradient
+					lightblue: '#30C0FB', // Light blue from logo
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',

@@ -29,8 +29,15 @@ const Header = () => {
   return (
     <header className="bg-verifyvision-blue py-4 text-white">
       <div className="verifyvision-container flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Link to="/" className="text-xl font-bold">VerifyVision AI</Link>
+        <div className="flex items-center space-x-3">
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/14a8bc8f-617c-43d9-90e5-bdc8b7bf3749.png" 
+              alt="VerifyVision AI Logo" 
+              className="h-10 w-10"
+            />
+            <span className="text-xl font-bold ml-2">VerifyVision AI</span>
+          </Link>
         </div>
         
         <div className="flex items-center space-x-4">

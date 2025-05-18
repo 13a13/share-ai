@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 210 100% 35%;
+    --primary: 217 91% 60%;  /* Adjusted to logo blue */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96%;
@@ -23,7 +23,7 @@
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 16 100% 50%; 
+    --accent: 260 95% 65%;  /* Logo purple */
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84% 60%;
@@ -55,7 +55,7 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 100% 35%;
+    --primary: 217 91% 60%;  /* Adjusted to logo blue */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217 33% 18%;
@@ -64,7 +64,7 @@
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 16 100% 50%;
+    --accent: 260 95% 65%;  /* Logo purple */
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 63% 31%;
