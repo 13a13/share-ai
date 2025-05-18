@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0 flex items-center">
             <img 
-              src="/lovable-uploads/14a8bc8f-617c-43d9-90e5-bdc8b7bf3749.png" 
+              src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
               alt="VerifyVision AI Logo" 
               className="h-10 w-10 mr-3" 
             />

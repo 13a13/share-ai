@@ -60,6 +60,13 @@ const RegisterPage = () => {
     <div className="container flex items-center justify-center min-h-screen py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
+              alt="VerifyVision AI Logo" 
+              className="h-16 w-16" 
+            />
+          </div>
           <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
           <CardDescription className="text-center">
             Enter your information to create your account
@@ -163,7 +170,7 @@ const RegisterPage = () => {
           <CardFooter className="flex flex-col space-y-4">
             <Button
               type="submit"
-              className="w-full bg-shareai-teal hover:bg-shareai-teal/90"
+              className="w-full bg-gradient-to-r from-verifyvision-gradient-start via-verifyvision-gradient-middle to-verifyvision-gradient-end hover:opacity-90"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -176,7 +183,7 @@ const RegisterPage = () => {
             </Button>
             <div className="text-center text-sm">
               Already have an account?{" "}
-              <Link to="/login" className="font-medium text-shareai-teal hover:underline">
+              <Link to="/login" className="font-medium text-verifyvision-primary hover:underline">
                 Login
               </Link>
             </div>

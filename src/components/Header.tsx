@@ -32,7 +32,7 @@ const Header = () => {
         <div className="flex items-center space-x-3">
           <Link to="/" className="flex items-center">
             <img 
-              src="/lovable-uploads/14a8bc8f-617c-43d9-90e5-bdc8b7bf3749.png" 
+              src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
               alt="VerifyVision AI Logo" 
               className="h-10 w-10"
             />

@@ -106,7 +106,7 @@ const LoginPage = () => {
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
             <img 
-              src="/lovable-uploads/14a8bc8f-617c-43d9-90e5-bdc8b7bf3749.png" 
+              src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
               alt="VerifyVision AI Logo" 
               className="h-16 w-16" 
             />
@@ -208,7 +208,7 @@ const LoginPage = () => {
           <CardFooter className="flex flex-col space-y-4">
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-verifyvision-lightblue to-verifyvision-purple hover:opacity-90"
+              className="w-full bg-gradient-to-r from-verifyvision-gradient-start via-verifyvision-gradient-middle to-verifyvision-gradient-end hover:opacity-90"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
