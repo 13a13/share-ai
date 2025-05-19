@@ -2,16 +2,28 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ConditionRating } from '@/types';
 
+// Enhanced interface with cross-analysis support
 export interface ProcessedImageResult {
   description: string;
   condition: {
     summary: string;
-    points: string[];
+    points: string[] | Array<{
+      label: string;
+      validationStatus?: 'confirmed' | 'unconfirmed';
+      supportingImageCount?: number;
+    }>;
     rating: ConditionRating;
   };
   cleanliness: string;
   rating?: string; // The original rating from Gemini
   notes?: string;
+  // Advanced analysis fields
+  crossAnalysis?: {
+    materialConsistency: boolean | null;
+    defectConfidence: 'low' | 'medium' | 'high';
+    multiAngleValidation: Array<[string, number]>;
+  };
+  analysisMode?: 'standard' | 'inventory' | 'advanced';
 }
 
 export const cleanlinessOptions = [
@@ -44,24 +56,34 @@ export const conditionRatingToText = (condition: string): string => {
  * @param imageUrls URL or array of URLs of the image(s) to analyze
  * @param roomType Type of room the component is in
  * @param componentName Name of the component being analyzed
- * @param multipleImages Flag indicating multiple images are being processed
+ * @param options Additional options for processing
  * @returns Processed image result with description, condition, cleanliness and other details
  */
 export const processComponentImage = async (
   imageUrls: string | string[],
   roomType: string,
   componentName: string,
-  multipleImages = false
+  options: {
+    multipleImages?: boolean;
+    useAdvancedAnalysis?: boolean; // New option to enable advanced analysis
+  } = {}
 ): Promise<ProcessedImageResult> => {
   try {
+    const { multipleImages = false, useAdvancedAnalysis = false } = options;
     console.log(`Processing ${Array.isArray(imageUrls) ? imageUrls.length : 1} images for component: ${componentName}`);
+    
+    // Only enable advanced analysis for multiple images
+    const shouldUseAdvancedAnalysis = useAdvancedAnalysis && 
+                                      Array.isArray(imageUrls) && 
+                                      imageUrls.length > 1;
     
     const response = await supabase.functions.invoke('process-room-image', {
       body: {
         imageUrls,
         componentName,
         roomType,
-        inventoryMode: true, // Use the inventory clerk prompt format
+        inventoryMode: !shouldUseAdvancedAnalysis && true, // Use inventory mode when not using advanced
+        useAdvancedAnalysis: shouldUseAdvancedAnalysis,
         multipleImages
       },
     });
@@ -71,9 +93,41 @@ export const processComponentImage = async (
       throw new Error('Failed to analyze image');
     }
 
-    return response.data as ProcessedImageResult;
+    const result = response.data as ProcessedImageResult;
+    
+    // Add analysis mode for frontend rendering decisions if not already set
+    if (!result.analysisMode) {
+      result.analysisMode = shouldUseAdvancedAnalysis ? 'advanced' : 'inventory';
+    }
+    
+    return result;
   } catch (error) {
     console.error('Error in processComponentImage:', error);
     throw error;
   }
+};
+
+/**
+ * Normalize and standardize condition points to handle both string arrays
+ * and structured object arrays with validation data
+ */
+export const normalizeConditionPoints = (points: any[]): string[] => {
+  if (!points || !Array.isArray(points)) return [];
+  
+  return points.map(point => {
+    if (typeof point === 'string') {
+      return point;
+    } else if (typeof point === 'object' && point !== null) {
+      // If it's an enhanced point with validation data, just return the label
+      return point.label || '';
+    }
+    return '';
+  }).filter(Boolean);
+};
+
+/**
+ * Check if analysis result uses the advanced format
+ */
+export const isAdvancedAnalysis = (result: ProcessedImageResult): boolean => {
+  return Boolean(result.analysisMode === 'advanced' || result.crossAnalysis);
 };

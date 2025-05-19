@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { 
   corsHeaders, 
@@ -14,6 +15,11 @@ import {
   parseInventoryResponse,
   createInventoryPrompt
 } from "./inventory-parser.ts";
+import {
+  createAdvancedMultiImagePrompt,
+  parseAdvancedAnalysisResponse,
+  formatAdvancedResponse
+} from "./advanced-analysis.ts";
 
 // Use the provided API key directly
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -42,7 +48,15 @@ serve(async (req) => {
       );
     }
     
-    const { imageUrls, componentName, roomType, inventoryMode = false, maxImages = 20 } = requestData;
+    const { 
+      imageUrls, 
+      componentName, 
+      roomType, 
+      inventoryMode = false, 
+      useAdvancedAnalysis = false, // New flag for opting into advanced analysis
+      multipleImages = false,
+      maxImages = 20 
+    } = requestData;
     
     if (!imageUrls || (Array.isArray(imageUrls) && imageUrls.length === 0)) {
       return new Response(
@@ -74,10 +88,24 @@ serve(async (req) => {
       return imageUrl;
     });
 
-    // Generate prompt based on inventory mode or component analysis
+    // Determine if we should use advanced analysis
+    // Only use for multiple images AND when explicitly requested
+    const shouldUseAdvancedAnalysis = useAdvancedAnalysis && 
+                                      Array.isArray(limitedImages) && 
+                                      limitedImages.length > 1;
+
+    // Generate prompt based on analysis mode
     let promptText;
     
-    if (inventoryMode && componentName) {
+    if (shouldUseAdvancedAnalysis) {
+      // Use the new advanced multi-image analysis prompt
+      promptText = createAdvancedMultiImagePrompt(
+        componentName || 'component',
+        roomType || 'room',
+        limitedImages.length
+      );
+      console.log("Using advanced multi-image analysis protocol");
+    } else if (inventoryMode && componentName) {
       // Use the detailed inventory clerk prompt for component analysis
       promptText = createInventoryPrompt(componentName);
     } else {
@@ -86,7 +114,7 @@ serve(async (req) => {
     }
     
     // Create and send request to Gemini API with all images
-    const geminiRequest = createGeminiRequest(promptText, imageDataArray);
+    const geminiRequest = createGeminiRequest(promptText, imageDataArray, shouldUseAdvancedAnalysis);
     
     try {
       // Call Gemini API and get the text response
@@ -94,11 +122,26 @@ serve(async (req) => {
       
       let parsedData;
       
-      if (inventoryMode && componentName) {
+      if (shouldUseAdvancedAnalysis) {
+        // Parse using the advanced response parser
+        try {
+          parsedData = parseAdvancedAnalysisResponse(textContent);
+          console.log("Successfully parsed advanced multi-image analysis response");
+        } catch (parseError) {
+          console.error("Failed to parse advanced analysis response:", parseError);
+          // Try inventory parser as fallback
+          try {
+            parsedData = parseInventoryResponse(textContent);
+          } catch {
+            // Last resort fallback to basic JSON extraction
+            parsedData = extractJsonFromText(textContent);
+          }
+        }
+      } else if (inventoryMode && componentName) {
         // Parse the inventory clerk format response
         try {
           parsedData = parseInventoryResponse(textContent);
-          console.log("Successfully parsed inventory response:", parsedData);
+          console.log("Successfully parsed inventory response");
         } catch (parseError) {
           console.error("Failed to parse inventory response:", parseError);
           // Extract JSON if available as fallback
@@ -109,8 +152,10 @@ serve(async (req) => {
         parsedData = extractJsonFromText(textContent);
       }
       
-      // Format the response based on whether this is a component or full room
-      const formattedResponse = formatResponse(parsedData, componentName);
+      // Format the response based on analysis mode
+      const formattedResponse = shouldUseAdvancedAnalysis 
+        ? formatAdvancedResponse(parsedData, componentName)
+        : formatResponse(parsedData, componentName);
 
       console.log("Successfully processed images with Gemini");
       

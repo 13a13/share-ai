@@ -1,21 +1,30 @@
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ConditionRating } from "@/types";
-import { conditionOptions } from "@/utils/roomComponentUtils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Save, X } from "lucide-react";
+import { normalizeConditionPoints } from "@/services/imageProcessingService";
 
 interface ComponentEditFormProps {
   componentId: string;
   description: string;
-  conditionSummary?: string;
-  conditionPoints?: string[];
-  condition: ConditionRating;
-  cleanliness?: string;
-  cleanlinessOptions?: { value: string, label: string }[];
-  conditionRatingOptions?: { value: string, label: string }[];
-  notes: string;
-  onUpdateComponent: (componentId: string, field: string, value: string) => void;
+  conditionSummary: string;
+  conditionPoints: any[]; // Support both string[] and enhanced object[]
+  condition: string;
+  cleanliness: string;
+  cleanlinessOptions: { value: string; label: string }[];
+  conditionRatingOptions: { value: string; label: string; color: string }[];
+  notes?: string;
+  onUpdateComponent: (componentId: string, field: string, value: string | string[]) => void;
   onToggleEditMode: (componentId: string) => void;
 }
 
@@ -23,108 +32,108 @@ const ComponentEditForm = ({
   componentId,
   description,
   conditionSummary,
-  conditionPoints = [],
+  conditionPoints,
   condition,
   cleanliness,
-  cleanlinessOptions = [],
-  conditionRatingOptions = [],
-  notes,
+  cleanlinessOptions,
+  conditionRatingOptions,
+  notes = "",
   onUpdateComponent,
   onToggleEditMode
 }: ComponentEditFormProps) => {
+  // Convert points for editing - handle both string[] and object[]
+  const normalizedPoints = normalizeConditionPoints(conditionPoints);
+  
+  // Convert points array to a single string for editing
+  const [pointsText, setPointsText] = useState(normalizedPoints.join("\n"));
+  
+  // Update points text when conditionPoints prop changes
+  useEffect(() => {
+    setPointsText(normalizeConditionPoints(conditionPoints).join("\n"));
+  }, [conditionPoints]);
+  
+  const handleSave = () => {
+    // Convert the text back to an array
+    const pointsArray = pointsText
+      .split("\n")
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+    
+    // Update conditionPoints as an array
+    onUpdateComponent(componentId, "conditionPoints", pointsArray);
+    
+    // Close edit mode
+    onToggleEditMode(componentId);
+  };
+  
   return (
-    <div className="space-y-4 pt-2">
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Description
-        </label>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor={`${componentId}-description`}>Description</Label>
         <Textarea
+          id={`${componentId}-description`}
           value={description}
           onChange={(e) => onUpdateComponent(componentId, "description", e.target.value)}
-          placeholder="Describe the current condition, appearance, etc."
-          className="w-full"
-          rows={2}
+          placeholder="Describe the component..."
+          className="min-h-[80px]"
         />
       </div>
       
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Condition Summary
-        </label>
+      <div className="space-y-2">
+        <Label htmlFor={`${componentId}-condition-summary`}>Condition Summary</Label>
         <Textarea
-          value={conditionSummary || ""}
+          id={`${componentId}-condition-summary`}
+          value={conditionSummary}
           onChange={(e) => onUpdateComponent(componentId, "conditionSummary", e.target.value)}
-          placeholder="Detailed assessment of the condition"
-          className="w-full"
-          rows={3}
+          placeholder="Summarize the condition..."
+          className="min-h-[60px]"
         />
       </div>
       
-      {conditionPoints && conditionPoints.length > 0 && (
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Condition Details
-          </label>
-          <ul className="list-disc pl-5 space-y-1 text-sm">
-            {conditionPoints.map((point, index) => (
-              <li key={index}>{point}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="space-y-2">
+        <Label htmlFor={`${componentId}-condition-points`}>Condition Points</Label>
+        <Textarea
+          id={`${componentId}-condition-points`}
+          value={pointsText}
+          onChange={(e) => setPointsText(e.target.value)}
+          placeholder="Enter condition points, one per line..."
+          className="min-h-[80px]"
+        />
+        <p className="text-xs text-gray-500">Enter each point on a new line</p>
+      </div>
       
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Condition Rating
-        </label>
-        {conditionRatingOptions && conditionRatingOptions.length > 0 ? (
-          <Select
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor={`${componentId}-condition`}>Condition Rating</Label>
+          <Select 
             value={condition}
             onValueChange={(value) => onUpdateComponent(componentId, "condition", value)}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger>
               <SelectValue placeholder="Select condition" />
             </SelectTrigger>
             <SelectContent>
               {conditionRatingOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Select
-            value={condition}
-            onValueChange={(value) => onUpdateComponent(componentId, "condition", value)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select condition" />
-            </SelectTrigger>
-            <SelectContent>
-              {conditionOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
                   <div className="flex items-center">
-                    <span className={`h-2 w-2 rounded-full ${option.color} mr-2`}></span>
+                    <span 
+                      className={`w-3 h-3 rounded-full ${option.color} mr-2`} 
+                    />
                     {option.label}
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
-      </div>
-      
-      {cleanlinessOptions && cleanlinessOptions.length > 0 && (
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Cleanliness
-          </label>
-          <Select
-            value={cleanliness || "domestic_clean"}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor={`${componentId}-cleanliness`}>Cleanliness</Label>
+          <Select 
+            value={cleanliness}
             onValueChange={(value) => onUpdateComponent(componentId, "cleanliness", value)}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger>
               <SelectValue placeholder="Select cleanliness" />
             </SelectTrigger>
             <SelectContent>
@@ -136,27 +145,34 @@ const ComponentEditForm = ({
             </SelectContent>
           </Select>
         </div>
-      )}
+      </div>
       
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Additional Notes
-        </label>
+      <div className="space-y-2">
+        <Label htmlFor={`${componentId}-notes`}>Additional Notes</Label>
         <Textarea
+          id={`${componentId}-notes`}
           value={notes}
           onChange={(e) => onUpdateComponent(componentId, "notes", e.target.value)}
-          placeholder="Add any additional notes or observations"
-          className="w-full"
-          rows={3}
+          placeholder="Any additional notes or observations..."
+          className="min-h-[60px]"
         />
       </div>
       
-      <div className="flex justify-end">
+      <div className="flex justify-end space-x-2">
         <Button 
+          variant="outline" 
           onClick={() => onToggleEditMode(componentId)}
-          className="bg-shareai-teal hover:bg-shareai-teal/90"
+          className="gap-1"
         >
-          Done
+          <X className="h-4 w-4" />
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSave}
+          className="gap-1 bg-shareai-teal hover:bg-shareai-teal/90"
+        >
+          <Save className="h-4 w-4" />
+          Save
         </Button>
       </div>
     </div>

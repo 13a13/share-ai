@@ -24,26 +24,45 @@ export interface GeminiRequest {
  * Creates a request body for the Gemini API with support for multiple images
  * Optimized for large batches by limiting the number of images
  */
-export function createGeminiRequest(promptText: string, imageData: string | string[]): GeminiRequest {
+export function createGeminiRequest(
+  promptText: string, 
+  imageData: string | string[], 
+  isAdvancedAnalysis: boolean = false
+): GeminiRequest {
   // Ensure imageData is an array
   const imageDataArray = Array.isArray(imageData) ? imageData : [imageData];
   
   // Limit to 10 images max for Gemini API (prevent overloading)
-  // For large batches, we'll use a subset of the images (first, middle, and last few)
+  // For large batches, implement optimized selection algorithm
   let optimizedImageArray = imageDataArray;
+  
   if (imageDataArray.length > 10) {
-    // Take the first 4, middle 2, and last 4 images
-    const first = imageDataArray.slice(0, 4);
-    const middle = imageDataArray.length > 6 
-      ? [imageDataArray[Math.floor(imageDataArray.length / 2) - 1], 
-         imageDataArray[Math.floor(imageDataArray.length / 2)]]
-      : [];
-    const last = imageDataArray.slice(-4);
-    
-    optimizedImageArray = [...first, ...middle, ...last];
-    
-    // Update prompt to indicate we're analyzing a subset
-    promptText = `${promptText}\n\nNote: You are being shown a representative subset of ${imageDataArray.length} total images. Please analyze what you see in these sample images.`;
+    if (isAdvancedAnalysis) {
+      // Enhanced image selection for advanced analysis
+      const first = imageDataArray.slice(0, 3);
+      const quarter = Math.floor(imageDataArray.length * 0.25);
+      const middle1 = imageDataArray.slice(quarter, quarter + 2);
+      const middle2 = imageDataArray.slice(Math.floor(imageDataArray.length * 0.5), Math.floor(imageDataArray.length * 0.5) + 2);
+      const last = imageDataArray.slice(-3);
+      
+      optimizedImageArray = [...first, ...middle1, ...middle2, ...last];
+      
+      // Update prompt with context about subset selection
+      promptText = `${promptText}\n\n**ANALYSIS CONTEXT:**\nYou are analyzing a carefully selected subset of ${imageDataArray.length} total images, chosen to represent different perspectives and lighting conditions.`;
+    } else {
+      // Original selection algorithm
+      const first = imageDataArray.slice(0, 4);
+      const middle = imageDataArray.length > 6 
+        ? [imageDataArray[Math.floor(imageDataArray.length / 2) - 1], 
+          imageDataArray[Math.floor(imageDataArray.length / 2)]]
+        : [];
+      const last = imageDataArray.slice(-4);
+      
+      optimizedImageArray = [...first, ...middle, ...last];
+      
+      // Standard subset note
+      promptText = `${promptText}\n\nNote: You are being shown a representative subset of ${imageDataArray.length} total images. Please analyze what you see in these sample images.`;
+    }
   }
 
   // Create parts array with prompt text and selected images
@@ -57,6 +76,7 @@ export function createGeminiRequest(promptText: string, imageData: string | stri
     }))
   ];
 
+  // Configure generation parameters based on analysis mode
   return {
     contents: [
       {
@@ -64,10 +84,10 @@ export function createGeminiRequest(promptText: string, imageData: string | stri
       }
     ],
     generationConfig: {
-      temperature: 0.4,
-      topK: 32,
-      topP: 1,
-      maxOutputTokens: 1024,  // Reduced output tokens for conciseness
+      temperature: isAdvancedAnalysis ? 0.2 : 0.4,  // Lower temperature for consistency in advanced mode
+      topK: isAdvancedAnalysis ? 40 : 32,
+      topP: isAdvancedAnalysis ? 0.95 : 1.0,
+      maxOutputTokens: isAdvancedAnalysis ? 1536 : 1024,  // Increased tokens for detailed analysis
     }
   };
 }

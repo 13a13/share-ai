@@ -22,6 +22,10 @@ const buttonVariants = cva(
         warm: "bg-verifyvision-teal text-white hover:bg-verifyvision-teal/90",
         primary: "bg-verifyvision-primary text-white hover:bg-verifyvision-primary/90",
         gradient: "bg-gradient-to-r from-verifyvision-gradient-start to-verifyvision-gradient-end text-white hover:opacity-90",
+        // New variants for enhanced image analysis
+        analysis: "bg-blue-600 text-white hover:bg-blue-700",
+        success: "bg-green-600 text-white hover:bg-green-700",
+        warning: "bg-amber-500 text-white hover:bg-amber-600",
       },
       size: {
         default: "h-10 px-4 py-2",

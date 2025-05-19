@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, RefreshCw } from "lucide-react";
 import { downloadPdf, isIosDevice } from "@/utils/pdfUtils";
 
 interface PDFPreviewFooterProps {
@@ -37,6 +37,7 @@ const PDFPreviewFooter = ({
       <Button 
         variant="outline" 
         onClick={onClose}
+        className="px-4"
       >
         Close
       </Button>
@@ -45,25 +46,30 @@ const PDFPreviewFooter = ({
         <Button
           onClick={onRegeneratePdf}
           disabled={regeneratingPdf}
-          className="bg-shareai-teal hover:bg-shareai-teal/90 text-white"
+          variant="primary"
+          className="gap-2"
         >
           {regeneratingPdf ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Updating PDF...
             </>
           ) : (
-            <>Generate Updated PDF</>
+            <>
+              <RefreshCw className="h-4 w-4" />
+              Generate Updated PDF
+            </>
           )}
         </Button>
       )}
       
       {currentPdfUrl && (
         <Button 
-          className="bg-shareai-blue hover:bg-shareai-blue/90 text-white"
+          variant="warm"
           onClick={handleDownload}
+          className="gap-2"
         >
-          <Download className="mr-2 h-4 w-4" />
+          <Download className="h-4 w-4" />
           {isIosDevice() ? "View PDF" : "Download"}
         </Button>
       )}

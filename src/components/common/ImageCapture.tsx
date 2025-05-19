@@ -1,14 +1,12 @@
 
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { useEffect, useState } from "react";
+import { useState, useRef } from "react";
+import { ConditionRating } from "@/types";
 import { useImageUploadAndProcess } from "@/hooks/useImageUploadAndProcess";
+import WhatsAppStyleImageInput from "../camera/WhatsAppStyleImageInput";
+import { Button } from "../ui/button";
+import { X, ImageIcon, AlertTriangle } from "lucide-react";
 import StagingImagesGrid from "../image-upload/StagingImagesGrid";
-import { ProgressIndicator } from "../ui/progress-indicator";
-import WhatsAppStyleImageUploadControls from "../image-upload/WhatsAppStyleImageUploadControls";
 import MaxImagesWarning from "../image-upload/MaxImagesWarning";
-import { ScrollArea } from "../ui/scroll-area";
-import ComponentImages from "../component/ComponentImages";
 
 export interface ImageCaptureProps {
   componentId: string;
@@ -18,35 +16,46 @@ export interface ImageCaptureProps {
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  onRemoveImage: (imageId: string) => void;
-  disabled?: boolean;
-  showCurrentImages?: boolean;
+  onRemoveImage: (imageId: string) => void; 
   processComponentImage?: (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => Promise<any>;
+  disabled?: boolean;
 }
 
-/**
- * Unified ImageCapture component that handles image upload, processing, and display
- * for both room components and general usage
- */
 const ImageCapture = ({
-  componentId, 
+  componentId,
   componentName,
-  roomType, 
+  roomType,
   isProcessing,
   currentImages,
   onImagesProcessed,
   onProcessingStateChange,
   onRemoveImage,
-  disabled = false,
-  showCurrentImages = true,
-  processComponentImage
+  processComponentImage,
+  disabled = false
 }: ImageCaptureProps) => {
-  const [imageLoadProgress, setImageLoadProgress] = useState(0);
-  const [showProgress, setShowProgress] = useState(false);
+  // Lazy load imageProcessingService if not provided
+  const processImage = async (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => {
+    if (processComponentImage) {
+      return processComponentImage(imageUrls, roomType, componentName, multipleImages);
+    } else {
+      // Dynamically import the service
+      const module = await import('@/services/imageProcessingService');
+      return module.processComponentImage(
+        imageUrls, 
+        roomType, 
+        componentName, 
+        { 
+          multipleImages,
+          // Enable advanced analysis when processing multiple images
+          useAdvancedAnalysis: imageUrls.length > 1
+        }
+      );
+    }
+  };
   
+  // Use the image upload and process hook
   const {
     stagingImages,
-    analysisInProgress,
     compressionInProgress,
     totalImages,
     maxImages,
@@ -64,88 +73,74 @@ const ImageCapture = ({
     currentImages,
     onImagesProcessed,
     onProcessingStateChange,
-    processComponentImage: processComponentImage || 
-      ((imageUrls, roomType, componentName, multipleImages) => 
-        import('@/services/imageProcessingService').then(module => 
-          module.processComponentImage(imageUrls, roomType, componentName, multipleImages)
-        )
-      )
+    processComponentImage: processImage
   });
-
-  // Simulate progress when loading images
-  useEffect(() => {
-    if (stagingImages.length > 0) {
-      setShowProgress(true);
-      setImageLoadProgress(0);
-      
-      const interval = setInterval(() => {
-        setImageLoadProgress(prev => {
-          const next = prev + Math.random() * 15;
-          if (next >= 100) {
-            clearInterval(interval);
-            setTimeout(() => setShowProgress(false), 500);
-            return 100;
-          }
-          return next;
-        });
-      }, 200);
-      
-      return () => clearInterval(interval);
-    }
-  }, [stagingImages.length]);
-
+  
+  // Check if we have reached maximum images
+  const hasReachedMaximum = currentImages.length >= maxImages;
+  
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="space-y-4">
-        {showProgress && stagingImages.length > 0 && (
-          <ProgressIndicator
-            value={imageLoadProgress}
-            text="Preparing images..."
-            showPercentage
+    <div className="space-y-4">
+      {hasReachedMaximum ? (
+        <MaxImagesWarning maxImages={maxImages} />
+      ) : stagingImages.length > 0 ? (
+        <div className="space-y-4">
+          <StagingImagesGrid 
+            images={stagingImages}
+            onRemoveImage={handleRemoveStagingImage}
+            onMoveImage={moveImage}
           />
-        )}
-      
-        <StagingImagesGrid 
-          stagingImages={stagingImages}
-          analysisInProgress={analysisInProgress}
-          compressionInProgress={compressionInProgress}
-          onCancel={cancelStagingImages}
-          onProcess={processImages}
-          onRemoveStagingImage={handleRemoveStagingImage}
-          onMoveImage={moveImage}
-          totalImages={totalImages}
-          maxImages={maxImages}
-        />
-        
-        {showCurrentImages && currentImages.length > 0 && (
-          <ScrollArea className="h-full max-h-[250px]">
-            <div className="text-sm font-medium mb-2">
-              Current Images ({currentImages.length})
-            </div>
-            <ComponentImages 
-              images={currentImages}
-              onRemoveImage={onRemoveImage}
-            />
-          </ScrollArea>
-        )}
-        
-        <WhatsAppStyleImageUploadControls
-          componentId={componentId}
+          
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline" 
+              onClick={cancelStagingImages}
+              className="gap-1"
+              disabled={isProcessing}
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+            
+            <Button 
+              onClick={processImages}
+              disabled={isProcessing || stagingImages.length === 0}
+              className={`gap-1 ${stagingImages.length > 1 ? "bg-blue-600 hover:bg-blue-700" : "bg-shareai-teal hover:bg-shareai-teal/90"}`}
+            >
+              {stagingImages.length > 1 ? (
+                <>
+                  <AlertTriangle className="h-4 w-4" />
+                  Analyze {stagingImages.length} Images
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="h-4 w-4" />
+                  Process Image
+                </>
+              )}
+            </Button>
+            
+            {stagingImages.length > 1 && (
+              <div className="w-full mt-1 text-xs text-blue-700 flex items-center">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                <span>Advanced multi-image analysis will be used for better accuracy</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <WhatsAppStyleImageInput
+          id={`image-upload-${componentId}`}
           isProcessing={isProcessing}
-          compressionInProgress={compressionInProgress}
-          handleImageCapture={handleImageCapture}
-          handleCameraCapture={handleCameraCapture}
-          canAddMore={canAddMore}
-          disabled={disabled}
+          onChange={handleImageCapture}
+          onImageCapture={handleCameraCapture}
+          disabled={disabled || isProcessing || hasReachedMaximum}
           totalImages={totalImages}
           maxImages={maxImages}
+          compressionInProgress={compressionInProgress}
         />
-        
-        {!canAddMore && !stagingImages.length && (
-          <MaxImagesWarning maxImages={maxImages} />
-        )}
-      </div>
-    </DndProvider>
+      )}
+    </div>
   );
 };
 
