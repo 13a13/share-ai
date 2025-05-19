@@ -3,7 +3,7 @@ import { Github, Heart } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="mt-auto bg-verifyvision-blue text-white py-8">
+    <footer className="mt-auto bg-verifyvision-teal text-white py-8">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0 flex items-center">
@@ -24,13 +24,13 @@ const Footer = () => {
             <div className="flex items-center space-x-4 mb-2">
               <a 
                 href="#" 
-                className="text-white hover:text-verifyvision-purple transition"
+                className="text-white hover:text-verifyvision-gradient-end transition"
                 aria-label="GitHub"
               >
                 <Github className="h-5 w-5" />
               </a>
               <span className="flex items-center text-sm">
-                Made with <Heart className="h-4 w-4 text-verifyvision-purple mx-1" /> by VerifyVision AI Team
+                Made with <Heart className="h-4 w-4 text-verifyvision-gradient-end mx-1" /> by VerifyVision AI Team
               </span>
             </div>
             <p className="text-sm text-white/70">
