@@ -65,7 +65,8 @@ const ImageCapture = ({
     handleRemoveStagingImage,
     moveImage,
     processImages,
-    cancelStagingImages
+    cancelStagingImages,
+    analysisInProgress
   } = useImageUploadAndProcess({
     componentId,
     componentName,
@@ -83,50 +84,19 @@ const ImageCapture = ({
     <div className="space-y-4">
       {hasReachedMaximum ? (
         <MaxImagesWarning maxImages={maxImages} />
-      ) : stagingImages.length > 0 ? (
+      ) : stagingImages && stagingImages.length > 0 ? (
         <div className="space-y-4">
           <StagingImagesGrid 
             images={stagingImages}
             onRemoveImage={handleRemoveStagingImage}
             onMoveImage={moveImage}
+            onCancel={cancelStagingImages}
+            onProcess={processImages}
+            analysisInProgress={analysisInProgress}
+            compressionInProgress={compressionInProgress}
+            totalImages={totalImages}
+            maxImages={maxImages}
           />
-          
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline" 
-              onClick={cancelStagingImages}
-              className="gap-1"
-              disabled={isProcessing}
-            >
-              <X className="h-4 w-4" />
-              Cancel
-            </Button>
-            
-            <Button 
-              onClick={processImages}
-              disabled={isProcessing || stagingImages.length === 0}
-              className={`gap-1 ${stagingImages.length > 1 ? "bg-blue-600 hover:bg-blue-700" : "bg-shareai-teal hover:bg-shareai-teal/90"}`}
-            >
-              {stagingImages.length > 1 ? (
-                <>
-                  <AlertTriangle className="h-4 w-4" />
-                  Analyze {stagingImages.length} Images
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="h-4 w-4" />
-                  Process Image
-                </>
-              )}
-            </Button>
-            
-            {stagingImages.length > 1 && (
-              <div className="w-full mt-1 text-xs text-blue-700 flex items-center">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                <span>Advanced multi-image analysis will be used for better accuracy</span>
-              </div>
-            )}
-          </div>
         </div>
       ) : (
         <WhatsAppStyleImageInput
