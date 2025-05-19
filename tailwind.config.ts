@@ -62,19 +62,19 @@ export default {
 				},
 				verifyvision: {
 					blue: '#0F3460',    // Dark blue base
-					teal: '#30ACF5',    // Logo blue
-					orange: '#FF5722',   // Keeping accent color
+					teal: '#2E8BC0',    // Original teal
+					orange: '#FF5722',   // Original accent color
 					light: '#F5F7FA',
 					dark: '#1E293B',
-					primary: '#30ACF5', // Logo blue
-					secondary: '#1E73BE', // Darker blue from logo
+					primary: '#2E8BC0', // Original primary color
+					secondary: '#1E73BE', 
 					accent: '#0F3460',
-					purple: '#30ACF5',  // Changed to blue from logo
-					lightblue: '#30ACF5', // Light blue from logo
+					purple: '#9B87F5',  // Restoring the purple color
+					lightblue: '#30ACF5', 
 					gradient: {
-						start: '#30ACF5', // Start of gradient (bright blue)
-						middle: '#2797DA', // Middle of gradient (mid blue)
-						end: '#1E73BE'    // End of gradient (darker blue)
+						start: '#9B87F5', // Gradient starts with purple
+						middle: '#7E69AB', // Middle gradient is medium purple
+						end: '#6E59A5'    // End gradient is darker purple
 					}
 				},
 				sidebar: {
