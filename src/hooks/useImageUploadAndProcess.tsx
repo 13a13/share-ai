@@ -11,7 +11,7 @@ interface UseImageUploadAndProcessProps {
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  processComponentImage: (imageUrls: string[], roomType: string, componentName: string, options: boolean | { multipleImages?: boolean; useAdvancedAnalysis?: boolean }) => Promise<ProcessedImageResult>;
+  processComponentImage: (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => Promise<ProcessedImageResult>;
 }
 
 export function useImageUploadAndProcess({
@@ -56,12 +56,8 @@ export function useImageUploadAndProcess({
 
   // Process the staged images
   const handleProcessImages = async () => {
-    try {
-      if (await processImages(stagingImages)) {
-        clearStagingImages();
-      }
-    } catch (error) {
-      console.error("Error processing images:", error);
+    if (await processImages(stagingImages)) {
+      clearStagingImages();
     }
   };
 

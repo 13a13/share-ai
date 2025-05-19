@@ -31,25 +31,22 @@ const MultiImageComponentCapture = ({
   disabled = false
 }: MultiImageComponentCaptureProps) => {
   return (
-    <DndProvider backend={HTML5Backend}>
-      <ImageCapture
-        componentId={componentId}
-        componentName={componentName}
-        roomType={roomType}
-        isProcessing={isProcessing}
-        currentImages={currentImages}
-        onImagesProcessed={onImagesProcessed}
-        onProcessingStateChange={onProcessingStateChange}
-        onRemoveImage={onRemoveImage}
-        disabled={disabled}
-        processComponentImage={(imageUrls, roomType, componentName, options) => 
-          import('@/services/imageProcessingService').then(module => 
-            module.processComponentImage(imageUrls, roomType, componentName, 
-              typeof options === 'boolean' ? { multipleImages: options } : options)
-          )
-        }
-      />
-    </DndProvider>
+    <ImageCapture
+      componentId={componentId}
+      componentName={componentName}
+      roomType={roomType}
+      isProcessing={isProcessing}
+      currentImages={currentImages}
+      onImagesProcessed={onImagesProcessed}
+      onProcessingStateChange={onProcessingStateChange}
+      onRemoveImage={onRemoveImage}
+      disabled={disabled}
+      processComponentImage={(imageUrls, roomType, componentName, multipleImages) => 
+        import('@/services/imageProcessingService').then(module => 
+          module.processComponentImage(imageUrls, roomType, componentName, multipleImages)
+        )
+      }
+    />
   );
 };
 

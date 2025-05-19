@@ -10,7 +10,7 @@ interface UseImageAnalysisProps {
   roomType: string;
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  processComponentImage: (imageUrls: string[], roomType: string, componentName: string, options: boolean | { multipleImages?: boolean; useAdvancedAnalysis?: boolean }) => Promise<ProcessedImageResult>;
+  processComponentImage: (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => Promise<ProcessedImageResult>;
 }
 
 export function useImageAnalysis({
@@ -54,12 +54,7 @@ export function useImageAnalysis({
       );
       
       // Process stored images with AI
-      const options = {
-        multipleImages: true,
-        useAdvancedAnalysis: stagingImages.length > 1
-      };
-      
-      const result = await processComponentImage(storedImageUrls, roomType, componentName, options);
+      const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
       onImagesProcessed(componentId, storedImageUrls, result);
       
       toast({
