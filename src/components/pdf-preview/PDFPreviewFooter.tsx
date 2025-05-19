@@ -45,7 +45,7 @@ const PDFPreviewFooter = ({
         <Button
           onClick={onRegeneratePdf}
           disabled={regeneratingPdf}
-          className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 text-white"
+          className="bg-shareai-teal hover:bg-shareai-teal/90 text-white"
         >
           {regeneratingPdf ? (
             <>
@@ -60,7 +60,7 @@ const PDFPreviewFooter = ({
       
       {currentPdfUrl && (
         <Button 
-          className="bg-verifyvision-gradient-end hover:bg-verifyvision-gradient-end/90 text-white"
+          className="bg-shareai-blue hover:bg-shareai-blue/90 text-white"
           onClick={handleDownload}
         >
           <Download className="mr-2 h-4 w-4" />

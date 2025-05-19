@@ -21,7 +21,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         warm: "bg-verifyvision-teal text-white hover:bg-verifyvision-teal/90",
         primary: "bg-verifyvision-primary text-white hover:bg-verifyvision-primary/90",
-        gradient: "bg-gradient-to-r from-verifyvision-gradient-start via-verifyvision-gradient-middle to-verifyvision-gradient-end text-white hover:opacity-90",
+        gradient: "bg-gradient-to-r from-verifyvision-gradient-start to-verifyvision-gradient-end text-white hover:opacity-90",
       },
       size: {
         default: "h-10 px-4 py-2",
