@@ -56,20 +56,29 @@ export const conditionRatingToText = (condition: string): string => {
  * @param imageUrls URL or array of URLs of the image(s) to analyze
  * @param roomType Type of room the component is in
  * @param componentName Name of the component being analyzed
- * @param options Additional options for processing
+ * @param options Additional options for processing, or boolean for backward compatibility
  * @returns Processed image result with description, condition, cleanliness and other details
  */
 export const processComponentImage = async (
   imageUrls: string | string[],
   roomType: string,
   componentName: string,
-  options: {
-    multipleImages?: boolean;
-    useAdvancedAnalysis?: boolean; // New option to enable advanced analysis
-  } = {}
+  options?: { multipleImages?: boolean; useAdvancedAnalysis?: boolean; } | boolean
 ): Promise<ProcessedImageResult> => {
   try {
-    const { multipleImages = false, useAdvancedAnalysis = false } = options;
+    // Handle both new options object and legacy boolean parameter for backward compatibility
+    let multipleImages = false;
+    let useAdvancedAnalysis = false;
+    
+    if (typeof options === 'boolean') {
+      // Legacy parameter format
+      multipleImages = options;
+    } else if (options && typeof options === 'object') {
+      // New parameter format
+      multipleImages = options.multipleImages ?? false;
+      useAdvancedAnalysis = options.useAdvancedAnalysis ?? false;
+    }
+    
     console.log(`Processing ${Array.isArray(imageUrls) ? imageUrls.length : 1} images for component: ${componentName}`);
     
     // Only enable advanced analysis for multiple images

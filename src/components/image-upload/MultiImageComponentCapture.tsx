@@ -41,9 +41,10 @@ const MultiImageComponentCapture = ({
       onProcessingStateChange={onProcessingStateChange}
       onRemoveImage={onRemoveImage}
       disabled={disabled}
-      processComponentImage={(imageUrls, roomType, componentName, multipleImages) => 
+      processComponentImage={(imageUrls, roomType, componentName, options) => 
         import('@/services/imageProcessingService').then(module => 
-          module.processComponentImage(imageUrls, roomType, componentName, multipleImages)
+          module.processComponentImage(imageUrls, roomType, componentName, 
+            typeof options === 'boolean' ? { multipleImages: options } : options)
         )
       }
     />
