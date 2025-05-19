@@ -25,7 +25,7 @@ export function useImageAnalysis({
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
 
   const processImages = async (stagingImages: string[]) => {
-    if (!stagingImages || stagingImages.length === 0) return false;
+    if (stagingImages.length === 0) return false;
     
     onProcessingStateChange(componentId, true);
     setAnalysisInProgress(true);
