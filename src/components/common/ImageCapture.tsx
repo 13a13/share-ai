@@ -7,6 +7,8 @@ import { Button } from "../ui/button";
 import { X, ImageIcon, AlertTriangle } from "lucide-react";
 import StagingImagesGrid from "../image-upload/StagingImagesGrid";
 import MaxImagesWarning from "../image-upload/MaxImagesWarning";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 export interface ImageCaptureProps {
   componentId: string;

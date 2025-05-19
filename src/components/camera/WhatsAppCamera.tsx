@@ -41,8 +41,17 @@ const WhatsAppCamera: React.FC<WhatsAppCameraProps> = ({
   };
   
   const handlePhotosCapture = (photos: string[]) => {
-    onPhotosCapture(photos);
-    setIsOpen(false);
+    try {
+      if (photos && Array.isArray(photos) && photos.length > 0) {
+        onPhotosCapture(photos);
+      }
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Error handling photos capture:", error);
+      // Still close the camera even if there's an error
+      setIsOpen(false);
+      onClose();
+    }
   };
   
   return (

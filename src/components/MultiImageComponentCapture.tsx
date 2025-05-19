@@ -1,6 +1,8 @@
 
 import { ConditionRating } from "@/types";
 import ImageCapture from "./common/ImageCapture";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 import { processComponentImage } from "@/services/imageProcessingService";
 
 interface MultiImageComponentCaptureProps {
@@ -31,18 +33,27 @@ const MultiImageComponentCapture = ({
   disabled = false
 }: MultiImageComponentCaptureProps) => {
   return (
-    <ImageCapture
-      componentId={componentId}
-      componentName={componentName}
-      roomType={roomType}
-      isProcessing={isProcessing}
-      currentImages={currentImages}
-      onImagesProcessed={onImagesProcessed}
-      onProcessingStateChange={onProcessingStateChange}
-      onRemoveImage={onRemoveImage}
-      disabled={disabled}
-      processComponentImage={processComponentImage}
-    />
+    <DndProvider backend={HTML5Backend}>
+      <ImageCapture
+        componentId={componentId}
+        componentName={componentName}
+        roomType={roomType}
+        isProcessing={isProcessing}
+        currentImages={currentImages}
+        onImagesProcessed={onImagesProcessed}
+        onProcessingStateChange={onProcessingStateChange}
+        onRemoveImage={onRemoveImage}
+        disabled={disabled}
+        processComponentImage={(imageUrls, roomType, componentName, options) => {
+          return processComponentImage(
+            imageUrls, 
+            roomType, 
+            componentName, 
+            typeof options === 'boolean' ? { multipleImages: options } : options
+          );
+        }}
+      />
+    </DndProvider>
   );
 };
 

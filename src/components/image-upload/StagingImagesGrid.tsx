@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, X, Play } from "lucide-react";
 import DraggableImage from './DraggableImage';
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 interface StagingImagesGridProps {
   stagingImages?: string[];
@@ -43,6 +45,13 @@ const StagingImagesGrid = ({
     return null;
   }
 
+  // Function to safely handle drag and drop operations
+  const handleMoveImage = (dragIndex: number, hoverIndex: number) => {
+    if (onMoveImage && typeof onMoveImage === 'function') {
+      onMoveImage(dragIndex, hoverIndex);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -65,7 +74,7 @@ const StagingImagesGrid = ({
               index={index}
               image={{ url }}
               onRemove={() => handleRemoveImage(index)}
-              onMove={onMoveImage}
+              onMove={handleMoveImage}
             />
           ))}
         </div>

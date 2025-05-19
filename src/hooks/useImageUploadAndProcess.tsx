@@ -56,8 +56,12 @@ export function useImageUploadAndProcess({
 
   // Process the staged images
   const handleProcessImages = async () => {
-    if (await processImages(stagingImages)) {
-      clearStagingImages();
+    try {
+      if (await processImages(stagingImages)) {
+        clearStagingImages();
+      }
+    } catch (error) {
+      console.error("Error processing images:", error);
     }
   };
 

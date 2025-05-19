@@ -1,6 +1,8 @@
 
 import { ConditionRating } from "@/types";
 import ImageCapture, { ImageCaptureProps } from "@/components/common/ImageCapture";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 type ComponentImageCaptureProps = Omit<ImageCaptureProps, 'componentName'> & {
   componentType: string;
@@ -19,22 +21,25 @@ const ComponentImageCapture = ({
   onImagesProcessed,
   onProcessingStateChange,
   onRemoveImage,
-  disabled
+  disabled,
+  processComponentImage
 }: ComponentImageCaptureProps) => {
   return (
-    <ImageCapture
-      componentId={componentId}
-      componentName={componentType}
-      roomType={roomType}
-      isProcessing={isProcessing}
-      currentImages={currentImages}
-      onImagesProcessed={onImagesProcessed}
-      onProcessingStateChange={onProcessingStateChange}
-      onRemoveImage={onRemoveImage}
-      disabled={disabled}
-    />
+    <DndProvider backend={HTML5Backend}>
+      <ImageCapture
+        componentId={componentId}
+        componentName={componentType}
+        roomType={roomType}
+        isProcessing={isProcessing}
+        currentImages={currentImages}
+        onImagesProcessed={onImagesProcessed}
+        onProcessingStateChange={onProcessingStateChange}
+        onRemoveImage={onRemoveImage}
+        disabled={disabled}
+        processComponentImage={processComponentImage}
+      />
+    </DndProvider>
   );
 };
 
 export default ComponentImageCapture;
-
