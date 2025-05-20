@@ -41,7 +41,10 @@ const MultiImageComponentCapture = ({
       onProcessingStateChange={onProcessingStateChange}
       onRemoveImage={onRemoveImage}
       disabled={disabled}
-      processComponentImage={processComponentImage}
+      // Fix for type error: Convert function signature to match expected type
+      processComponentImage={(imageUrls, roomType, componentName, multipleImages) => 
+        processComponentImage(imageUrls, roomType, componentName, { multipleImages })
+      }
     />
   );
 };

@@ -41,9 +41,10 @@ const MultiImageComponentCapture = ({
       onProcessingStateChange={onProcessingStateChange}
       onRemoveImage={onRemoveImage}
       disabled={disabled}
+      // Fix type error by adapting function signature to match expected type
       processComponentImage={(imageUrls, roomType, componentName, multipleImages) => 
         import('@/services/imageProcessingService').then(module => 
-          module.processComponentImage(imageUrls, roomType, componentName, multipleImages)
+          module.processComponentImage(imageUrls, roomType, componentName, { multipleImages })
         )
       }
     />
