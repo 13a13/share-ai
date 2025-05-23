@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +33,7 @@ const Header = () => {
             <img 
               src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
               alt="VerifyVision AI Logo" 
-              className="h-10 w-10"
+              className="h-10 w-15"
             />
             <span className="text-xl font-bold ml-2">VerifyVision AI</span>
           </Link>
