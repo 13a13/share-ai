@@ -53,11 +53,11 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
     doc.text("Report Type: Comparison Analysis", pageWidth / 2, 130, { align: "center" });
   }
   
-  // Add actual VerifyVision AI logo
+  // Add VerifyVision AI logo with transparent background
   try {
     await addCompressedImage(
       doc,
-      "/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png",
+      "/lovable-uploads/14a8bc8f-617c-43d9-90e5-bdc8b7bf3749.png",
       "verifyvision_logo",
       pageWidth / 2 - 30,
       140,
