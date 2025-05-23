@@ -1,4 +1,3 @@
-
 import { Github, Heart } from "lucide-react";
 
 const Footer = () => {
@@ -10,7 +9,7 @@ const Footer = () => {
             <img 
               src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
               alt="VerifyVision AI Logo" 
-              className="h-10 w-10 mr-3" 
+              className="h-10 w-15 mr-3" 
             />
             <div>
               <h3 className="text-xl font-bold mb-2">VerifyVision AI</h3>

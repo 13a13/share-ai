@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -64,7 +63,7 @@ const RegisterPage = () => {
             <img 
               src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
               alt="VerifyVision AI Logo" 
-              className="h-16 w-16" 
+              className="h-16 w-20" 
             />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
