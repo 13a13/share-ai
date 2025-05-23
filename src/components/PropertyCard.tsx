@@ -41,15 +41,15 @@ const PropertyCard = ({ property, onDeleteClick }: PropertyCardProps) => {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-shareai-teal/20 flex items-center justify-center">
-            <Home className="h-12 w-12 text-shareai-teal" />
+          <div className="w-full h-full bg-verifyvision-teal/20 flex items-center justify-center">
+            <Home className="h-12 w-12 text-verifyvision-teal" />
           </div>
         )}
         <div className="absolute top-2 right-2 flex gap-2">
-          <Badge className="bg-shareai-blue text-white">
+          <Badge className="bg-verifyvision-blue text-white">
             {property.propertyType}
           </Badge>
-          <Badge className="bg-shareai-teal text-white">
+          <Badge className="bg-verifyvision-teal text-white">
             {reportCount} {reportCount === 1 ? 'Report' : 'Reports'}
           </Badge>
         </div>
@@ -91,7 +91,7 @@ const PropertyCard = ({ property, onDeleteClick }: PropertyCardProps) => {
           <Button 
             size="sm" 
             onClick={() => navigate(`/reports/new/${property.id}`)}
-            className="bg-shareai-teal hover:bg-shareai-teal/90"
+            className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
           >
             <Plus className="h-4 w-4 mr-1" /> New Report
           </Button>
