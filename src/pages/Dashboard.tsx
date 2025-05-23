@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Home, Plus, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -54,67 +56,71 @@ const Dashboard = () => {
   }, [searchQuery, properties]);
   
   return (
-    <div className="verifyvision-container py-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold mb-2 text-verifyvision-blue">Welcome, {user?.name || user?.email?.split('@')[0]}</h1>
-          <p className="text-gray-600">Manage your property inventory reports efficiently with VerifyVision AI</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-            <Input
-              type="text"
-              placeholder="Search properties..."
-              className="pl-8 w-full sm:w-64"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <div className="verifyvision-container py-8 flex-1">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2 text-verifyvision-blue">Welcome, {user?.name || user?.email?.split('@')[0]}</h1>
+            <p className="text-gray-600">Manage your property inventory reports efficiently with VerifyVision AI</p>
           </div>
-          <Button 
-            onClick={() => navigate("/properties/new")}
-            className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Property
-          </Button>
-        </div>
-      </div>
-      
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
-          ))}
-        </div>
-      ) : filteredProperties.length === 0 ? (
-        searchQuery ? (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-medium mb-2">No matching properties</h3>
-            <p className="text-gray-500 mb-4">Try adjusting your search criteria</p>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                type="text"
+                placeholder="Search properties..."
+                className="pl-8 w-full sm:w-64"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
             <Button 
-              variant="outline" 
-              onClick={() => setSearchQuery("")}
+              onClick={() => navigate("/properties/new")}
+              className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
             >
-              Clear Search
+              <Plus className="h-4 w-4 mr-2" />
+              Add Property
             </Button>
           </div>
-        ) : (
-          <EmptyState
-            title="No properties yet"
-            description="Add your first property to get started with creating reports."
-            actionLabel="Add Property"
-            onAction={() => navigate("/properties/new")}
-            icon={<Home className="h-12 w-12 text-verifyvision-teal mb-4" />}
-          />
-        )
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProperties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
         </div>
-      )}
+        
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
+            ))}
+          </div>
+        ) : filteredProperties.length === 0 ? (
+          searchQuery ? (
+            <div className="text-center py-12">
+              <h3 className="text-xl font-medium mb-2">No matching properties</h3>
+              <p className="text-gray-500 mb-4">Try adjusting your search criteria</p>
+              <Button 
+                variant="outline" 
+                onClick={() => setSearchQuery("")}
+              >
+                Clear Search
+              </Button>
+            </div>
+          ) : (
+            <EmptyState
+              title="No properties yet"
+              description="Add your first property to get started with creating reports."
+              actionLabel="Add Property"
+              onAction={() => navigate("/properties/new")}
+              icon={<Home className="h-12 w-12 text-verifyvision-teal mb-4" />}
+            />
+          )
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        )}
+      </div>
+      <Footer />
     </div>
   );
 };
