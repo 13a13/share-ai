@@ -8,6 +8,7 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import DashboardPage from "./pages/Dashboard";
+import ReportViewPage from "./pages/ReportViewPage";
 
 const App = () => {
   return (
@@ -22,6 +23,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/reports/:reportId" 
+            element={
+              <ProtectedRoute>
+                <ReportViewPage />
               </ProtectedRoute>
             } 
           />
