@@ -2,6 +2,7 @@
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { pdfStyles } from "../styles";
+import { addCompressedImage } from "../utils/imageHelpers";
 
 /**
  * Generate the cover page
@@ -52,12 +53,28 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
     doc.text("Report Type: Comparison Analysis", pageWidth / 2, 130, { align: "center" });
   }
   
-  // Logo placeholder - box for logo
-  doc.setDrawColor(pdfStyles.colors.lightGray[0], pdfStyles.colors.lightGray[1], pdfStyles.colors.lightGray[2]);
-  doc.setLineWidth(0.5);
-  doc.rect(pageWidth / 2 - 30, 140, 60, 30);
-  doc.setFontSize(pdfStyles.fontSizes.small);
-  doc.text("Logo", pageWidth / 2, 155, { align: "center" });
+  // Add actual VerifyVision AI logo
+  try {
+    await addCompressedImage(
+      doc,
+      "/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png",
+      "verifyvision_logo",
+      pageWidth / 2 - 30,
+      140,
+      60,
+      30,
+      undefined,
+      true // maintain aspect ratio
+    );
+  } catch (error) {
+    console.error("Error adding logo to PDF:", error);
+    // Fallback to placeholder if logo fails to load
+    doc.setDrawColor(pdfStyles.colors.lightGray[0], pdfStyles.colors.lightGray[1], pdfStyles.colors.lightGray[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(pageWidth / 2 - 30, 140, 60, 30);
+    doc.setFontSize(pdfStyles.fontSizes.small);
+    doc.text("Logo", pageWidth / 2, 155, { align: "center" });
+  }
   
   // Footer at bottom of page
   doc.setFont(pdfStyles.fonts.body, "italic");
