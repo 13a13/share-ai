@@ -311,42 +311,6 @@ async function generateComponentSection(
     yPosition += splitSummary.length * 6 + 3;
   }
   
-  // Condition points as bullet points
-  if (component.conditionPoints && component.conditionPoints.length > 0) {
-    // Check if points would overflow into footer
-    if (checkPageOverflow(doc, yPosition, component.conditionPoints.length * 6 + 5)) {
-      doc.addPage();
-      yPosition = margins;
-      
-      // Add component continuation header
-      doc.setFont(pdfStyles.fonts.header, "normal");
-      doc.setFontSize(pdfStyles.fontSizes.normal);
-      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
-      yPosition += 10;
-    }
-    
-    yPosition += 2;
-    for (const point of component.conditionPoints) {
-      if (point.trim()) {
-        // Check if this specific point would overflow into footer
-        if (checkPageOverflow(doc, yPosition, 6)) {
-          doc.addPage();
-          yPosition = margins;
-          
-          // Add component continuation header
-          doc.setFont(pdfStyles.fonts.header, "normal");
-          doc.setFontSize(pdfStyles.fontSizes.normal);
-          doc.text(`${roomIndex}.${componentIndex} ${component.name} - Points (continued)`, margins, yPosition);
-          yPosition += 10;
-        }
-        
-        doc.text("• " + point, margins + 5, yPosition);
-        yPosition += 6;
-      }
-    }
-    yPosition += 3;
-  }
-  
   // Component notes
   if (component.notes) {
     // Check if notes header would overflow into footer

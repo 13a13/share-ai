@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,25 +43,15 @@ const ComponentEditForm = ({
   // Convert points for editing - handle both string[] and object[]
   const normalizedPoints = normalizeConditionPoints(conditionPoints);
   
-  // Convert points array to a single string for editing
-  const [pointsText, setPointsText] = useState(normalizedPoints.join("\n"));
-  
   // Update points text when conditionPoints prop changes
   useEffect(() => {
-    setPointsText(normalizeConditionPoints(conditionPoints).join("\n"));
+    // We still need to handle conditionPoints being passed to the component,
+    // but we won't display the editor for them anymore
   }, [conditionPoints]);
   
   const handleSave = () => {
-    // Convert the text back to an array
-    const pointsArray = pointsText
-      .split("\n")
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-    
-    // Update conditionPoints as an array
-    onUpdateComponent(componentId, "conditionPoints", pointsArray);
-    
-    // Close edit mode
+    // Keep conditionPoints as they were, but don't expose them in the UI
+    // This ensures backward compatibility while removing the field from the form
     onToggleEditMode(componentId);
   };
   
@@ -90,17 +79,7 @@ const ComponentEditForm = ({
         />
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor={`${componentId}-condition-points`}>Condition Points</Label>
-        <Textarea
-          id={`${componentId}-condition-points`}
-          value={pointsText}
-          onChange={(e) => setPointsText(e.target.value)}
-          placeholder="Enter condition points, one per line..."
-          className="min-h-[80px]"
-        />
-        <p className="text-xs text-gray-500">Enter each point on a new line</p>
-      </div>
+      {/* Condition points section removed as requested */}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
