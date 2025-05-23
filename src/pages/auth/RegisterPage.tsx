@@ -58,11 +58,13 @@ const RegisterPage = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
-              alt="VerifyVision AI Logo" 
-              className="h-16 w-20" 
-            />
+            <Link to="/">
+              <img 
+                src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
+                alt="VerifyVision AI Logo" 
+                className="h-16 w-20 cursor-pointer" 
+              />
+            </Link>
           </div>
           <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
           <CardDescription className="text-center">

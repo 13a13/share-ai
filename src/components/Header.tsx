@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,14 +30,27 @@ const Header = () => {
     <header className="bg-verifyvision-blue py-4 text-white">
       <div className="verifyvision-container flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
-              alt="VerifyVision AI Logo" 
-              className="h-10 w-15"
-            />
-            <span className="text-xl font-bold ml-2">VerifyVision AI</span>
-          </Link>
+          {isAuthenticated ? (
+            // When authenticated, link to dashboard
+            <Link to="/dashboard" className="flex items-center">
+              <img 
+                src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
+                alt="VerifyVision AI Logo" 
+                className="h-10 w-15"
+              />
+              <span className="text-xl font-bold ml-2">VerifyVision AI</span>
+            </Link>
+          ) : (
+            // When not authenticated, link to landing page
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
+                alt="VerifyVision AI Logo" 
+                className="h-10 w-15"
+              />
+              <span className="text-xl font-bold ml-2">VerifyVision AI</span>
+            </Link>
+          )}
         </div>
         
         <div className="flex items-center space-x-4">
