@@ -93,6 +93,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (error) throw error;
+      
+      // Success toast will be shown by the auth state change listener
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -120,6 +126,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (error) throw error;
+      
+      toast({
+        title: "Registration successful",
+        description: "Welcome! You have been logged in.",
+      });
     } catch (error: any) {
       toast({
         title: "Registration failed",

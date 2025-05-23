@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -25,8 +26,8 @@ const LoginPage = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [facebookLoading, setFacebookLoading] = useState(false);
   
-  // Get the page they were trying to visit
-  const from = location.state?.from?.pathname || "/";
+  // Get the page they were trying to visit, default to dashboard
+  const from = location.state?.from?.pathname || "/dashboard";
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,11 +36,8 @@ const LoginPage = () => {
     
     try {
       await login(email, password);
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-      navigate(from, { replace: true });
+      // Redirect to dashboard after successful login
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       setError(error.message || "Login failed. Please check your credentials.");
     } finally {

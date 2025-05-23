@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -35,11 +36,8 @@ const RegisterPage = () => {
     
     try {
       await register(email, password, name);
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created.",
-      });
-      navigate("/");
+      // Redirect to dashboard after successful registration
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       setError(error.message || "Registration failed. Please try again.");
     } finally {
