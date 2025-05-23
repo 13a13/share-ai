@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -22,6 +23,8 @@ import ReportCard from "@/components/ReportCard";
 import UploadReportDialog from "@/components/UploadReportDialog";
 import CompareReportsDialog from "@/components/CompareReportsDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const PropertyDetailsPage = () => {
   
@@ -153,391 +156,403 @@ const PropertyDetailsPage = () => {
   
   if (isLoading) {
     return (
-      <div className="shareai-container flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-shareai-teal"></div>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="verifyvision-container flex items-center justify-center py-12 flex-1">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-verifyvision-teal"></div>
+        </div>
+        <Footer />
       </div>
     );
   }
   
   if (!property) {
     return (
-      <div className="shareai-container py-8">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-2">Property Not Found</h2>
-          <p className="text-gray-500 mb-4">The property you're looking for doesn't exist or has been removed.</p>
-          <Button onClick={() => navigate("/properties")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Properties
-          </Button>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="verifyvision-container py-8 flex-1">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold mb-2">Property Not Found</h2>
+            <p className="text-gray-500 mb-4">The property you're looking for doesn't exist or has been removed.</p>
+            <Button onClick={() => navigate("/properties")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Properties
+            </Button>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
   
   return (
-    <div className="shareai-container py-8">
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" onClick={() => navigate("/properties")} className="mr-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-3xl font-bold text-shareai-blue">
-          {property?.name || property?.address}
-        </h1>
-      </div>
-      
-      <div className="space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="flex items-center text-xl">
-              <Building2 className="h-5 w-5 mr-2 text-shareai-teal" />
-              Property Details
-            </CardTitle>
-            {!isEditing ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsEditing(true)}
-              >
-                <Edit className="h-4 w-4 mr-2" /> Edit
-              </Button>
-            ) : (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </Button>
-            )}
-          </CardHeader>
-          
-          <CardContent>
-            {!isEditing ? (
-              
-              <div className="space-y-4">
-                <div className="aspect-video relative overflow-hidden rounded-md">
-                  {property.imageUrl ? (
-                    <img 
-                      src={property.imageUrl} 
-                      alt={property.name || property.address} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <Home className="h-16 w-16 text-gray-300" />
-                    </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-medium text-gray-500">Name</h3>
-                    <p>{property.name || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-500">Property Type</h3>
-                    <p>{property.propertyType.replace('_', ' ')}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-500">Address</h3>
-                    <p>{property.address}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-500">Location</h3>
-                    <p>{property.city}, {property.state} {property.zipCode}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-500">Bedrooms</h3>
-                    <p>{property.bedrooms}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-500">Bathrooms</h3>
-                    <p>{property.bathrooms}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-500">Square Feet</h3>
-                    <p>{property.squareFeet} sqft</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-500">Year Built</h3>
-                    <p>{property.yearBuilt || 'Not specified'}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="propertyImage">Property Image</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-24 h-24 overflow-hidden rounded-md">
-                      {(imageFile && URL.createObjectURL(imageFile)) || property.imageUrl ? (
-                        <img 
-                          src={imageFile ? URL.createObjectURL(imageFile) : property.imageUrl}
-                          alt="Property" 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                          <Home className="h-8 w-8 text-gray-300" />
-                        </div>
-                      )}
-                    </div>
-                    <Label className="cursor-pointer flex items-center gap-1.5 bg-white border rounded-md px-3 py-1.5 text-sm font-medium">
-                      <Upload className="h-4 w-4" />
-                      Upload
-                      <Input
-                        id="propertyImage"
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                      />
-                    </Label>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name || ''}
-                      onChange={handleInputChange}
-                      placeholder="Property Name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      name="address"
-                      value={formData.address || ''}
-                      onChange={handleInputChange}
-                      placeholder="Street Address"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      name="city"
-                      value={formData.city || ''}
-                      onChange={handleInputChange}
-                      placeholder="City"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
-                    <Input
-                      id="state"
-                      name="state"
-                      value={formData.state || ''}
-                      onChange={handleInputChange}
-                      placeholder="State"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="zipCode">Zip Code</Label>
-                    <Input
-                      id="zipCode"
-                      name="zipCode"
-                      value={formData.zipCode || ''}
-                      onChange={handleInputChange}
-                      placeholder="Zip Code"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bedrooms">Bedrooms</Label>
-                    <Input
-                      id="bedrooms"
-                      name="bedrooms"
-                      type="number"
-                      min="0"
-                      value={formData.bedrooms || 0}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bathrooms">Bathrooms</Label>
-                    <Input
-                      id="bathrooms"
-                      name="bathrooms"
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={formData.bathrooms || 0}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="squareFeet">Square Feet</Label>
-                    <Input
-                      id="squareFeet"
-                      name="squareFeet"
-                      type="number"
-                      min="0"
-                      value={formData.squareFeet || 0}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="yearBuilt">Year Built</Label>
-                    <Input
-                      id="yearBuilt"
-                      name="yearBuilt"
-                      type="number"
-                      min="1900"
-                      max={new Date().getFullYear()}
-                      value={formData.yearBuilt || ''}
-                      onChange={handleInputChange}
-                      placeholder="Optional"
-                    />
-                  </div>
-                </div>
-                
-                <Button type="submit" className="bg-shareai-teal hover:bg-shareai-teal/90">
-                  <Save className="h-4 w-4 mr-2" /> Save Changes
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <div className="verifyvision-container py-8 flex-1">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={() => navigate("/properties")} className="mr-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold text-verifyvision-blue">
+            {property?.name || property?.address}
+          </h1>
+        </div>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="flex items-center text-xl">
-              <Plus className="h-5 w-5 mr-2 text-shareai-teal" />
-              Property Reports
-            </CardTitle>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="flex items-center text-xl">
+                <Building2 className="h-5 w-5 mr-2 text-verifyvision-teal" />
+                Property Details
+              </CardTitle>
+              {!isEditing ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Edit className="h-4 w-4 mr-2" /> Edit
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel
+                </Button>
+              )}
+            </CardHeader>
             
-            {/* Responsive buttons container */}
-            {isMobile ? (
-              <div className="flex flex-col space-y-2">
-                <Button
-                  size="sm"
-                  onClick={() => setIsCompareDialogOpen(true)}
-                  className="bg-shareai-teal hover:bg-shareai-teal/90 w-full"
-                >
-                  <GitCompare className="h-4 w-4 mr-2" /> Compare
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setIsUploadDialogOpen(true)}
-                  className="bg-shareai-teal hover:bg-shareai-teal/90 w-full"
-                >
-                  <FileUp className="h-4 w-4 mr-2" /> Upload
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => navigate(`/reports/new/${propertyId}`)}
-                  className="bg-shareai-teal hover:bg-shareai-teal/90 w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" /> New
-                </Button>
-              </div>
-            ) : (
-              <div className="flex space-x-2">
-                <Button
-                  onClick={() => setIsCompareDialogOpen(true)}
-                  className="bg-shareai-teal hover:bg-shareai-teal/90"
-                >
-                  <GitCompare className="h-4 w-4 mr-2" /> AI Compare Reports
-                </Button>
-                <Button
-                  onClick={() => setIsUploadDialogOpen(true)}
-                  className="bg-shareai-teal hover:bg-shareai-teal/90"
-                >
-                  <FileUp className="h-4 w-4 mr-2" /> Upload Report
-                </Button>
-                <Button
-                  onClick={() => navigate(`/reports/new/${propertyId}`)}
-                  className="bg-shareai-teal hover:bg-shareai-teal/90"
-                >
-                  <Plus className="h-4 w-4 mr-2" /> New Report
-                </Button>
-              </div>
-            )}
-          </CardHeader>
+            <CardContent>
+              {!isEditing ? (
+                
+                <div className="space-y-4">
+                  <div className="aspect-video relative overflow-hidden rounded-md">
+                    {property.imageUrl ? (
+                      <img 
+                        src={property.imageUrl} 
+                        alt={property.name || property.address} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <Home className="h-16 w-16 text-gray-300" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-medium text-gray-500">Name</h3>
+                      <p>{property.name || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-500">Property Type</h3>
+                      <p>{property.propertyType.replace('_', ' ')}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-500">Address</h3>
+                      <p>{property.address}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-500">Location</h3>
+                      <p>{property.city}, {property.state} {property.zipCode}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-500">Bedrooms</h3>
+                      <p>{property.bedrooms}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-500">Bathrooms</h3>
+                      <p>{property.bathrooms}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-500">Square Feet</h3>
+                      <p>{property.squareFeet} sqft</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-500">Year Built</h3>
+                      <p>{property.yearBuilt || 'Not specified'}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="propertyImage">Property Image</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-24 h-24 overflow-hidden rounded-md">
+                        {(imageFile && URL.createObjectURL(imageFile)) || property.imageUrl ? (
+                          <img 
+                            src={imageFile ? URL.createObjectURL(imageFile) : property.imageUrl}
+                            alt="Property" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <Home className="h-8 w-8 text-gray-300" />
+                          </div>
+                        )}
+                      </div>
+                      <Label className="cursor-pointer flex items-center gap-1.5 bg-white border rounded-md px-3 py-1.5 text-sm font-medium">
+                        <Upload className="h-4 w-4" />
+                        Upload
+                        <Input
+                          id="propertyImage"
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                        />
+                      </Label>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={formData.name || ''}
+                        onChange={handleInputChange}
+                        placeholder="Property Name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Address</Label>
+                      <Input
+                        id="address"
+                        name="address"
+                        value={formData.address || ''}
+                        onChange={handleInputChange}
+                        placeholder="Street Address"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        name="city"
+                        value={formData.city || ''}
+                        onChange={handleInputChange}
+                        placeholder="City"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="state">State</Label>
+                      <Input
+                        id="state"
+                        name="state"
+                        value={formData.state || ''}
+                        onChange={handleInputChange}
+                        placeholder="State"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="zipCode">Zip Code</Label>
+                      <Input
+                        id="zipCode"
+                        name="zipCode"
+                        value={formData.zipCode || ''}
+                        onChange={handleInputChange}
+                        placeholder="Zip Code"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bedrooms">Bedrooms</Label>
+                      <Input
+                        id="bedrooms"
+                        name="bedrooms"
+                        type="number"
+                        min="0"
+                        value={formData.bedrooms || 0}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bathrooms">Bathrooms</Label>
+                      <Input
+                        id="bathrooms"
+                        name="bathrooms"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={formData.bathrooms || 0}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="squareFeet">Square Feet</Label>
+                      <Input
+                        id="squareFeet"
+                        name="squareFeet"
+                        type="number"
+                        min="0"
+                        value={formData.squareFeet || 0}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="yearBuilt">Year Built</Label>
+                      <Input
+                        id="yearBuilt"
+                        name="yearBuilt"
+                        type="number"
+                        min="1900"
+                        max={new Date().getFullYear()}
+                        value={formData.yearBuilt || ''}
+                        onChange={handleInputChange}
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button type="submit" className="bg-verifyvision-teal hover:bg-verifyvision-teal/90">
+                    <Save className="h-4 w-4 mr-2" /> Save Changes
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+          </Card>
           
-          <CardContent>
-            {reports.length === 0 ? (
-              <div className="text-center py-8">
-                <h3 className="font-medium mb-2">No Reports Yet</h3>
-                <p className="text-gray-500 mb-4">Create a new report to get started.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {reports.map((report) => (
-                  <ReportCard 
-                    key={report.id} 
-                    report={report}
-                    propertyAddress={property.address}
-                    onDelete={async (reportId) => {
-                      await ReportsAPI.delete(reportId);
-                      setReports(reports.filter(r => r.id !== reportId));
-                      toast({
-                        title: "Report deleted",
-                        description: "The report has been deleted successfully.",
-                      });
-                    }}
-                    onDuplicate={async (reportId) => {
-                      const duplicatedReport = await ReportsAPI.duplicate(reportId);
-                      if (duplicatedReport) {
-                        setReports([...reports, duplicatedReport]);
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="flex items-center text-xl">
+                <Plus className="h-5 w-5 mr-2 text-verifyvision-teal" />
+                Property Reports
+              </CardTitle>
+              
+              {/* Responsive buttons container */}
+              {isMobile ? (
+                <div className="flex flex-col space-y-2">
+                  <Button
+                    size="sm"
+                    onClick={() => setIsCompareDialogOpen(true)}
+                    className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 w-full"
+                  >
+                    <GitCompare className="h-4 w-4 mr-2" /> Compare
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsUploadDialogOpen(true)}
+                    className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 w-full"
+                  >
+                    <FileUp className="h-4 w-4 mr-2" /> Upload
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/reports/new/${propertyId}`)}
+                    className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> New
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => setIsCompareDialogOpen(true)}
+                    className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
+                  >
+                    <GitCompare className="h-4 w-4 mr-2" /> AI Compare Reports
+                  </Button>
+                  <Button
+                    onClick={() => setIsUploadDialogOpen(true)}
+                    className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
+                  >
+                    <FileUp className="h-4 w-4 mr-2" /> Upload Report
+                  </Button>
+                  <Button
+                    onClick={() => navigate(`/reports/new/${propertyId}`)}
+                    className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> New Report
+                  </Button>
+                </div>
+              )}
+            </CardHeader>
+            
+            <CardContent>
+              {reports.length === 0 ? (
+                <div className="text-center py-8">
+                  <h3 className="font-medium mb-2">No Reports Yet</h3>
+                  <p className="text-gray-500 mb-4">Create a new report to get started.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {reports.map((report) => (
+                    <ReportCard 
+                      key={report.id} 
+                      report={report}
+                      propertyAddress={property.address}
+                      onDelete={async (reportId) => {
+                        await ReportsAPI.delete(reportId);
+                        setReports(reports.filter(r => r.id !== reportId));
                         toast({
-                          title: "Report duplicated",
-                          description: "The report has been duplicated successfully.",
+                          title: "Report deleted",
+                          description: "The report has been deleted successfully.",
                         });
-                      }
-                    }}
-                    onArchive={async (reportId) => {
-                      const archivedReport = await ReportsAPI.update(reportId, { status: 'archived' });
-                      if (archivedReport) {
-                        setReports(reports.map(r => r.id === reportId ? archivedReport : r));
-                        toast({
-                          title: "Report archived",
-                          description: "The report has been archived successfully.",
-                        });
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      }}
+                      onDuplicate={async (reportId) => {
+                        const duplicatedReport = await ReportsAPI.duplicate(reportId);
+                        if (duplicatedReport) {
+                          setReports([...reports, duplicatedReport]);
+                          toast({
+                            title: "Report duplicated",
+                            description: "The report has been duplicated successfully.",
+                          });
+                        }
+                      }}
+                      onArchive={async (reportId) => {
+                        const archivedReport = await ReportsAPI.update(reportId, { status: 'archived' });
+                        if (archivedReport) {
+                          setReports(reports.map(r => r.id === reportId ? archivedReport : r));
+                          toast({
+                            title: "Report archived",
+                            description: "The report has been archived successfully.",
+                          });
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Upload Report Dialog */}
+        {propertyId && (
+          <UploadReportDialog
+            isOpen={isUploadDialogOpen}
+            onClose={() => setIsUploadDialogOpen(false)}
+            properties={[property].filter(Boolean) as Property[]}
+            onUploadComplete={handleUploadComplete}
+            preselectedPropertyId={propertyId}
+          />
+        )}
+        
+        {/* Compare Reports Dialog */}
+        {property && (
+          <CompareReportsDialog
+            isOpen={isCompareDialogOpen}
+            onClose={() => setIsCompareDialogOpen(false)}
+            property={property}
+            reports={reports}
+          />
+        )}
       </div>
-      
-      {/* Upload Report Dialog */}
-      {propertyId && (
-        <UploadReportDialog
-          isOpen={isUploadDialogOpen}
-          onClose={() => setIsUploadDialogOpen(false)}
-          properties={[property].filter(Boolean) as Property[]}
-          onUploadComplete={handleUploadComplete}
-          preselectedPropertyId={propertyId}
-        />
-      )}
-      
-      {/* Compare Reports Dialog */}
-      {property && (
-        <CompareReportsDialog
-          isOpen={isCompareDialogOpen}
-          onClose={() => setIsCompareDialogOpen(false)}
-          property={property}
-          reports={reports}
-        />
-      )}
+      <Footer />
     </div>
   );
 };

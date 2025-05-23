@@ -54,7 +54,7 @@ const RoomHeader = ({
       <div className="flex flex-col">
         <div className="text-lg flex items-center gap-2">
           {room.name}
-          <Badge className="bg-shareai-teal text-white">{room.type.replace('_', ' ')}</Badge>
+          <Badge className="bg-verifyvision-teal text-white">{room.type.replace('_', ' ')}</Badge>
           {isComplete && (
             <TooltipProvider>
               <Tooltip>
