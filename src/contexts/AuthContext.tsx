@@ -16,7 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name?: string) => Promise<{ needsVerification: boolean }>;
+  register: (email: string, password: string, name?: string) => Promise<{ success: boolean }>;
   logout: () => void;
   socialLogin: (provider: Provider) => Promise<void>;
   resendVerification: (email: string) => Promise<void>;
@@ -28,7 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   login: async () => {},
-  register: async () => ({ needsVerification: false }),
+  register: async () => ({ success: false }),
   logout: () => {},
   socialLogin: async () => {},
   resendVerification: async () => {},
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener first to ensure we don't miss auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("Auth state changed:", event);
+        console.log("Auth state changed:", event, session?.user?.id);
         if (session?.user) {
           const userData = {
             id: session.user.id,
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             name: session.user.user_metadata?.name || 
                   session.user.user_metadata?.full_name || 
                   session.user.email?.split('@')[0] || "",
-            emailConfirmed: session.user.email_confirmed_at != null,
+            emailConfirmed: true, // Remove email verification requirement
           };
           setUser(userData);
         } else {
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: session.user.user_metadata?.name || 
                 session.user.user_metadata?.full_name || 
                 session.user.email?.split('@')[0] || "",
-          emailConfirmed: session.user.email_confirmed_at != null,
+          emailConfirmed: true, // Remove email verification requirement
         };
         setUser(userData);
       }
@@ -96,24 +96,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
       });
       
-      if (error) throw error;
-      
-      // Check if email is confirmed
-      if (data.user && !data.user.email_confirmed_at) {
-        toast({
-          title: "Email verification required",
-          description: "Please check your email and click the verification link before logging in.",
-          variant: "destructive",
-        });
-        await supabase.auth.signOut();
-        throw new Error("Email verification required");
+      if (error) {
+        console.error("Login error:", error);
+        throw error;
       }
       
+      console.log("Login successful:", data.user?.id);
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
     } catch (error: any) {
+      console.error("Login failed:", error);
       toast({
         title: "Login failed",
         description: error.message || "An error occurred during login.",
@@ -125,43 +119,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Register function with email verification
+  // Register function - simplified without email verification
   const register = async (email: string, password: string, name?: string) => {
     setIsLoading(true);
     try {
+      console.log("Starting registration for:", email);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
+            full_name: name,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       
-      if (error) throw error;
-      
-      // Check if user needs to verify email
-      const needsVerification = !data.user?.email_confirmed_at;
-      
-      if (needsVerification) {
-        toast({
-          title: "Registration successful",
-          description: "Please check your email to verify your account.",
-        });
-      } else {
-        toast({
-          title: "Registration successful",
-          description: "Welcome! You have been logged in.",
-        });
+      if (error) {
+        console.error("Registration error:", error);
+        throw error;
       }
       
-      return { needsVerification };
+      console.log("Registration response:", data);
+      
+      // Check if user was created successfully
+      if (data.user) {
+        console.log("User created successfully:", data.user.id);
+        toast({
+          title: "Registration successful",
+          description: "Welcome! Your account has been created.",
+        });
+        return { success: true };
+      } else {
+        console.log("Registration completed but no user returned");
+        toast({
+          title: "Registration completed",
+          description: "Your account has been created successfully.",
+        });
+        return { success: true };
+      }
     } catch (error: any) {
+      console.error("Registration failed:", error);
+      
+      // Handle specific error cases
+      let errorMessage = "An error occurred during registration.";
+      if (error.message?.includes("already registered")) {
+        errorMessage = "An account with this email already exists. Please try logging in instead.";
+      } else if (error.message?.includes("Password")) {
+        errorMessage = "Password must be at least 6 characters long.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Registration failed",
-        description: error.message || "An error occurred during registration.",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
@@ -170,14 +183,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Resend verification email
+  // Resend verification email (keeping for compatibility but not used)
   const resendVerification = async (email: string) => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
     });
     
     if (error) throw error;
@@ -188,20 +198,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
       
-      // Use the absolute URL for redirect to avoid path issues
       const redirectTo = `${window.location.origin}/auth/callback`;
-      
       console.log(`Using redirect URL: ${redirectTo}`);
-      
-      if (provider === 'google') {
-        console.log('Google Sign-In initiated with redirect URL:', redirectTo);
-      }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
-          // Only specify scopes where needed
           scopes: provider === 'google' ? 'profile email' : undefined,
         },
       });
@@ -246,7 +249,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user && !!user.emailConfirmed,
+        isAuthenticated: !!user, // Simplified - just check if user exists
         isLoading,
         login,
         register,

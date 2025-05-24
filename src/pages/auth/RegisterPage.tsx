@@ -13,7 +13,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
 import PasswordMatchIndicator from "@/components/auth/PasswordMatchIndicator";
 import SimpleCaptcha from "@/components/auth/SimpleCaptcha";
-import EmailVerificationPrompt from "@/components/auth/EmailVerificationPrompt";
 import { calculatePasswordStrength } from "@/utils/passwordUtils";
 
 const RegisterPage = () => {
@@ -28,12 +27,26 @@ const RegisterPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
-  const [showEmailVerification, setShowEmailVerification] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState("");
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Validate inputs
+    if (!name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+    
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+    
+    if (!password) {
+      setError("Please enter a password.");
+      return;
+    }
     
     // Validate password strength
     const passwordStrength = calculatePasswordStrength(password);
@@ -55,13 +68,15 @@ const RegisterPage = () => {
     setIsSubmitting(true);
     
     try {
+      console.log("Attempting to register user:", email);
       const result = await register(email, password, name);
       
-      if (result.needsVerification) {
-        setRegisteredEmail(email);
-        setShowEmailVerification(true);
-      } else {
-        // User is automatically logged in
+      if (result.success) {
+        console.log("Registration successful, redirecting to dashboard");
+        toast({
+          title: "Account created successfully",
+          description: "Welcome! You can now access your dashboard.",
+        });
         navigate("/dashboard", { replace: true });
       }
     } catch (error: any) {
@@ -79,17 +94,6 @@ const RegisterPage = () => {
       setError(error.message || `Registration with ${provider} failed.`);
     }
   };
-
-  if (showEmailVerification) {
-    return (
-      <div className="container flex items-center justify-center min-h-screen py-8">
-        <EmailVerificationPrompt 
-          email={registeredEmail}
-          onClose={() => navigate("/login")}
-        />
-      </div>
-    );
-  }
   
   return (
     <div className="container flex items-center justify-center min-h-screen py-8">
@@ -149,7 +153,7 @@ const RegisterPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={8}
+                minLength={6}
               />
               <PasswordStrengthIndicator password={password} />
             </div>
@@ -163,7 +167,7 @@ const RegisterPage = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={8}
+                minLength={6}
               />
               <PasswordMatchIndicator 
                 password={password} 
