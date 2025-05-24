@@ -10,6 +10,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Mail, Apple, Facebook } from "lucide-react";
 import { Provider } from "@supabase/supabase-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
+import PasswordMatchIndicator from "@/components/auth/PasswordMatchIndicator";
+import SimpleCaptcha from "@/components/auth/SimpleCaptcha";
+import EmailVerificationPrompt from "@/components/auth/EmailVerificationPrompt";
+import { calculatePasswordStrength } from "@/utils/passwordUtils";
 
 const RegisterPage = () => {
   const { register, socialLogin } = useAuth();
@@ -22,23 +27,45 @@ const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Validate password strength
+    const passwordStrength = calculatePasswordStrength(password);
+    if (passwordStrength.score < 2) {
+      setError("Please choose a stronger password. Use at least 8 characters with a mix of letters, numbers, and symbols.");
+      return;
+    }
     
     if (password !== confirmPassword) {
       setError("Passwords don't match. Please make sure both passwords match.");
       return;
     }
     
+    if (!isCaptchaVerified) {
+      setError("Please complete the security check.");
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      await register(email, password, name);
-      // Redirect to dashboard after successful registration
-      navigate("/dashboard", { replace: true });
+      const result = await register(email, password, name);
+      
+      if (result.needsVerification) {
+        setRegisteredEmail(email);
+        setShowEmailVerification(true);
+      } else {
+        // User is automatically logged in
+        navigate("/dashboard", { replace: true });
+      }
     } catch (error: any) {
+      console.error("Registration error:", error);
       setError(error.message || "Registration failed. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -52,6 +79,17 @@ const RegisterPage = () => {
       setError(error.message || `Registration with ${provider} failed.`);
     }
   };
+
+  if (showEmailVerification) {
+    return (
+      <div className="container flex items-center justify-center min-h-screen py-8">
+        <EmailVerificationPrompt 
+          email={registeredEmail}
+          onClose={() => navigate("/login")}
+        />
+      </div>
+    );
+  }
   
   return (
     <div className="container flex items-center justify-center min-h-screen py-8">
@@ -89,6 +127,7 @@ const RegisterPage = () => {
                 required
               />
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -100,6 +139,7 @@ const RegisterPage = () => {
                 required
               />
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -109,9 +149,11 @@ const RegisterPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
               />
+              <PasswordStrengthIndicator password={password} />
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input
@@ -121,9 +163,15 @@ const RegisterPage = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
+              />
+              <PasswordMatchIndicator 
+                password={password} 
+                confirmPassword={confirmPassword} 
               />
             </div>
+
+            <SimpleCaptcha onVerify={setIsCaptchaVerified} />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -170,7 +218,7 @@ const RegisterPage = () => {
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-verifyvision-gradient-start via-verifyvision-gradient-middle to-verifyvision-gradient-end hover:opacity-90"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isCaptchaVerified}
             >
               {isSubmitting ? (
                 <>
