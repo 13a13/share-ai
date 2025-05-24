@@ -16,7 +16,7 @@ import SimpleCaptcha from "@/components/auth/SimpleCaptcha";
 import { calculatePasswordStrength } from "@/utils/passwordUtils";
 
 const RegisterPage = () => {
-  const { register, socialLogin } = useAuth();
+  const { register, socialLogin, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -27,58 +27,82 @@ const RegisterPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    
-    // Validate inputs
+  const validateForm = () => {
     if (!name.trim()) {
       setError("Please enter your name.");
-      return;
+      return false;
     }
     
     if (!email.trim()) {
       setError("Please enter your email address.");
-      return;
+      return false;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address.");
+      return false;
     }
     
     if (!password) {
       setError("Please enter a password.");
-      return;
+      return false;
     }
     
     // Validate password strength
     const passwordStrength = calculatePasswordStrength(password);
     if (passwordStrength.score < 2) {
       setError("Please choose a stronger password. Use at least 8 characters with a mix of letters, numbers, and symbols.");
-      return;
+      return false;
     }
     
     if (password !== confirmPassword) {
       setError("Passwords don't match. Please make sure both passwords match.");
-      return;
+      return false;
     }
     
     if (!isCaptchaVerified) {
       setError("Please complete the security check.");
+      return false;
+    }
+
+    return true;
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    
+    if (!validateForm()) {
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      console.log("Attempting to register user:", email);
-      const result = await register(email, password, name);
+      console.log("Attempting to register user:", email.trim());
+      await register(email.trim(), password, name.trim());
       
-      if (result.success) {
-        console.log("Registration successful, redirecting to dashboard");
-        toast({
-          title: "Account created successfully",
-          description: "Welcome! You can now access your dashboard.",
-        });
+      // Success - user will be redirected by auth state change
+      console.log("Registration successful");
+      toast({
+        title: "Account created successfully",
+        description: "Welcome! Redirecting to your dashboard...",
+      });
+      
+      // Small delay to show success message, then redirect
+      setTimeout(() => {
         navigate("/dashboard", { replace: true });
-      }
+      }, 1000);
+      
     } catch (error: any) {
       console.error("Registration error:", error);
       setError(error.message || "Registration failed. Please try again.");
@@ -88,8 +112,10 @@ const RegisterPage = () => {
   };
 
   const handleSocialLogin = async (provider: Provider) => {
+    setError(null);
     try {
       await socialLogin(provider);
+      // Redirect will be handled by the OAuth flow
     } catch (error: any) {
       setError(error.message || `Registration with ${provider} failed.`);
     }
@@ -129,6 +155,7 @@ const RegisterPage = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                disabled={isSubmitting}
               />
             </div>
             
@@ -141,6 +168,7 @@ const RegisterPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isSubmitting}
               />
             </div>
             
@@ -154,6 +182,7 @@ const RegisterPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                disabled={isSubmitting}
               />
               <PasswordStrengthIndicator password={password} />
             </div>
@@ -168,6 +197,7 @@ const RegisterPage = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
+                disabled={isSubmitting}
               />
               <PasswordMatchIndicator 
                 password={password} 
@@ -194,6 +224,7 @@ const RegisterPage = () => {
                 variant="outline" 
                 onClick={() => handleSocialLogin('google')} 
                 className="w-full"
+                disabled={isSubmitting}
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Google
@@ -203,6 +234,7 @@ const RegisterPage = () => {
                 variant="outline" 
                 onClick={() => handleSocialLogin('apple')} 
                 className="w-full"
+                disabled={isSubmitting}
               >
                 <Apple className="h-4 w-4 mr-2" />
                 Apple
@@ -212,6 +244,7 @@ const RegisterPage = () => {
                 variant="outline" 
                 onClick={() => handleSocialLogin('facebook')} 
                 className="w-full"
+                disabled={isSubmitting}
               >
                 <Facebook className="h-4 w-4 mr-2" />
                 Facebook

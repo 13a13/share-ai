@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Provider } from "@supabase/supabase-js";
@@ -8,7 +9,6 @@ interface User {
   id: string;
   email: string;
   name?: string;
-  emailConfirmed?: boolean;
 }
 
 interface AuthContextType {
@@ -16,10 +16,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name?: string) => Promise<{ success: boolean }>;
+  register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
   socialLogin: (provider: Provider) => Promise<void>;
-  resendVerification: (email: string) => Promise<void>;
 }
 
 // Create context with default values
@@ -28,10 +27,9 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   login: async () => {},
-  register: async () => ({ success: false }),
+  register: async () => {},
   logout: () => {},
   socialLogin: async () => {},
-  resendVerification: async () => {},
 });
 
 // Custom hook for using auth context
@@ -43,12 +41,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Check for existing user session on mount and set up auth state listener
+  // Initialize auth state
   useEffect(() => {
-    // Set up auth state listener first to ensure we don't miss auth events
+    let mounted = true;
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
+      async (event, session) => {
+        console.log("Auth event:", event, session?.user?.id);
+        
+        if (!mounted) return;
+
         if (session?.user) {
           const userData = {
             id: session.user.id,
@@ -56,7 +59,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             name: session.user.user_metadata?.name || 
                   session.user.user_metadata?.full_name || 
                   session.user.email?.split('@')[0] || "",
-            emailConfirmed: true, // Remove email verification requirement
           };
           setUser(userData);
         } else {
@@ -66,72 +68,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const userData = {
-          id: session.user.id,
-          email: session.user.email || "",
-          name: session.user.user_metadata?.name || 
-                session.user.user_metadata?.full_name || 
-                session.user.email?.split('@')[0] || "",
-          emailConfirmed: true, // Remove email verification requirement
-        };
-        setUser(userData);
+    // Check for existing session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error getting session:", error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (mounted && session?.user) {
+          const userData = {
+            id: session.user.id,
+            email: session.user.email || "",
+            name: session.user.user_metadata?.name || 
+                  session.user.user_metadata?.full_name || 
+                  session.user.email?.split('@')[0] || "",
+          };
+          setUser(userData);
+        }
+        if (mounted) {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Session initialization error:", error);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-      setIsLoading(false);
-    });
+    };
+
+    getInitialSession();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  // Login function
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error("Login error:", error);
-        throw error;
-      }
-      
-      console.log("Login successful:", data.user?.id);
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-    } catch (error: any) {
-      console.error("Login failed:", error);
-      toast({
-        title: "Login failed",
-        description: error.message || "An error occurred during login.",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Register function - simplified without email verification
+  // Register function - industry standard approach
   const register = async (email: string, password: string, name?: string) => {
     setIsLoading(true);
     try {
       console.log("Starting registration for:", email);
       
+      // Clear any existing session first
+      await supabase.auth.signOut();
+      
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
           data: {
-            name,
-            full_name: name,
+            name: name?.trim(),
+            full_name: name?.trim(),
           },
         },
       });
@@ -143,31 +134,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       console.log("Registration response:", data);
       
-      // Check if user was created successfully
+      // Check if user was created
       if (data.user) {
-        console.log("User created successfully:", data.user.id);
-        toast({
-          title: "Registration successful",
-          description: "Welcome! Your account has been created.",
-        });
-        return { success: true };
+        console.log("User registered successfully:", data.user.id);
+        
+        // If there's a session, the user is automatically logged in
+        if (data.session) {
+          console.log("User automatically logged in with session");
+          toast({
+            title: "Account created successfully",
+            description: "Welcome! You're now logged in.",
+          });
+        } else {
+          console.log("User created but no session - may need email confirmation");
+          toast({
+            title: "Account created",
+            description: "Your account has been created successfully. You can now log in.",
+          });
+        }
       } else {
-        console.log("Registration completed but no user returned");
-        toast({
-          title: "Registration completed",
-          description: "Your account has been created successfully.",
-        });
-        return { success: true };
+        throw new Error("Failed to create user account");
       }
     } catch (error: any) {
       console.error("Registration failed:", error);
       
-      // Handle specific error cases
-      let errorMessage = "An error occurred during registration.";
+      let errorMessage = "Failed to create account. Please try again.";
       if (error.message?.includes("already registered")) {
         errorMessage = "An account with this email already exists. Please try logging in instead.";
       } else if (error.message?.includes("Password")) {
         errorMessage = "Password must be at least 6 characters long.";
+      } else if (error.message?.includes("Invalid email")) {
+        errorMessage = "Please enter a valid email address.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -183,14 +180,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Resend verification email (keeping for compatibility but not used)
-  const resendVerification = async (email: string) => {
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-    });
-    
-    if (error) throw error;
+  // Login function
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      
+      if (error) {
+        console.error("Login error:", error);
+        throw error;
+      }
+      
+      console.log("Login successful:", data.user?.id);
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      
+      let errorMessage = "Login failed. Please check your credentials.";
+      if (error.message?.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const socialLogin = async (provider: Provider) => {
@@ -249,13 +276,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user, // Simplified - just check if user exists
+        isAuthenticated: !!user,
         isLoading,
         login,
         register,
         logout,
         socialLogin,
-        resendVerification,
       }}
     >
       {children}
