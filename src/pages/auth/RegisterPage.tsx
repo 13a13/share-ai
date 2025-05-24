@@ -16,7 +16,7 @@ import SimpleCaptcha from "@/components/auth/SimpleCaptcha";
 import { calculatePasswordStrength } from "@/utils/passwordUtils";
 
 const RegisterPage = () => {
-  const { register, socialLogin, isAuthenticated } = useAuth();
+  const { register, socialLogin, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -29,7 +29,7 @@ const RegisterPage = () => {
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
 
   // Redirect if already authenticated
-  if (isAuthenticated) {
+  if (isAuthenticated && !authLoading) {
     navigate("/dashboard", { replace: true });
     return null;
   }
@@ -91,14 +91,9 @@ const RegisterPage = () => {
       console.log("Attempting to register user:", email.trim());
       await register(email.trim(), password, name.trim());
       
-      // Success - user will be redirected by auth state change
-      console.log("Registration successful");
-      toast({
-        title: "Account created successfully",
-        description: "Welcome! Redirecting to your dashboard...",
-      });
+      console.log("Registration completed successfully");
       
-      // Small delay to show success message, then redirect
+      // Wait a moment for auth state to update, then navigate
       setTimeout(() => {
         navigate("/dashboard", { replace: true });
       }, 1000);

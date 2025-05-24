@@ -45,6 +45,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    // Check for existing session first
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          if (mounted) setIsLoading(false);
+          return;
+        }
+
+        if (mounted && session?.user) {
+          const userData = {
+            id: session.user.id,
+            email: session.user.email || "",
+            name: session.user.user_metadata?.name || 
+                  session.user.user_metadata?.full_name || 
+                  session.user.email?.split('@')[0] || "",
+          };
+          setUser(userData);
+        }
+        
+        if (mounted) setIsLoading(false);
+      } catch (error) {
+        console.error("Session initialization error:", error);
+        if (mounted) setIsLoading(false);
+      }
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -68,37 +97,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for existing session
-    const getInitialSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting session:", error);
-          setIsLoading(false);
-          return;
-        }
-
-        if (mounted && session?.user) {
-          const userData = {
-            id: session.user.id,
-            email: session.user.email || "",
-            name: session.user.user_metadata?.name || 
-                  session.user.user_metadata?.full_name || 
-                  session.user.email?.split('@')[0] || "",
-          };
-          setUser(userData);
-        }
-        if (mounted) {
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error("Session initialization error:", error);
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
     getInitialSession();
 
     return () => {
@@ -107,14 +105,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Register function - industry standard approach
+  // Register function
   const register = async (email: string, password: string, name?: string) => {
-    setIsLoading(true);
     try {
       console.log("Starting registration for:", email);
-      
-      // Clear any existing session first
-      await supabase.auth.signOut();
       
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
@@ -134,32 +128,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       console.log("Registration response:", data);
       
-      // Check if user was created
-      if (data.user) {
-        console.log("User registered successfully:", data.user.id);
+      if (!data.user) {
+        throw new Error("Failed to create user account");
+      }
+
+      console.log("User registered successfully:", data.user.id);
+      
+      // If there's a session, user is logged in immediately
+      if (data.session) {
+        console.log("User automatically logged in");
+        toast({
+          title: "Account created successfully",
+          description: "Welcome! You're now logged in.",
+        });
+      } else {
+        console.log("User created, attempting to sign in");
+        // If no session, try to sign in immediately
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
         
-        // If there's a session, the user is automatically logged in
-        if (data.session) {
-          console.log("User automatically logged in with session");
+        if (signInError) {
+          console.log("Auto sign-in failed, but account was created");
+          toast({
+            title: "Account created",
+            description: "Your account has been created. Please log in.",
+          });
+        } else {
+          console.log("Auto sign-in successful");
           toast({
             title: "Account created successfully",
             description: "Welcome! You're now logged in.",
           });
-        } else {
-          console.log("User created but no session - may need email confirmation");
-          toast({
-            title: "Account created",
-            description: "Your account has been created successfully. You can now log in.",
-          });
         }
-      } else {
-        throw new Error("Failed to create user account");
       }
     } catch (error: any) {
       console.error("Registration failed:", error);
       
       let errorMessage = "Failed to create account. Please try again.";
-      if (error.message?.includes("already registered")) {
+      if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
         errorMessage = "An account with this email already exists. Please try logging in instead.";
       } else if (error.message?.includes("Password")) {
         errorMessage = "Password must be at least 6 characters long.";
@@ -175,14 +183,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   // Login function
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
@@ -215,13 +220,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const socialLogin = async (provider: Provider) => {
-    setIsLoading(true);
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
       
@@ -249,8 +251,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
