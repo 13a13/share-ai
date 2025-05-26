@@ -82,7 +82,17 @@ const ReportCard = ({
   // Helper to check if report has uploaded document
   const hasUploadedDocument = report.reportInfo?.fileUrl !== undefined;
   
-  const handleDuplicate = async () => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[role="button"]')) {
+      return;
+    }
+    navigate(`/reports/${report.id}`);
+  };
+
+  const handleDuplicate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       setIsProcessing(true);
       if (onDuplicate) {
@@ -100,7 +110,8 @@ const ReportCard = ({
     }
   };
 
-  const handleArchive = async () => {
+  const handleArchive = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       setIsProcessing(true);
       if (onArchive) {
@@ -136,14 +147,29 @@ const ReportCard = ({
       setIsProcessing(false);
     }
   };
+
+  const handleViewClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/reports/${report.id}`);
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/reports/${report.id}/edit`);
+  };
   
   return (
     <>
-      <Card className="card-hover">
-        <CardHeader className="pb-2">
+      <Card 
+        className="card-hover cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] border-l-4 border-l-verifyvision-teal"
+        onClick={handleCardClick}
+      >
+        <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">
-              {report.name || formatReportType(report.type)} Report
+            <CardTitle className="text-lg flex items-center group">
+              <span className="group-hover:text-verifyvision-teal transition-colors">
+                {report.name || formatReportType(report.type)} Report
+              </span>
               {hasUploadedDocument && (
                 <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
                   <FileText className="h-3 w-3 mr-1" />
@@ -157,25 +183,36 @@ const ReportCard = ({
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 hover:bg-gray-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">Open menu</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem
-                    onClick={() => navigate(`/reports/${report.id}`)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/reports/${report.id}`);
+                    }}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    View
+                    View Report
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem
-                    onClick={() => navigate(`/reports/${report.id}/edit`)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/reports/${report.id}/edit`);
+                    }}
                     disabled={report.status === 'archived'}
                   >
                     <Pencil className="h-4 w-4 mr-2" />
-                    Edit
+                    Edit Report
                   </DropdownMenuItem>
                   
                   <DropdownMenuSeparator />
@@ -201,8 +238,11 @@ const ReportCard = ({
                   <DropdownMenuSeparator />
                   
                   <DropdownMenuItem
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    className="text-red-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDeleteDialogOpen(true);
+                    }}
+                    className="text-red-600 focus:text-red-600"
                     disabled={isProcessing}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -213,58 +253,65 @@ const ReportCard = ({
             </div>
           </div>
           {propertyAddress && (
-            <p className="text-sm text-gray-600 mt-1">{propertyAddress}</p>
+            <p className="text-sm text-gray-600 mt-2 font-medium">{propertyAddress}</p>
           )}
         </CardHeader>
         
-        <CardContent className="text-sm pb-2">
-          <div className="flex justify-between">
-            <div>
-              <p>Created on: {format(new Date(report.createdAt), 'MMM d, yyyy')}</p>
-              {report.completedAt && (
-                <p>Completed on: {format(new Date(report.completedAt), 'MMM d, yyyy')}</p>
-              )}
+        <CardContent className="text-sm pb-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">Created</p>
+              <p className="font-medium">{format(new Date(report.createdAt), 'MMM d, yyyy')}</p>
             </div>
-            <div className="text-right">
-              <p>{report.rooms.length} Rooms</p>
+            {report.completedAt && (
+              <div className="space-y-1">
+                <p className="text-gray-500 text-xs uppercase tracking-wide">Completed</p>
+                <p className="font-medium">{format(new Date(report.completedAt), 'MMM d, yyyy')}</p>
+              </div>
+            )}
+            <div className="space-y-1">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">Rooms</p>
+              <p className="font-medium">{report.rooms.length} {report.rooms.length === 1 ? 'Room' : 'Rooms'}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">Type</p>
+              <p className="font-medium">{formatReportType(report.type)}</p>
             </div>
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-between pt-0">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate(`/reports/${report.id}`)}
-          >
-            <Eye className="h-4 w-4 mr-1" /> View
-          </Button>
-          
-          {report.status === 'archived' ? (
-            <Button 
-              size="sm" 
-              variant="secondary"
-              onClick={() => navigate(`/reports/${report.id}`)}
-            >
-              <Eye className="h-4 w-4 mr-1" /> View
-            </Button>
-          ) : report.status !== 'completed' ? (
-            <Button 
-              size="sm" 
-              onClick={() => navigate(`/reports/${report.id}/edit`)}
-              className="bg-shareai-teal hover:bg-shareai-teal/90"
-            >
-              <Pencil className="h-4 w-4 mr-1" /> Continue
-            </Button>
-          ) : (
-            <Button 
-              size="sm" 
-              variant="secondary"
-              onClick={() => navigate(`/reports/${report.id}`)}
-            >
-              <Eye className="h-4 w-4 mr-1" /> View
-            </Button>
-          )}
+        <CardFooter className="pt-0 pb-4">
+          <div className="w-full flex justify-center">
+            {report.status === 'archived' ? (
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={handleViewClick}
+                className="w-full max-w-xs group border-2 hover:border-verifyvision-teal hover:bg-verifyvision-teal hover:text-white transition-all duration-300"
+              >
+                <Eye className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> 
+                View Report
+              </Button>
+            ) : report.status !== 'completed' ? (
+              <Button 
+                size="lg" 
+                onClick={handleEditClick}
+                className="w-full max-w-xs bg-gradient-to-r from-verifyvision-teal to-blue-500 hover:from-verifyvision-teal/90 hover:to-blue-500/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 group"
+              >
+                <Pencil className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> 
+                Continue Report
+              </Button>
+            ) : (
+              <Button 
+                size="lg" 
+                onClick={handleViewClick}
+                className="w-full max-w-xs bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 group"
+              >
+                <Eye className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> 
+                View Report
+              </Button>
+            )}
+          </div>
         </CardFooter>
       </Card>
 
