@@ -3,6 +3,7 @@ import React from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Button } from "@/components/ui/button";
+import { RainbowButton } from "@/components/ui/rainbow-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, X, Play } from "lucide-react";
 import DraggableImage from './DraggableImage';
@@ -86,12 +87,10 @@ const StagingImagesGrid = ({
             )}
             
             {onProcess && (
-              <Button
-                variant="default"
-                size="sm"
+              <RainbowButton
                 onClick={onProcess}
                 disabled={analysisInProgress || compressionInProgress || images.length === 0}
-                className="bg-shareai-teal hover:bg-shareai-teal/90"
+                className="text-sm px-4 py-2 h-8"
               >
                 {analysisInProgress ? (
                   <>
@@ -109,7 +108,7 @@ const StagingImagesGrid = ({
                     Analyze Images
                   </>
                 )}
-              </Button>
+              </RainbowButton>
             )}
           </div>
         )}
