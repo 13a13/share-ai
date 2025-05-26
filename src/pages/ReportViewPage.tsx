@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
@@ -107,17 +106,19 @@ const ReportViewPage = () => {
             </p>
           </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <Button 
               variant="outline" 
               onClick={() => navigate(`/properties/${property.id}`)}
+              className="border-gray-300 hover:border-gray-400"
             >
               Back to Property
             </Button>
             <Button 
               onClick={() => navigate(`/reports/${reportId}/edit`)}
-              className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
+              className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 text-white px-6"
             >
+              <Eye className="h-4 w-4 mr-2" />
               Edit Report
             </Button>
             <PDFExportButton 

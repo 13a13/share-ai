@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { usePDFGeneration, PDFGenerationStatus } from "@/services/pdf";
 import { Report, Property } from "@/types";
-import { Loader2, Eye, Download } from "lucide-react";
+import { Loader2, Eye, Download, FileText } from "lucide-react";
 import PDFPreviewDialog from "./PDFPreviewDialog";
 import { downloadPdf, isIosDevice } from "@/utils/pdfUtils";
 
@@ -70,7 +69,8 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
         id="pdf-download-button"
         onClick={directDownload ? handleGeneratePDF : handlePreviewPDF}
         disabled={isGenerating || status === "generating"}
-        className="bg-shareai-blue hover:bg-shareai-blue/90 text-white transition-all"
+        className="bg-blue-600 hover:bg-blue-700 text-white transition-all px-6 shadow-md hover:shadow-lg"
+        size="default"
       >
         {isGenerating || status === "generating" ? (
           <>
@@ -86,7 +86,7 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
               </>
             ) : (
               <>
-                <Eye className="mr-2 h-4 w-4" />
+                <FileText className="mr-2 h-4 w-4" />
                 Preview PDF
               </>
             )}
