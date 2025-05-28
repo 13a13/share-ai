@@ -109,7 +109,7 @@ const LandingPage = () => {
               <h2 className="text-3xl font-bold tracking-tight text-white">
                 Reduce Time Spent Inside Properties by Half!
               </h2>
-              <p className="max-w-[800px] text-brand-blue-300 md:text-xl/relaxed">
+              <p className="max-w-[800px] text-white md:text-xl/relaxed">
                 Our AI technology allows you to capture images while our system automatically documents and analyzes property conditions, cutting inspection time dramatically.
               </p>
             </div>
