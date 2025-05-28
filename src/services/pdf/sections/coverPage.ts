@@ -67,12 +67,6 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
       true // maintain aspect ratio
     );
     
-    // Add "VerifyVision" text below the logo with proportional size and font
-    doc.setFont(pdfStyles.fonts.header, "bold");
-    doc.setFontSize(pdfStyles.fontSizes.subtitle);
-    doc.setTextColor(pdfStyles.colors.black[0], pdfStyles.colors.black[1], pdfStyles.colors.black[2]);
-    doc.text("VerifyVision", pageWidth / 2, 180, { align: "center" });
-    
   } catch (error) {
     console.error("Error adding logo to PDF:", error);
     // Fallback to placeholder if logo fails to load
@@ -81,12 +75,6 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
     doc.rect(pageWidth / 2 - 30, 140, 60, 30);
     doc.setFontSize(pdfStyles.fontSizes.small);
     doc.text("Logo", pageWidth / 2, 155, { align: "center" });
-    
-    // Add "VerifyVision" text below the placeholder with proportional size and font
-    doc.setFont(pdfStyles.fonts.header, "bold");
-    doc.setFontSize(pdfStyles.fontSizes.subtitle);
-    doc.setTextColor(pdfStyles.colors.black[0], pdfStyles.colors.black[1], pdfStyles.colors.black[2]);
-    doc.text("VerifyVision", pageWidth / 2, 180, { align: "center" });
   }
   
   // Footer at bottom of page

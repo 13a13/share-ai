@@ -14,7 +14,7 @@ const Footer = () => {
             />
             <div>
               <h3 className="text-xl font-bold mb-2 text-white">VerifyVision AI</h3>
-              <p className="text-brand-blue-300">
+              <p className="text-white">
                 AI-powered property inspection reports
               </p>
             </div>
@@ -33,7 +33,7 @@ const Footer = () => {
                 Made with <Heart className="h-4 w-4 text-verifyvision-teal mx-1" /> by VerifyVision AI Team
               </span>
             </div>
-            <p className="text-sm text-brand-blue-300">
+            <p className="text-sm text-white">
               &copy; {new Date().getFullYear()} VerifyVision AI. All rights reserved.
             </p>
           </div>
