@@ -307,7 +307,7 @@ const RegisterPage = () => {
                 Login
               </Link>
             </div>
-          </CardContent>
+          </CardFooter>
         </form>
       </Card>
     </div>
