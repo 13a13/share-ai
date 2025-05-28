@@ -33,6 +33,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_inspection_images_inspection_id"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "inspection_images_inspection_id_fkey"
             columns: ["inspection_id"]
             isOneToOne: false
@@ -73,6 +80,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_inspections_room_id"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inspections_room_id_fkey"
             columns: ["room_id"]
@@ -165,6 +179,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_rooms_property_id"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rooms_property_id_fkey"
             columns: ["property_id"]

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -7,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Apple, Facebook, Loader2 } from "lucide-react";
+import { Mail, Apple, Loader2 } from "lucide-react";
 import { Provider } from "@supabase/supabase-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
@@ -24,7 +23,6 @@ const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [facebookLoading, setFacebookLoading] = useState(false);
   
   // Get the page they were trying to visit, default to dashboard
   const from = location.state?.from?.pathname || "/dashboard";
@@ -59,20 +57,6 @@ const LoginPage = () => {
     }
   };
 
-  const handleFacebookLogin = async () => {
-    try {
-      setError(null);
-      setFacebookLoading(true);
-      console.log("Initiating Facebook login");
-      await socialLogin('facebook');
-      // The redirect will happen automatically through Supabase
-    } catch (error: any) {
-      console.error("Facebook login error:", error);
-      setFacebookLoading(false);
-      setError(error.message || "Login with Facebook failed.");
-    }
-  };
-
   const handleAppleLogin = async () => {
     try {
       setError(null);
@@ -92,8 +76,6 @@ const LoginPage = () => {
       return handleAppleLogin();
     } else if (provider === 'google') {
       return handleGoogleLogin();
-    } else if (provider === 'facebook') {
-      return handleFacebookLogin();
     }
   };
   
@@ -159,7 +141,7 @@ const LoginPage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -187,20 +169,6 @@ const LoginPage = () => {
                   <Apple className="h-4 w-4 mr-2" />
                 )}
                 Apple
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => handleSocialLogin('facebook')} 
-                className="w-full"
-                disabled={facebookLoading}
-              >
-                {facebookLoading ? (
-                  <ProgressIndicator variant="inline" size="sm" className="mr-2" />
-                ) : (
-                  <Facebook className="h-4 w-4 mr-2" />
-                )}
-                Facebook
               </Button>
             </div>
           </CardContent>
