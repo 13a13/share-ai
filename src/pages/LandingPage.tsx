@@ -32,16 +32,16 @@ const LandingPage = () => {
           </div>
           
           <nav className="ml-auto hidden md:flex gap-6">
-            <a href="#how-it-works" className="text-sm font-medium text-white hover:text-brand-blue-300 transition-colors">
+            <a href="#how-it-works" className="text-sm font-medium text-white hover:text-white hover:bg-verifyvision-teal transition-colors px-3 py-2 rounded">
               How It Works
             </a>
-            <a href="#features" className="text-sm font-medium text-white hover:text-brand-blue-300 transition-colors">
+            <a href="#features" className="text-sm font-medium text-white hover:text-white hover:bg-verifyvision-teal transition-colors px-3 py-2 rounded">
               Features
             </a>
-            <a href="#ai-technology" className="text-sm font-medium text-white hover:text-brand-blue-300 transition-colors">
+            <a href="#ai-technology" className="text-sm font-medium text-white hover:text-white hover:bg-verifyvision-teal transition-colors px-3 py-2 rounded">
               AI Technology
             </a>
-            <a href="#pricing" className="text-sm font-medium text-white hover:text-brand-blue-300 transition-colors">
+            <a href="#pricing" className="text-sm font-medium text-white hover:text-white hover:bg-verifyvision-teal transition-colors px-3 py-2 rounded">
               Pricing
             </a>
           </nav>
@@ -269,53 +269,6 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* Free Trial Section */}
-        <section id="pricing" className="bg-gradient-to-r from-verifyvision-teal/10 to-brand-blue-900/10 py-16 md:py-24">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-8 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-brand-blue-900">Start Your Free Trial Today</h2>
-                <p className="max-w-[800px] text-gray-500 md:text-xl/relaxed">
-                  Try our platform for 30 days with no obligation
-                </p>
-              </div>
-              <div className="mx-auto w-full max-w-lg space-y-6">
-                <div className="rounded-lg border bg-card p-8 shadow-sm card-hover">
-                  <div className="flex flex-col items-center space-y-4">
-                    <h3 className="text-2xl font-bold text-brand-blue-900">30-Day Free Trial</h3>
-                    <div className="text-4xl font-bold text-verifyvision-teal">$0</div>
-                    <p className="text-gray-500">No credit card details required</p>
-                    <ul className="grid gap-2 text-left">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-verifyvision-teal" />
-                        <span>Full access to all features</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-verifyvision-teal" />
-                        <span>Unlimited property inspections</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-verifyvision-teal" />
-                        <span>PDF report generation</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-verifyvision-teal" />
-                        <span>Email support</span>
-                      </li>
-                    </ul>
-                    <Button size="lg" variant="default" className="w-full bg-verifyvision-teal hover:bg-verifyvision-teal/90" asChild>
-                      <Link to="/register" className="flex items-center justify-center gap-2">
-                        Start Your Free Trial
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Testimonials Section */}
         <section className="py-16 md:py-24">
           <div className="container px-4 md:px-6">
@@ -364,20 +317,50 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-16 md:py-24 bg-muted">
+        {/* Combined CTA and Pricing Section */}
+        <section id="pricing" className="bg-gradient-to-r from-verifyvision-teal/10 to-brand-blue-900/10 py-16 md:py-24">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <div className="flex flex-col items-center justify-center space-y-8 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-brand-blue-900">Ready to Transform Your Inspection Process?</h2>
                 <p className="max-w-[800px] text-gray-500 md:text-xl/relaxed">
-                  Join thousands of property professionals already using VerifyVision AI
+                  Join thousands of property professionals already using VerifyVision AI. Try our platform for 30 days with no obligation.
                 </p>
               </div>
+              <div className="mx-auto w-full max-w-lg space-y-6">
+                <div className="rounded-lg border bg-card p-8 shadow-sm card-hover">
+                  <div className="flex flex-col items-center space-y-4">
+                    <h3 className="text-2xl font-bold text-brand-blue-900">30-Day Free Trial</h3>
+                    <div className="text-4xl font-bold text-verifyvision-teal">$0</div>
+                    <p className="text-gray-500">No credit card details required</p>
+                    <ul className="grid gap-2 text-left">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-verifyvision-teal" />
+                        <span>Full access to all features</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-verifyvision-teal" />
+                        <span>Unlimited property inspections</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-verifyvision-teal" />
+                        <span>PDF report generation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-verifyvision-teal" />
+                        <span>Email support</span>
+                      </li>
+                    </ul>
+                    <Button size="lg" variant="default" className="w-full bg-verifyvision-teal hover:bg-verifyvision-teal/90" asChild>
+                      <Link to="/register" className="flex items-center justify-center gap-2">
+                        Start Your Free Trial
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Button size="lg" variant="default" asChild className="bg-verifyvision-teal hover:bg-verifyvision-teal/90">
-                  <Link to="/register">Start Your Free Trial</Link>
-                </Button>
                 <Button size="lg" variant="outline" asChild className="border-brand-blue-900 text-brand-blue-900 hover:bg-verifyvision-teal hover:text-white">
                   <Link to="/contact">Contact Sales</Link>
                 </Button>
