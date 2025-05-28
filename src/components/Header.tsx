@@ -27,7 +27,7 @@ const Header = () => {
   };
   
   return (
-    <header className="bg-verifyvision-blue py-4 text-white">
+    <header className="bg-brand-blue-950 py-4 text-white">
       <div className="verifyvision-container flex justify-between items-center">
         <div className="flex items-center space-x-3">
           {isAuthenticated ? (
@@ -37,7 +37,7 @@ const Header = () => {
                 alt="VerifyVision AI Logo" 
                 className="h-10 w-15"
               />
-              <span className="text-xl font-bold ml-2">VerifyVision AI</span>
+              <span className="text-xl font-bold ml-2 text-white">VerifyVision AI</span>
             </Link>
           ) : (
             <Link to="/" className="flex items-center">
@@ -46,7 +46,7 @@ const Header = () => {
                 alt="VerifyVision AI Logo" 
                 className="h-10 w-15"
               />
-              <span className="text-xl font-bold ml-2">VerifyVision AI</span>
+              <span className="text-xl font-bold ml-2 text-white">VerifyVision AI</span>
             </Link>
           )}
         </div>
@@ -55,19 +55,19 @@ const Header = () => {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-white hover:bg-verifyvision-blue/50 flex items-center">
+                <Button variant="ghost" className="text-white hover:bg-verifyvision-teal hover:text-white flex items-center">
                   <User className="h-5 w-5 mr-2" />
                   <span className="mr-1">{user?.name || user?.email?.split('@')[0]}</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuContent align="end" className="bg-white z-50">
+                <DropdownMenuItem className="cursor-pointer hover:bg-verifyvision-teal hover:text-white">
                   <User className="h-4 w-4 mr-2" />
                   <span>Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:text-red-500">
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 hover:bg-verifyvision-teal hover:text-white focus:text-white">
                   <LogOut className="h-4 w-4 mr-2" />
                   <span>Logout</span>
                 </DropdownMenuItem>
@@ -76,12 +76,12 @@ const Header = () => {
           ) : (
             <>
               <Link to="/login">
-                <Button variant="ghost" className="text-white hover:bg-verifyvision-blue/50">
+                <Button variant="ghost" className="text-white hover:bg-verifyvision-teal hover:text-white">
                   Login
                 </Button>
               </Link>
               <Link to="/register">
-                <Button className="bg-verifyvision-teal hover:bg-verifyvision-teal/90">
+                <Button className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 text-white">
                   Register
                 </Button>
               </Link>

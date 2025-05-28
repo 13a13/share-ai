@@ -55,6 +55,20 @@ const config = {
         },
         "shareai-teal": "#0EA5E9",
         "verifyvision-teal": "#0EA5E9",
+        "verifyvision-blue": "#1e3a8a",
+        "brand-blue": {
+          50: "#f0f4ff",
+          100: "#e0e8ff", 
+          200: "#c7d4fe",
+          300: "#a5b6fc",
+          400: "#8b93f8",
+          500: "#7c73f2", 
+          600: "#6d56e8",
+          700: "#5d45d4",
+          800: "#4e3bb0",
+          900: "#213968",
+          950: "#1a2d52"
+        }
       },
       borderRadius: {
         lg: "var(--radius)",

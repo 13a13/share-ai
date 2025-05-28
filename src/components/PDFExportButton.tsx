@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { usePDFGeneration, PDFGenerationStatus } from "@/services/pdf";
@@ -69,7 +70,7 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
         id="pdf-download-button"
         onClick={directDownload ? handleGeneratePDF : handlePreviewPDF}
         disabled={isGenerating || status === "generating"}
-        className="bg-blue-600 hover:bg-blue-700 text-white transition-all px-6 shadow-md hover:shadow-lg"
+        className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 text-white transition-all px-6 shadow-md hover:shadow-lg"
         size="default"
       >
         {isGenerating || status === "generating" ? (

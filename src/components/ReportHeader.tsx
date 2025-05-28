@@ -37,7 +37,7 @@ const ReportHeader = ({
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
       <div>
-        <h1 className="text-3xl font-bold text-verifyvision-blue">
+        <h1 className="text-3xl font-bold text-brand-blue-900">
           {title}
         </h1>
         <p className="text-gray-600">
@@ -49,6 +49,7 @@ const ReportHeader = ({
         <Button 
           variant="outline" 
           onClick={() => navigate(-1)}
+          className="border-brand-blue-900 text-brand-blue-900 hover:bg-verifyvision-teal hover:text-white"
         >
           Cancel
         </Button>
@@ -66,7 +67,7 @@ const ReportHeader = ({
               onClick={onComplete}
               disabled={isSaving}
               className="px-4 py-2 h-10"
-              background="rgb(155, 135, 245)"
+              background="rgb(14, 165, 233)"
             >
               {isSaving ? (
                 <>
@@ -86,7 +87,7 @@ const ReportHeader = ({
             onClick={onSave}
             disabled={isSaving}
             className="px-4 py-2 h-10"
-            background="rgb(155, 135, 245)"
+            background="rgb(14, 165, 233)"
           >
             {isSaving ? (
               <>

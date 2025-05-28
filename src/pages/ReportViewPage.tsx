@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
@@ -78,7 +79,7 @@ const ReportViewPage = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <div className="verifyvision-container text-center py-12 flex-1">
-          <h2 className="text-2xl font-bold mb-4">Report Not Found</h2>
+          <h2 className="text-2xl font-bold mb-4 text-brand-blue-900">Report Not Found</h2>
           <p className="mb-6">The requested report could not be found or has been deleted.</p>
           <Button 
             onClick={() => navigate("/dashboard")}
@@ -98,7 +99,7 @@ const ReportViewPage = () => {
       <div className="verifyvision-container py-8 flex-1">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-verifyvision-blue">
+            <h1 className="text-3xl font-bold text-brand-blue-900">
               {report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Report
             </h1>
             <p className="text-gray-600">
@@ -110,7 +111,7 @@ const ReportViewPage = () => {
             <Button 
               variant="outline" 
               onClick={() => navigate(`/properties/${property.id}`)}
-              className="border-gray-300 hover:border-gray-400"
+              className="border-brand-blue-900 text-brand-blue-900 hover:bg-verifyvision-teal hover:text-white"
             >
               Back to Property
             </Button>
@@ -129,9 +130,9 @@ const ReportViewPage = () => {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-8 card-hover">
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-4">Report Information</h2>
+            <h2 className="text-xl font-bold mb-4 text-brand-blue-900">Report Information</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
@@ -167,7 +168,7 @@ const ReportViewPage = () => {
           </div>
         </div>
         
-        <h2 className="text-xl font-bold mb-4">Rooms</h2>
+        <h2 className="text-xl font-bold mb-4 text-brand-blue-900">Rooms</h2>
         
         {report.rooms.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-6 text-center">
@@ -191,8 +192,8 @@ const ReportViewPage = () => {
         )}
         
         {report.disclaimers && report.disclaimers.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mt-8">
-            <h2 className="text-xl font-bold mb-4">Disclaimers</h2>
+          <div className="bg-white rounded-lg shadow p-6 mt-8 card-hover">
+            <h2 className="text-xl font-bold mb-4 text-brand-blue-900">Disclaimers</h2>
             <ul className="list-disc list-inside space-y-2 text-gray-600">
               {report.disclaimers.map((disclaimer, index) => (
                 <li key={index}>{disclaimer}</li>
