@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { Provider, Session } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
+import { securityService } from "@/lib/security/securityService";
 
 // Define types
 interface User {
@@ -75,11 +76,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(userData);
         setIsLoading(false);
 
+        // Log security events
+        securityService.logSecurityEvent({
+          action: event,
+          success: !!session,
+          identifier: userData?.email,
+          userAgent: navigator.userAgent
+        });
+
         // Handle specific auth events
         if (event === 'SIGNED_OUT') {
           console.log("User signed out, clearing state");
         } else if (event === 'SIGNED_IN') {
           console.log("User signed in:", userData?.email);
+          // Record successful login for rate limiting
+          securityService.recordAttempt('login', userData?.email, true);
         } else if (event === 'TOKEN_REFRESHED') {
           console.log("Token refreshed for user:", userData?.email);
         }
@@ -124,25 +135,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Register function
+  // Register function with enhanced security
   const register = async (email: string, password: string, name?: string) => {
     try {
       console.log("Starting registration for:", email);
+      
+      // Sanitize inputs
+      const sanitizedEmail = securityService.sanitizeInput(email);
+      const sanitizedName = name ? securityService.sanitizeInput(name) : undefined;
+      
+      // Validate email
+      const emailValidation = securityService.validateEmail(sanitizedEmail);
+      if (!emailValidation.valid) {
+        throw new Error(emailValidation.reason);
+      }
+      
+      // Check rate limiting
+      const rateLimitCheck = securityService.checkRateLimit('register', sanitizedEmail);
+      if (!rateLimitCheck.allowed) {
+        throw new Error(rateLimitCheck.reason);
+      }
+      
       setIsLoading(true);
       
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
+        email: sanitizedEmail.trim().toLowerCase(),
         password,
         options: {
           data: {
-            name: name?.trim(),
-            full_name: name?.trim(),
+            name: sanitizedName?.trim(),
+            full_name: sanitizedName?.trim(),
           },
         },
       });
       
+      // Record attempt
+      securityService.recordAttempt('register', sanitizedEmail, !error);
+      
       if (error) {
         console.error("Registration error:", error);
+        securityService.logSecurityEvent({
+          action: 'register_failed',
+          success: false,
+          identifier: sanitizedEmail,
+          userAgent: navigator.userAgent,
+          additionalData: { error: error.message }
+        });
         throw error;
       }
       
@@ -153,6 +191,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       console.log("User registered successfully:", data.user.id);
+      
+      securityService.logSecurityEvent({
+        action: 'register_success',
+        success: true,
+        identifier: sanitizedEmail,
+        userAgent: navigator.userAgent
+      });
       
       // If there's a session, user is logged in immediately
       if (data.session) {
@@ -193,23 +238,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Login function
+  // Login function with enhanced security
   const login = async (email: string, password: string) => {
     try {
       console.log("Starting login for:", email);
+      
+      // Sanitize inputs
+      const sanitizedEmail = securityService.sanitizeInput(email);
+      
+      // Validate email
+      const emailValidation = securityService.validateEmail(sanitizedEmail);
+      if (!emailValidation.valid) {
+        throw new Error(emailValidation.reason);
+      }
+      
+      // Check rate limiting
+      const rateLimitCheck = securityService.checkRateLimit('login', sanitizedEmail);
+      if (!rateLimitCheck.allowed) {
+        throw new Error(rateLimitCheck.reason);
+      }
+      
       setIsLoading(true);
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+        email: sanitizedEmail.trim().toLowerCase(),
         password,
       });
       
+      // Record attempt
+      securityService.recordAttempt('login', sanitizedEmail, !error);
+      
       if (error) {
         console.error("Login error:", error);
+        securityService.logSecurityEvent({
+          action: 'login_failed',
+          success: false,
+          identifier: sanitizedEmail,
+          userAgent: navigator.userAgent,
+          additionalData: { error: error.message }
+        });
         throw error;
       }
       
       console.log("Login successful:", data.user?.id);
+      
+      securityService.logSecurityEvent({
+        action: 'login_success',
+        success: true,
+        identifier: sanitizedEmail,
+        userAgent: navigator.userAgent
+      });
+      
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -222,6 +301,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         errorMessage = "Invalid email or password. Please try again.";
       } else if (error.message?.includes("Email not confirmed")) {
         errorMessage = "Please check your email and confirm your account before logging in.";
+      } else if (error.message?.includes("Too many attempts")) {
+        errorMessage = error.message; // Rate limiting message
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -240,6 +321,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const socialLogin = async (provider: Provider) => {
     try {
       console.log(`Initiating ${provider} OAuth login flow`);
+      
+      // Check rate limiting for social login
+      const rateLimitCheck = securityService.checkRateLimit('socialLogin');
+      if (!rateLimitCheck.allowed) {
+        throw new Error(rateLimitCheck.reason);
+      }
+      
       setIsLoading(true);
       
       const redirectTo = `${window.location.origin}/auth/callback`;
@@ -253,12 +341,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
       
+      // Record attempt
+      securityService.recordAttempt('socialLogin', provider, !error);
+      
       if (error) {
         console.error(`${provider} OAuth error:`, error);
+        securityService.logSecurityEvent({
+          action: 'social_login_failed',
+          success: false,
+          identifier: provider,
+          userAgent: navigator.userAgent,
+          additionalData: { provider, error: error.message }
+        });
         throw error;
       }
       
       console.log(`${provider} OAuth initiated, redirecting:`, data);
+      
+      securityService.logSecurityEvent({
+        action: 'social_login_initiated',
+        success: true,
+        identifier: provider,
+        userAgent: navigator.userAgent,
+        additionalData: { provider }
+      });
     } catch (error: any) {
       toast({
         title: "Social login failed",
@@ -277,6 +383,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Starting logout...");
       setIsLoading(true);
       
+      const userEmail = user?.email;
+      
       await supabase.auth.signOut();
       
       // Clear state immediately (onAuthStateChange will also handle this)
@@ -284,6 +392,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null);
       
       console.log("Logout successful");
+      
+      securityService.logSecurityEvent({
+        action: 'logout',
+        success: true,
+        identifier: userEmail,
+        userAgent: navigator.userAgent
+      });
+      
       toast({
         title: "Logged out successfully",
         description: "You have been logged out.",

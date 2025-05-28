@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -6,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Apple, Loader2 } from "lucide-react";
+import { Mail, Apple, Loader2, Shield, AlertTriangle } from "lucide-react";
 import { Provider } from "@supabase/supabase-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
+import { securityService } from "@/lib/security/securityService";
 
 const LoginPage = () => {
   const { login, socialLogin } = useAuth();
@@ -23,6 +25,7 @@ const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
   
   // Get the page they were trying to visit, default to dashboard
   const from = location.state?.from?.pathname || "/dashboard";
@@ -33,11 +36,33 @@ const LoginPage = () => {
     setError(null);
     
     try {
+      // Pre-validate inputs
+      const emailValidation = securityService.validateEmail(email);
+      if (!emailValidation.valid) {
+        setError(emailValidation.reason || "Invalid email format");
+        return;
+      }
+
+      // Check rate limiting before attempting login
+      const rateLimitCheck = securityService.checkRateLimit('login', email);
+      if (!rateLimitCheck.allowed) {
+        setError(rateLimitCheck.reason || "Too many login attempts");
+        setRemainingAttempts(rateLimitCheck.remainingAttempts || 0);
+        return;
+      }
+
+      setRemainingAttempts(rateLimitCheck.remainingAttempts || null);
+
       await login(email, password);
       // Redirect to dashboard after successful login
       navigate("/dashboard", { replace: true });
     } catch (error: any) {
+      console.error("Login error:", error);
       setError(error.message || "Login failed. Please check your credentials.");
+      
+      // Update remaining attempts after failed login
+      const updatedCheck = securityService.checkRateLimit('login', email);
+      setRemainingAttempts(updatedCheck.remainingAttempts || 0);
     } finally {
       setIsSubmitting(false);
     }
@@ -47,13 +72,22 @@ const LoginPage = () => {
     try {
       setError(null);
       setGoogleLoading(true);
+      
+      // Check rate limiting
+      const rateLimitCheck = securityService.checkRateLimit('socialLogin');
+      if (!rateLimitCheck.allowed) {
+        setError(rateLimitCheck.reason || "Too many login attempts");
+        return;
+      }
+      
       console.log("Initiating Google login");
       await socialLogin('google');
       // The redirect will happen automatically through Supabase
     } catch (error: any) {
       console.error("Google login error:", error);
-      setGoogleLoading(false);
       setError(error.message || "Login with Google failed.");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -61,13 +95,22 @@ const LoginPage = () => {
     try {
       setError(null);
       setAppleLoading(true);
+      
+      // Check rate limiting
+      const rateLimitCheck = securityService.checkRateLimit('socialLogin');
+      if (!rateLimitCheck.allowed) {
+        setError(rateLimitCheck.reason || "Too many login attempts");
+        return;
+      }
+      
       console.log("Initiating Apple Sign-In");
       await socialLogin('apple');
       // The redirect happens automatically through Supabase
     } catch (error: any) {
       console.error("Apple Sign-In error:", error);
-      setAppleLoading(false);
       setError(error.message || "Apple Sign-In failed.");
+    } finally {
+      setAppleLoading(false);
     }
   };
 
@@ -96,12 +139,26 @@ const LoginPage = () => {
           <CardDescription className="text-center">
             Enter your email to sign in to your account
           </CardDescription>
+          
+          {/* Security Notice */}
+          <div className="flex items-center space-x-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-md p-2 mt-4">
+            <Shield className="h-4 w-4 flex-shrink-0" />
+            <span>Protected by advanced security measures</span>
+          </div>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  {error}
+                  {remainingAttempts !== null && remainingAttempts > 0 && (
+                    <div className="mt-1 text-sm">
+                      {remainingAttempts} attempt{remainingAttempts !== 1 ? 's' : ''} remaining
+                    </div>
+                  )}
+                </AlertDescription>
               </Alert>
             )}
             
@@ -114,6 +171,7 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="space-y-2">
@@ -127,6 +185,7 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -147,7 +206,7 @@ const LoginPage = () => {
                 variant="outline" 
                 onClick={() => handleSocialLogin('google')} 
                 className="w-full"
-                disabled={googleLoading}
+                disabled={googleLoading || isSubmitting}
               >
                 {googleLoading ? (
                   <ProgressIndicator variant="inline" size="sm" className="mr-2" />
@@ -161,7 +220,7 @@ const LoginPage = () => {
                 variant="outline" 
                 onClick={() => handleSocialLogin('apple')} 
                 className="w-full"
-                disabled={appleLoading}
+                disabled={appleLoading || isSubmitting}
               >
                 {appleLoading ? (
                   <ProgressIndicator variant="inline" size="sm" className="mr-2" />
@@ -176,7 +235,7 @@ const LoginPage = () => {
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-verifyvision-gradient-start via-verifyvision-gradient-middle to-verifyvision-gradient-end hover:opacity-90"
-              disabled={isSubmitting}
+              disabled={isSubmitting || appleLoading || googleLoading}
             >
               {isSubmitting ? (
                 <>
