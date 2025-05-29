@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, ChevronDown } from "lucide-react";
+import { LogOut, User, ChevronDown, Home } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 const Header = () => {
@@ -62,6 +62,13 @@ const Header = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white z-50">
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-verifyvision-teal hover:text-white"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  <span>Home</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="cursor-pointer hover:bg-verifyvision-teal hover:text-white"
                   onClick={() => navigate("/profile")}

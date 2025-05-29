@@ -70,50 +70,6 @@ const Dashboard = () => {
           <p className="text-gray-600">Welcome back! Here's what's happening with your properties.</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{properties.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Active properties in your portfolio
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{reports.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Inspection reports generated
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {properties.length > 0 ? Math.round((reports.length / properties.length) * 100) : 0}%
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Properties with completed reports
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card>
