@@ -1,126 +1,243 @@
 
 import { useEffect, useState } from "react";
-import { PropertiesAPI } from "@/lib/api";
-import { Property } from "@/types";
-import PropertyCard from "@/components/PropertyCard";
-import EmptyState from "@/components/EmptyState";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Building, FileText, Plus, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, Search } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { PropertiesAPI, ReportsAPI } from "@/lib/api";
+import PropertyCard from "@/components/PropertyCard";
+import ReportCard from "@/components/ReportCard";
+import { Property, Report } from "@/types";
+import { useMigration } from "@/hooks/useMigration";
+import TrialStatusCard from "@/components/TrialStatusCard";
+import { usePropertyLimits } from "@/hooks/usePropertyLimits";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
-  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const { isMigrating } = useMigration();
+  const { canCreateNewProperty } = usePropertyLimits();
+
   useEffect(() => {
-    const fetchProperties = async () => {
+    const fetchData = async () => {
       try {
-        const data = await PropertiesAPI.getAll();
-        setProperties(data);
-        setFilteredProperties(data);
+        console.log("Fetching dashboard data...");
+        const [propertiesData, reportsData] = await Promise.all([
+          PropertiesAPI.getAll(),
+          ReportsAPI.getAll()
+        ]);
+        
+        setProperties(propertiesData.slice(0, 3)); // Show only 3 recent properties
+        setReports(reportsData.slice(0, 3)); // Show only 3 recent reports
       } catch (error) {
-        console.error("Error fetching properties:", error);
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    
-    fetchProperties();
-  }, []);
-  
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredProperties(properties);
-      return;
+
+    // Wait for migration to complete before fetching data
+    if (!isMigrating) {
+      fetchData();
     }
-    
-    const query = searchQuery.toLowerCase();
-    const filtered = properties.filter(
-      (property) => 
-        (property.name && property.name.toLowerCase().includes(query)) ||
-        property.address.toLowerCase().includes(query) ||
-        property.city.toLowerCase().includes(query) ||
-        property.state.toLowerCase().includes(query) ||
-        property.zipCode.toLowerCase().includes(query)
-    );
-    
-    setFilteredProperties(filtered);
-  }, [searchQuery, properties]);
-  
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <div className="verifyvision-container py-8 flex-1">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 text-verifyvision-blue">Welcome, {user?.name || user?.email?.split('@')[0]}</h1>
-            <p className="text-gray-600">Manage your property inventory reports efficiently with VerifyVision AI</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                type="text"
-                placeholder="Search properties..."
-                className="pl-8 w-full sm:w-64"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+  }, [isMigrating]);
+
+  if (isMigrating) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-verifyvision-teal mx-auto mb-4"></div>
+              <p className="text-gray-600">Setting up your dashboard...</p>
             </div>
-            <Button 
-              onClick={() => navigate("/properties/new")}
-              className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Property
-            </Button>
           </div>
         </div>
-        
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
-            ))}
-          </div>
-        ) : filteredProperties.length === 0 ? (
-          searchQuery ? (
-            <div className="text-center py-12">
-              <h3 className="text-xl font-medium mb-2">No matching properties</h3>
-              <p className="text-gray-500 mb-4">Try adjusting your search criteria</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <p className="text-gray-600">Welcome back! Here's what's happening with your properties.</p>
+        </div>
+
+        {/* Trial Status Card */}
+        <div className="mb-8">
+          <TrialStatusCard />
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
+              <Building className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{properties.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Active properties in your portfolio
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{reports.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Inspection reports generated
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {properties.length > 0 ? Math.round((reports.length / properties.length) * 100) : 0}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Properties with completed reports
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Get started with your property inspections</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button 
+                className="w-full justify-start" 
+                onClick={() => navigate("/properties/new")}
+                disabled={!canCreateNewProperty()}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Property
+              </Button>
               <Button 
                 variant="outline" 
-                onClick={() => setSearchQuery("")}
+                className="w-full justify-start" 
+                onClick={() => navigate("/reports/new")}
               >
-                Clear Search
+                <FileText className="mr-2 h-4 w-4" />
+                Create New Report
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Your latest property and report updates</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              ) : (
+                <div className="space-y-2 text-sm">
+                  {reports.length > 0 ? (
+                    reports.slice(0, 3).map((report) => (
+                      <div key={report.id} className="flex justify-between items-center">
+                        <span>Report created for {report.propertyName}</span>
+                        <span className="text-gray-500 text-xs">
+                          {new Date(report.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No recent activity</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Properties */}
+        {properties.length > 0 && (
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Recent Properties</h2>
+              <Button variant="outline" onClick={() => navigate("/properties")}>
+                View All
               </Button>
             </div>
-          ) : (
-            <EmptyState
-              title="No properties yet"
-              description="Add your first property to get started with creating reports."
-              actionLabel="Add Property"
-              onAction={() => navigate("/properties/new")}
-              icon={<Home className="h-12 w-12 text-verifyvision-teal mb-4" />}
-            />
-          )
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {properties.map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
+            </div>
           </div>
         )}
+
+        {/* Recent Reports */}
+        {reports.length > 0 && (
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Recent Reports</h2>
+              <Button variant="outline" onClick={() => navigate("/reports")}>
+                View All
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reports.map((report) => (
+                <ReportCard key={report.id} report={report} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {properties.length === 0 && !isLoading && (
+          <Card className="text-center py-12">
+            <CardContent>
+              <Building className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No properties yet</h3>
+              <p className="text-gray-600 mb-6">
+                Get started by adding your first property to begin creating inspection reports.
+              </p>
+              <Button 
+                onClick={() => navigate("/properties/new")}
+                disabled={!canCreateNewProperty()}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Your First Property
+              </Button>
+              {!canCreateNewProperty() && (
+                <p className="text-sm text-red-600 mt-2">
+                  Upgrade your subscription to create properties
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
-      <Footer />
     </div>
   );
 };

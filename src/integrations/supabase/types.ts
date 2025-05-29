@@ -102,6 +102,11 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          property_limit: number | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          trial_end: string | null
+          trial_start: string | null
           updated_at: string
         }
         Insert: {
@@ -109,6 +114,11 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          property_limit?: number | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
           updated_at?: string
         }
         Update: {
@@ -116,6 +126,11 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          property_limit?: number | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
           updated_at?: string
         }
         Relationships: []
