@@ -4,13 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Save } from "lucide-react";
+import { User, Save, Building, FileText, TrendingUp } from "lucide-react";
 import Header from "@/components/Header";
 import TrialStatusCard from "@/components/TrialStatusCard";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { PropertiesAPI, ReportsAPI } from "@/lib/api";
+import { Property, Report } from "@/types";
 
 const ProfilePage = () => {
   const { profile, refetch } = useSubscription();
@@ -19,6 +21,8 @@ const ProfilePage = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
 
   useEffect(() => {
     if (profile) {
@@ -26,6 +30,24 @@ const ProfilePage = () => {
       setLastName(profile.last_name || "");
     }
   }, [profile]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [propertiesData, reportsData] = await Promise.all([
+          PropertiesAPI.getAll(),
+          ReportsAPI.getAll()
+        ]);
+        
+        setProperties(propertiesData);
+        setReports(reportsData);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -72,6 +94,50 @@ const ProfilePage = () => {
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
+                <Building className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{properties.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Active properties in your portfolio
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{reports.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Inspection reports generated
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {properties.length > 0 ? Math.round((reports.length / properties.length) * 100) : 0}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Properties with completed reports
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Subscription Status Card */}
           <TrialStatusCard />
 
