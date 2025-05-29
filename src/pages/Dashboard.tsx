@@ -10,7 +10,6 @@ import PropertyCard from "@/components/PropertyCard";
 import ReportCard from "@/components/ReportCard";
 import { Property, Report } from "@/types";
 import { useMigration } from "@/hooks/useMigration";
-import TrialStatusCard from "@/components/TrialStatusCard";
 import { usePropertyLimits } from "@/hooks/usePropertyLimits";
 
 const Dashboard = () => {
@@ -69,11 +68,6 @@ const Dashboard = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
           <p className="text-gray-600">Welcome back! Here's what's happening with your properties.</p>
-        </div>
-
-        {/* Trial Status Card */}
-        <div className="mb-8">
-          <TrialStatusCard />
         </div>
 
         {/* Stats Cards */}

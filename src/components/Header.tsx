@@ -62,7 +62,10 @@ const Header = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white z-50">
-                <DropdownMenuItem className="cursor-pointer hover:bg-verifyvision-teal hover:text-white">
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-verifyvision-teal hover:text-white"
+                  onClick={() => navigate("/profile")}
+                >
                   <User className="h-4 w-4 mr-2" />
                   <span>Profile</span>
                 </DropdownMenuItem>

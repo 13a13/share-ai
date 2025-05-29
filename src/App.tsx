@@ -16,6 +16,7 @@ import PropertyCreationPage from "./pages/PropertyCreationPage";
 import ReportsPage from "./pages/ReportsPage";
 import ReportCreationPage from "./pages/ReportCreationPage";
 import ReportEditPage from "./pages/ReportEditPage";
+import ProfilePage from "./pages/ProfilePage";
 
 const App = () => {
   return (
@@ -31,6 +32,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             } 
           />
