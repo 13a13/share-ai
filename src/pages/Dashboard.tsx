@@ -164,7 +164,7 @@ const Dashboard = () => {
                   {reports.length > 0 ? (
                     reports.slice(0, 3).map((report) => (
                       <div key={report.id} className="flex justify-between items-center">
-                        <span>Report created for {report.propertyName}</span>
+                        <span>Report created for {report.property?.name || report.name || 'Property'}</span>
                         <span className="text-gray-500 text-xs">
                           {new Date(report.createdAt).toLocaleDateString()}
                         </span>
