@@ -1,5 +1,5 @@
 
-import { UnifiedResponse } from '../../../src/types/gemini.ts';
+import { UnifiedResponse } from './types.ts';
 
 export function parseUnifiedResponse(textContent: string, componentName?: string): UnifiedResponse {
   try {

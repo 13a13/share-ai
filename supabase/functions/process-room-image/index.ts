@@ -9,7 +9,7 @@ import {
   createGeminiRequest 
 } from "./gemini-api.ts";
 import { parseUnifiedResponse } from "./responseParser.ts";
-import { createUnifiedPrompt } from "../../../src/lib/prompts/unifiedPrompt.ts";
+import { createUnifiedPrompt } from "./unifiedPrompt.ts";
 
 // Use the provided API key directly
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
