@@ -1,12 +1,15 @@
 
-import { RoomComponent } from "@/types";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Check, AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Edit, Eye, CheckCircle, AlertCircle, XCircle } from "lucide-react";
+import { RoomComponent } from "@/types";
 import { 
-  conditionRatingOptions, 
+  conditionRatingToText, 
   cleanlinessOptions,
-  isAdvancedAnalysis,
-  normalizeConditionPoints
+  normalizeConditionPoints,
+  isAdvancedAnalysis 
 } from "@/services/imageProcessingService";
 
 interface ComponentAnalysisSummaryProps {
@@ -15,149 +18,176 @@ interface ComponentAnalysisSummaryProps {
 }
 
 const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummaryProps) => {
-  const conditionOption = conditionRatingOptions.find(option => 
-    option.value === component.condition
-  );
-  
-  const cleanlinessOption = cleanlinessOptions.find(option => 
-    option.value === component.cleanliness
-  );
-  
-  // Determine if this is an advanced analysis result
+  const cleanlinessLabel = cleanlinessOptions.find(
+    option => option.value === component.cleanliness
+  )?.label || component.cleanliness;
+
+  const conditionPoints = normalizeConditionPoints(component.conditionPoints || []);
   const isAdvanced = component.images.some(img => 
-    img.aiData && isAdvancedAnalysis(img.aiData)
+    img.aiData?.analysisMode === 'advanced' || img.aiData?.crossAnalysis
   );
-  
-  // Get the latest AI analysis data
-  const latestAnalysis = component.images
-    .filter(img => img.aiData)
-    .sort((a, b) => 
-      new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
-    )[0]?.aiData;
-  
-  // Get standardized condition points
-  const conditionPoints = component.conditionPoints ? 
-    normalizeConditionPoints(component.conditionPoints) : 
-    [];
-  
+
+  const getConfidenceIcon = (confidence?: string) => {
+    switch (confidence) {
+      case 'high': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'medium': return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case 'low': return <XCircle className="h-4 w-4 text-red-500" />;
+      default: return null;
+    }
+  };
+
+  const getAnalysisModeBadge = () => {
+    if (isAdvanced) {
+      return <Badge variant="outline" className="text-xs border-purple-200 text-purple-700">Advanced Analysis</Badge>;
+    }
+    
+    const latestAnalysis = component.images
+      .filter(img => img.aiData?.analysisMode)
+      .pop()?.aiData?.analysisMode;
+      
+    if (latestAnalysis === 'inventory') {
+      return <Badge variant="outline" className="text-xs border-blue-200 text-blue-700">Inventory Mode</Badge>;
+    }
+    
+    return <Badge variant="outline" className="text-xs">Standard</Badge>;
+  };
+
   return (
-    <div className="bg-gray-50 p-4 rounded-lg border">
-      {isAdvanced && (
-        <div className="mb-3 flex items-center">
-          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-            Advanced Multi-Image Analysis
-          </span>
+    <Card className="bg-gray-50 border-gray-200">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-2">
+            <Eye className="h-4 w-4 text-gray-500" />
+            <CardTitle className="text-sm font-medium">AI Analysis Summary</CardTitle>
+            {getAnalysisModeBadge()}
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onEdit}
+            className="h-7 px-2 text-xs"
+          >
+            <Edit className="h-3 w-3 mr-1" />
+            Edit
+          </Button>
         </div>
-      )}
+      </CardHeader>
       
-      <div className="space-y-3">
-        <div>
-          <h4 className="text-sm font-medium">Description</h4>
-          <p className="text-sm text-gray-700 mt-1">{component.description}</p>
-        </div>
-        
-        {component.conditionSummary && (
+      <CardContent className="pt-0 space-y-3">
+        {component.description && (
           <div>
-            <h4 className="text-sm font-medium">Condition</h4>
-            <p className="text-sm text-gray-700 mt-1">{component.conditionSummary}</p>
-            
-            {conditionPoints.length > 0 && (
-              <ul className="list-disc list-inside text-sm text-gray-700 mt-2 pl-2 space-y-1">
-                {conditionPoints.map((point, idx) => (
-                  <li key={idx}>{point}</li>
-                ))}
-              </ul>
-            )}
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {component.description}
+            </p>
           </div>
         )}
         
-        {isAdvanced && latestAnalysis?.crossAnalysis && (
-          <div className="bg-blue-50 p-3 rounded-md">
-            <h4 className="text-sm font-medium text-blue-900">Cross-Image Analysis</h4>
-            
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {latestAnalysis.crossAnalysis.materialConsistency !== null && (
-                <div className="flex items-center">
-                  <span className="text-xs text-gray-600">Material Consistency:</span>
-                  <span className={`ml-2 text-xs font-medium ${
-                    latestAnalysis.crossAnalysis.materialConsistency 
-                      ? "text-green-700" 
-                      : "text-amber-700"
-                  }`}>
-                    {latestAnalysis.crossAnalysis.materialConsistency ? "Yes" : "No"}
-                  </span>
-                </div>
-              )}
-              
-              <div className="flex items-center">
-                <span className="text-xs text-gray-600">Defect Confidence:</span>
-                <span className={`ml-2 text-xs px-1.5 py-0.5 rounded font-medium ${
-                  latestAnalysis.crossAnalysis.defectConfidence === 'low' 
-                    ? "bg-green-100 text-green-800" 
-                    : latestAnalysis.crossAnalysis.defectConfidence === 'medium'
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                }`}>
-                  {latestAnalysis.crossAnalysis.defectConfidence}
-                </span>
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <span className="font-medium text-gray-600">Condition:</span>
+            <div className="mt-1">
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  component.condition === 'excellent' ? 'border-green-500 text-green-700' :
+                  component.condition === 'good' ? 'border-blue-500 text-blue-700' :
+                  component.condition === 'fair' ? 'border-yellow-500 text-yellow-700' :
+                  'border-red-500 text-red-700'
+                }`}
+              >
+                {conditionRatingToText(component.condition || 'fair')}
+              </Badge>
             </div>
-            
-            {Array.isArray(latestAnalysis.crossAnalysis.multiAngleValidation) && 
-             latestAnalysis.crossAnalysis.multiAngleValidation.length > 0 && (
-              <div className="mt-2">
-                <span className="text-xs text-gray-700 font-medium">Multi-Angle Validations:</span>
-                <ul className="mt-1 space-y-1">
-                  {latestAnalysis.crossAnalysis.multiAngleValidation.map((item, idx) => (
-                    <li key={idx} className="flex items-center text-xs">
-                      <span>{item[0]}</span>
-                      <span className="ml-1 px-1.5 rounded bg-blue-100 text-blue-800">
-                        {item[1]} images
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
-        )}
-        
-        <div className="flex flex-wrap gap-2 items-center mt-3">
-          {conditionOption && (
-            <span 
-              className={`text-xs font-medium px-2 py-1 rounded-full text-white ${conditionOption.color}`}
-            >
-              {conditionOption.label}
-            </span>
-          )}
           
-          {cleanlinessOption && (
-            <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-200">
-              {cleanlinessOption.label}
-            </span>
-          )}
-          
-          {component.notes && (
-            <div className="flex items-center ml-1">
-              <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
-              <span className="text-xs text-gray-600">Has notes</span>
-            </div>
-          )}
+          <div>
+            <span className="font-medium text-gray-600">Cleanliness:</span>
+            <p className="text-gray-800 mt-1">{cleanlinessLabel}</p>
+          </div>
         </div>
-      </div>
-      
-      <div className="flex justify-end mt-3">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={onEdit}
-          className="flex items-center"
-        >
-          <Edit className="h-3 w-3 mr-1" />
-          Edit
-        </Button>
-      </div>
-    </div>
+
+        {component.conditionSummary && (
+          <>
+            <Separator />
+            <div>
+              <span className="font-medium text-gray-600 text-xs">Summary:</span>
+              <p className="text-sm text-gray-700 mt-1">{component.conditionSummary}</p>
+            </div>
+          </>
+        )}
+
+        {conditionPoints.length > 0 && (
+          <>
+            <Separator />
+            <div>
+              <span className="font-medium text-gray-600 text-xs">Key Points:</span>
+              <ul className="mt-2 space-y-1">
+                {conditionPoints.slice(0, 3).map((point, index) => (
+                  <li key={index} className="text-sm text-gray-700 flex items-start">
+                    <span className="text-gray-400 mr-2">•</span>
+                    <span className="flex-1">{point}</span>
+                  </li>
+                ))}
+                {conditionPoints.length > 3 && (
+                  <li className="text-xs text-gray-500 italic">
+                    +{conditionPoints.length - 3} more points...
+                  </li>
+                )}
+              </ul>
+            </div>
+          </>
+        )}
+
+        {/* Enhanced analysis display for advanced mode */}
+        {isAdvanced && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <span className="font-medium text-gray-600 text-xs">Advanced Analysis:</span>
+              
+              {component.images.map((image, idx) => {
+                const aiData = image.aiData;
+                if (!aiData?.crossAnalysis && !aiData?.defectAnalysis) return null;
+                
+                return (
+                  <div key={idx} className="bg-white p-2 rounded border text-xs">
+                    {aiData.defectAnalysis && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">Defect Confidence:</span>
+                        {getConfidenceIcon(aiData.defectAnalysis.overallConfidence)}
+                        <span className="capitalize">{aiData.defectAnalysis.overallConfidence}</span>
+                      </div>
+                    )}
+                    
+                    {aiData.crossAnalysis?.materialConsistency !== null && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-gray-600">Material Consistency:</span>
+                        {aiData.crossAnalysis.materialConsistency ? (
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <XCircle className="h-3 w-3 text-red-500" />
+                        )}
+                        <span>{aiData.crossAnalysis.materialConsistency ? 'Consistent' : 'Inconsistent'}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {component.notes && (
+          <>
+            <Separator />
+            <div>
+              <span className="font-medium text-gray-600 text-xs">Notes:</span>
+              <p className="text-sm text-gray-700 mt-1">{component.notes}</p>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { ConditionRating } from '@/types';
+import { UnifiedResponse } from '@/types/gemini';
 
 // Enhanced interface with cross-analysis support
 export interface ProcessedImageResult {
@@ -65,25 +66,30 @@ export const processComponentImage = async (
   componentName: string,
   options: {
     multipleImages?: boolean;
-    useAdvancedAnalysis?: boolean; // New option to enable advanced analysis
+    useAdvancedAnalysis?: boolean;
   } = {}
 ): Promise<ProcessedImageResult> => {
   try {
     const { multipleImages = false, useAdvancedAnalysis = false } = options;
     console.log(`Processing ${Array.isArray(imageUrls) ? imageUrls.length : 1} images for component: ${componentName}`);
     
-    // Only enable advanced analysis for multiple images
-    const shouldUseAdvancedAnalysis = useAdvancedAnalysis && 
-                                      Array.isArray(imageUrls) && 
-                                      imageUrls.length > 1;
+    // Determine analysis mode based on options and image count
+    const imageArray = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
+    let analysisMode: 'standard' | 'inventory' | 'advanced' = 'standard';
+    
+    if (useAdvancedAnalysis && imageArray.length > 1) {
+      analysisMode = 'advanced';
+    } else if (imageArray.length > 1 || multipleImages) {
+      analysisMode = 'inventory';
+    }
     
     const response = await supabase.functions.invoke('process-room-image', {
       body: {
         imageUrls,
         componentName,
         roomType,
-        inventoryMode: !shouldUseAdvancedAnalysis && true, // Use inventory mode when not using advanced
-        useAdvancedAnalysis: shouldUseAdvancedAnalysis,
+        inventoryMode: analysisMode === 'inventory',
+        useAdvancedAnalysis: analysisMode === 'advanced',
         multipleImages
       },
     });
@@ -93,11 +99,31 @@ export const processComponentImage = async (
       throw new Error('Failed to analyze image');
     }
 
-    const result = response.data as ProcessedImageResult;
+    const unifiedResult = response.data as UnifiedResponse;
     
-    // Add analysis mode for frontend rendering decisions if not already set
-    if (!result.analysisMode) {
-      result.analysisMode = shouldUseAdvancedAnalysis ? 'advanced' : 'inventory';
+    // Convert unified response to ProcessedImageResult format
+    const result: ProcessedImageResult = {
+      description: unifiedResult.description,
+      condition: {
+        summary: unifiedResult.condition.summary,
+        points: unifiedResult.condition.points,
+        rating: unifiedResult.condition.rating
+      },
+      cleanliness: unifiedResult.cleanliness,
+      rating: unifiedResult.condition.rating,
+      notes: unifiedResult.notes,
+      analysisMode: unifiedResult.analysisMode
+    };
+    
+    // Add advanced analysis data if available
+    if (unifiedResult.defectAnalysis || unifiedResult.crossImageValidation || unifiedResult.materialConsistency) {
+      result.crossAnalysis = {
+        materialConsistency: unifiedResult.materialConsistency?.isConsistent ?? null,
+        defectConfidence: unifiedResult.defectAnalysis?.overallConfidence || 'medium',
+        multiAngleValidation: unifiedResult.crossImageValidation?.multiAngleValidation?.map(item => 
+          [item.finding, item.supportingImageCount] as [string, number]
+        ) || []
+      };
     }
     
     return result;
