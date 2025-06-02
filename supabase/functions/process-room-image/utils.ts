@@ -1,104 +1,105 @@
+
 // Define CORS headers for the function
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Create a prompt for Gemini model based on room and component type
+export const createPrompt = (roomType: string, componentName: string, multipleImages = false) => {
+  const promptBase = `You are an AI assistant analyzing ${
+    multipleImages ? "multiple images" : "an image"
+  } of ${
+    componentName ? `a ${componentName} in` : ""
+  } a ${roomType || "room"}. 
+  
+  Provide a JSON object with the following information:
+  1. A brief description of what you see
+  2. An assessment of the condition (excellent, good, fair, poor)
+  3. Any notable features or concerns
+  
+  Keep your responses concise - no more than 2-3 sentences per section.`;
+
+  return promptBase;
 };
 
-/**
- * Creates a prompt for room/component analysis
- * @deprecated Use createUnifiedPrompt from unifiedPrompt.ts instead
- */
-export function createPrompt(roomType?: string, componentName?: string, multipleImages: boolean = false): string {
-  console.log('Warning: createPrompt is deprecated. Use createUnifiedPrompt instead.');
-  
-  const component = componentName || 'component';
-  const room = roomType || 'room';
-  
-  return `You are a professional property inspector analyzing a ${component} in a ${room}.
-${multipleImages ? 'You are viewing multiple images of this component.' : 'You are viewing an image of this component.'}
-
-Provide a JSON response with:
-{
-  "description": "Brief description (max 2 sentences)",
-  "condition": {
-    "summary": "Overall condition",
-    "points": ["specific observations"],
-    "rating": "excellent|good|fair|poor"
-  },
-  "cleanliness": "professional_clean|domestic_clean|not_clean",
-  "analysisMode": "standard",
-  "imageCount": 1
-}
-
-Keep responses concise and factual.`;
-}
-
-/**
- * Extracts JSON content from text response
- */
-export function extractJsonFromText(text: string): any {
+// Extract JSON from text response
+export const extractJsonFromText = (text: string): any => {
   try {
-    // Try to find JSON in the text
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    // Try to parse the whole text as JSON first
+    return JSON.parse(text);
+  } catch (e) {
+    // If that fails, try to find JSON inside the text
+    const jsonMatch = text.match(/```json([\s\S]*?)```|```([\s\S]*?)```|(\{[\s\S]*\})/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const jsonStr = jsonMatch[1] || jsonMatch[2] || jsonMatch[3];
+      try {
+        return JSON.parse(jsonStr.trim());
+      } catch (e2) {
+        console.error("Failed to parse extracted JSON:", e2);
+      }
     }
     
-    // If no JSON found, create a basic structure
+    // As a final fallback, try to extract just the outermost curly braces content
+    const fallbackMatch = text.match(/\{[\s\S]*\}/);
+    if (fallbackMatch) {
+      try {
+        return JSON.parse(fallbackMatch[0]);
+      } catch (e3) {
+        console.error("Failed to parse fallback JSON:", e3);
+      }
+    }
+  }
+  
+  // If all parsing attempts fail, return a minimal object
+  return {
+    description: "Failed to parse AI response",
+    condition: "fair",
+    notes: "The AI generated an unparseable response. Please try again or inspect manually."
+  };
+};
+
+// Format the response to maintain consistent structure
+export const formatResponse = (data: any, componentName: string | undefined) => {
+  // If this is a component response, format for component
+  if (componentName) {
     return {
-      description: text.substring(0, 200),
+      description: data.description || "",
       condition: {
-        summary: "Manual review required",
-        points: ["AI analysis incomplete"],
+        summary: data.notes || data.concerns || data.condition?.summary || "",
+        points: Array.isArray(data.condition?.points) ? data.condition.points 
+              : Array.isArray(data.points) ? data.points 
+              : [],
+        rating: data.condition?.rating || data.condition || "fair"
+      },
+      cleanliness: data.cleanliness || "domestic_clean",
+      notes: data.notes || ""
+    };
+  }
+  
+  // Otherwise return the full room assessment format
+  return data;
+};
+
+// Create a fallback response if processing fails
+export const createFallbackResponse = (componentName: string | undefined) => {
+  if (componentName) {
+    return {
+      description: `${componentName || "Component"} - AI analysis unavailable`,
+      condition: {
+        summary: "Could not analyze the image(s) automatically",
+        points: ["Manual inspection required"],
         rating: "fair"
       },
-      cleanliness: "domestic_clean"
+      cleanliness: "domestic_clean",
+      notes: "AI analysis failed - please add description manually"
     };
-  } catch (error) {
-    console.error('Error extracting JSON:', error);
-    return null;
-  }
-}
-
-/**
- * Formats the response for frontend consumption
- * @deprecated Use parseUnifiedResponse instead
- */
-export function formatResponse(data: any, componentName?: string): any {
-  console.log('Warning: formatResponse is deprecated. Use parseUnifiedResponse instead.');
-  
-  if (!data) {
-    return createFallbackResponse(componentName);
   }
   
   return {
-    description: data.description || `Analysis of ${componentName || 'component'}`,
-    condition: {
-      summary: data.condition?.summary || data.summary || 'No summary available',
-      points: Array.isArray(data.condition?.points) ? data.condition.points : (data.points || []),
-      rating: data.condition?.rating || data.rating || 'fair'
-    },
-    cleanliness: data.cleanliness || 'domestic_clean',
-    notes: data.notes,
-    analysisMode: data.analysisMode || 'standard'
+    roomAssessment: {
+      generalCondition: "fair",
+      notes: "AI analysis failed - please evaluate manually"
+    }
   };
-}
-
-/**
- * Creates a fallback response when AI processing fails
- */
-export function createFallbackResponse(componentName?: string): any {
-  return {
-    description: `Analysis of ${componentName || 'component'} - AI processing failed`,
-    condition: {
-      summary: "Manual review required",
-      points: ["AI analysis failed - please add description manually"],
-      rating: "fair"
-    },
-    cleanliness: "domestic_clean",
-    notes: "AI analysis failed - please add description manually",
-    analysisMode: "standard",
-    imageCount: 1,
-    processingNotes: ["AI processing failed", "Fallback response generated"]
-  };
-}
+};
