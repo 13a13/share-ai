@@ -12,36 +12,82 @@ import { Property, Report } from "@/types";
 import { useMigration } from "@/hooks/useMigration";
 import { usePropertyLimits } from "@/hooks/usePropertyLimits";
 
+// Skeleton components for loading states
+const PropertyCardSkeleton = () => (
+  <Card className="overflow-hidden">
+    <div className="h-40 bg-gray-200 animate-pulse"></div>
+    <CardHeader className="pb-2">
+      <div className="h-5 bg-gray-200 rounded animate-pulse mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+    </CardHeader>
+    <CardContent className="text-sm pb-2">
+      <div className="flex justify-between">
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const ReportCardSkeleton = () => (
+  <Card>
+    <CardHeader>
+      <div className="h-5 bg-gray-200 rounded animate-pulse mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+    </CardHeader>
+    <CardContent>
+      <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+    </CardContent>
+  </Card>
+);
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [propertiesError, setPropertiesError] = useState<string | null>(null);
+  const [reportsError, setReportsError] = useState<string | null>(null);
   const { isMigrating } = useMigration();
   const { canCreateNewProperty } = usePropertyLimits();
 
   useEffect(() => {
-    const fetchData = async () => {
+    if (isMigrating) return;
+
+    // Fetch properties and reports in parallel
+    const fetchProperties = async () => {
       try {
-        console.log("Fetching dashboard data...");
-        const [propertiesData, reportsData] = await Promise.all([
-          PropertiesAPI.getAll(),
-          ReportsAPI.getAll()
-        ]);
-        
+        console.log("Fetching properties...");
+        const propertiesData = await PropertiesAPI.getAll();
         setProperties(propertiesData.slice(0, 3)); // Show only 3 recent properties
-        setReports(reportsData.slice(0, 3)); // Show only 3 recent reports
+        setPropertiesError(null);
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        console.error("Error fetching properties:", error);
+        setPropertiesError("Failed to load properties");
       } finally {
-        setIsLoading(false);
+        setIsLoadingProperties(false);
       }
     };
 
-    // Wait for migration to complete before fetching data
-    if (!isMigrating) {
-      fetchData();
-    }
+    const fetchReports = async () => {
+      try {
+        console.log("Fetching reports...");
+        const reportsData = await ReportsAPI.getAll();
+        setReports(reportsData.slice(0, 3)); // Show only 3 recent reports
+        setReportsError(null);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+        setReportsError("Failed to load reports");
+      } finally {
+        setIsLoadingReports(false);
+      }
+    };
+
+    // Start both fetches immediately and in parallel
+    fetchProperties();
+    fetchReports();
   }, [isMigrating]);
 
   if (isMigrating) {
@@ -103,16 +149,18 @@ const Dashboard = () => {
               <CardDescription>Your latest property and report updates</CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {isLoadingReports ? (
                 <div className="space-y-2">
                   <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
                   <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
                   <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
                 </div>
+              ) : reportsError ? (
+                <p className="text-red-500 text-sm">{reportsError}</p>
               ) : (
                 <div className="space-y-2 text-sm">
                   {reports.length > 0 ? (
-                    reports.slice(0, 3).map((report) => (
+                    reports.map((report) => (
                       <div key={report.id} className="flex justify-between items-center">
                         <span>Report created for {report.property?.name || report.name || 'Property'}</span>
                         <span className="text-gray-500 text-xs">
@@ -130,63 +178,92 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Properties */}
-        {properties.length > 0 && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Recent Properties</h2>
-              <Button variant="outline" onClick={() => navigate("/properties")}>
-                View All
-              </Button>
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Recent Properties</h2>
+            <Button variant="outline" onClick={() => navigate("/properties")}>
+              View All
+            </Button>
+          </div>
+          
+          {isLoadingProperties ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <PropertyCardSkeleton key={i} />
+              ))}
             </div>
+          ) : propertiesError ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <p className="text-red-500 mb-4">{propertiesError}</p>
+                <Button onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          ) : properties.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {properties.map((property) => (
                 <PropertyCard key={property.id} property={property} />
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Building className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No properties yet</h3>
+                <p className="text-gray-600 mb-6">
+                  Get started by adding your first property to begin creating inspection reports.
+                </p>
+                <Button 
+                  onClick={() => navigate("/properties/new")}
+                  disabled={!canCreateNewProperty()}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Your First Property
+                </Button>
+                {!canCreateNewProperty() && (
+                  <p className="text-sm text-red-600 mt-2">
+                    Upgrade your subscription to create properties
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Recent Reports */}
-        {reports.length > 0 && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Recent Reports</h2>
-              <Button variant="outline" onClick={() => navigate("/reports")}>
-                View All
-              </Button>
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Recent Reports</h2>
+            <Button variant="outline" onClick={() => navigate("/reports")}>
+              View All
+            </Button>
+          </div>
+          
+          {isLoadingReports ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <ReportCardSkeleton key={i} />
+              ))}
             </div>
+          ) : reportsError ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <p className="text-red-500 mb-4">{reportsError}</p>
+                <Button onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          ) : reports.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {reports.map((report) => (
                 <ReportCard key={report.id} report={report} />
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {properties.length === 0 && !isLoading && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Building className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No properties yet</h3>
-              <p className="text-gray-600 mb-6">
-                Get started by adding your first property to begin creating inspection reports.
-              </p>
-              <Button 
-                onClick={() => navigate("/properties/new")}
-                disabled={!canCreateNewProperty()}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Property
-              </Button>
-              {!canCreateNewProperty() && (
-                <p className="text-sm text-red-600 mt-2">
-                  Upgrade your subscription to create properties
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
+          ) : null}
+        </div>
       </div>
     </div>
   );
