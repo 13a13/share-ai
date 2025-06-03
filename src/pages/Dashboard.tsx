@@ -1,7 +1,8 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building, FileText, Plus, TrendingUp } from "lucide-react";
+import { Building, FileText, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
@@ -9,7 +10,6 @@ import PropertyCard from "@/components/PropertyCard";
 import ReportCard from "@/components/ReportCard";
 import { Property, Report } from "@/types";
 import { useMigration } from "@/hooks/useMigration";
-import { usePropertyLimits } from "@/hooks/usePropertyLimits";
 
 // Skeleton components for loading states
 const PropertyCardSkeleton = () => (
@@ -50,7 +50,6 @@ const Dashboard = () => {
   const [propertiesError, setPropertiesError] = useState<string | null>(null);
   const [reportsError, setReportsError] = useState<string | null>(null);
   const { isMigrating } = useMigration();
-  const { canCreateNewProperty } = usePropertyLimits();
 
   useEffect(() => {
     if (isMigrating) return;
@@ -126,7 +125,6 @@ const Dashboard = () => {
               <Button 
                 className="w-full justify-start" 
                 onClick={() => navigate("/properties/new")}
-                disabled={!canCreateNewProperty()}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Property
@@ -215,18 +213,10 @@ const Dashboard = () => {
                 <p className="text-gray-600 mb-6">
                   Get started by adding your first property to begin creating inspection reports.
                 </p>
-                <Button 
-                  onClick={() => navigate("/properties/new")}
-                  disabled={!canCreateNewProperty()}
-                >
+                <Button onClick={() => navigate("/properties/new")}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Your First Property
                 </Button>
-                {!canCreateNewProperty() && (
-                  <p className="text-sm text-red-600 mt-2">
-                    Upgrade your subscription to create properties
-                  </p>
-                )}
               </CardContent>
             </Card>
           )}
