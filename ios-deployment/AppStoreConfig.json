@@ -1,0 +1,31 @@
+
+{
+  "appInfo": {
+    "bundleId": "app.lovable.aiproperty",
+    "appName": "VerifyVision AI",
+    "version": "1.0.0",
+    "buildNumber": "1"
+  },
+  "appStoreConnect": {
+    "teamId": "YOUR_TEAM_ID",
+    "appId": "YOUR_APP_ID",
+    "appStoreConnectKey": "YOUR_APP_STORE_CONNECT_KEY",
+    "issuerKey": "YOUR_ISSUER_KEY"
+  },
+  "deployment": {
+    "scheme": "App",
+    "configuration": "Release",
+    "exportMethod": "app-store",
+    "provisioningProfile": "YOUR_PROVISIONING_PROFILE",
+    "signingCertificate": "YOUR_SIGNING_CERTIFICATE"
+  },
+  "metadata": {
+    "category": "PRODUCTIVITY",
+    "contentRating": "4+",
+    "description": "AI-powered property inspection and reporting tool",
+    "keywords": "property,inspection,AI,reporting,real estate",
+    "supportUrl": "https://verifyvision.ai/support",
+    "marketingUrl": "https://verifyvision.ai",
+    "privacyUrl": "https://verifyvision.ai/privacy"
+  }
+}
