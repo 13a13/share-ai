@@ -30,8 +30,11 @@ export const CheckoutReportAPI = {
         throw new Error('Check-in report not found');
       }
 
-      // Create the checkout inspection record with proper null handling
-      const baseReportInfo = checkinReport.report_info || {};
+      // Create the checkout inspection record with proper type handling
+      const baseReportInfo: Record<string, any> = checkinReport.report_info && typeof checkinReport.report_info === 'object' 
+        ? checkinReport.report_info as Record<string, any>
+        : {};
+        
       const checkoutReportInfo = {
         ...baseReportInfo,
         checkoutDate: checkoutData.date || new Date().toISOString(),
