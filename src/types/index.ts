@@ -1,4 +1,3 @@
-
 export interface Property {
   id: string;
   name?: string;
@@ -47,6 +46,8 @@ export interface ReportInfo {
   comparisonText?: string; // Added for comparison reports
   inventoryType?: string; // Optional field for backward compatibility
   tenantPresent?: boolean; // Optional field for backward compatibility
+  checkoutReportId?: string; // Add checkout report reference
+  checkoutDate?: string | Date; // Add checkout date
 }
 
 export interface Room {

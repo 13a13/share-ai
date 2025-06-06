@@ -111,7 +111,11 @@ export const CheckoutAPI = {
         throw error;
       }
 
-      return data || [];
+      // Cast the data to ensure proper typing
+      return (data || []).map(item => ({
+        ...item,
+        status: item.status as 'unchanged' | 'changed' | 'pending'
+      }));
     } catch (error) {
       console.error('Error in getCheckoutComparisons:', error);
       throw error;
@@ -170,7 +174,11 @@ export const CheckoutAPI = {
         throw error;
       }
 
-      return data;
+      // Cast the data to ensure proper typing
+      return data ? {
+        ...data,
+        status: data.status as 'unchanged' | 'changed' | 'pending'
+      } : null;
     } catch (error) {
       console.error('Error in updateCheckoutComparison:', error);
       throw error;
