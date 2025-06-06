@@ -10,7 +10,8 @@ import {
   Copy, 
   Trash2,
   Archive,
-  FileText
+  FileText,
+  CheckSquare
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -88,7 +89,7 @@ const ReportCard = ({
     if (target.closest('button') || target.closest('[role="button"]')) {
       return;
     }
-    navigate(`/reports/${report.id}`);
+    navigate(`/reports/${report.id}/view`);
   };
 
   const handleDuplicate = async (e: React.MouseEvent) => {
@@ -150,13 +151,21 @@ const ReportCard = ({
 
   const handleViewClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/reports/${report.id}`);
+    navigate(`/reports/${report.id}/view`);
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigate(`/reports/${report.id}/edit`);
   };
+
+  const handleCheckoutClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/reports/${report.id}/checkout`);
+  };
+
+  // Check if this is a check-in report that can have a checkout
+  const canStartCheckout = report.type === 'check_in' && report.status === 'completed';
   
   return (
     <>
@@ -197,7 +206,7 @@ const ReportCard = ({
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/reports/${report.id}`);
+                      navigate(`/reports/${report.id}/view`);
                     }}
                   >
                     <Eye className="h-4 w-4 mr-2" />
@@ -214,6 +223,18 @@ const ReportCard = ({
                     <Pencil className="h-4 w-4 mr-2" />
                     Edit Report
                   </DropdownMenuItem>
+
+                  {canStartCheckout && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleCheckoutClick}
+                      >
+                        <CheckSquare className="h-4 w-4 mr-2" />
+                        Start Checkout
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   
                   <DropdownMenuSeparator />
                   
@@ -281,13 +302,13 @@ const ReportCard = ({
         </CardContent>
         
         <CardFooter className="pt-0 pb-4">
-          <div className="w-full flex justify-center">
+          <div className="w-full flex justify-center gap-2">
             {report.status === 'archived' ? (
               <Button 
                 size="lg" 
                 variant="outline"
                 onClick={handleViewClick}
-                className="w-full max-w-xs group border-2 hover:border-verifyvision-teal hover:bg-verifyvision-teal hover:text-white transition-all duration-300"
+                className="flex-1 max-w-xs group border-2 hover:border-verifyvision-teal hover:bg-verifyvision-teal hover:text-white transition-all duration-300"
               >
                 <Eye className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> 
                 View Report
@@ -296,20 +317,33 @@ const ReportCard = ({
               <Button 
                 size="lg" 
                 onClick={handleEditClick}
-                className="w-full max-w-xs bg-gradient-to-r from-verifyvision-teal to-blue-500 hover:from-verifyvision-teal/90 hover:to-blue-500/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 group"
+                className="flex-1 max-w-xs bg-gradient-to-r from-verifyvision-teal to-blue-500 hover:from-verifyvision-teal/90 hover:to-blue-500/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 group"
               >
                 <Pencil className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> 
                 Continue Report
               </Button>
             ) : (
-              <Button 
-                size="lg" 
-                onClick={handleViewClick}
-                className="w-full max-w-xs bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 group"
-              >
-                <Eye className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> 
-                View Report
-              </Button>
+              <>
+                <Button 
+                  size="lg" 
+                  onClick={handleViewClick}
+                  className="flex-1 max-w-xs bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 group"
+                >
+                  <Eye className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> 
+                  View Report
+                </Button>
+                {canStartCheckout && (
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    onClick={handleCheckoutClick}
+                    className="flex-1 max-w-xs border-2 border-verifyvision-teal text-verifyvision-teal hover:bg-verifyvision-teal hover:text-white transition-all duration-300 group"
+                  >
+                    <CheckSquare className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> 
+                    Start Checkout
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </CardFooter>

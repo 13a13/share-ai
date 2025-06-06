@@ -5,7 +5,7 @@ import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, FileText, Download, Eye } from "lucide-react";
+import { Loader2, FileText, Download, Eye, CheckSquare } from "lucide-react";
 import CollapsibleRoomSection from "@/components/CollapsibleRoomSection";
 import PDFExportButton from "@/components/PDFExportButton";
 import Header from "@/components/Header";
@@ -61,6 +61,15 @@ const ReportViewPage = () => {
       setActiveRoomIndex(index);
     }
   };
+
+  const handleStartCheckout = () => {
+    if (report) {
+      navigate(`/reports/${report.id}/checkout`);
+    }
+  };
+
+  // Check if this is a check-in report that can have a checkout
+  const canStartCheckout = report?.type === 'check_in' && report?.status === 'completed';
   
   if (isLoading) {
     return (
@@ -122,6 +131,16 @@ const ReportViewPage = () => {
               <Eye className="h-4 w-4 mr-2" />
               Edit Report
             </Button>
+            {canStartCheckout && (
+              <Button 
+                onClick={handleStartCheckout}
+                variant="outline"
+                className="border-verifyvision-teal text-verifyvision-teal hover:bg-verifyvision-teal hover:text-white px-6"
+              >
+                <CheckSquare className="h-4 w-4 mr-2" />
+                Start Checkout
+              </Button>
+            )}
             <PDFExportButton 
               report={report} 
               property={property} 
