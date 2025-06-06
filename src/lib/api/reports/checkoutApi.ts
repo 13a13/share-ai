@@ -1,4 +1,7 @@
 
+import { CheckoutReportAPI } from './checkoutReportApi';
+import { CheckoutComparisonAPI } from './checkoutComparisonApi';
+
 // Re-export types
 export type { CheckoutComparison, CheckoutData } from './checkoutTypes';
 
