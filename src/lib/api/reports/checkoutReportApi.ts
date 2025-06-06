@@ -17,15 +17,7 @@ export const CheckoutReportAPI = {
       // First, get the check-in report data
       const { data: checkinReport, error: fetchError } = await supabase
         .from('inspections')
-        .select(`
-          *,
-          rooms (
-            id,
-            type,
-            property_id,
-            properties (*)
-          )
-        `)
+        .select('*')
         .eq('id', checkinReportId)
         .single();
 
@@ -39,6 +31,14 @@ export const CheckoutReportAPI = {
       }
 
       // Create the checkout inspection record
+      const checkoutReportInfo = {
+        ...checkinReport.report_info,
+        checkoutDate: checkoutData.date || new Date().toISOString(),
+        clerk: checkoutData.clerk,
+        tenantName: checkoutData.tenantName,
+        tenantPresent: checkoutData.tenantPresent
+      };
+
       const { data: checkoutInspection, error: createError } = await supabase
         .from('inspections')
         .insert({
@@ -49,7 +49,8 @@ export const CheckoutReportAPI = {
           checkout_clerk: checkoutData.clerk,
           checkout_tenant_name: checkoutData.tenantName,
           checkout_tenant_present: checkoutData.tenantPresent,
-          status: 'pending'
+          status: 'in_progress',
+          report_info: checkoutReportInfo
         })
         .select()
         .single();
@@ -66,7 +67,21 @@ export const CheckoutReportAPI = {
         .eq('id', checkinReportId);
 
       console.log('Checkout report created:', checkoutInspection);
-      return checkoutInspection as any;
+      
+      // Transform to our Report interface
+      const transformedReport: Report = {
+        id: checkoutInspection.id,
+        propertyId: '', // Will be filled by the calling component
+        type: 'check_out',
+        status: 'in_progress',
+        reportInfo: checkoutReportInfo,
+        rooms: [], // Will be populated by the calling component
+        createdAt: new Date(checkoutInspection.created_at),
+        updatedAt: new Date(checkoutInspection.updated_at),
+        completedAt: null
+      };
+
+      return transformedReport;
     } catch (error) {
       console.error('Error in createCheckoutReport:', error);
       throw error;

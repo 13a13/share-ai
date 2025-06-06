@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import { ReportsAPI } from '@/lib/api';
 import { useCheckoutProcedure } from '@/hooks/useCheckoutProcedure';
@@ -20,6 +20,7 @@ const CheckoutPage = () => {
   
   const [checkinReport, setCheckinReport] = useState<Report | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [allComponents, setAllComponents] = useState<(RoomComponent & { roomId: string })[]>([]);
 
   const {
@@ -35,22 +36,30 @@ const CheckoutPage = () => {
 
   useEffect(() => {
     const fetchReport = async () => {
-      if (!reportId) return;
+      if (!reportId) {
+        setError('No report ID provided');
+        setIsLoading(false);
+        return;
+      }
       
       try {
+        console.log('Fetching report with ID:', reportId);
         setIsLoading(true);
+        setError(null);
+        
         const report = await ReportsAPI.getById(reportId);
         
         if (!report) {
+          setError('Report not found');
           toast({
             title: "Report not found",
             description: "The requested report could not be found.",
             variant: "destructive",
           });
-          navigate('/reports');
           return;
         }
 
+        console.log('Fetched report:', report);
         setCheckinReport(report);
 
         // Collect all components from all rooms
@@ -65,17 +74,21 @@ const CheckoutPage = () => {
             });
           }
         });
+        console.log('Found components:', components.length);
         setAllComponents(components);
 
-        // If there's already a checkout report, load its comparisons
+        // Check if there's already a checkout report
         if (report.reportInfo?.checkoutReportId) {
+          console.log('Existing checkout report found, loading comparisons...');
           await loadCheckoutComparisons(report.reportInfo.checkoutReportId);
         }
       } catch (error) {
         console.error('Error fetching report:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setError(errorMessage);
         toast({
           title: "Error",
-          description: "Failed to load report data.",
+          description: `Failed to load report data: ${errorMessage}`,
           variant: "destructive",
         });
       } finally {
@@ -84,7 +97,7 @@ const CheckoutPage = () => {
     };
     
     fetchReport();
-  }, [reportId, toast, navigate, loadCheckoutComparisons]);
+  }, [reportId, toast, loadCheckoutComparisons]);
 
   const getOriginalComponent = (componentId: string): RoomComponent | null => {
     return allComponents.find(comp => comp.id === componentId) || null;
@@ -110,27 +123,35 @@ const CheckoutPage = () => {
         <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading checkout page...</p>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!checkinReport) {
+  if (error || !checkinReport) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="container mx-auto px-4 py-8">
           <Card>
             <CardContent className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Report Not Found</h2>
-              <p className="text-gray-600 mb-4">The requested report could not be found.</p>
-              <Button onClick={() => navigate('/reports')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Reports
-              </Button>
+              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Error Loading Report</h2>
+              <p className="text-gray-600 mb-4">{error || 'The requested report could not be found.'}</p>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={() => navigate('/reports')}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Reports
+                </Button>
+                <Button variant="outline" onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -213,13 +234,23 @@ const CheckoutPage = () => {
                 Begin the checkout procedure to compare the current condition of each component 
                 with the check-in condition.
               </p>
+              <p className="text-sm text-gray-500 mb-4">
+                Found {allComponents.length} components to review from {checkinReport.rooms.length} rooms.
+              </p>
               <CheckoutProcedureDialog
                 checkinReport={checkinReport}
                 onStartCheckout={startCheckoutProcedure}
                 isCreating={isCreatingCheckout}
               >
-                <Button>
-                  Start Checkout Procedure
+                <Button disabled={isCreatingCheckout}>
+                  {isCreatingCheckout ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Starting Checkout...
+                    </>
+                  ) : (
+                    'Start Checkout Procedure'
+                  )}
                 </Button>
               </CheckoutProcedureDialog>
             </CardContent>
@@ -277,7 +308,7 @@ const CheckoutPage = () => {
             {isLoadingComparisons ? (
               <Card>
                 <CardContent className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
                   <p>Loading component comparisons...</p>
                 </CardContent>
               </Card>

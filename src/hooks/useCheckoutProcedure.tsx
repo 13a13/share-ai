@@ -20,6 +20,7 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
    */
   const startCheckoutProcedure = async (checkoutData: CheckoutData) => {
     if (!checkinReport) {
+      console.error('No check-in report found');
       toast({
         title: "Error",
         description: "No check-in report found to create checkout from.",
@@ -28,17 +29,31 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
       return;
     }
 
+    console.log('Starting checkout procedure with data:', checkoutData);
+    console.log('Check-in report:', checkinReport);
+    
     setIsCreatingCheckout(true);
     
     try {
       // Create the checkout report
+      console.log('Creating checkout report...');
       const newCheckoutReport = await CheckoutAPI.createCheckoutReport(
         checkinReport.id,
         checkoutData
       );
 
       if (newCheckoutReport) {
-        setCheckoutReport(newCheckoutReport);
+        console.log('Checkout report created successfully:', newCheckoutReport);
+        
+        // Set the property ID and rooms from the check-in report
+        const fullCheckoutReport = {
+          ...newCheckoutReport,
+          propertyId: checkinReport.propertyId,
+          rooms: checkinReport.rooms,
+          property: checkinReport.property
+        };
+        
+        setCheckoutReport(fullCheckoutReport);
 
         // Collect all components from all rooms in the check-in report
         const allComponents: (RoomComponent & { roomId: string })[] = [];
@@ -53,26 +68,36 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
           }
         });
 
-        // Initialize checkout comparisons
-        await CheckoutAPI.initializeCheckoutComparisons(
-          newCheckoutReport.id,
-          checkinReport.id,
-          allComponents
-        );
+        console.log('Components to initialize:', allComponents.length);
 
-        // Load the created comparisons
-        await loadCheckoutComparisons(newCheckoutReport.id);
+        if (allComponents.length > 0) {
+          // Initialize checkout comparisons
+          console.log('Initializing checkout comparisons...');
+          await CheckoutAPI.initializeCheckoutComparisons(
+            newCheckoutReport.id,
+            checkinReport.id,
+            allComponents
+          );
+
+          // Load the created comparisons
+          console.log('Loading checkout comparisons...');
+          await loadCheckoutComparisons(newCheckoutReport.id);
+        } else {
+          console.warn('No components found to initialize comparisons');
+        }
 
         toast({
           title: "Checkout Started",
           description: "Checkout procedure has been initiated. You can now review each component.",
         });
+      } else {
+        throw new Error('Failed to create checkout report');
       }
     } catch (error) {
       console.error('Error starting checkout procedure:', error);
       toast({
         title: "Error",
-        description: "Failed to start checkout procedure. Please try again.",
+        description: `Failed to start checkout procedure: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -84,10 +109,12 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
    * Load checkout comparisons
    */
   const loadCheckoutComparisons = async (checkoutReportId: string) => {
+    console.log('Loading checkout comparisons for report:', checkoutReportId);
     setIsLoadingComparisons(true);
     
     try {
       const fetchedComparisons = await CheckoutAPI.getCheckoutComparisons(checkoutReportId);
+      console.log('Loaded comparisons:', fetchedComparisons);
       setComparisons(fetchedComparisons);
     } catch (error) {
       console.error('Error loading checkout comparisons:', error);
@@ -109,6 +136,7 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
     updates: Partial<CheckoutComparison>
   ) => {
     try {
+      console.log('Updating comparison:', comparisonId, updates);
       const updatedComparison = await CheckoutAPI.updateCheckoutComparison(
         comparisonId,
         updates
@@ -143,6 +171,7 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
     if (!checkoutReport) return;
 
     try {
+      console.log('Completing checkout report:', checkoutReport.id);
       await CheckoutAPI.completeCheckoutReport(checkoutReport.id);
       
       setCheckoutReport(prev => prev ? { ...prev, status: 'completed' } : prev);
