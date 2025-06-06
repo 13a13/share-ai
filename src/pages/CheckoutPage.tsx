@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle, Clock, AlertTriangle, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, CheckCircle, Clock, AlertTriangle, Loader2, FileCheck, Users } from 'lucide-react';
 import Header from '@/components/Header';
 import { ReportsAPI } from '@/lib/api';
 import { useCheckoutProcedure } from '@/hooks/useCheckoutProcedure';
@@ -23,6 +24,8 @@ const CheckoutPage = () => {
   const {
     checkoutReport,
     isCreatingCheckout,
+    comparisons,
+    isLoadingComparisons,
     startCheckoutProcedure,
     completeCheckout
   } = useCheckoutProcedure({ checkinReport });
@@ -113,6 +116,14 @@ const CheckoutPage = () => {
     );
   }
 
+  const getCurrentStep = () => {
+    if (!checkoutReport) return 1;
+    if (comparisons.length === 0) return 2;
+    return 2; // For now, we're implementing step 2
+  };
+
+  const currentStep = getCurrentStep();
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -125,7 +136,7 @@ const CheckoutPage = () => {
             Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Checkout Procedure - Step 1</h1>
+            <h1 className="text-2xl font-bold">Checkout Procedure - Step {currentStep}</h1>
             <p className="text-gray-600">
               Property: {checkinReport.property?.name || 'Unknown Property'}
             </p>
@@ -170,15 +181,15 @@ const CheckoutPage = () => {
           </CardContent>
         </Card>
 
-        {/* Main Content */}
-        {!checkoutReport ? (
+        {/* Step 1: Start Checkout */}
+        {!checkoutReport && (
           <Card>
             <CardHeader>
-              <CardTitle>Start Basic Checkout Procedure</CardTitle>
+              <CardTitle>Step 1: Start Checkout Procedure</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                This is Step 1 of the checkout implementation. Click below to create a basic checkout record.
+                Create a checkout record and initialize component comparisons.
               </p>
               <CheckoutProcedureDialog
                 checkinReport={checkinReport}
@@ -192,50 +203,97 @@ const CheckoutPage = () => {
                       Creating Checkout...
                     </>
                   ) : (
-                    'Start Basic Checkout'
+                    'Start Checkout Procedure'
                   )}
                 </Button>
               </CheckoutProcedureDialog>
             </CardContent>
           </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Basic Checkout Created Successfully!</span>
-                <Button 
-                  onClick={completeCheckout}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Complete Checkout
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-green-800 mb-2">Checkout Details:</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Checkout ID:</span>
-                    <p className="font-medium">{checkoutReport.id}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Status:</span>
-                    <p className="font-medium">{checkoutReport.status}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Created:</span>
-                    <p className="font-medium">{new Date(checkoutReport.created_at).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Clerk:</span>
-                    <p className="font-medium">{checkoutReport.checkout_clerk || 'Not specified'}</p>
+        )}
+
+        {/* Step 2: Component Comparison Setup */}
+        {checkoutReport && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Step 2: Component Comparison Setup</span>
+                  <Badge className="bg-green-500">Checkout Created</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-green-50 p-4 rounded-lg mb-4">
+                  <h3 className="font-semibold text-green-800 mb-2">Checkout Details:</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Checkout ID:</span>
+                      <p className="font-medium">{checkoutReport.id}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Status:</span>
+                      <p className="font-medium">{checkoutReport.status}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Components Found:</span>
+                      <p className="font-medium">{checkoutReport.componentsCount || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Clerk:</span>
+                      <p className="font-medium">{checkoutReport.checkout_clerk || 'Not specified'}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                {isLoadingComparisons ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                    <p className="text-gray-600">Loading components...</p>
+                  </div>
+                ) : (
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Components Ready for Comparison ({comparisons.length})
+                    </h4>
+                    
+                    {comparisons.length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {comparisons.map((comparison) => (
+                          <div key={comparison.id} className="flex items-center justify-between p-2 border rounded">
+                            <div>
+                              <span className="font-medium">{comparison.component_name}</span>
+                              <p className="text-sm text-gray-500">Room: {comparison.room_id}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {comparison.status}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic">No components found for comparison.</p>
+                    )}
+
+                    <div className="mt-6 pt-4 border-t">
+                      <p className="text-sm text-gray-600 mb-4">
+                        ✅ Step 2 Complete: Component comparisons have been initialized. 
+                        <br />
+                        <strong>Next:</strong> Step 3 will allow individual component assessment.
+                      </p>
+                      
+                      <Button 
+                        onClick={completeCheckout}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Complete Checkout (For Now)
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>

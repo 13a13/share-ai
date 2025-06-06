@@ -1,20 +1,33 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { CheckoutData } from './checkoutTypes';
+import { CheckoutComparisonAPI } from './checkoutComparisonApi';
 
 /**
- * Simple Checkout Report API - Step 1 Implementation
+ * Checkout Report API - Step 2 Implementation
  */
 export const CheckoutReportAPI = {
   /**
-   * Create a basic checkout report
+   * Create a checkout report with component comparisons
    */
   async createCheckoutReport(checkinReportId: string, checkoutData: CheckoutData): Promise<any> {
     try {
-      console.log('Creating simple checkout report for:', checkinReportId);
+      console.log('Creating checkout report for:', checkinReportId);
       console.log('Checkout data:', checkoutData);
       
-      // Create a simple checkout inspection record
+      // First, fetch the check-in report to get all components
+      const { data: checkinReport, error: fetchError } = await supabase
+        .from('inspections')
+        .select('*, report_info')
+        .eq('id', checkinReportId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching check-in report:', fetchError);
+        throw fetchError;
+      }
+
+      // Create the checkout inspection record
       const { data: checkoutInspection, error: createError } = await supabase
         .from('inspections')
         .insert({
@@ -35,8 +48,42 @@ export const CheckoutReportAPI = {
         throw createError;
       }
 
-      console.log('Simple checkout report created:', checkoutInspection);
-      return checkoutInspection;
+      // Extract components from the check-in report
+      const reportInfo = checkinReport.report_info as any;
+      const rooms = reportInfo?.rooms || [];
+      const allComponents: any[] = [];
+
+      rooms.forEach((room: any) => {
+        if (room.components) {
+          room.components.forEach((component: any) => {
+            allComponents.push({
+              id: component.id,
+              name: component.name,
+              roomId: room.id,
+              roomName: room.name,
+              condition: component.condition,
+              images: component.images || []
+            });
+          });
+        }
+      });
+
+      console.log('Found components for comparison:', allComponents.length);
+
+      // Initialize comparison records for all components
+      if (allComponents.length > 0) {
+        await CheckoutComparisonAPI.initializeCheckoutComparisons(
+          checkoutInspection.id,
+          checkinReportId,
+          allComponents
+        );
+      }
+
+      console.log('Checkout report created with comparisons:', checkoutInspection);
+      return {
+        ...checkoutInspection,
+        componentsCount: allComponents.length
+      };
     } catch (error) {
       console.error('Error in createCheckoutReport:', error);
       throw error;
