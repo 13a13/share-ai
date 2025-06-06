@@ -136,6 +136,7 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
     currentStep,
     createBasicCheckout,
     initializeComparisons,
-    completeCheckout
+    completeCheckout,
+    setComparisons // Export this so components can update comparisons
   };
 };

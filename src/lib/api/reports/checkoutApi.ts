@@ -11,8 +11,9 @@ export { CheckoutComparisonAPI } from './checkoutComparisonApi';
 
 // Combined API for backward compatibility
 export const CheckoutAPI = {
-  // Checkout report operations
-  createCheckoutReport: CheckoutReportAPI.createCheckoutReport,
+  // Checkout report operations - fixed method name
+  createBasicCheckoutReport: CheckoutReportAPI.createBasicCheckoutReport,
+  initializeComponentComparisons: CheckoutReportAPI.initializeComponentComparisons,
   completeCheckoutReport: CheckoutReportAPI.completeCheckoutReport,
   
   // Comparison operations

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,8 +8,10 @@ import Header from '@/components/Header';
 import { ReportsAPI } from '@/lib/api';
 import { useCheckoutProcedure } from '@/hooks/useCheckoutProcedure';
 import CheckoutProcedureDialog from '@/components/checkout/CheckoutProcedureDialog';
+import CheckoutRoomAssessment from '@/components/checkout/CheckoutRoomAssessment';
 import { Report } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
 
 const CheckoutPage = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -29,7 +30,8 @@ const CheckoutPage = () => {
     currentStep,
     createBasicCheckout,
     initializeComparisons,
-    completeCheckout
+    completeCheckout,
+    setComparisons
   } = useCheckoutProcedure({ checkinReport });
 
   useEffect(() => {
@@ -75,6 +77,22 @@ const CheckoutPage = () => {
     
     fetchReport();
   }, [reportId, toast]);
+
+  const handleComparisonUpdate = (updatedComparison: CheckoutComparison) => {
+    setComparisons(prev => 
+      prev.map(comp => 
+        comp.id === updatedComparison.id ? updatedComparison : comp
+      )
+    );
+  };
+
+  const getCompletedAssessments = () => {
+    return comparisons.filter(comp => comp.status !== 'pending').length;
+  };
+
+  const getTotalAssessments = () => {
+    return comparisons.length;
+  };
 
   if (isLoading) {
     return (
@@ -160,7 +178,7 @@ const CheckoutPage = () => {
               <ArrowRight className="h-4 w-4 text-gray-400" />
               <div className={`flex items-center ${currentStep >= 3 ? 'text-green-600' : 'text-gray-400'}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 3 ? 'bg-green-100' : 'bg-gray-100'}`}>
-                  '3'
+                  {currentStep > 3 ? <CheckCircle className="h-4 w-4" /> : '3'}
                 </div>
                 <span className="ml-2 text-sm">Assess Components</span>
               </div>
@@ -298,56 +316,58 @@ const CheckoutPage = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Step 3: Component Assessment Ready</span>
-                <Badge className="bg-blue-500">Setup Complete</Badge>
+                <span>Step 3: Component Assessment</span>
+                <div className="flex gap-2">
+                  <Badge className="bg-blue-500">
+                    {getCompletedAssessments()}/{getTotalAssessments()} Assessed
+                  </Badge>
+                  <Badge className="bg-green-500">Setup Complete</Badge>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                <h3 className="font-semibold text-blue-800 mb-2">Components Ready for Assessment:</h3>
-                <p className="text-blue-700">
-                  {comparisons.length} components have been initialized and are ready for individual assessment.
-                </p>
-              </div>
-
-              {comparisons.length > 0 && (
-                <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
-                  {comparisons.map((comparison) => (
-                    <div key={comparison.id} className="flex items-center justify-between p-3 border rounded bg-white">
-                      <div>
-                        <span className="font-medium">{comparison.component_name}</span>
-                        <p className="text-sm text-gray-500">Room: {comparison.room_id}</p>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {comparison.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="border-t pt-4">
-                <p className="text-sm text-gray-600 mb-4">
-                  ✅ Ready for individual component assessment!
-                  <br />
-                  <strong>Next:</strong> In the following steps, you'll be able to assess each component individually, 
-                  add photos for changes, and complete the checkout process.
+              <div className="mb-6">
+                <p className="text-gray-600 mb-4">
+                  Review each component and determine if there are any changes since check-in. 
+                  You can mark items as "No Changes" or document any changes found with photos and descriptions.
                 </p>
                 
-                <div className="flex gap-2">
+                {comparisons.length > 0 ? (
+                  <CheckoutRoomAssessment
+                    checkoutReportId={checkoutReport.id}
+                    comparisons={comparisons}
+                    onComparisonUpdate={handleComparisonUpdate}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading components for assessment...</p>
+                  </div>
+                )}
+              </div>
+
+              {comparisons.length > 0 && getCompletedAssessments() === getTotalAssessments() && (
+                <div className="border-t pt-4">
+                  <div className="bg-green-50 p-4 rounded-lg mb-4">
+                    <h3 className="font-semibold text-green-800 mb-2">
+                      ✅ All Components Assessed!
+                    </h3>
+                    <p className="text-green-700">
+                      You've completed the assessment of all {getTotalAssessments()} components. 
+                      You can now complete the checkout process.
+                    </p>
+                  </div>
+                  
                   <Button 
                     onClick={completeCheckout}
                     className="bg-green-600 hover:bg-green-700"
+                    size="lg"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Complete Basic Checkout (For Now)
-                  </Button>
-                  
-                  <Button variant="outline" disabled>
-                    Individual Assessment (Coming Next)
+                    Complete Checkout Process
                   </Button>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         )}
