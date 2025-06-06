@@ -30,9 +30,10 @@ export const CheckoutReportAPI = {
         throw new Error('Check-in report not found');
       }
 
-      // Create the checkout inspection record
+      // Create the checkout inspection record with proper null handling
+      const baseReportInfo = checkinReport.report_info || {};
       const checkoutReportInfo = {
-        ...checkinReport.report_info,
+        ...baseReportInfo,
         checkoutDate: checkoutData.date || new Date().toISOString(),
         clerk: checkoutData.clerk,
         tenantName: checkoutData.tenantName,
