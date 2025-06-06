@@ -3,14 +3,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, CheckCircle, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import { ReportsAPI } from '@/lib/api';
 import { useCheckoutProcedure } from '@/hooks/useCheckoutProcedure';
 import CheckoutProcedureDialog from '@/components/checkout/CheckoutProcedureDialog';
-import CheckoutComparisonCard from '@/components/checkout/CheckoutComparisonCard';
-import { Report, RoomComponent } from '@/types';
+import { Report } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 
 const CheckoutPage = () => {
@@ -21,16 +19,11 @@ const CheckoutPage = () => {
   const [checkinReport, setCheckinReport] = useState<Report | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [allComponents, setAllComponents] = useState<(RoomComponent & { roomId: string })[]>([]);
 
   const {
     checkoutReport,
-    comparisons,
     isCreatingCheckout,
-    isLoadingComparisons,
     startCheckoutProcedure,
-    loadCheckoutComparisons,
-    updateComparison,
     completeCheckout
   } = useCheckoutProcedure({ checkinReport });
 
@@ -61,27 +54,6 @@ const CheckoutPage = () => {
 
         console.log('Fetched report:', report);
         setCheckinReport(report);
-
-        // Collect all components from all rooms
-        const components: (RoomComponent & { roomId: string })[] = [];
-        report.rooms.forEach(room => {
-          if (room.components) {
-            room.components.forEach(component => {
-              components.push({
-                ...component,
-                roomId: room.id
-              });
-            });
-          }
-        });
-        console.log('Found components:', components.length);
-        setAllComponents(components);
-
-        // Check if there's already a checkout report
-        if (report.reportInfo?.checkoutReportId) {
-          console.log('Existing checkout report found, loading comparisons...');
-          await loadCheckoutComparisons(report.reportInfo.checkoutReportId);
-        }
       } catch (error) {
         console.error('Error fetching report:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -97,25 +69,7 @@ const CheckoutPage = () => {
     };
     
     fetchReport();
-  }, [reportId, toast, loadCheckoutComparisons]);
-
-  const getOriginalComponent = (componentId: string): RoomComponent | null => {
-    return allComponents.find(comp => comp.id === componentId) || null;
-  };
-
-  const getProgressStats = () => {
-    if (comparisons.length === 0) return { completed: 0, total: 0, percentage: 0 };
-    
-    const completed = comparisons.filter(comp => comp.status !== 'pending').length;
-    const total = comparisons.length;
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
-    return { completed, total, percentage };
-  };
-
-  const canCompleteCheckout = () => {
-    return comparisons.length > 0 && comparisons.every(comp => comp.status !== 'pending');
-  };
+  }, [reportId, toast]);
 
   if (isLoading) {
     return (
@@ -159,8 +113,6 @@ const CheckoutPage = () => {
     );
   }
 
-  const progressStats = getProgressStats();
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -173,169 +125,117 @@ const CheckoutPage = () => {
             Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Checkout Procedure</h1>
+            <h1 className="text-2xl font-bold">Checkout Procedure - Step 1</h1>
             <p className="text-gray-600">
               Property: {checkinReport.property?.name || 'Unknown Property'}
             </p>
           </div>
         </div>
 
-        {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Check-in Date</CardTitle>
-            </CardHeader>
-            <CardContent>
+        {/* Status Card */}
+        <Card className="mb-8">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Check-in Report Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-blue-600" />
-                <span className="text-lg font-semibold">
-                  {new Date(checkinReport.createdAt).toLocaleDateString()}
-                </span>
+                <div>
+                  <p className="text-sm text-gray-500">Check-in Date</p>
+                  <span className="font-semibold">
+                    {new Date(checkinReport.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Components to Review</CardTitle>
-            </CardHeader>
-            <CardContent>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="text-lg font-semibold">
-                  {progressStats.completed} / {progressStats.total}
-                </span>
+                <div>
+                  <p className="text-sm text-gray-500">Rooms</p>
+                  <span className="font-semibold">
+                    {checkinReport.rooms.length} rooms
+                  </span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Progress value={progressStats.percentage} className="h-2" />
-                <span className="text-sm text-gray-600">{progressStats.percentage}% complete</span>
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-gray-600" />
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  <span className="font-semibold">
+                    {checkinReport.status}
+                  </span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Main Content */}
         {!checkoutReport ? (
           <Card>
             <CardHeader>
-              <CardTitle>Start Checkout Procedure</CardTitle>
+              <CardTitle>Start Basic Checkout Procedure</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Begin the checkout procedure to compare the current condition of each component 
-                with the check-in condition.
-              </p>
-              <p className="text-sm text-gray-500 mb-4">
-                Found {allComponents.length} components to review from {checkinReport.rooms.length} rooms.
+                This is Step 1 of the checkout implementation. Click below to create a basic checkout record.
               </p>
               <CheckoutProcedureDialog
                 checkinReport={checkinReport}
                 onStartCheckout={startCheckoutProcedure}
                 isCreating={isCreatingCheckout}
               >
-                <Button disabled={isCreatingCheckout}>
+                <Button disabled={isCreatingCheckout} size="lg">
                   {isCreatingCheckout ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Starting Checkout...
+                      Creating Checkout...
                     </>
                   ) : (
-                    'Start Checkout Procedure'
+                    'Start Basic Checkout'
                   )}
                 </Button>
               </CheckoutProcedureDialog>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
-            {/* Checkout Header */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Checkout in Progress</span>
-                  <Button 
-                    onClick={completeCheckout}
-                    disabled={!canCompleteCheckout()}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Complete Checkout
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  {checkoutReport.reportInfo?.checkoutDate && (
-                    <div>
-                      <span className="text-gray-600">Checkout Date:</span>
-                      <p className="font-medium">
-                        {new Date(checkoutReport.reportInfo.checkoutDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-                  {checkoutReport.reportInfo?.clerk && (
-                    <div>
-                      <span className="text-gray-600">Clerk:</span>
-                      <p className="font-medium">{checkoutReport.reportInfo.clerk}</p>
-                    </div>
-                  )}
-                  {checkoutReport.reportInfo?.tenantName && (
-                    <div>
-                      <span className="text-gray-600">Tenant:</span>
-                      <p className="font-medium">{checkoutReport.reportInfo.tenantName}</p>
-                    </div>
-                  )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Basic Checkout Created Successfully!</span>
+                <Button 
+                  onClick={completeCheckout}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Complete Checkout
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-green-800 mb-2">Checkout Details:</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Tenant Present:</span>
-                    <p className="font-medium">
-                      {checkoutReport.reportInfo?.tenantPresent ? 'Yes' : 'No'}
-                    </p>
+                    <span className="text-gray-600">Checkout ID:</span>
+                    <p className="font-medium">{checkoutReport.id}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Status:</span>
+                    <p className="font-medium">{checkoutReport.status}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Created:</span>
+                    <p className="font-medium">{new Date(checkoutReport.created_at).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Clerk:</span>
+                    <p className="font-medium">{checkoutReport.checkout_clerk || 'Not specified'}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Component Comparisons */}
-            {isLoadingComparisons ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p>Loading component comparisons...</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Component Comparisons</h2>
-                {comparisons.length === 0 ? (
-                  <Card>
-                    <CardContent className="text-center py-8">
-                      <p className="text-gray-600">No components to review.</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4">
-                    {comparisons.map(comparison => (
-                      <CheckoutComparisonCard
-                        key={comparison.id}
-                        comparison={comparison}
-                        originalComponent={getOriginalComponent(comparison.component_id)}
-                        onUpdate={updateComparison}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
