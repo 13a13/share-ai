@@ -111,10 +111,21 @@ export const CheckoutAPI = {
         throw error;
       }
 
-      // Cast the data to ensure proper typing
+      // Transform the data to match our TypeScript interface
       return (data || []).map(item => ({
-        ...item,
-        status: item.status as 'unchanged' | 'changed' | 'pending'
+        id: item.id,
+        checkout_report_id: item.checkout_report_id,
+        checkin_report_id: item.checkin_report_id,
+        room_id: item.room_id,
+        component_id: item.component_id,
+        component_name: item.component_name,
+        status: item.status as 'unchanged' | 'changed' | 'pending',
+        change_description: item.change_description || undefined,
+        checkout_condition: item.checkout_condition || undefined,
+        checkout_images: Array.isArray(item.checkout_images) ? item.checkout_images as string[] : [],
+        ai_analysis: item.ai_analysis || undefined,
+        created_at: item.created_at,
+        updated_at: item.updated_at
       }));
     } catch (error) {
       console.error('Error in getCheckoutComparisons:', error);
@@ -174,10 +185,21 @@ export const CheckoutAPI = {
         throw error;
       }
 
-      // Cast the data to ensure proper typing
+      // Transform the data to match our TypeScript interface
       return data ? {
-        ...data,
-        status: data.status as 'unchanged' | 'changed' | 'pending'
+        id: data.id,
+        checkout_report_id: data.checkout_report_id,
+        checkin_report_id: data.checkin_report_id,
+        room_id: data.room_id,
+        component_id: data.component_id,
+        component_name: data.component_name,
+        status: data.status as 'unchanged' | 'changed' | 'pending',
+        change_description: data.change_description || undefined,
+        checkout_condition: data.checkout_condition || undefined,
+        checkout_images: Array.isArray(data.checkout_images) ? data.checkout_images as string[] : [],
+        ai_analysis: data.ai_analysis || undefined,
+        created_at: data.created_at,
+        updated_at: data.updated_at
       } : null;
     } catch (error) {
       console.error('Error in updateCheckoutComparison:', error);
