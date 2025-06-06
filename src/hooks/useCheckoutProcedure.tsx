@@ -15,11 +15,12 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [comparisons, setComparisons] = useState<CheckoutComparison[]>([]);
   const [isLoadingComparisons, setIsLoadingComparisons] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
 
   /**
-   * Step 1: Create checkout report with component comparisons
+   * Phase 2: Create basic checkout report
    */
-  const startCheckoutProcedure = async (checkoutData: CheckoutData) => {
+  const createBasicCheckout = async (checkoutData: CheckoutData) => {
     if (!checkinReport) {
       console.error('No check-in report found');
       toast({
@@ -30,38 +31,32 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
       return;
     }
 
-    console.log('Starting checkout procedure...');
-    console.log('Check-in report:', checkinReport.id);
-    console.log('Checkout data:', checkoutData);
-    
+    console.log('Creating basic checkout...');
     setIsCreatingCheckout(true);
     
     try {
-      // Create the checkout report with component comparisons
-      const newCheckoutReport = await CheckoutReportAPI.createCheckoutReport(
+      const newCheckoutReport = await CheckoutReportAPI.createBasicCheckoutReport(
         checkinReport.id,
         checkoutData
       );
 
       if (newCheckoutReport) {
-        console.log('Checkout report created successfully:', newCheckoutReport);
+        console.log('Basic checkout report created:', newCheckoutReport);
         setCheckoutReport(newCheckoutReport);
-        
-        // Load the comparisons that were just created
-        await loadComparisons(newCheckoutReport.id);
+        setCurrentStep(2);
         
         toast({
-          title: "Checkout Started",
-          description: `Checkout procedure initiated with ${newCheckoutReport.componentsCount || 0} components to compare.`,
+          title: "Checkout Created",
+          description: "Basic checkout record created successfully. Ready for component setup.",
         });
       } else {
-        throw new Error('Failed to create checkout report');
+        throw new Error('Failed to create basic checkout report');
       }
     } catch (error) {
-      console.error('Error starting checkout procedure:', error);
+      console.error('Error creating basic checkout:', error);
       toast({
         title: "Error",
-        description: `Failed to start checkout: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to create checkout: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -70,19 +65,36 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
   };
 
   /**
-   * Step 2: Load component comparisons
+   * Phase 3: Initialize component comparisons
    */
-  const loadComparisons = async (checkoutReportId: string) => {
+  const initializeComparisons = async () => {
+    if (!checkoutReport || !checkinReport) return;
+
     setIsLoadingComparisons(true);
     try {
-      const comparisonData = await CheckoutComparisonAPI.getCheckoutComparisons(checkoutReportId);
+      console.log('Initializing component comparisons...');
+      
+      const components = await CheckoutReportAPI.initializeComponentComparisons(
+        checkoutReport.id,
+        checkinReport.id
+      );
+
+      // Load the created comparison records
+      const comparisonData = await CheckoutComparisonAPI.getCheckoutComparisons(checkoutReport.id);
       setComparisons(comparisonData);
-      console.log('Loaded comparisons:', comparisonData.length);
+      setCurrentStep(3);
+      
+      toast({
+        title: "Components Initialized",
+        description: `Setup complete! ${components.length} components ready for comparison.`,
+      });
+      
+      console.log('Component comparisons initialized:', comparisonData.length);
     } catch (error) {
-      console.error('Error loading comparisons:', error);
+      console.error('Error initializing comparisons:', error);
       toast({
         title: "Error",
-        description: "Failed to load component comparisons.",
+        description: "Failed to initialize component comparisons.",
         variant: "destructive",
       });
     } finally {
@@ -121,8 +133,9 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
     isCreatingCheckout,
     comparisons,
     isLoadingComparisons,
-    startCheckoutProcedure,
-    loadComparisons,
+    currentStep,
+    createBasicCheckout,
+    initializeComparisons,
     completeCheckout
   };
 };

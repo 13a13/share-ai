@@ -4,21 +4,21 @@ import { CheckoutData } from './checkoutTypes';
 import { CheckoutComparisonAPI } from './checkoutComparisonApi';
 
 /**
- * Checkout Report API - Step 2 Implementation
+ * Checkout Report API - Fixed Implementation
  */
 export const CheckoutReportAPI = {
   /**
-   * Create a checkout report with component comparisons
+   * Phase 2: Create a basic checkout report
    */
-  async createCheckoutReport(checkinReportId: string, checkoutData: CheckoutData): Promise<any> {
+  async createBasicCheckoutReport(checkinReportId: string, checkoutData: CheckoutData): Promise<any> {
     try {
-      console.log('Creating checkout report for:', checkinReportId);
+      console.log('Creating basic checkout report for:', checkinReportId);
       console.log('Checkout data:', checkoutData);
       
-      // First, fetch the check-in report to get all components
+      // First, fetch the check-in report to get the room_id
       const { data: checkinReport, error: fetchError } = await supabase
         .from('inspections')
-        .select('*, report_info')
+        .select('room_id, report_info')
         .eq('id', checkinReportId)
         .single();
 
@@ -27,11 +27,15 @@ export const CheckoutReportAPI = {
         throw fetchError;
       }
 
-      // Create the checkout inspection record
+      if (!checkinReport.room_id) {
+        throw new Error('Check-in report does not have a valid room_id');
+      }
+
+      // Create the checkout inspection record with the same room_id as check-in
       const { data: checkoutInspection, error: createError } = await supabase
         .from('inspections')
         .insert({
-          room_id: '00000000-0000-0000-0000-000000000000', // Placeholder for now
+          room_id: checkinReport.room_id, // Use the same room_id from check-in
           is_checkout: true,
           checkout_report_id: checkinReportId,
           checkout_date: checkoutData.date || new Date().toISOString(),
@@ -48,6 +52,33 @@ export const CheckoutReportAPI = {
         throw createError;
       }
 
+      console.log('Basic checkout report created successfully:', checkoutInspection);
+      return checkoutInspection;
+    } catch (error) {
+      console.error('Error in createBasicCheckoutReport:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Phase 3: Initialize component comparisons for existing checkout
+   */
+  async initializeComponentComparisons(checkoutReportId: string, checkinReportId: string): Promise<any[]> {
+    try {
+      console.log('Initializing component comparisons for checkout:', checkoutReportId);
+      
+      // Fetch the check-in report to get all components
+      const { data: checkinReport, error: fetchError } = await supabase
+        .from('inspections')
+        .select('report_info')
+        .eq('id', checkinReportId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching check-in report for components:', fetchError);
+        throw fetchError;
+      }
+
       // Extract components from the check-in report
       const reportInfo = checkinReport.report_info as any;
       const rooms = reportInfo?.rooms || [];
@@ -62,7 +93,8 @@ export const CheckoutReportAPI = {
               roomId: room.id,
               roomName: room.name,
               condition: component.condition,
-              images: component.images || []
+              images: component.images || [],
+              notes: component.notes || ''
             });
           });
         }
@@ -73,19 +105,15 @@ export const CheckoutReportAPI = {
       // Initialize comparison records for all components
       if (allComponents.length > 0) {
         await CheckoutComparisonAPI.initializeCheckoutComparisons(
-          checkoutInspection.id,
+          checkoutReportId,
           checkinReportId,
           allComponents
         );
       }
 
-      console.log('Checkout report created with comparisons:', checkoutInspection);
-      return {
-        ...checkoutInspection,
-        componentsCount: allComponents.length
-      };
+      return allComponents;
     } catch (error) {
-      console.error('Error in createCheckoutReport:', error);
+      console.error('Error in initializeComponentComparisons:', error);
       throw error;
     }
   },

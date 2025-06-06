@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CheckCircle, Clock, AlertTriangle, Loader2, FileCheck, Users } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertTriangle, Loader2, FileCheck, Users, ArrowRight } from 'lucide-react';
 import Header from '@/components/Header';
 import { ReportsAPI } from '@/lib/api';
 import { useCheckoutProcedure } from '@/hooks/useCheckoutProcedure';
@@ -26,7 +26,9 @@ const CheckoutPage = () => {
     isCreatingCheckout,
     comparisons,
     isLoadingComparisons,
-    startCheckoutProcedure,
+    currentStep,
+    createBasicCheckout,
+    initializeComparisons,
     completeCheckout
   } = useCheckoutProcedure({ checkinReport });
 
@@ -116,14 +118,6 @@ const CheckoutPage = () => {
     );
   }
 
-  const getCurrentStep = () => {
-    if (!checkoutReport) return 1;
-    if (comparisons.length === 0) return 2;
-    return 2; // For now, we're implementing step 2
-  };
-
-  const currentStep = getCurrentStep();
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -143,7 +137,38 @@ const CheckoutPage = () => {
           </div>
         </div>
 
-        {/* Status Card */}
+        {/* Progress Indicator */}
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-4">
+              <div className={`flex items-center ${currentStep >= 1 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {currentStep > 1 ? <CheckCircle className="h-4 w-4" /> : '1'}
+                </div>
+                <span className="ml-2 text-sm">Create Checkout</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+              <div className={`flex items-center ${currentStep >= 2 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {currentStep > 2 ? <CheckCircle className="h-4 w-4" /> : '2'}
+                </div>
+                <span className="ml-2 text-sm">Setup Components</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+              <div className={`flex items-center ${currentStep >= 3 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 3 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  '3'
+                </div>
+                <span className="ml-2 text-sm">Assess Components</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Check-in Report Info */}
         <Card className="mb-8">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Check-in Report Information</CardTitle>
@@ -181,19 +206,19 @@ const CheckoutPage = () => {
           </CardContent>
         </Card>
 
-        {/* Step 1: Start Checkout */}
-        {!checkoutReport && (
+        {/* Step 1: Create Basic Checkout */}
+        {currentStep === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle>Step 1: Start Checkout Procedure</CardTitle>
+              <CardTitle>Step 1: Create Checkout Record</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Create a checkout record and initialize component comparisons.
+                Create a basic checkout record with your details and checkout information.
               </p>
               <CheckoutProcedureDialog
                 checkinReport={checkinReport}
-                onStartCheckout={startCheckoutProcedure}
+                onStartCheckout={createBasicCheckout}
                 isCreating={isCreatingCheckout}
               >
                 <Button disabled={isCreatingCheckout} size="lg">
@@ -211,89 +236,120 @@ const CheckoutPage = () => {
           </Card>
         )}
 
-        {/* Step 2: Component Comparison Setup */}
-        {checkoutReport && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Step 2: Component Comparison Setup</span>
-                  <Badge className="bg-green-500">Checkout Created</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-green-50 p-4 rounded-lg mb-4">
-                  <h3 className="font-semibold text-green-800 mb-2">Checkout Details:</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Checkout ID:</span>
-                      <p className="font-medium">{checkoutReport.id}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Status:</span>
-                      <p className="font-medium">{checkoutReport.status}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Components Found:</span>
-                      <p className="font-medium">{checkoutReport.componentsCount || 0}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Clerk:</span>
-                      <p className="font-medium">{checkoutReport.checkout_clerk || 'Not specified'}</p>
-                    </div>
+        {/* Step 2: Initialize Components */}
+        {currentStep === 2 && checkoutReport && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Step 2: Initialize Component Comparisons</span>
+                <Badge className="bg-green-500">Checkout Created</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-green-50 p-4 rounded-lg mb-4">
+                <h3 className="font-semibold text-green-800 mb-2">Checkout Details:</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Checkout ID:</span>
+                    <p className="font-medium">{checkoutReport.id}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Status:</span>
+                    <p className="font-medium">{checkoutReport.status}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Clerk:</span>
+                    <p className="font-medium">{checkoutReport.checkout_clerk || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Tenant:</span>
+                    <p className="font-medium">{checkoutReport.checkout_tenant_name || 'Not specified'}</p>
                   </div>
                 </div>
+              </div>
 
+              <p className="text-gray-600 mb-4">
+                Now we'll set up component comparisons from your original check-in report.
+              </p>
+
+              <Button 
+                onClick={initializeComparisons}
+                disabled={isLoadingComparisons}
+                size="lg"
+              >
                 {isLoadingComparisons ? (
-                  <div className="text-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                    <p className="text-gray-600">Loading components...</p>
-                  </div>
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Setting up Components...
+                  </>
                 ) : (
-                  <div>
-                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Components Ready for Comparison ({comparisons.length})
-                    </h4>
-                    
-                    {comparisons.length > 0 ? (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {comparisons.map((comparison) => (
-                          <div key={comparison.id} className="flex items-center justify-between p-2 border rounded">
-                            <div>
-                              <span className="font-medium">{comparison.component_name}</span>
-                              <p className="text-sm text-gray-500">Room: {comparison.room_id}</p>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {comparison.status}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 italic">No components found for comparison.</p>
-                    )}
-
-                    <div className="mt-6 pt-4 border-t">
-                      <p className="text-sm text-gray-600 mb-4">
-                        ✅ Step 2 Complete: Component comparisons have been initialized. 
-                        <br />
-                        <strong>Next:</strong> Step 3 will allow individual component assessment.
-                      </p>
-                      
-                      <Button 
-                        onClick={completeCheckout}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Complete Checkout (For Now)
-                      </Button>
-                    </div>
-                  </div>
+                  <>
+                    <Users className="h-4 w-4 mr-2" />
+                    Initialize Component Comparisons
+                  </>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Component Assessment */}
+        {currentStep === 3 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Step 3: Component Assessment Ready</span>
+                <Badge className="bg-blue-500">Setup Complete</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                <h3 className="font-semibold text-blue-800 mb-2">Components Ready for Assessment:</h3>
+                <p className="text-blue-700">
+                  {comparisons.length} components have been initialized and are ready for individual assessment.
+                </p>
+              </div>
+
+              {comparisons.length > 0 && (
+                <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+                  {comparisons.map((comparison) => (
+                    <div key={comparison.id} className="flex items-center justify-between p-3 border rounded bg-white">
+                      <div>
+                        <span className="font-medium">{comparison.component_name}</span>
+                        <p className="text-sm text-gray-500">Room: {comparison.room_id}</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {comparison.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="border-t pt-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  ✅ Ready for individual component assessment!
+                  <br />
+                  <strong>Next:</strong> In the following steps, you'll be able to assess each component individually, 
+                  add photos for changes, and complete the checkout process.
+                </p>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={completeCheckout}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Complete Basic Checkout (For Now)
+                  </Button>
+                  
+                  <Button variant="outline" disabled>
+                    Individual Assessment (Coming Next)
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
