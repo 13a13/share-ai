@@ -9,6 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      checkout_comparisons: {
+        Row: {
+          ai_analysis: Json | null
+          change_description: string | null
+          checkin_report_id: string
+          checkout_condition: string | null
+          checkout_images: Json | null
+          checkout_report_id: string
+          component_id: string
+          component_name: string
+          created_at: string
+          id: string
+          room_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          change_description?: string | null
+          checkin_report_id: string
+          checkout_condition?: string | null
+          checkout_images?: Json | null
+          checkout_report_id: string
+          component_id: string
+          component_name: string
+          created_at?: string
+          id?: string
+          room_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          change_description?: string | null
+          checkin_report_id?: string
+          checkout_condition?: string | null
+          checkout_images?: Json | null
+          checkout_report_id?: string
+          component_id?: string
+          component_name?: string
+          created_at?: string
+          id?: string
+          room_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_comparisons_checkin_report_id_fkey"
+            columns: ["checkin_report_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkout_comparisons_checkout_report_id_fkey"
+            columns: ["checkout_report_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_images: {
         Row: {
           analysis: Json | null
@@ -50,9 +113,15 @@ export type Database = {
       }
       inspections: {
         Row: {
+          checkout_clerk: string | null
+          checkout_date: string | null
+          checkout_report_id: string | null
+          checkout_tenant_name: string | null
+          checkout_tenant_present: boolean | null
           created_at: string
           date: string
           id: string
+          is_checkout: boolean | null
           report_info: Json | null
           report_url: string | null
           room_id: string
@@ -60,9 +129,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checkout_clerk?: string | null
+          checkout_date?: string | null
+          checkout_report_id?: string | null
+          checkout_tenant_name?: string | null
+          checkout_tenant_present?: boolean | null
           created_at?: string
           date?: string
           id?: string
+          is_checkout?: boolean | null
           report_info?: Json | null
           report_url?: string | null
           room_id: string
@@ -70,9 +145,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checkout_clerk?: string | null
+          checkout_date?: string | null
+          checkout_report_id?: string | null
+          checkout_tenant_name?: string | null
+          checkout_tenant_present?: boolean | null
           created_at?: string
           date?: string
           id?: string
+          is_checkout?: boolean | null
           report_info?: Json | null
           report_url?: string | null
           room_id?: string
@@ -85,6 +166,13 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_checkout_report_id_fkey"
+            columns: ["checkout_report_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
             referencedColumns: ["id"]
           },
           {
