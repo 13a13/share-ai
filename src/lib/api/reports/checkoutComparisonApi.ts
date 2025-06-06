@@ -12,6 +12,8 @@ export const CheckoutComparisonAPI = {
    */
   async getCheckoutComparisons(checkoutReportId: string): Promise<CheckoutComparison[]> {
     try {
+      console.log('Fetching checkout comparisons for report:', checkoutReportId);
+      
       const { data, error } = await supabase
         .from('checkout_comparisons')
         .select('*')
@@ -23,7 +25,11 @@ export const CheckoutComparisonAPI = {
         throw error;
       }
 
-      return transformCheckoutComparisons(data);
+      console.log('Raw comparison data from DB:', data);
+      const transformedData = transformCheckoutComparisons(data || []);
+      console.log('Transformed comparison data:', transformedData);
+      
+      return transformedData;
     } catch (error) {
       console.error('Error in getCheckoutComparisons:', error);
       throw error;
@@ -37,14 +43,21 @@ export const CheckoutComparisonAPI = {
     try {
       console.log('Initializing checkout comparisons:', { checkoutReportId, checkinReportId, componentsCount: components.length });
       
+      if (components.length === 0) {
+        console.warn('No components found to initialize comparisons');
+        return;
+      }
+      
       const comparisons = components.map(component => ({
         checkout_report_id: checkoutReportId,
         checkin_report_id: checkinReportId,
-        room_id: component.roomId || '',
+        room_id: component.roomId || component.roomName || 'unknown',
         component_id: component.id,
         component_name: component.name,
-        status: 'pending' as const
+        status: 'pending'
       }));
+
+      console.log('Inserting comparisons:', comparisons);
 
       const { error } = await supabase
         .from('checkout_comparisons')

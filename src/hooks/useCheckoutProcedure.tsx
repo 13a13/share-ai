@@ -79,14 +79,18 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
         checkinReport.id
       );
 
+      console.log('Components found for initialization:', components);
+
       // Load the created comparison records
       const comparisonData = await CheckoutComparisonAPI.getCheckoutComparisons(checkoutReport.id);
+      console.log('Loaded comparison data:', comparisonData);
+      
       setComparisons(comparisonData);
       setCurrentStep(3);
       
       toast({
         title: "Components Initialized",
-        description: `Setup complete! ${components.length} components ready for comparison.`,
+        description: `Setup complete! ${comparisonData.length} components ready for comparison.`,
       });
       
       console.log('Component comparisons initialized:', comparisonData.length);
@@ -137,6 +141,6 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
     createBasicCheckout,
     initializeComparisons,
     completeCheckout,
-    setComparisons // Export this so components can update comparisons
+    setComparisons
   };
 };

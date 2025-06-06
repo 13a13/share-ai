@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,7 @@ const CheckoutPage = () => {
         }
 
         console.log('Fetched report:', report);
+        console.log('Report rooms:', report.rooms);
         setCheckinReport(report);
       } catch (error) {
         console.error('Error fetching report:', error);
@@ -93,6 +95,15 @@ const CheckoutPage = () => {
   const getTotalAssessments = () => {
     return comparisons.length;
   };
+
+  // Debug log for current state
+  console.log('CheckoutPage state:', {
+    currentStep,
+    checkoutReport,
+    comparisons: comparisons.length,
+    isLoadingComparisons,
+    checkinReport: checkinReport?.id
+  });
 
   if (isLoading) {
     return (
@@ -312,7 +323,7 @@ const CheckoutPage = () => {
         )}
 
         {/* Step 3: Component Assessment */}
-        {currentStep === 3 && (
+        {currentStep === 3 && checkoutReport && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -332,7 +343,12 @@ const CheckoutPage = () => {
                   You can mark items as "No Changes" or document any changes found with photos and descriptions.
                 </p>
                 
-                {comparisons.length > 0 ? (
+                {isLoadingComparisons ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading components for assessment...</p>
+                  </div>
+                ) : comparisons.length > 0 ? (
                   <CheckoutRoomAssessment
                     checkoutReportId={checkoutReport.id}
                     comparisons={comparisons}
@@ -340,8 +356,11 @@ const CheckoutPage = () => {
                   />
                 ) : (
                   <div className="text-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600">Loading components for assessment...</p>
+                    <AlertTriangle className="h-8 w-8 text-orange-500 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-4">No components found for assessment.</p>
+                    <p className="text-sm text-gray-500">
+                      This might happen if the check-in report doesn't have any components recorded.
+                    </p>
                   </div>
                 )}
               </div>
