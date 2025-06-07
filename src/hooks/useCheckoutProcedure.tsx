@@ -31,7 +31,12 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
       return;
     }
 
-    console.log('Creating basic checkout...');
+    console.log('Creating basic checkout...', {
+      checkinReportId: checkinReport.id,
+      checkinReport: checkinReport,
+      checkoutData
+    });
+    
     setIsCreatingCheckout(true);
     
     try {
@@ -68,7 +73,20 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
    * Phase 3: Initialize component comparisons
    */
   const initializeComparisons = async () => {
-    if (!checkoutReport || !checkinReport) return;
+    if (!checkoutReport || !checkinReport) {
+      console.error('Missing required data for initialization:', { checkoutReport, checkinReport });
+      return;
+    }
+
+    console.log('Starting component initialization...', {
+      checkoutReportId: checkoutReport.id,
+      checkinReportId: checkinReport.id,
+      checkinReportStructure: {
+        id: checkinReport.id,
+        rooms: checkinReport.rooms?.length || 0,
+        roomsData: checkinReport.rooms
+      }
+    });
 
     setIsLoadingComparisons(true);
     try {
@@ -83,7 +101,7 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
 
       // Load the created comparison records
       const comparisonData = await CheckoutComparisonAPI.getCheckoutComparisons(checkoutReport.id);
-      console.log('Loaded comparison data:', comparisonData);
+      console.log('Loaded comparison data from database:', comparisonData);
       
       setComparisons(comparisonData);
       setCurrentStep(3);
@@ -93,7 +111,10 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
         description: `Setup complete! ${comparisonData.length} components ready for comparison.`,
       });
       
-      console.log('Component comparisons initialized:', comparisonData.length);
+      console.log('Component comparisons initialized successfully:', {
+        componentsFound: components.length,
+        comparisonsCreated: comparisonData.length
+      });
     } catch (error) {
       console.error('Error initializing comparisons:', error);
       toast({

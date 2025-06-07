@@ -79,28 +79,71 @@ export const CheckoutReportAPI = {
         throw fetchError;
       }
 
-      // Extract components from the check-in report
+      console.log('Raw check-in report data:', checkinReport);
+
+      // Extract components from the check-in report with improved logic
       const reportInfo = checkinReport.report_info as any;
-      const rooms = reportInfo?.rooms || [];
+      console.log('Report info structure:', reportInfo);
+      
       const allComponents: any[] = [];
 
-      rooms.forEach((room: any) => {
-        if (room.components) {
-          room.components.forEach((component: any) => {
-            allComponents.push({
-              id: component.id,
-              name: component.name,
-              roomId: room.id,
-              roomName: room.name,
-              condition: component.condition,
-              images: component.images || [],
-              notes: component.notes || ''
-            });
+      // Handle different possible data structures
+      if (reportInfo) {
+        // Check if there's a rooms array directly in reportInfo
+        if (reportInfo.rooms && Array.isArray(reportInfo.rooms)) {
+          console.log('Found rooms array with length:', reportInfo.rooms.length);
+          reportInfo.rooms.forEach((room: any, roomIndex: number) => {
+            console.log(`Processing room ${roomIndex}:`, room);
+            
+            if (room.components && Array.isArray(room.components)) {
+              console.log(`Room ${room.name || room.id || roomIndex} has ${room.components.length} components`);
+              
+              room.components.forEach((component: any) => {
+                const componentData = {
+                  id: component.id || `${room.id || roomIndex}-${component.name}`,
+                  name: component.name || 'Unknown Component',
+                  roomId: room.id || `room-${roomIndex}`,
+                  roomName: room.name || room.type || `Room ${roomIndex + 1}`,
+                  condition: component.condition || 'unknown',
+                  images: component.images || [],
+                  notes: component.notes || component.description || '',
+                  description: component.description || '',
+                  conditionSummary: component.conditionSummary || ''
+                };
+                
+                console.log('Adding component:', componentData);
+                allComponents.push(componentData);
+              });
+            } else {
+              console.log(`Room ${room.name || roomIndex} has no components or components is not an array`);
+            }
           });
         }
-      });
+        
+        // Also check for components at the top level (in case the structure is different)
+        if (reportInfo.components && Array.isArray(reportInfo.components)) {
+          console.log('Found top-level components array with length:', reportInfo.components.length);
+          reportInfo.components.forEach((component: any) => {
+            const componentData = {
+              id: component.id || component.name,
+              name: component.name || 'Unknown Component',
+              roomId: component.roomId || 'general',
+              roomName: component.roomName || 'General',
+              condition: component.condition || 'unknown',
+              images: component.images || [],
+              notes: component.notes || component.description || '',
+              description: component.description || '',
+              conditionSummary: component.conditionSummary || ''
+            };
+            
+            console.log('Adding top-level component:', componentData);
+            allComponents.push(componentData);
+          });
+        }
+      }
 
-      console.log('Found components for comparison:', allComponents.length);
+      console.log('Total components found for comparison:', allComponents.length);
+      console.log('All components:', allComponents);
 
       // Initialize comparison records for all components
       if (allComponents.length > 0) {
@@ -109,6 +152,22 @@ export const CheckoutReportAPI = {
           checkinReportId,
           allComponents
         );
+      } else {
+        console.warn('No components found in check-in report for initialization');
+        // Let's try a different approach - fetch from the database directly
+        console.log('Attempting alternative component extraction...');
+        
+        // Try to get components from the property/room structure if available
+        const { data: roomData, error: roomError } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('id', checkinReport.room_id || 'unknown')
+          .single();
+          
+        if (roomData && !roomError) {
+          console.log('Found room data:', roomData);
+          // You could add logic here to extract components from room data if needed
+        }
       }
 
       return allComponents;
