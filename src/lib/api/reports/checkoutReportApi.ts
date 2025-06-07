@@ -88,56 +88,79 @@ export const CheckoutReportAPI = {
       const allComponents: any[] = [];
 
       // Handle different possible data structures
-      if (reportInfo) {
-        // Check if there's a rooms array directly in reportInfo
-        if (reportInfo.rooms && Array.isArray(reportInfo.rooms)) {
-          console.log('Found rooms array with length:', reportInfo.rooms.length);
-          reportInfo.rooms.forEach((room: any, roomIndex: number) => {
-            console.log(`Processing room ${roomIndex}:`, room);
-            
-            if (room.components && Array.isArray(room.components)) {
-              console.log(`Room ${room.name || room.id || roomIndex} has ${room.components.length} components`);
-              
-              room.components.forEach((component: any) => {
-                const componentData = {
-                  id: component.id || `${room.id || roomIndex}-${component.name}`,
-                  name: component.name || 'Unknown Component',
-                  roomId: room.id || `room-${roomIndex}`,
-                  roomName: room.name || room.type || `Room ${roomIndex + 1}`,
-                  condition: component.condition || 'unknown',
-                  images: component.images || [],
-                  notes: component.notes || component.description || '',
-                  description: component.description || '',
-                  conditionSummary: component.conditionSummary || ''
-                };
-                
-                console.log('Adding component:', componentData);
-                allComponents.push(componentData);
-              });
-            } else {
-              console.log(`Room ${room.name || roomIndex} has no components or components is not an array`);
-            }
-          });
-        }
+      if (reportInfo && reportInfo.rooms && Array.isArray(reportInfo.rooms)) {
+        console.log('Found rooms array with length:', reportInfo.rooms.length);
         
-        // Also check for components at the top level (in case the structure is different)
-        if (reportInfo.components && Array.isArray(reportInfo.components)) {
-          console.log('Found top-level components array with length:', reportInfo.components.length);
-          reportInfo.components.forEach((component: any) => {
-            const componentData = {
-              id: component.id || component.name,
-              name: component.name || 'Unknown Component',
-              roomId: component.roomId || 'general',
-              roomName: component.roomName || 'General',
-              condition: component.condition || 'unknown',
-              images: component.images || [],
-              notes: component.notes || component.description || '',
-              description: component.description || '',
-              conditionSummary: component.conditionSummary || ''
-            };
+        reportInfo.rooms.forEach((room: any, roomIndex: number) => {
+          console.log(`Processing room ${roomIndex}:`, room);
+          
+          if (room.components && Array.isArray(room.components)) {
+            console.log(`Room ${room.name || room.id || roomIndex} has ${room.components.length} components`);
             
-            console.log('Adding top-level component:', componentData);
-            allComponents.push(componentData);
+            room.components.forEach((component: any, componentIndex: number) => {
+              const componentData = {
+                id: component.id || `${room.id || roomIndex}-${component.name || componentIndex}`,
+                name: component.name || `Component ${componentIndex + 1}`,
+                roomId: room.id || `room-${roomIndex}`,
+                roomName: room.name || room.type || `Room ${roomIndex + 1}`,
+                condition: component.condition || 'unknown',
+                images: component.images || [],
+                notes: component.notes || component.description || '',
+                description: component.description || '',
+                conditionSummary: component.conditionSummary || ''
+              };
+              
+              console.log('Adding component:', componentData);
+              allComponents.push(componentData);
+            });
+          } else {
+            console.log(`Room ${room.name || roomIndex} has no components or components is not an array`);
+          }
+        });
+      } else {
+        console.log('No rooms array found or reportInfo is invalid');
+        
+        // Try to extract components from different possible structures
+        if (reportInfo) {
+          // Check for a flat components array at the top level
+          if (reportInfo.components && Array.isArray(reportInfo.components)) {
+            console.log('Found top-level components array');
+            reportInfo.components.forEach((component: any, index: number) => {
+              allComponents.push({
+                id: component.id || `component-${index}`,
+                name: component.name || `Component ${index + 1}`,
+                roomId: 'general',
+                roomName: 'General',
+                condition: component.condition || 'unknown',
+                images: component.images || [],
+                notes: component.notes || component.description || '',
+                description: component.description || '',
+                conditionSummary: component.conditionSummary || ''
+              });
+            });
+          }
+          
+          // Check for other possible structures (room-level data)
+          Object.keys(reportInfo).forEach(key => {
+            if (key !== 'rooms' && key !== 'components' && typeof reportInfo[key] === 'object' && reportInfo[key] !== null) {
+              const roomData = reportInfo[key];
+              if (roomData.components && Array.isArray(roomData.components)) {
+                console.log(`Found components in ${key}:`, roomData.components.length);
+                roomData.components.forEach((component: any, index: number) => {
+                  allComponents.push({
+                    id: component.id || `${key}-${index}`,
+                    name: component.name || `Component ${index + 1}`,
+                    roomId: key,
+                    roomName: roomData.name || key,
+                    condition: component.condition || 'unknown',
+                    images: component.images || [],
+                    notes: component.notes || component.description || '',
+                    description: component.description || '',
+                    conditionSummary: component.conditionSummary || ''
+                  });
+                });
+              }
+            }
           });
         }
       }
@@ -154,20 +177,27 @@ export const CheckoutReportAPI = {
         );
       } else {
         console.warn('No components found in check-in report for initialization');
-        // Let's try a different approach - fetch from the database directly
-        console.log('Attempting alternative component extraction...');
         
-        // Try to get components from the property/room structure if available
-        const { data: roomData, error: roomError } = await supabase
-          .from('rooms')
-          .select('*')
-          .eq('id', checkinReport.room_id || 'unknown')
-          .single();
-          
-        if (roomData && !roomError) {
-          console.log('Found room data:', roomData);
-          // You could add logic here to extract components from room data if needed
-        }
+        // Create a fallback component if none found
+        const fallbackComponent = {
+          id: 'general-inspection',
+          name: 'General Property Condition',
+          roomId: 'general',
+          roomName: 'General',
+          condition: 'unknown',
+          images: [],
+          notes: 'No specific components found in check-in report',
+          description: 'General property assessment',
+          conditionSummary: 'Review overall property condition'
+        };
+        
+        await CheckoutComparisonAPI.initializeCheckoutComparisons(
+          checkoutReportId,
+          checkinReportId,
+          [fallbackComponent]
+        );
+        
+        allComponents.push(fallbackComponent);
       }
 
       return allComponents;

@@ -1,10 +1,9 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, Camera, AlertTriangle, Loader2 } from 'lucide-react';
+import { CheckCircle, Camera, AlertTriangle, Loader2, Eye, EyeOff, Plus } from 'lucide-react';
 import { CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
 import { CheckoutComparisonAPI } from '@/lib/api/reports/checkoutComparisonApi';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,6 +23,7 @@ const CheckoutRoomAssessment = ({
   const { toast } = useToast();
   const [expandedComponent, setExpandedComponent] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
+  const [changeDescriptions, setChangeDescriptions] = useState<Record<string, string>>({});
 
   // Group comparisons by room
   const roomGroups = comparisons.reduce((groups, comparison) => {
@@ -55,8 +55,13 @@ const CheckoutRoomAssessment = ({
         onComparisonUpdate(updatedComparison);
         toast({
           title: "Assessment Updated",
-          description: `Component marked as ${status}`,
+          description: `Component marked as ${status === 'unchanged' ? 'no changes' : 'changed'}`,
         });
+        
+        // Collapse the component if marked as unchanged
+        if (status === 'unchanged') {
+          setExpandedComponent(null);
+        }
       }
     } catch (error) {
       console.error('Error updating comparison:', error);
@@ -67,6 +72,17 @@ const CheckoutRoomAssessment = ({
       });
     } finally {
       setIsUpdating(prev => ({ ...prev, [comparisonId]: false }));
+    }
+  };
+
+  const handleDescriptionChange = (comparisonId: string, description: string) => {
+    setChangeDescriptions(prev => ({ ...prev, [comparisonId]: description }));
+  };
+
+  const saveDescription = async (comparisonId: string) => {
+    const description = changeDescriptions[comparisonId];
+    if (description && description.trim()) {
+      await handleStatusChange(comparisonId, 'changed', description.trim());
     }
   };
 
@@ -109,97 +125,165 @@ const CheckoutRoomAssessment = ({
     }
   };
 
+  const toggleExpanded = (comparisonId: string) => {
+    setExpandedComponent(expandedComponent === comparisonId ? null : comparisonId);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'unchanged': return 'bg-green-500';
+      case 'changed': return 'bg-orange-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'unchanged': return <CheckCircle className="h-4 w-4" />;
+      case 'changed': return <AlertTriangle className="h-4 w-4" />;
+      default: return <Eye className="h-4 w-4" />;
+    }
+  };
+
+  if (comparisons.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <AlertTriangle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No Components Found</h3>
+        <p className="text-gray-600 mb-4">
+          No components were found in the check-in report for assessment.
+        </p>
+        <p className="text-sm text-gray-500">
+          This might happen if the check-in report doesn't have any components recorded,
+          or if there was an issue extracting the component data.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="text-sm text-gray-600 mb-4">
-        Assess each component to determine if there are any changes since check-in. 
-        Mark items as "No Changes" or add photos and descriptions for any changes found.
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h3 className="font-semibold text-blue-800 mb-2">Assessment Instructions</h3>
+        <ul className="text-sm text-blue-700 space-y-1">
+          <li>• Click on each component to expand and assess its condition</li>
+          <li>• Mark as "No Changes" if the component looks the same as check-in</li>
+          <li>• Mark as "Changes Found" if you notice any differences</li>
+          <li>• Take photos and add descriptions for any changes</li>
+        </ul>
       </div>
 
       {Object.entries(roomGroups).map(([roomId, roomComparisons]) => (
         <Card key={roomId} className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">
-              Room: {roomId}
-              <Badge className="ml-2 bg-blue-500">
-                {roomComparisons.length} components
-              </Badge>
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span>Room: {roomId}</span>
+              <div className="flex gap-2">
+                <Badge className="bg-blue-500">
+                  {roomComparisons.length} components
+                </Badge>
+                <Badge className={`${getStatusColor('pending')}`}>
+                  {roomComparisons.filter(c => c.status !== 'pending').length} assessed
+                </Badge>
+              </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             {roomComparisons.map((comparison) => (
-              <Card key={comparison.id} className="border border-gray-200">
+              <Card key={comparison.id} className="border border-gray-200 transition-all hover:border-blue-300">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{comparison.component_name}</h4>
-                      <Badge 
-                        className={
-                          comparison.status === 'unchanged' ? 'bg-green-500' :
-                          comparison.status === 'changed' ? 'bg-orange-500' :
-                          'bg-gray-500'
-                        }
-                      >
-                        {comparison.status}
-                      </Badge>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${getStatusColor(comparison.status)}`}>
+                        {getStatusIcon(comparison.status)}
+                      </div>
+                      <div>
+                        <h4 className="font-medium">{comparison.component_name}</h4>
+                        <p className="text-sm text-gray-500">
+                          Status: {comparison.status === 'pending' ? 'Awaiting Assessment' : 
+                                   comparison.status === 'unchanged' ? 'No Changes' : 'Changes Found'}
+                        </p>
+                      </div>
                     </div>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => setExpandedComponent(
-                        expandedComponent === comparison.id ? null : comparison.id
-                      )}
+                      onClick={() => toggleExpanded(comparison.id)}
+                      disabled={isUpdating[comparison.id]}
                     >
-                      {expandedComponent === comparison.id ? 'Collapse' : 'Assess'}
+                      {expandedComponent === comparison.id ? (
+                        <>
+                          <EyeOff className="h-4 w-4 mr-1" />
+                          Collapse
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Assess
+                        </>
+                      )}
                     </Button>
                   </div>
                 </CardHeader>
 
                 {expandedComponent === comparison.id && (
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Button
-                        onClick={() => handleStatusChange(comparison.id, 'unchanged')}
-                        disabled={isUpdating[comparison.id]}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        {isUpdating[comparison.id] ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                        )}
-                        No Changes
-                      </Button>
-                      
-                      <Button
-                        onClick={() => setExpandedComponent(comparison.id)}
-                        variant="outline"
-                        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Found Changes
-                      </Button>
-                    </div>
+                  <CardContent className="space-y-4 border-t">
+                    {comparison.status === 'pending' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <Button
+                          onClick={() => handleStatusChange(comparison.id, 'unchanged')}
+                          disabled={isUpdating[comparison.id]}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          {isUpdating[comparison.id] ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                          )}
+                          No Changes
+                        </Button>
+                        
+                        <Button
+                          onClick={() => {
+                            // Auto-expand the changes section
+                            setExpandedComponent(comparison.id);
+                          }}
+                          variant="outline"
+                          className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+                        >
+                          <AlertTriangle className="h-4 w-4 mr-2" />
+                          Found Changes
+                        </Button>
+                      </div>
+                    )}
 
-                    {comparison.status === 'changed' && (
+                    {(comparison.status === 'changed' || comparison.status === 'pending') && (
                       <div className="space-y-4 p-4 bg-orange-50 rounded-lg">
                         <div>
                           <label className="block text-sm font-medium mb-2">
                             Description of Changes
                           </label>
                           <Textarea
-                            value={comparison.change_description || ''}
-                            onChange={(e) => {
-                              // Update local state and save to backend
-                              handleStatusChange(
-                                comparison.id, 
-                                'changed', 
-                                e.target.value
-                              );
-                            }}
+                            value={changeDescriptions[comparison.id] || comparison.change_description || ''}
+                            onChange={(e) => handleDescriptionChange(comparison.id, e.target.value)}
                             placeholder="Describe what has changed since check-in..."
                             className="min-h-[80px]"
                           />
+                          {changeDescriptions[comparison.id] && (
+                            <Button
+                              size="sm"
+                              className="mt-2"
+                              onClick={() => saveDescription(comparison.id)}
+                              disabled={isUpdating[comparison.id]}
+                            >
+                              {isUpdating[comparison.id] ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Plus className="h-4 w-4 mr-2" />
+                              )}
+                              Save Description
+                            </Button>
+                          )}
                         </div>
 
                         <div>
@@ -229,6 +313,18 @@ const CheckoutRoomAssessment = ({
                             }}
                           />
                         </div>
+                      </div>
+                    )}
+
+                    {comparison.status === 'unchanged' && (
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <div className="flex items-center gap-2 text-green-800">
+                          <CheckCircle className="h-5 w-5" />
+                          <span className="font-medium">No Changes Detected</span>
+                        </div>
+                        <p className="text-sm text-green-700 mt-1">
+                          This component appears to be in the same condition as during check-in.
+                        </p>
                       </div>
                     )}
                   </CardContent>

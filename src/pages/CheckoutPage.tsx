@@ -10,6 +10,7 @@ import { ReportsAPI } from '@/lib/api';
 import { useCheckoutProcedure } from '@/hooks/useCheckoutProcedure';
 import CheckoutProcedureDialog from '@/components/checkout/CheckoutProcedureDialog';
 import CheckoutRoomAssessment from '@/components/checkout/CheckoutRoomAssessment';
+import ComponentProcessingStatus from '@/components/checkout/ComponentProcessingStatus';
 import { Report } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
@@ -90,6 +91,18 @@ const CheckoutPage = () => {
 
   const getCompletedAssessments = () => {
     return comparisons.filter(comp => comp.status !== 'pending').length;
+  };
+
+  const getUnchangedAssessments = () => {
+    return comparisons.filter(comp => comp.status === 'unchanged').length;
+  };
+
+  const getChangedAssessments = () => {
+    return comparisons.filter(comp => comp.status === 'changed').length;
+  };
+
+  const getPendingAssessments = () => {
+    return comparisons.filter(comp => comp.status === 'pending').length;
   };
 
   const getTotalAssessments = () => {
@@ -349,11 +362,21 @@ const CheckoutPage = () => {
                     <p className="text-gray-600">Loading components for assessment...</p>
                   </div>
                 ) : comparisons.length > 0 ? (
-                  <CheckoutRoomAssessment
-                    checkoutReportId={checkoutReport.id}
-                    comparisons={comparisons}
-                    onComparisonUpdate={handleComparisonUpdate}
-                  />
+                  <>
+                    <ComponentProcessingStatus
+                      totalComponents={getTotalAssessments()}
+                      pendingComponents={getPendingAssessments()}
+                      unchangedComponents={getUnchangedAssessments()}
+                      changedComponents={getChangedAssessments()}
+                      isProcessing={Object.values(comparisons).some(comp => comp.status === 'pending')}
+                    />
+                    
+                    <CheckoutRoomAssessment
+                      checkoutReportId={checkoutReport.id}
+                      comparisons={comparisons}
+                      onComparisonUpdate={handleComparisonUpdate}
+                    />
+                  </>
                 ) : (
                   <div className="text-center py-8">
                     <AlertTriangle className="h-8 w-8 text-orange-500 mx-auto mb-4" />
