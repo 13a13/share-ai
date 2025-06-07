@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,19 @@ const CheckoutRoomAssessment = ({
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
   const [changeDescriptions, setChangeDescriptions] = useState<Record<string, string>>({});
 
+  // Helper function to get display name for rooms
+  const getRoomDisplayName = (roomId: string, comparison: CheckoutComparison): string => {
+    if (roomId === 'general') return 'General Assessment';
+    
+    // Try to extract room name from component data
+    if (comparison.ai_analysis?.roomName) {
+      return comparison.ai_analysis.roomName;
+    }
+    
+    // Fallback to formatted room ID
+    return roomId.charAt(0).toUpperCase() + roomId.slice(1).replace(/[-_]/g, ' ');
+  };
+
   // Enhanced room grouping with better room name handling
   const roomGroups = comparisons.reduce((groups, comparison) => {
     const roomKey = comparison.room_id || 'general';
@@ -41,19 +53,6 @@ const CheckoutRoomAssessment = ({
     groups[roomKey].components.push(comparison);
     return groups;
   }, {} as Record<string, { name: string; components: CheckoutComparison[] }>);
-
-  // Helper function to get display name for rooms
-  const getRoomDisplayName = (roomId: string, comparison: CheckoutComparison): string => {
-    if (roomId === 'general') return 'General Assessment';
-    
-    // Try to extract room name from component data
-    if (comparison.ai_analysis?.roomName) {
-      return comparison.ai_analysis.roomName;
-    }
-    
-    // Fallback to formatted room ID
-    return roomId.charAt(0).toUpperCase() + roomId.slice(1).replace(/[-_]/g, ' ');
-  };
 
   const handleStatusChange = async (
     comparisonId: string, 
