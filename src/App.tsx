@@ -35,6 +35,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Root route - shows landing page or redirects based on auth */}
+            <Route path="/" element={<Index />} />
+            
             {/* Public routes */}
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
@@ -42,7 +45,6 @@ const App = () => (
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             {/* Protected routes */}
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             

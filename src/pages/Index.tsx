@@ -2,10 +2,11 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import LandingPage from "./LandingPage";
 
 /**
- * Index page that redirects to Dashboard if authenticated or Login if not
- * This is a placeholder that shouldn't be visible since we now redirect at the router level
+ * Index page that shows the landing page for unauthenticated users 
+ * or redirects to Dashboard if authenticated
  */
 const Index = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -22,8 +23,13 @@ const Index = () => {
     );
   }
 
-  // Redirect to the appropriate page based on auth state
-  return <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />;
+  // If authenticated, redirect to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If not authenticated, show the landing page
+  return <LandingPage />;
 };
 
 export default Index;
