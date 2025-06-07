@@ -67,10 +67,10 @@ export const CheckoutReportAPI = {
     try {
       console.log('Initializing component comparisons for checkout:', checkoutReportId);
       
-      // Fetch the check-in report to get all components
+      // Fetch the check-in report to get all components and room_id
       const { data: checkinReport, error: fetchError } = await supabase
         .from('inspections')
-        .select('report_info')
+        .select('room_id, report_info')
         .eq('id', checkinReportId)
         .single();
 
