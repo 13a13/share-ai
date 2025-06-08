@@ -1,74 +1,56 @@
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { Index } from './pages';
+import { LoginPage } from './pages/Login';
+import { RegisterPage } from './pages/Register';
+import { AuthCallbackPage } from './pages/AuthCallback';
+import { Dashboard } from './pages/Dashboard';
+import { ProfilePage } from './pages/Profile';
+import { PropertiesPage } from './pages/Properties';
+import { PropertyCreationPage } from './pages/PropertyCreation';
+import { PropertyDetailsPage } from './pages/PropertyDetails';
+import { ReportsPage } from './pages/Reports';
+import { ReportCreationPage } from './pages/ReportCreation';
+import { ReportEditPage } from './pages/ReportEdit';
+import { ReportViewPage } from './pages/ReportView';
+import { CheckoutPage } from './pages/Checkout';
+import { NotFound } from './pages/NotFound';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import ImageDiagnosticPage from "./pages/ImageDiagnosticPage";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-
-// Import all pages
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import LandingPage from "./pages/LandingPage";
-import NotFound from "./pages/NotFound";
-import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import AuthCallbackPage from "./pages/auth/AuthCallbackPage";
-import ProfilePage from "./pages/ProfilePage";
-import PropertiesPage from "./pages/PropertiesPage";
-import PropertyCreationPage from "./pages/PropertyCreationPage";
-import PropertyDetailsPage from "./pages/PropertyDetailsPage";
-import ReportsPage from "./pages/ReportsPage";
-import ReportCreationPage from "./pages/ReportCreationPage";
-import ReportEditPage from "./pages/ReportEditPage";
-import ReportViewPage from "./pages/ReportViewPage";
-import CheckoutPage from "./pages/CheckoutPage";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
+function App() {
+  return (
+    <Router>
+      <div className="min-h-screen bg-background text-foreground">
         <Toaster />
-        <Sonner />
-        <BrowserRouter>
+        <Header />
+        <main className="flex-1">
           <Routes>
-            {/* Root route - shows landing page or redirects based on auth */}
             <Route path="/" element={<Index />} />
-            
-            {/* Public routes */}
-            <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
-
-            {/* Protected routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            
-            {/* Properties routes */}
             <Route path="/properties" element={<ProtectedRoute><PropertiesPage /></ProtectedRoute>} />
             <Route path="/properties/new" element={<ProtectedRoute><PropertyCreationPage /></ProtectedRoute>} />
-            <Route path="/properties/:propertyId" element={<ProtectedRoute><PropertyDetailsPage /></ProtectedRoute>} />
-            
-            {/* Reports routes */}
+            <Route path="/properties/:id" element={<ProtectedRoute><PropertyDetailsPage /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
             <Route path="/reports/new" element={<ProtectedRoute><ReportCreationPage /></ProtectedRoute>} />
-            <Route path="/reports/new/:propertyId" element={<ProtectedRoute><ReportCreationPage /></ProtectedRoute>} />
-            <Route path="/reports/:reportId/edit" element={<ProtectedRoute><ReportEditPage /></ProtectedRoute>} />
-            <Route path="/reports/:reportId/view" element={<ProtectedRoute><ReportViewPage /></ProtectedRoute>} />
-            <Route path="/reports/:reportId" element={<ProtectedRoute><ReportViewPage /></ProtectedRoute>} />
-            <Route path="/reports/:reportId/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-
-            {/* Catch all */}
+            <Route path="/reports/:id" element={<ProtectedRoute><ReportEditPage /></ProtectedRoute>} />
+            <Route path="/reports/:id/view" element={<ProtectedRoute><ReportViewPage /></ProtectedRoute>} />
+            <Route path="/checkout/:id" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+            <Route path="/image-diagnostic" element={<ProtectedRoute><ImageDiagnosticPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+        </main>
+        <Footer />
+      </div>
+    </Router>
+  );
+}
 
 export default App;
