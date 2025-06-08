@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -48,14 +47,18 @@ export const usePDFGeneration = () => {
         format: "a4",
       });
       
-      // Set up document metadata
+      // Set up document metadata with updated title
+      const reportTitle = report.type === "comparison" 
+        ? `Property Comparison - ${property.address}` 
+        : `VerifyVision Inspection Report - ${property.address}`;
+      
       doc.setProperties({
-        title: `Property Report - ${property.address}`,
+        title: reportTitle,
         subject: report.type === "comparison" 
           ? `Comparison Report for ${property.address}` 
-          : `Inventory and Check In Report for ${property.address}`,
-        author: report.reportInfo?.clerk || "Share.AI",
-        creator: "Share.AI Property Reports"
+          : `VerifyVision Inspection Report for ${property.address}`,
+        author: report.reportInfo?.clerk || "VerifyVision",
+        creator: "VerifyVision AI Property Reports"
       });
       
       // Preload all images to avoid async issues
@@ -76,7 +79,7 @@ export const usePDFGeneration = () => {
       // Track page numbers for table of contents
       const pageMap: Record<string, number> = {};
       let currentPage = 2; // Cover is page 1
-
+      
       // Special handling for comparison report
       if (report.type === "comparison" && report.reportInfo?.comparisonText) {
         console.log("=== Generating comparison report sections ===");
