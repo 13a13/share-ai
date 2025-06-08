@@ -3,10 +3,11 @@ import { BaseReportsAPI } from './baseReportsApi';
 import { RoomOperationsAPI } from './roomOperationsApi';
 import { ReportUpdateAPI } from './reportUpdateApi';
 import { BatchReportsAPI } from './batchOperationsApi';
+import { OptimizedDashboardAPI } from './optimizedDashboardApi';
 import { Report, Room, RoomType, RoomImage } from '@/types';
 
 /**
- * Combined ReportsAPI with all functionality including batch operations
+ * Combined ReportsAPI with all functionality including optimized operations
  */
 export const ReportsAPI = {
   /**
@@ -37,5 +38,9 @@ export const ReportsAPI = {
    * Batch operations for performance
    */
   updateBatch: BatchReportsAPI.updateReportBatch,
-  getDashboardReports: BatchReportsAPI.getDashboardReports
+  
+  /**
+   * Optimized dashboard operations
+   */
+  getDashboardReports: OptimizedDashboardAPI.getDashboardData
 };

@@ -6,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Room, RoomSection, RoomComponent } from "@/types";
-import { BookCheck } from "lucide-react";
+import { BookCheck, Save, Clock } from "lucide-react";
 import RoomSectionEditor from "@/components/RoomSectionEditor";
 import RoomComponentInspection from "@/components/RoomComponentInspection";
 import RoomImageUploader from "@/components/RoomImageUploader";
 import { useState } from "react";
+import { useOptimizedBatchSaving } from "@/hooks/useOptimizedBatchSaving";
 
 interface RoomDetailsProps {
   reportId: string;
@@ -36,6 +37,7 @@ const RoomDetails = ({
   onImageProcessed
 }: RoomDetailsProps) => {
   const [activeTab, setActiveTab] = useState("details");
+  const { forceSave, isSaving, getPendingCount } = useOptimizedBatchSaving();
 
   if (!room) {
     return (
@@ -69,11 +71,35 @@ const RoomDetails = ({
     onUpdateComponents(room.id, updatedComponents);
   };
 
+  const handleForceSave = async () => {
+    await forceSave(reportId);
+  };
+
+  const pendingCount = getPendingCount();
+
   return (
     <Card className="transition-none" data-report-id={reportId} data-room-id={room.id}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
           <CardTitle className="text-xl">{room.name}</CardTitle>
+          {pendingCount > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {pendingCount} pending
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleForceSave}
+                disabled={isSaving}
+                className="flex items-center gap-1"
+              >
+                <Save className="h-3 w-3" />
+                {isSaving ? "Saving..." : "Save Now"}
+              </Button>
+            </div>
+          )}
         </div>
         <div className="mt-2">
           <div className="flex justify-between items-center mb-1">

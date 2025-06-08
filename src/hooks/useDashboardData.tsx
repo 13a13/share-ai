@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { PropertiesAPI, ReportsAPI } from "@/lib/api";
+import { OptimizedDashboardAPI } from "@/lib/api/reports/optimizedDashboardApi";
 import { Property, Report } from "@/types";
 
 interface DashboardData {
@@ -24,18 +24,15 @@ export const useDashboardData = (): DashboardData => {
       setIsLoading(true);
       setError(null);
       
-      // Fetch both properties and reports in parallel
-      const [propertiesData, reportsData] = await Promise.all([
-        PropertiesAPI.getAll(),
-        ReportsAPI.getAll()
-      ]);
+      console.log("Fetching optimized dashboard data...");
       
-      // Limit to recent items for dashboard
-      const recentProperties = propertiesData.slice(0, 3);
-      const recentReports = reportsData.slice(0, 3);
+      // Single optimized API call
+      const { properties: propertiesData, reports: reportsData } = await OptimizedDashboardAPI.getDashboardData();
       
-      setProperties(recentProperties);
-      setReports(recentReports);
+      console.log(`Loaded ${propertiesData.length} properties and ${reportsData.length} reports`);
+      
+      setProperties(propertiesData);
+      setReports(reportsData);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       const errorMessage = "Failed to load dashboard data. Please try again.";

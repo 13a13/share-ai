@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
 import { uploadReportImage } from "@/utils/supabaseStorage";
-import { useOptimizedImageSaving } from "./useOptimizedImageSaving";
+import { useOptimizedBatchSaving } from "./useOptimizedBatchSaving";
 
 interface UseImageAnalysisProps {
   componentId: string;
@@ -24,7 +24,7 @@ export function useImageAnalysis({
 }: UseImageAnalysisProps) {
   const { toast } = useToast();
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
-  const { saveComponentAnalysisBatch } = useOptimizedImageSaving();
+  const { queueComponentUpdate, isSaving, getPendingCount } = useOptimizedBatchSaving();
 
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
@@ -33,7 +33,7 @@ export function useImageAnalysis({
     setAnalysisInProgress(true);
     
     try {
-      // First, get reportId and roomId from the DOM
+      // Get reportId and roomId from the DOM
       const reportElement = document.querySelector('[data-report-id]');
       const roomElement = document.querySelector('[data-room-id]');
       
@@ -50,6 +50,8 @@ export function useImageAnalysis({
         throw new Error("Invalid report or room ID");
       }
       
+      console.log(`Processing ${stagingImages.length} images for component ${componentName}`);
+      
       // Upload all images to Supabase Storage in parallel
       const uploadPromises = stagingImages.map(imageUrl => 
         uploadReportImage(imageUrl, reportId, roomId)
@@ -59,25 +61,26 @@ export function useImageAnalysis({
       // Process stored images with AI
       const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
       
-      // Use batch saving for better performance
-      const saveSuccess = await saveComponentAnalysisBatch(reportId, [{
-        id: componentId,
-        images: storedImageUrls,
-        description: result.description || "",
-        condition: result.condition || { summary: "", points: [], rating: "fair" },
-        analysisData: result
-      }]);
+      // Queue the update for batch saving instead of saving immediately
+      queueComponentUpdate(
+        reportId,
+        componentId,
+        storedImageUrls,
+        result.description || "",
+        result.condition || { summary: "", points: [], rating: "fair" },
+        result
+      );
       
-      if (saveSuccess) {
-        onImagesProcessed(componentId, storedImageUrls, result);
-        
-        toast({
-          title: "Images processed successfully",
-          description: `AI has analyzed ${stagingImages.length} ${stagingImages.length === 1 ? 'image' : 'images'} for ${componentName}`,
-        });
-      }
+      // Update UI immediately
+      onImagesProcessed(componentId, storedImageUrls, result);
       
-      return saveSuccess;
+      const pendingCount = getPendingCount();
+      toast({
+        title: "Images processed successfully",
+        description: `AI analyzed ${stagingImages.length} image(s) for ${componentName}. ${pendingCount} update(s) queued for saving.`,
+      });
+      
+      return true;
     } catch (error) {
       console.error("Error processing images:", error);
       toast({
@@ -86,7 +89,7 @@ export function useImageAnalysis({
         variant: "destructive",
       });
       
-      // Even if AI fails, still add the images without AI data
+      // Even if AI fails, still upload the images without AI data
       try {
         const reportElement = document.querySelector('[data-report-id]');
         const roomElement = document.querySelector('[data-room-id]');
@@ -96,7 +99,6 @@ export function useImageAnalysis({
           const roomId = roomElement.getAttribute('data-room-id');
           
           if (reportId && roomId) {
-            // Upload images to Supabase Storage even if AI fails
             const uploadPromises = stagingImages.map(imageUrl => 
               uploadReportImage(imageUrl, reportId, roomId)
             );
@@ -126,7 +128,8 @@ export function useImageAnalysis({
   };
 
   return {
-    analysisInProgress,
-    processImages
+    analysisInProgress: analysisInProgress || isSaving,
+    processImages,
+    pendingUpdatesCount: getPendingCount()
   };
 }
