@@ -2,10 +2,11 @@
 import { BaseReportsAPI } from './baseReportsApi';
 import { RoomOperationsAPI } from './roomOperationsApi';
 import { ReportUpdateAPI } from './reportUpdateApi';
+import { BatchReportsAPI } from './batchOperationsApi';
 import { Report, Room, RoomType, RoomImage } from '@/types';
 
 /**
- * Combined ReportsAPI with all functionality
+ * Combined ReportsAPI with all functionality including batch operations
  */
 export const ReportsAPI = {
   /**
@@ -30,5 +31,11 @@ export const ReportsAPI = {
   update: ReportUpdateAPI.update,
   delete: ReportUpdateAPI.delete,
   duplicate: ReportUpdateAPI.duplicate,
-  updateComponentAnalysis: ReportUpdateAPI.updateComponentAnalysis
+  updateComponentAnalysis: ReportUpdateAPI.updateComponentAnalysis,
+  
+  /**
+   * Batch operations for performance
+   */
+  updateBatch: BatchReportsAPI.updateReportBatch,
+  getDashboardReports: BatchReportsAPI.getDashboardReports
 };

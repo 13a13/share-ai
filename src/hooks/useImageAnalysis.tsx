@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
 import { uploadReportImage } from "@/utils/supabaseStorage";
+import { useOptimizedImageSaving } from "./useOptimizedImageSaving";
 
 interface UseImageAnalysisProps {
   componentId: string;
@@ -23,6 +24,7 @@ export function useImageAnalysis({
 }: UseImageAnalysisProps) {
   const { toast } = useToast();
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
+  const { saveComponentAnalysisBatch } = useOptimizedImageSaving();
 
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
@@ -48,20 +50,34 @@ export function useImageAnalysis({
         throw new Error("Invalid report or room ID");
       }
       
-      // Upload all images to Supabase Storage
-      const storedImageUrls = await Promise.all(
-        stagingImages.map(imageUrl => uploadReportImage(imageUrl, reportId, roomId))
+      // Upload all images to Supabase Storage in parallel
+      const uploadPromises = stagingImages.map(imageUrl => 
+        uploadReportImage(imageUrl, reportId, roomId)
       );
+      const storedImageUrls = await Promise.all(uploadPromises);
       
       // Process stored images with AI
       const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
-      onImagesProcessed(componentId, storedImageUrls, result);
       
-      toast({
-        title: "Images processed successfully",
-        description: `AI has analyzed ${stagingImages.length} ${stagingImages.length === 1 ? 'image' : 'images'} for ${componentName}`,
-      });
-      return true;
+      // Use batch saving for better performance
+      const saveSuccess = await saveComponentAnalysisBatch(reportId, [{
+        id: componentId,
+        images: storedImageUrls,
+        description: result.description || "",
+        condition: result.condition || { summary: "", points: [], rating: "fair" },
+        analysisData: result
+      }]);
+      
+      if (saveSuccess) {
+        onImagesProcessed(componentId, storedImageUrls, result);
+        
+        toast({
+          title: "Images processed successfully",
+          description: `AI has analyzed ${stagingImages.length} ${stagingImages.length === 1 ? 'image' : 'images'} for ${componentName}`,
+        });
+      }
+      
+      return saveSuccess;
     } catch (error) {
       console.error("Error processing images:", error);
       toast({
@@ -81,9 +97,10 @@ export function useImageAnalysis({
           
           if (reportId && roomId) {
             // Upload images to Supabase Storage even if AI fails
-            const storedImageUrls = await Promise.all(
-              stagingImages.map(imageUrl => uploadReportImage(imageUrl, reportId, roomId))
+            const uploadPromises = stagingImages.map(imageUrl => 
+              uploadReportImage(imageUrl, reportId, roomId)
             );
+            const storedImageUrls = await Promise.all(uploadPromises);
             
             onImagesProcessed(componentId, storedImageUrls, {
               description: "",

@@ -1,15 +1,13 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building, FileText, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
-import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import PropertyCard from "@/components/PropertyCard";
 import ReportCard from "@/components/ReportCard";
-import { Property, Report } from "@/types";
 import { useMigration } from "@/hooks/useMigration";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 // Skeleton components for loading states
 const PropertyCardSkeleton = () => (
@@ -43,50 +41,19 @@ const ReportCardSkeleton = () => (
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
-  const [isLoadingReports, setIsLoadingReports] = useState(true);
-  const [propertiesError, setPropertiesError] = useState<string | null>(null);
-  const [reportsError, setReportsError] = useState<string | null>(null);
   const { isMigrating } = useMigration();
+  
+  // Use optimized dashboard data hook
+  const { 
+    properties, 
+    reports, 
+    isLoading: isLoadingData, 
+    error: dataError,
+    refetch 
+  } = useDashboardData();
 
-  useEffect(() => {
-    if (isMigrating) return;
-
-    // Fetch properties and reports in parallel
-    const fetchProperties = async () => {
-      try {
-        console.log("Fetching properties...");
-        const propertiesData = await PropertiesAPI.getAll();
-        setProperties(propertiesData.slice(0, 3)); // Show only 3 recent properties
-        setPropertiesError(null);
-      } catch (error) {
-        console.error("Error fetching properties:", error);
-        setPropertiesError("Failed to load properties");
-      } finally {
-        setIsLoadingProperties(false);
-      }
-    };
-
-    const fetchReports = async () => {
-      try {
-        console.log("Fetching reports...");
-        const reportsData = await ReportsAPI.getAll();
-        setReports(reportsData.slice(0, 3)); // Show only 3 recent reports
-        setReportsError(null);
-      } catch (error) {
-        console.error("Error fetching reports:", error);
-        setReportsError("Failed to load reports");
-      } finally {
-        setIsLoadingReports(false);
-      }
-    };
-
-    // Start both fetches immediately and in parallel
-    fetchProperties();
-    fetchReports();
-  }, [isMigrating]);
+  // Skip migration check for performance
+  const isLoading = isMigrating || isLoadingData;
 
   if (isMigrating) {
     return (
@@ -147,20 +114,23 @@ const Dashboard = () => {
               <CardDescription>Your latest property and report updates</CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoadingReports ? (
+              {isLoading ? (
                 <div className="space-y-2">
                   <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
                   <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
                   <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
                 </div>
-              ) : reportsError ? (
-                <p className="text-red-500 text-sm">{reportsError}</p>
+              ) : dataError ? (
+                <div className="text-center">
+                  <p className="text-red-500 text-sm mb-2">{dataError}</p>
+                  <Button size="sm" onClick={refetch}>Try Again</Button>
+                </div>
               ) : (
                 <div className="space-y-2 text-sm">
                   {reports.length > 0 ? (
                     reports.map((report) => (
                       <div key={report.id} className="flex justify-between items-center">
-                        <span>Report created for {report.property?.name || report.name || 'Property'}</span>
+                        <span>Report created for {report.propertyName || 'Property'}</span>
                         <span className="text-gray-500 text-xs">
                           {new Date(report.createdAt).toLocaleDateString()}
                         </span>
@@ -184,17 +154,17 @@ const Dashboard = () => {
             </Button>
           </div>
           
-          {isLoadingProperties ? (
+          {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
                 <PropertyCardSkeleton key={i} />
               ))}
             </div>
-          ) : propertiesError ? (
+          ) : dataError ? (
             <Card className="text-center py-12">
               <CardContent>
-                <p className="text-red-500 mb-4">{propertiesError}</p>
-                <Button onClick={() => window.location.reload()}>
+                <p className="text-red-500 mb-4">{dataError}</p>
+                <Button onClick={refetch}>
                   Try Again
                 </Button>
               </CardContent>
@@ -231,17 +201,17 @@ const Dashboard = () => {
             </Button>
           </div>
           
-          {isLoadingReports ? (
+          {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
                 <ReportCardSkeleton key={i} />
               ))}
             </div>
-          ) : reportsError ? (
+          ) : dataError ? (
             <Card className="text-center py-12">
               <CardContent>
-                <p className="text-red-500 mb-4">{reportsError}</p>
-                <Button onClick={() => window.location.reload()}>
+                <p className="text-red-500 mb-4">{dataError}</p>
+                <Button onClick={refetch}>
                   Try Again
                 </Button>
               </CardContent>
