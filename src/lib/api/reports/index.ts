@@ -1,6 +1,5 @@
 
-// Export all room-related APIs
-export { RoomOperationsAPI } from './roomOperationsApi';
+// Export specific room-related APIs directly
 export { RoomCrudAPI } from './roomCrudApi';
 export { RoomUpdateAPI } from './roomUpdateApi';
 export { RoomImageAPI } from './roomImageApi';

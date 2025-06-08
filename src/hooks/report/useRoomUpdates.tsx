@@ -1,6 +1,5 @@
-
 import { useToast } from "@/components/ui/use-toast";
-import { ReportsAPI } from "@/lib/api";
+import { RoomUpdateAPI } from "@/lib/api/reports";
 import { Report, Room, RoomComponent } from "@/types";
 
 /**
@@ -24,7 +23,7 @@ export const useRoomUpdates = (
         generalCondition,
       };
       
-      const savedRoom = await ReportsAPI.updateRoom(report.id, roomId, updatedRoom);
+      const savedRoom = await RoomUpdateAPI.updateRoom(report.id, roomId, updatedRoom);
       
       if (savedRoom) {
         setReport(prev => {
@@ -59,7 +58,7 @@ export const useRoomUpdates = (
         components: updatedComponents,
       };
       
-      const savedRoom = await ReportsAPI.updateRoom(report.id, roomId, updatedRoom);
+      const savedRoom = await RoomUpdateAPI.updateRoom(report.id, roomId, updatedRoom);
       
       if (savedRoom) {
         setReport(prev => {

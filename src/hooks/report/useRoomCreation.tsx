@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { ReportsAPI } from "@/lib/api";
+import { RoomCrudAPI, RoomUpdateAPI } from "@/lib/api/reports";
 import { Report, Room, RoomType, RoomComponent } from "@/types";
 import { v4 as uuidv4 } from 'uuid';
 import { getDefaultComponentsByRoomType } from "@/utils/roomComponentUtils";
@@ -43,7 +42,7 @@ export const useRoomCreation = (
       console.log("Adding room with values:", values);
       
       // Create a new room with the provided name and type
-      const newRoom = await ReportsAPI.addRoom(
+      const newRoom = await RoomCrudAPI.addRoom(
         report.id,
         values.name, // Pass the name explicitly
         values.type as RoomType
@@ -65,7 +64,7 @@ export const useRoomCreation = (
         console.log("Updating room with:", updatedRoom);
         
         // Save the updated room with components to the API
-        const savedRoom = await ReportsAPI.updateRoom(report.id, newRoom.id, updatedRoom);
+        const savedRoom = await RoomUpdateAPI.updateRoom(report.id, newRoom.id, updatedRoom);
         
         // Update the report state with the new room including components
         setReport(prev => {

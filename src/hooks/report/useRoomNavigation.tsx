@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { ReportsAPI } from "@/lib/api";
+import { RoomCrudAPI } from "@/lib/api/reports";
 import { Report } from "@/types";
 
 /**
@@ -18,7 +17,7 @@ export const useRoomNavigation = (
     if (!report) return;
     
     try {
-      await ReportsAPI.deleteRoom(report.id, roomId);
+      await RoomCrudAPI.deleteRoom(report.id, roomId);
       
       setReport(prev => {
         if (!prev) return prev;
