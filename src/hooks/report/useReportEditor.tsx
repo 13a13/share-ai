@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Report, Property, Room, RoomComponent, RoomSection } from "@/types";
@@ -5,6 +6,9 @@ import { ReportsAPI, PropertiesAPI } from "@/lib/api";
 import { useReportInfo, ReportInfoFormValues } from "./useReportInfo";
 import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
 import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
+
+// Re-export ReportInfoFormValues for convenience
+export type { ReportInfoFormValues };
 
 export const useReportEditor = (reportId: string | undefined) => {
   const { toast } = useToast();
@@ -43,19 +47,17 @@ export const useReportEditor = (reportId: string | undefined) => {
 
       try {
         setIsLoading(true);
-        const [reportData, propertyData] = await Promise.all([
-          ReportsAPI.getById(reportId),
-          ReportsAPI.getPropertyByReportId(reportId)
-        ]);
+        const reportData = await ReportsAPI.getById(reportId);
         
         if (reportData) {
           setReport(reportData);
+          // Get property data separately using the propertyId from the report
+          const propertyData = await PropertiesAPI.getById(reportData.propertyId);
+          if (propertyData) {
+            setProperty(propertyData);
+          }
         } else {
           setHasError(true);
-        }
-        
-        if (propertyData) {
-          setProperty(propertyData);
         }
       } catch (error) {
         console.error("Error fetching report data:", error);
@@ -79,7 +81,7 @@ export const useReportEditor = (reportId: string | undefined) => {
     
     setIsSubmittingRoom(true);
     try {
-      const updatedReport = await ReportsAPI.addRoom(report.id, roomData);
+      const updatedReport = await ReportsAPI.addRoom(report.id, roomData.name, roomData.type);
       if (updatedReport) {
         setReport(updatedReport);
         toast({
@@ -138,7 +140,11 @@ export const useReportEditor = (reportId: string | undefined) => {
     setReport(updatedReport);
     
     // Auto-save with batch processing
-    await saveBatch(updatedReport);
+    try {
+      await saveBatch(updatedReport);
+    } catch (error) {
+      console.error("Error saving components:", error);
+    }
   };
 
   const handleNavigateRoom = useCallback((index: number) => {
