@@ -53,16 +53,16 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
     doc.text("Report Type: Comparison Analysis", pageWidth / 2, 130, { align: "center" });
   }
   
-  // Add the new logo with adjusted size
+  // Add the new logo with updated path and size
   try {
     await addCompressedImage(
       doc,
-      "/lovable-uploads/62d7ef1a-92bd-4a35-b1ef-58bbda08a876.png",
-      "new_logo",
-      pageWidth / 2 - 30,
+      "/lovable-uploads/d0f6bc71-e952-4739-aa12-54a7a8bb41ae.png",
+      "vi_logo",
+      pageWidth / 2 - 35,
       140,
-      60,
-      35,
+      70,
+      40,
       undefined,
       true // maintain aspect ratio
     );
@@ -72,9 +72,9 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
     // Fallback to placeholder if logo fails to load
     doc.setDrawColor(pdfStyles.colors.lightGray[0], pdfStyles.colors.lightGray[1], pdfStyles.colors.lightGray[2]);
     doc.setLineWidth(0.5);
-    doc.rect(pageWidth / 2 - 30, 140, 60, 35);
+    doc.rect(pageWidth / 2 - 35, 140, 70, 40);
     doc.setFontSize(pdfStyles.fontSizes.small);
-    doc.text("Logo", pageWidth / 2, 157, { align: "center" });
+    doc.text("Logo", pageWidth / 2, 160, { align: "center" });
   }
   
   // Footer at bottom of page

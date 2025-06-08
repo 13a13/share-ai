@@ -73,9 +73,9 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
     }
   };
   
-  // Determine report title
+  // Determine report title with new naming convention
   const getReportTitle = () => {
-    return `Inventory & Check In - ${property.address.replace(/\s+/g, '_')}`;
+    return `Inspection Report - ${property.address.replace(/\s+/g, '_')}`;
   };
   
   const handlePreviewPDF = async () => {
