@@ -1,6 +1,8 @@
+
 import { useParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import SaveProgressIndicator from "@/components/ui/SaveProgressIndicator";
 import ReportHeader from "@/components/ReportHeader";
 import ReportInfoForm from "@/components/ReportInfoForm";
 import EmptyRoomsState from "@/components/EmptyRoomsState";
