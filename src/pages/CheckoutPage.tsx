@@ -13,6 +13,7 @@ import ComponentProcessingStatus from '@/components/checkout/ComponentProcessing
 import { Report } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
+import { supabase } from '@/integrations/supabase/client';
 
 const CheckoutPage = () => {
   const { reportId } = useParams<{ reportId: string }>();
