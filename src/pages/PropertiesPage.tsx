@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import PropertyCard from "@/components/PropertyCard";
@@ -92,19 +92,27 @@ const PropertiesPage = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Properties</h1>
-            <p className="text-gray-600">Manage your property portfolio and create inspection reports.</p>
-          </div>
-          <Button 
-            onClick={handleCreateProperty}
-            className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
-            disabled={!canCreateNewProperty()}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Property
+        <div className="flex items-center mb-8">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mr-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
           </Button>
+          <div className="flex-1">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Properties</h1>
+                <p className="text-gray-600">Manage your property portfolio and create inspection reports.</p>
+              </div>
+              <Button 
+                onClick={handleCreateProperty}
+                className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
+                disabled={!canCreateNewProperty()}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Property
+              </Button>
+            </div>
+          </div>
         </div>
 
         <PropertyLimitWarning />

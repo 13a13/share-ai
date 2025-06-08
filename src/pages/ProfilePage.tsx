@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Save, Building, FileText, TrendingUp } from "lucide-react";
+import { User, Save, Building, FileText, TrendingUp, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import TrialStatusCard from "@/components/TrialStatusCard";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -15,6 +16,7 @@ import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report } from "@/types";
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { profile, refetch } = useSubscription();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -70,7 +72,8 @@ const ProfilePage = () => {
         description: "Your profile has been successfully updated.",
       });
 
-      refetch();
+      // Refetch the profile data to update the display
+      await refetch();
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({
@@ -88,9 +91,15 @@ const ProfilePage = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile</h1>
-          <p className="text-gray-600">Manage your account settings and subscription.</p>
+        <div className="flex items-center mb-8">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mr-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile</h1>
+            <p className="text-gray-600">Manage your account settings and subscription.</p>
+          </div>
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6">

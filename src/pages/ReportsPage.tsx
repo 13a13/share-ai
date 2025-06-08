@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
 import { Property, Report } from "@/types";
 import { useEffect, useState } from "react";
-import { FileText, Plus, Search, Filter, Upload } from "lucide-react";
+import { FileText, Plus, Search, Filter, Upload, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import UploadReportDialog from "@/components/UploadReportDialog";
+import Header from "@/components/Header";
 
 const ReportsPage = () => {
   const navigate = useNavigate();
@@ -212,147 +213,159 @@ const ReportsPage = () => {
   };
   
   return (
-    <div className="shareai-container">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-shareai-blue">Reports</h1>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => navigate("/reports/new")}
-            className="bg-shareai-teal hover:bg-shareai-teal/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Report
-          </Button>
-          <Button 
-            onClick={() => setIsUploadDialogOpen(true)}
-            variant="outline"
-            className="border-shareai-teal text-shareai-teal hover:bg-shareai-teal/10"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Report
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
       
-      {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-          <Input
-            type="text"
-            placeholder="Search reports..."
-            className="pl-8 w-full"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="relative">
-                <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                <Select 
-                  value={statusFilter} 
-                  onValueChange={setStatusFilter}
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mr-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <div className="flex-1">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h1 className="text-3xl font-bold text-shareai-blue">Reports</h1>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => navigate("/reports/new")}
+                  className="bg-shareai-teal hover:bg-shareai-teal/90"
                 >
-                  <SelectTrigger className="pl-8">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="pending_review">Pending Review</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Report
+                </Button>
+                <Button 
+                  onClick={() => setIsUploadDialogOpen(true)}
+                  variant="outline"
+                  className="border-shareai-teal text-shareai-teal hover:bg-shareai-teal/10"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Report
+                </Button>
               </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Filter reports by their current status</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        <Select 
-          value={propertyFilter} 
-          onValueChange={setPropertyFilter}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by property" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Properties</SelectItem>
-            {properties.map((property) => (
-              <SelectItem key={property.id} value={property.id}>
-                {property.address}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
-          ))}
-        </div>
-      ) : filteredReports.length === 0 ? (
-        (searchQuery || statusFilter !== "all" || propertyFilter !== "all") ? (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-medium mb-2">No matching reports</h3>
-            <p className="text-gray-500 mb-4">Try adjusting your filters or search criteria</p>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchQuery("");
-                setStatusFilter("all");
-                setPropertyFilter("all");
-              }}
-            >
-              Clear Filters
-            </Button>
+            </div>
           </div>
-        ) : (
-          <EmptyState
-            title="No reports yet"
-            description="Create your first property report with AI-powered analysis."
-            actionLabel="Create Report"
-            onAction={() => navigate("/reports/new")}
-            icon={<FileText className="h-12 w-12 text-shareai-teal mb-4" />}
-          />
-        )
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredReports.map((report) => (
-            <ReportCard 
-              key={report.id} 
-              report={report} 
-              propertyAddress={report.property?.address}
-              onDelete={handleDeleteReport}
-              onDuplicate={handleDuplicateReport}
-              onArchive={handleArchiveReport}
-            />
-          ))}
         </div>
-      )}
-      
-      {/* Upload Report Dialog */}
-      <UploadReportDialog 
-        isOpen={isUploadDialogOpen} 
-        onClose={() => setIsUploadDialogOpen(false)}
-        properties={properties}
-        onUploadComplete={(newReport) => {
-          // Add the new report to the list and close the dialog
-          if (newReport) {
-            setReports(prev => [newReport, ...prev]);
-            setIsUploadDialogOpen(false);
-          }
-        }}
-      />
+        
+        {/* Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              type="text"
+              placeholder="Search reports..."
+              className="pl-8 w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative">
+                  <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Select 
+                    value={statusFilter} 
+                    onValueChange={setStatusFilter}
+                  >
+                    <SelectTrigger className="pl-8">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="pending_review">Pending Review</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Filter reports by their current status</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <Select 
+            value={propertyFilter} 
+            onValueChange={setPropertyFilter}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by property" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Properties</SelectItem>
+              {properties.map((property) => (
+                <SelectItem key={property.id} value={property.id}>
+                  {property.address}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>
+            ))}
+          </div>
+        ) : filteredReports.length === 0 ? (
+          (searchQuery || statusFilter !== "all" || propertyFilter !== "all") ? (
+            <div className="text-center py-12">
+              <h3 className="text-xl font-medium mb-2">No matching reports</h3>
+              <p className="text-gray-500 mb-4">Try adjusting your filters or search criteria</p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                  setPropertyFilter("all");
+                }}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          ) : (
+            <EmptyState
+              title="No reports yet"
+              description="Create your first property report with AI-powered analysis."
+              actionLabel="Create Report"
+              onAction={() => navigate("/reports/new")}
+              icon={<FileText className="h-12 w-12 text-shareai-teal mb-4" />}
+            />
+          )
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredReports.map((report) => (
+              <ReportCard 
+                key={report.id} 
+                report={report} 
+                propertyAddress={report.property?.address}
+                onDelete={handleDeleteReport}
+                onDuplicate={handleDuplicateReport}
+                onArchive={handleArchiveReport}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Upload Report Dialog */}
+        <UploadReportDialog 
+          isOpen={isUploadDialogOpen} 
+          onClose={() => setIsUploadDialogOpen(false)}
+          properties={properties}
+          onUploadComplete={(newReport) => {
+            // Add the new report to the list and close the dialog
+            if (newReport) {
+              setReports(prev => [newReport, ...prev]);
+              setIsUploadDialogOpen(false);
+            }
+          }}
+        />
+      </div>
     </div>
   );
 };
