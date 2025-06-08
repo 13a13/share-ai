@@ -11,9 +11,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User, ChevronDown, Home } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { profile } = useSubscription();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -24,6 +26,16 @@ const Header = () => {
       description: "You have been successfully logged out.",
     });
     navigate("/login");
+  };
+
+  const getDisplayName = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
+    }
+    if (profile?.first_name) {
+      return profile.first_name;
+    }
+    return user?.name || user?.email?.split('@')[0];
   };
   
   return (
@@ -57,7 +69,7 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-white hover:bg-verifyvision-teal hover:text-white flex items-center">
                   <User className="h-5 w-5 mr-2" />
-                  <span className="mr-1">{user?.name || user?.email?.split('@')[0]}</span>
+                  <span className="mr-1">{getDisplayName()}</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

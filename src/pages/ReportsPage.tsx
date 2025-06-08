@@ -217,32 +217,30 @@ const ReportsPage = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center mb-6">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mr-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <div className="flex-1">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <h1 className="text-3xl font-bold text-shareai-blue">Reports</h1>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => navigate("/reports/new")}
-                  className="bg-shareai-teal hover:bg-shareai-teal/90"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Report
-                </Button>
-                <Button 
-                  onClick={() => setIsUploadDialogOpen(true)}
-                  variant="outline"
-                  className="border-shareai-teal text-shareai-teal hover:bg-shareai-teal/10"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Report
-                </Button>
-              </div>
-            </div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-shareai-blue">Reports</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => navigate("/reports/new")}
+              className="bg-shareai-teal hover:bg-shareai-teal/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Report
+            </Button>
+            <Button 
+              onClick={() => setIsUploadDialogOpen(true)}
+              variant="outline"
+              className="border-shareai-teal text-shareai-teal hover:bg-shareai-teal/10"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Report
+            </Button>
+            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
           </div>
         </div>
         
