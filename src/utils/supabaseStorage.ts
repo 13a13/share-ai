@@ -1,6 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { ensureInspectionImagesBucket } from './storageUtils';
 
 /**
  * Upload a base64 image to Supabase Storage
@@ -13,16 +13,25 @@ export const uploadReportImage = async (
   try {
     console.log("Uploading image to storage for report:", reportId, "room:", roomId);
     
-    // Ensure bucket exists first
-    const bucketReady = await ensureInspectionImagesBucket();
-    if (!bucketReady) {
-      console.error("Failed to ensure bucket exists");
-      throw new Error("Storage bucket not available");
-    }
-    
     // Convert data URL to blob
     const res = await fetch(dataUrl);
     const blob = await res.blob();
+    
+    // Check if the inspection-images bucket exists, create if it doesn't
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const reportsBucket = buckets?.find(b => b.name === 'inspection-images');
+    
+    if (!reportsBucket) {
+      const { error: createBucketError } = await supabase.storage.createBucket('inspection-images', {
+        public: true
+      });
+      
+      if (createBucketError) {
+        console.error("Error creating inspection-images bucket:", createBucketError);
+        throw createBucketError;
+      }
+      console.log("Created new bucket: inspection-images");
+    }
     
     // Generate a unique filename with property and room folder structure
     const fileExt = dataUrl.substring(dataUrl.indexOf('/') + 1, dataUrl.indexOf(';base64'));
@@ -36,7 +45,7 @@ export const uploadReportImage = async (
       .upload(fileName, blob, {
         contentType: blob.type,
         cacheControl: '3600',
-        upsert: true
+        upsert: true // Change to true to ensure file is always uploaded
       });
     
     if (error) {

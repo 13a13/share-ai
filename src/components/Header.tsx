@@ -35,8 +35,7 @@ const Header = () => {
     if (profile?.first_name) {
       return profile.first_name;
     }
-    // Access user metadata instead of user.name
-    return user?.user_metadata?.name || user?.email?.split('@')[0];
+    return user?.name || user?.email?.split('@')[0];
   };
   
   return (

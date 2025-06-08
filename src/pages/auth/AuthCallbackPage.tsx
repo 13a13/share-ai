@@ -1,28 +1,52 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        navigate("/dashboard", { replace: true });
-      } else {
-        navigate("/login", { replace: true });
+    const handleAuthCallback = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Auth callback error:", error);
+          toast({
+            variant: "destructive",
+            title: "Verification failed",
+            description: error.message,
+          });
+          navigate("/login");
+          return;
+        }
+
+        if (data.session) {
+          toast({
+            title: "Email verified successfully",
+            description: "Welcome! Your account is now active.",
+          });
+          navigate("/dashboard");
+        } else {
+          navigate("/login");
+        }
+      } catch (error) {
+        console.error("Unexpected error during auth callback:", error);
+        navigate("/login");
       }
-    }
-  }, [isAuthenticated, isLoading, navigate]);
+    };
+
+    handleAuthCallback();
+  }, [navigate, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-verifyvision-teal mx-auto mb-4" />
-        <p className="text-gray-600">Processing authentication...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-verifyvision-teal mx-auto mb-4"></div>
+        <p className="text-gray-600">Verifying your account...</p>
       </div>
     </div>
   );
