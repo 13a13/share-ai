@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Report } from '@/types';
 
@@ -14,6 +15,7 @@ export const OptimizedDashboardAPI = {
   }> => {
     try {
       // Single query to get recent inspections with all needed data
+      // Fix: Be explicit about the foreign key relationship to avoid ambiguity
       const { data: inspections, error } = await supabase
         .from('inspections')
         .select(`
@@ -22,11 +24,12 @@ export const OptimizedDashboardAPI = {
           created_at,
           updated_at,
           report_info,
-          rooms!inner(
+          room_id,
+          rooms:room_id(
             id,
             property_id,
             type,
-            properties!inner(
+            properties:property_id(
               id,
               name,
               location,
