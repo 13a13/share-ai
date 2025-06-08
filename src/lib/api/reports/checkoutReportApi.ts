@@ -13,7 +13,6 @@ export const CheckoutReportAPI = {
   async createBasicCheckoutReport(checkinReportId: string, checkoutData: CheckoutData): Promise<any> {
     try {
       console.log('Creating basic checkout report for:', checkinReportId);
-      console.log('Checkout data:', checkoutData);
       
       // First, fetch the check-in report to get the room_id
       const { data: checkinReport, error: fetchError } = await supabase
@@ -35,7 +34,7 @@ export const CheckoutReportAPI = {
       const { data: checkoutInspection, error: createError } = await supabase
         .from('inspections')
         .insert({
-          room_id: checkinReport.room_id, // Use the same room_id from check-in
+          room_id: checkinReport.room_id,
           is_checkout: true,
           checkout_report_id: checkinReportId,
           checkout_date: checkoutData.date || new Date().toISOString(),
@@ -73,21 +72,19 @@ export const CheckoutReportAPI = {
 
     const allComponents: any[] = [];
 
-    // Strategy 1: Check for rooms array structure
-    if (reportInfo.rooms && Array.isArray(reportInfo.rooms)) {
-      console.log('Found rooms array structure with', reportInfo.rooms.length, 'rooms');
+    // Strategy 1: Check for additionalRooms in report_info
+    if (reportInfo.additionalRooms && Array.isArray(reportInfo.additionalRooms)) {
+      console.log('Found additionalRooms with', reportInfo.additionalRooms.length, 'rooms');
       
-      reportInfo.rooms.forEach((room: any, roomIndex: number) => {
-        const roomId = room.id || room.name || `room-${roomIndex}`;
-        const roomName = room.name || room.type || `Room ${roomIndex + 1}`;
-        
-        console.log(`Processing room: ${roomName} (${roomId})`);
+      reportInfo.additionalRooms.forEach((room: any) => {
+        const roomId = room.id || room.name || 'unknown-room';
+        const roomName = room.name || room.type || 'Unknown Room';
         
         if (room.components && Array.isArray(room.components)) {
-          room.components.forEach((component: any, componentIndex: number) => {
+          room.components.forEach((component: any, index: number) => {
             const processedComponent = this.processComponentData(
               component, 
-              componentIndex, 
+              index, 
               roomId, 
               roomName
             );
@@ -96,38 +93,19 @@ export const CheckoutReportAPI = {
             }
           });
         }
-        
-        // Also check for sections that might contain components
-        if (room.sections && Array.isArray(room.sections)) {
-          room.sections.forEach((section: any, sectionIndex: number) => {
-            if (section.components && Array.isArray(section.components)) {
-              section.components.forEach((component: any, componentIndex: number) => {
-                const processedComponent = this.processComponentData(
-                  component, 
-                  componentIndex, 
-                  roomId, 
-                  `${roomName} - ${section.name || section.title || 'Section'}`
-                );
-                if (processedComponent) {
-                  allComponents.push(processedComponent);
-                }
-              });
-            }
-          });
-        }
       });
     }
 
-    // Strategy 2: Check for flat components array
+    // Strategy 2: Check for main room components
     if (reportInfo.components && Array.isArray(reportInfo.components)) {
-      console.log('Found flat components array with', reportInfo.components.length, 'components');
+      console.log('Found main room components:', reportInfo.components.length);
       
       reportInfo.components.forEach((component: any, index: number) => {
         const processedComponent = this.processComponentData(
           component, 
           index, 
-          'general', 
-          'General Assessment'
+          'main-room', 
+          reportInfo.roomName || 'Main Room'
         );
         if (processedComponent) {
           allComponents.push(processedComponent);
@@ -135,14 +113,15 @@ export const CheckoutReportAPI = {
       });
     }
 
-    // Strategy 3: Check for room-keyed structure (room names as keys)
+    // Strategy 3: Check for flat structure with rooms as keys
     const possibleRoomKeys = Object.keys(reportInfo).filter(key => 
-      key !== 'rooms' && 
+      key !== 'additionalRooms' && 
       key !== 'components' && 
-      key !== 'metadata' &&
-      key !== 'summary' &&
+      key !== 'roomName' &&
+      key !== 'generalCondition' &&
       typeof reportInfo[key] === 'object' && 
-      reportInfo[key] !== null
+      reportInfo[key] !== null &&
+      reportInfo[key].components
     );
 
     possibleRoomKeys.forEach(roomKey => {
@@ -156,7 +135,7 @@ export const CheckoutReportAPI = {
             component, 
             index, 
             roomKey, 
-            roomData.name || roomData.title || roomKey
+            roomData.name || roomKey
           );
           if (processedComponent) {
             allComponents.push(processedComponent);

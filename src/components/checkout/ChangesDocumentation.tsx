@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus } from 'lucide-react';
-import MultiImageComponentCapture from '@/components/image-upload/MultiImageComponentCapture';
+import { useToast } from '@/components/ui/use-toast';
+import { processCheckoutImages } from '@/services/checkoutImageProcessingService';
+import ImageCapture from '@/components/common/ImageCapture';
 
 interface ChangesDocumentationProps {
   comparisonId: string;
@@ -28,11 +30,39 @@ const ChangesDocumentation = ({
   onImagesProcessed,
   onProcessingStateChange
 }: ChangesDocumentationProps) => {
+  const { toast } = useToast();
   const [localDescription, setLocalDescription] = useState(changeDescription || '');
 
   const handleSaveDescription = () => {
     if (localDescription.trim()) {
       onDescriptionSave(comparisonId, localDescription.trim());
+    }
+  };
+
+  const handleImagesProcessed = async (componentId: string, imageUrls: string[], result: any) => {
+    try {
+      console.log('Processing checkout images for comparison:', componentId, imageUrls);
+      
+      // Call the checkout-specific image processing
+      const checkoutResult = await processCheckoutImages(
+        imageUrls,
+        componentName,
+        result.checkinData
+      );
+      
+      onImagesProcessed(componentId, imageUrls, checkoutResult);
+      
+      toast({
+        title: "Images Analyzed",
+        description: "Checkout images have been processed successfully.",
+      });
+    } catch (error) {
+      console.error('Error processing checkout images:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Failed to analyze images. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -71,10 +101,10 @@ const ChangesDocumentation = ({
         <label className="block text-sm font-medium mb-2">
           Checkout Photos
         </label>
-        <MultiImageComponentCapture
+        <ImageCapture
           componentId={comparisonId}
           componentName={componentName}
-          roomType="general"
+          roomType="checkout"
           isProcessing={isUpdating}
           currentImages={
             (checkoutImages as string[] || []).map((url, index) => ({
@@ -83,7 +113,7 @@ const ChangesDocumentation = ({
               timestamp: new Date()
             }))
           }
-          onImagesProcessed={onImagesProcessed}
+          onImagesProcessed={handleImagesProcessed}
           onProcessingStateChange={onProcessingStateChange}
           onRemoveImage={() => {
             // Handle image removal if needed

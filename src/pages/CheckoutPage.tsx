@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -109,6 +108,40 @@ const CheckoutPage = () => {
     return comparisons.length;
   };
 
+  const handleSaveReport = async () => {
+    if (!checkoutReport) return;
+    
+    try {
+      toast({
+        title: "Saving Report",
+        description: "Saving checkout report progress...",
+      });
+      
+      // Update checkout report status to saved
+      const { error } = await supabase
+        .from('inspections')
+        .update({ 
+          status: 'saved',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', checkoutReport.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Report Saved",
+        description: "Checkout report has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving report:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Debug log for current state
   console.log('CheckoutPage state:', {
     currentStep,
@@ -165,17 +198,30 @@ const CheckoutPage = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Checkout Procedure - Step {currentStep}</h1>
-            <p className="text-gray-600">
-              Property: {checkinReport.property?.name || 'Unknown Property'}
-            </p>
+        {/* Updated Header with repositioned buttons */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Checkout Procedure - Step {currentStep}</h1>
+              <p className="text-gray-600">
+                Property: {checkinReport?.property?.name || 'Unknown Property'}
+              </p>
+            </div>
+          </div>
+          
+          {/* Button group on the right */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            
+            {currentStep === 3 && checkoutReport && (
+              <Button onClick={handleSaveReport} className="bg-blue-600 hover:bg-blue-700">
+                <FileCheck className="h-4 w-4 mr-2" />
+                Save Report
+              </Button>
+            )}
           </div>
         </div>
 
@@ -222,7 +268,7 @@ const CheckoutPage = () => {
                 <div>
                   <p className="text-sm text-gray-500">Check-in Date</p>
                   <span className="font-semibold">
-                    {new Date(checkinReport.createdAt).toLocaleDateString()}
+                    {checkinReport && new Date(checkinReport.createdAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -231,7 +277,7 @@ const CheckoutPage = () => {
                 <div>
                   <p className="text-sm text-gray-500">Rooms</p>
                   <span className="font-semibold">
-                    {checkinReport.rooms.length} rooms
+                    {checkinReport?.rooms.length || 0} rooms
                   </span>
                 </div>
               </div>
@@ -240,7 +286,7 @@ const CheckoutPage = () => {
                 <div>
                   <p className="text-sm text-gray-500">Status</p>
                   <span className="font-semibold">
-                    {checkinReport.status}
+                    {checkinReport?.status}
                   </span>
                 </div>
               </div>
