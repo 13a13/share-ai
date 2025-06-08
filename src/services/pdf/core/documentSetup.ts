@@ -13,16 +13,17 @@ export const setupPDFDocument = (report: Report, property: Property): jsPDF => {
     format: "a4",
   });
   
-  // Set up document metadata with updated title
+  // Set up document metadata with updated title using property name
+  const propertyTitle = property.name || property.address; // Fallback to address if name is not available
   const reportTitle = report.type === "comparison" 
-    ? `Property Comparison - ${property.address}` 
-    : `VerifyVision Inspection Report - ${property.address}`;
+    ? `Property Comparison - ${propertyTitle}` 
+    : `VerifyVision Inspection Report - ${propertyTitle}`;
   
   doc.setProperties({
     title: reportTitle,
     subject: report.type === "comparison" 
-      ? `Comparison Report for ${property.address}` 
-      : `VerifyVision Inspection Report for ${property.address}`,
+      ? `Comparison Report for ${propertyTitle}` 
+      : `VerifyVision Inspection Report for ${propertyTitle}`,
     author: report.reportInfo?.clerk || "VerifyVision",
     creator: "VerifyVision AI Property Reports"
   });

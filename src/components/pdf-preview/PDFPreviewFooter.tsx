@@ -28,6 +28,7 @@ const PDFPreviewFooter = ({
   const handleDownload = () => {
     if (!currentPdfUrl) return;
     
+    // Use the report title as provided, which now includes the property name
     const fileName = `${reportTitle.replace(/\s+/g, '_')}.pdf`;
     downloadPdf(currentPdfUrl, fileName);
   };

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { usePDFGeneration, PDFGenerationStatus } from "@/services/pdf";
@@ -73,9 +72,10 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
     }
   };
   
-  // Determine report title with new naming convention
+  // Determine report title with new naming convention using property name
   const getReportTitle = () => {
-    return `Inspection Report - ${property.address.replace(/\s+/g, '_')}`;
+    const propertyTitle = property.name || property.address; // Fallback to address if name is not available
+    return `Inspection Report - ${propertyTitle.replace(/\s+/g, '_')}`;
   };
   
   const handlePreviewPDF = async () => {
