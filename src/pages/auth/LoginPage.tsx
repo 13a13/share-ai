@@ -2,6 +2,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import LoginForm from "@/components/auth/LoginForm";
 
 const LoginPage = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -33,9 +34,7 @@ const LoginPage = () => {
         </CardHeader>
         
         <CardContent>
-          <div className="text-center">
-            <p>Login form will be implemented here</p>
-          </div>
+          <LoginForm />
         </CardContent>
         
         <CardFooter className="flex flex-col space-y-4">

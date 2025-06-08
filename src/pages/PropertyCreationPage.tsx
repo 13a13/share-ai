@@ -1,55 +1,23 @@
 
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
-import PropertyForm from "@/components/property/PropertyForm";
-import PropertyPageHeader from "@/components/property/PropertyPageHeader";
-import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const PropertyCreationPage = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    // Check authentication first
-    if (!user) {
-      console.log("User not authenticated, redirecting to login");
-      navigate("/login");
-      return;
-    }
-  }, [user, navigate]);
-
-  // Show loading while checking authentication
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-verifyvision-teal"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show the property creation form
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="container mx-auto px-4 py-8">
-        <PropertyPageHeader 
-          title="Add New Property"
-          description="Enter the details of your property to create a record in the system."
-        />
-
-        <div className="max-w-2xl mx-auto">
-          <PropertyForm onSuccess={() => {
-            console.log("Property creation successful, navigating to properties page");
-            navigate("/properties");
-          }} />
-        </div>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-brand-blue-900 mb-6">
+          Create New Property
+        </h1>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Property Details</CardTitle>
+            <CardDescription>Enter the details for your new property</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">Property creation form will be implemented here.</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
