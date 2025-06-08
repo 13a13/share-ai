@@ -26,6 +26,7 @@ const ReportViewPage = () => {
       if (!reportId) return;
       
       try {
+        console.log("Fetching report data for ID:", reportId);
         const reportData = await ReportsAPI.getById(reportId);
         if (!reportData) {
           toast({
@@ -37,9 +38,11 @@ const ReportViewPage = () => {
           return;
         }
         
+        console.log("Report data loaded:", reportData);
         setReport(reportData);
         
         const propertyData = await PropertiesAPI.getById(reportData.propertyId);
+        console.log("Property data loaded:", propertyData);
         setProperty(propertyData);
       } catch (error) {
         console.error("Error fetching report:", error);
@@ -75,8 +78,8 @@ const ReportViewPage = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <div className="verifyvision-container flex justify-center items-center min-h-[50vh] flex-1">
-          <Loader2 className="h-12 w-12 animate-spin text-verifyvision-teal" />
+        <div className="shareai-container flex justify-center items-center min-h-[50vh] flex-1">
+          <Loader2 className="h-12 w-12 animate-spin text-shareai-teal" />
         </div>
         <Footer />
       </div>
@@ -87,12 +90,12 @@ const ReportViewPage = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <div className="verifyvision-container text-center py-12 flex-1">
-          <h2 className="text-2xl font-bold mb-4 text-brand-blue-900">Report Not Found</h2>
+        <div className="shareai-container text-center py-12 flex-1">
+          <h2 className="text-2xl font-bold mb-4 text-shareai-blue">Report Not Found</h2>
           <p className="mb-6">The requested report could not be found or has been deleted.</p>
           <Button 
             onClick={() => navigate("/dashboard")}
-            className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
+            className="bg-shareai-teal hover:bg-shareai-teal/90"
           >
             Back to Dashboard
           </Button>
@@ -105,10 +108,10 @@ const ReportViewPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <div className="verifyvision-container py-8 flex-1">
+      <div className="shareai-container py-8 flex-1">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-brand-blue-900">
+            <h1 className="text-3xl font-bold text-shareai-blue">
               {report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Report
             </h1>
             <p className="text-gray-600">
@@ -120,13 +123,13 @@ const ReportViewPage = () => {
             <Button 
               variant="outline" 
               onClick={() => navigate(`/properties/${property.id}`)}
-              className="border-brand-blue-900 text-brand-blue-900 hover:bg-verifyvision-teal hover:text-white"
+              className="border-shareai-blue text-shareai-blue hover:bg-shareai-teal hover:text-white"
             >
               Back to Property
             </Button>
             <Button 
               onClick={() => navigate(`/reports/${reportId}/edit`)}
-              className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 text-white px-6"
+              className="bg-shareai-teal hover:bg-shareai-teal/90 text-white px-6"
             >
               <Eye className="h-4 w-4 mr-2" />
               Edit Report
@@ -135,7 +138,7 @@ const ReportViewPage = () => {
               <Button 
                 onClick={handleStartCheckout}
                 variant="outline"
-                className="border-verifyvision-teal text-verifyvision-teal hover:bg-verifyvision-teal hover:text-white px-6"
+                className="border-shareai-teal text-shareai-teal hover:bg-shareai-teal hover:text-white px-6"
               >
                 <CheckSquare className="h-4 w-4 mr-2" />
                 Start Checkout
@@ -149,9 +152,9 @@ const ReportViewPage = () => {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow overflow-hidden mb-8 card-hover">
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-4 text-brand-blue-900">Report Information</h2>
+            <h2 className="text-xl font-bold mb-4 text-shareai-blue">Report Information</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
@@ -187,7 +190,7 @@ const ReportViewPage = () => {
           </div>
         </div>
         
-        <h2 className="text-xl font-bold mb-4 text-brand-blue-900">Rooms</h2>
+        <h2 className="text-xl font-bold mb-4 text-shareai-blue">Rooms</h2>
         
         {report.rooms.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-6 text-center">
@@ -211,8 +214,8 @@ const ReportViewPage = () => {
         )}
         
         {report.disclaimers && report.disclaimers.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mt-8 card-hover">
-            <h2 className="text-xl font-bold mb-4 text-brand-blue-900">Disclaimers</h2>
+          <div className="bg-white rounded-lg shadow p-6 mt-8">
+            <h2 className="text-xl font-bold mb-4 text-shareai-blue">Disclaimers</h2>
             <ul className="list-disc list-inside space-y-2 text-gray-600">
               {report.disclaimers.map((disclaimer, index) => (
                 <li key={index}>{disclaimer}</li>

@@ -59,6 +59,7 @@ const App = () => (
             <Route path="/reports/new/:propertyId" element={<ProtectedRoute><ReportCreationPage /></ProtectedRoute>} />
             <Route path="/reports/:reportId/edit" element={<ProtectedRoute><ReportEditPage /></ProtectedRoute>} />
             <Route path="/reports/:reportId/view" element={<ProtectedRoute><ReportViewPage /></ProtectedRoute>} />
+            <Route path="/reports/:reportId" element={<ProtectedRoute><ReportViewPage /></ProtectedRoute>} />
             <Route path="/reports/:reportId/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
 
             {/* Catch all */}

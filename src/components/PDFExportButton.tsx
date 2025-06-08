@@ -22,6 +22,7 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
   const handleGeneratePDF = async () => {
     if (isGenerating) return;
     
+    console.log("Starting PDF generation for report:", report.id);
     setIsGenerating(true);
     try {
       // Generate the PDF with real report data
@@ -32,6 +33,7 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
         throw new Error("Failed to generate PDF data");
       }
       
+      console.log("PDF generated successfully");
       setDownloadUrl(pdfData);
       
       // If direct download is requested, trigger the download
@@ -55,12 +57,16 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
   };
   
   const handlePreviewPDF = async () => {
+    console.log("Preview PDF button clicked");
     // Generate PDF if not already generated
     const pdfData = downloadUrl || await handleGeneratePDF();
     
     // Open the preview dialog after generating
     if (pdfData) {
+      console.log("Opening PDF preview dialog");
       setPreviewOpen(true);
+    } else {
+      console.error("Failed to generate PDF for preview");
     }
   };
   
@@ -70,7 +76,7 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
         id="pdf-download-button"
         onClick={directDownload ? handleGeneratePDF : handlePreviewPDF}
         disabled={isGenerating || status === "generating"}
-        className="bg-verifyvision-teal hover:bg-verifyvision-teal/90 text-white transition-all px-6 shadow-md hover:shadow-lg"
+        className="bg-shareai-teal hover:bg-shareai-teal/90 text-white transition-all px-6 shadow-md hover:shadow-lg"
         size="default"
       >
         {isGenerating || status === "generating" ? (

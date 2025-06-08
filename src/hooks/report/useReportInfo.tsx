@@ -78,6 +78,7 @@ export const useReportInfo = (
     
     try {
       console.log("Saving report with rooms:", report.rooms.length);
+      console.log("Report ID:", report.id);
       
       let updatedStatus = report.status;
       
@@ -120,8 +121,9 @@ export const useReportInfo = (
           description: "Your report has been saved successfully.",
         });
         
-        // Navigate to the report view page
-        navigate(`/reports/${report.id}`);
+        console.log("Navigating to report view:", `/reports/${report.id}/view`);
+        // Navigate to the report view page with /view suffix
+        navigate(`/reports/${report.id}/view`);
       }
     } catch (error) {
       console.error("Error saving report:", error);
@@ -169,7 +171,8 @@ export const useReportInfo = (
           description: "Your report has been marked as completed.",
         });
         
-        navigate(`/reports/${report.id}`);
+        console.log("Navigating to completed report view:", `/reports/${report.id}/view`);
+        navigate(`/reports/${report.id}/view`);
       }
     } catch (error) {
       console.error("Error completing report:", error);
