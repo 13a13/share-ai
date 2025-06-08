@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Report, Property, Room, RoomComponent, RoomSection } from "@/types";
+import { Report, Property, Room, RoomComponent, RoomSection, RoomType } from "@/types";
 import { ReportsAPI, PropertiesAPI } from "@/lib/api";
 import { useReportInfo, ReportInfoFormValues } from "./useReportInfo";
 import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
@@ -81,7 +81,7 @@ export const useReportEditor = (reportId: string | undefined) => {
     
     setIsSubmittingRoom(true);
     try {
-      const updatedReport = await ReportsAPI.addRoom(report.id, roomData.name, roomData.type);
+      const updatedReport = await ReportsAPI.addRoom(report.id, roomData.name, roomData.type as RoomType);
       if (updatedReport) {
         setReport(updatedReport);
         toast({
@@ -141,7 +141,10 @@ export const useReportEditor = (reportId: string | undefined) => {
     
     // Auto-save with batch processing
     try {
-      await saveBatch(updatedReport);
+      const success = await saveBatch(updatedReport);
+      if (!success) {
+        console.error("Batch save failed");
+      }
     } catch (error) {
       console.error("Error saving components:", error);
     }
