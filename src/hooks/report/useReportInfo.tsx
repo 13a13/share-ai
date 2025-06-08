@@ -4,7 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ReportsAPI } from "@/lib/api";
 import { Report } from "@/types";
 import { useNavigate } from "react-router-dom";
-import { useUltraFastReportSaving } from "@/hooks/useUltraFastReportSaving";
+import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
+import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
 
 export type ReportInfoFormValues = {
   reportDate: string;
@@ -16,7 +17,7 @@ export type ReportInfoFormValues = {
 };
 
 /**
- * Hook for managing report information and status with ultra-fast saving
+ * Hook for managing report information with ultra-fast completion
  */
 export const useReportInfo = (
   report: Report | null,
@@ -25,7 +26,8 @@ export const useReportInfo = (
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const { ultraFastSave, ultraFastComplete, saveProgress } = useUltraFastReportSaving();
+  const { saveBatch, saveProgress: batchProgress } = useBatchRoomSaving();
+  const { completeReportInstantly, isCompleting, completionProgress } = useUltraFastCompletion();
   
   const handleSaveReportInfo = async (values: ReportInfoFormValues) => {
     if (!report) return;
@@ -48,7 +50,6 @@ export const useReportInfo = (
       });
       
       if (updatedReport) {
-        // Important: preserve the rooms from the current state
         const completeReport = {
           ...updatedReport,
           rooms: report.rooms
@@ -76,9 +77,9 @@ export const useReportInfo = (
   const handleSaveReport = async () => {
     if (!report) return;
     
-    console.log("🚀 Starting ultra-fast save for report:", report.id);
+    console.log("🚀 Starting batch save for report:", report.id);
     
-    const success = await ultraFastSave(report, true);
+    const success = await saveBatch(report);
     
     if (success) {
       console.log("Navigating to report view:", `/reports/${report.id}/view`);
@@ -91,7 +92,7 @@ export const useReportInfo = (
     
     console.log("🚀 Starting ultra-fast completion for report:", report.id);
     
-    const success = await ultraFastComplete(report);
+    const success = await completeReportInstantly(report);
     
     if (success) {
       console.log("Navigating to completed report view:", `/reports/${report.id}/view`);
@@ -100,8 +101,8 @@ export const useReportInfo = (
   };
 
   return {
-    isSaving: isSaving || saveProgress !== null,
-    saveProgress,
+    isSaving: isSaving || isCompleting,
+    saveProgress: completionProgress || batchProgress,
     handleSaveReportInfo,
     handleSaveReport,
     handleCompleteReport,
