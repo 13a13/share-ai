@@ -1,5 +1,6 @@
 
 
+
 // Import specific room-related APIs directly
 import { RoomCrudAPI } from './roomCrudApi';
 import { RoomUpdateAPI } from './roomUpdateApi';
@@ -39,8 +40,17 @@ export * from './reportQueryUtils';
 
 // Create a unified ReportsAPI that combines all report-related functionality
 export const ReportsAPI = {
-  // Core report operations
+  // Core report operations from BaseReportsAPI
   ...BaseReportsAPI,
+  
+  // Report creation
+  create: ReportCreationAPI.create,
+  
+  // Report update operations from ReportUpdateAPI
+  update: ReportUpdateAPI.update,
+  delete: ReportUpdateAPI.delete,
+  duplicate: ReportUpdateAPI.duplicate,
+  updateComponentAnalysis: ReportUpdateAPI.updateComponentAnalysis,
   
   // Room operations
   addRoom: RoomCrudAPI.addRoom,
