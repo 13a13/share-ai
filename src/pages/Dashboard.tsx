@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -130,7 +131,7 @@ const Dashboard = () => {
                   {reports.length > 0 ? (
                     reports.map((report) => (
                       <div key={report.id} className="flex justify-between items-center">
-                        <span>Report created for {report.propertyName || 'Property'}</span>
+                        <span>Report created for {report.property?.name || 'Property'}</span>
                         <span className="text-gray-500 text-xs">
                           {new Date(report.createdAt).toLocaleDateString()}
                         </span>
