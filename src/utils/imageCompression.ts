@@ -1,151 +1,210 @@
 
 /**
- * Compresses an image file to a specified quality and max dimensions
- * @param file The image file to compress
- * @param maxWidth Maximum width of the compressed image (default: 1200)
- * @param maxHeight Maximum height of the compressed image (default: 1200)
- * @param quality JPEG quality between 0 and 1 (default: 0.7)
- * @returns A Promise that resolves to a compressed image as a data URL
+ * Image compression utility functions
  */
-export const compressImageFile = async (
+
+// Default compression settings
+const DEFAULT_MAX_WIDTH = 1920;
+const DEFAULT_MAX_HEIGHT = 1080;
+const DEFAULT_QUALITY = 0.8;
+
+/**
+ * Compresses an image file
+ */
+export const compressImage = async (
   file: File,
-  maxWidth = 1200,
-  maxHeight = 1200,
-  quality = 0.7
-): Promise<string> => {
+  options: {
+    maxWidth?: number;
+    maxHeight?: number;
+    quality?: number;
+  } = {}
+): Promise<File> => {
+  const {
+    maxWidth = DEFAULT_MAX_WIDTH,
+    maxHeight = DEFAULT_MAX_HEIGHT,
+    quality = DEFAULT_QUALITY,
+  } = options;
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          
-          // Calculate new dimensions while maintaining aspect ratio
-          if (width > height) {
-            if (width > maxWidth) {
-              height = Math.round(height * (maxWidth / width));
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = Math.round(width * (maxHeight / height));
-              height = maxHeight;
-            }
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Could not get canvas context'));
-            return;
-          }
-          
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Get the data URL as JPEG with the specified quality
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          resolve(dataUrl);
-        } catch (error) {
-          console.error("Error compressing image:", error);
-          // If compression fails, return the original image
-          resolve(img.src);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        // Calculate new dimensions
+        const { width: newWidth, height: newHeight } = calculateDimensions(
+          img.width,
+          img.height,
+          maxWidth,
+          maxHeight
+        );
+
+        // Set canvas dimensions
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
         }
-      };
-      
-      img.onerror = (error) => {
-        console.error("Error loading image:", error);
-        reject(error);
-      };
+
+        // Draw image on canvas
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        // Convert to blob with error handling for tainted canvas
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              console.warn('Canvas toBlob failed, returning original file');
+              resolve(file);
+              return;
+            }
+
+            // Create new file from blob
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      } catch (error) {
+        console.warn('Image compression failed, returning original file:', error);
+        resolve(file);
+      }
     };
-    
-    reader.onerror = (error) => {
-      console.error("Error reading file:", error);
-      reject(error);
+
+    img.onerror = () => {
+      console.warn('Image load failed, returning original file');
+      resolve(file);
     };
+
+    // Handle CORS by setting crossOrigin before setting src
+    img.crossOrigin = 'anonymous';
+    img.src = URL.createObjectURL(file);
   });
 };
 
 /**
  * Compresses an image from a data URL
- * @param dataUrl The data URL of the image to compress
- * @param fileName Optional filename for logging purposes
- * @param maxWidth Maximum width of the compressed image (default: 1200)
- * @param maxHeight Maximum height of the compressed image (default: 1200)
- * @param quality JPEG quality between 0 and 1 (default: 0.7)
- * @returns A Promise that resolves to a compressed image as a data URL
  */
-export const compressDataURLImage = async (
+export const compressImageFromDataUrl = async (
   dataUrl: string,
-  fileName: string = 'image.jpg',
-  maxWidth = 1200,
-  maxHeight = 1200,
-  quality = 0.7
+  options: {
+    maxWidth?: number;
+    maxHeight?: number;
+    quality?: number;
+  } = {}
 ): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    try {
-      const img = new Image();
-      img.src = dataUrl;
-      
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        // Calculate new dimensions while maintaining aspect ratio
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round(height * (maxWidth / width));
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round(width * (maxHeight / height));
-            height = maxHeight;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
+  const {
+    maxWidth = DEFAULT_MAX_WIDTH,
+    maxHeight = DEFAULT_MAX_HEIGHT,
+    quality = DEFAULT_QUALITY,
+  } = options;
+
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        // Calculate new dimensions
+        const { width: newWidth, height: newHeight } = calculateDimensions(
+          img.width,
+          img.height,
+          maxWidth,
+          maxHeight
+        );
+
+        // Set canvas dimensions
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
         if (!ctx) {
-          reject(new Error('Could not get canvas context'));
+          console.warn('Failed to get canvas context, returning original');
+          resolve(dataUrl);
           return;
         }
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Get the data URL as JPEG with the specified quality
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-        
-        // Log compression results
-        if (dataUrl.length > compressedDataUrl.length) {
-          console.log(`Compressed ${fileName}: ${(dataUrl.length / 1024).toFixed(2)}KB → ${(compressedDataUrl.length / 1024).toFixed(2)}KB (${Math.round((1 - compressedDataUrl.length / dataUrl.length) * 100)}% reduction)`);
-        } else {
-          console.log(`Note: ${fileName} could not be further compressed`);
+
+        // Draw image on canvas
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        // Try to convert to data URL with error handling
+        try {
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        } catch (error) {
+          console.warn('Canvas toDataURL failed (likely CORS), returning original:', error);
+          resolve(dataUrl);
         }
-        
-        resolve(compressedDataUrl);
-      };
-      
-      img.onerror = (error) => {
-        console.error(`Error loading image ${fileName}:`, error);
-        // If compression fails, return the original data URL
+      } catch (error) {
+        console.warn('Image compression failed, returning original:', error);
         resolve(dataUrl);
-      };
-    } catch (error) {
-      console.error(`Error compressing image ${fileName}:`, error);
-      // If compression fails, return the original data URL
+      }
+    };
+
+    img.onerror = () => {
+      console.warn('Image load failed, returning original');
       resolve(dataUrl);
-    }
+    };
+
+    // Handle CORS properly
+    img.crossOrigin = 'anonymous';
+    img.src = dataUrl;
+  });
+};
+
+/**
+ * Calculate new dimensions while maintaining aspect ratio
+ */
+const calculateDimensions = (
+  originalWidth: number,
+  originalHeight: number,
+  maxWidth: number,
+  maxHeight: number
+): { width: number; height: number } => {
+  let { width, height } = { width: originalWidth, height: originalHeight };
+
+  // Scale down if needed
+  if (width > maxWidth) {
+    height = (height * maxWidth) / width;
+    width = maxWidth;
+  }
+
+  if (height > maxHeight) {
+    width = (width * maxHeight) / height;
+    height = maxHeight;
+  }
+
+  return { width: Math.round(width), height: Math.round(height) };
+};
+
+/**
+ * Validates if a file is a valid image
+ */
+export const isValidImageFile = (file: File): boolean => {
+  return file.type.startsWith('image/');
+};
+
+/**
+ * Converts file to data URL
+ */
+export const fileToDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        resolve(e.target.result as string);
+      } else {
+        reject(new Error('Failed to read file'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
   });
 };

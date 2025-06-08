@@ -33,11 +33,14 @@ export const usePDFGeneration = () => {
     report: Report, 
     property: Property
   ): Promise<string> => {
+    console.log("=== PDF Generation Started ===");
+    console.log("Report ID:", report.id);
+    console.log("Property:", property.address);
+    console.log("Room count:", report.rooms.length);
+    
     setStatus("generating");
     
     try {
-      console.log("Starting PDF generation for report:", report.id);
-      
       // Create a new PDF document
       const doc = new jsPDF({
         orientation: "portrait",
@@ -56,11 +59,17 @@ export const usePDFGeneration = () => {
       });
       
       // Preload all images to avoid async issues
-      console.log("Preloading images...");
-      await preloadImages(report);
+      console.log("=== Starting image preload ===");
+      try {
+        await preloadImages(report);
+        console.log("=== Image preload completed successfully ===");
+      } catch (imageError) {
+        console.warn("=== Image preload had issues, continuing anyway ===", imageError);
+        // Don't fail the entire PDF generation for image issues
+      }
       
       // Generate sections
-      console.log("Generating cover page...");
+      console.log("=== Generating cover page ===");
       await generateCoverPage(doc, report, property);
       doc.addPage();
       
@@ -70,6 +79,8 @@ export const usePDFGeneration = () => {
 
       // Special handling for comparison report
       if (report.type === "comparison" && report.reportInfo?.comparisonText) {
+        console.log("=== Generating comparison report sections ===");
+        
         // Add table of contents as page 2
         pageMap["contents"] = currentPage++;
         generateTableOfContents(doc, pageMap, null); // No rooms in ToC for comparison report
@@ -84,7 +95,7 @@ export const usePDFGeneration = () => {
         pageMap["comparison"] = currentPage++;
         generateComparisonSection(doc, report);
       } else {
-        // Standard report processing
+        console.log("=== Generating standard report sections ===");
         
         // Add table of contents as page 2
         pageMap["contents"] = currentPage++;
@@ -102,16 +113,16 @@ export const usePDFGeneration = () => {
         doc.addPage();
         
         // Track start of rooms for table of contents
-        console.log("Generating room sections...");
+        console.log("=== Generating room sections ===");
         await generateRoomSections(doc, report, pageMap, currentPage);
       }
       
       // Add headers and footers to all pages
-      console.log("Adding headers and footers...");
+      console.log("=== Adding headers and footers ===");
       addHeadersAndFooters(doc, property.address);
       
       // Convert the PDF to base64
-      console.log("Finalizing PDF...");
+      console.log("=== Finalizing PDF ===");
       const pdfBase64 = doc.output('datauristring');
       
       // Don't show success toast for comparison reports
@@ -124,18 +135,37 @@ export const usePDFGeneration = () => {
       }
       
       setStatus("complete");
-      console.log("PDF generation complete");
+      console.log("=== PDF generation completed successfully ===");
+      console.log("PDF size:", Math.round(pdfBase64.length / 1024), "KB");
       
       return pdfBase64;
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("=== PDF Generation Failed ===", error);
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        reportId: report.id,
+        roomCount: report.rooms.length
+      });
       
-      // Show error toast
+      // Show error toast with more specific messaging
+      let errorMessage = "There was an error generating your PDF. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('canvas') || error.message.includes('tainted')) {
+          errorMessage = "Some images couldn't be processed. Try removing or replacing problematic images.";
+        } else if (error.message.includes('memory') || error.message.includes('size')) {
+          errorMessage = "The report is too large. Try reducing the number of images or rooms.";
+        }
+      }
+      
+      if (isIosDevice()) {
+        errorMessage += " iOS has limitations with large PDFs.";
+      }
+      
       toast({
         title: "PDF Generation Failed",
-        description: isIosDevice() 
-          ? "There was an error generating your PDF. iOS has limitations with large PDFs. Try with fewer images or rooms."
-          : "There was an error generating your PDF. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       
@@ -157,17 +187,30 @@ export const usePDFGeneration = () => {
     
     for (let i = 0; i < report.rooms.length; i++) {
       const room = report.rooms[i];
-      console.log(`Processing room ${i+1}/${report.rooms.length}: ${room.name}`);
+      console.log(`=== Processing room ${i+1}/${report.rooms.length}: ${room.name} ===`);
       
-      // Record page number for this room
-      pageMap[room.id] = currentPage++;
-      
-      // Generate room section
-      await generateRoomSection(doc, room, i + 1);
-      
-      // Add new page for next room (except for last room)
-      if (i < report.rooms.length - 1) {
-        doc.addPage();
+      try {
+        // Record page number for this room
+        pageMap[room.id] = currentPage++;
+        
+        // Generate room section
+        await generateRoomSection(doc, room, i + 1);
+        
+        // Add new page for next room (except for last room)
+        if (i < report.rooms.length - 1) {
+          doc.addPage();
+        }
+        
+        console.log(`=== Room ${room.name} completed successfully ===`);
+      } catch (roomError) {
+        console.error(`=== Error processing room ${room.name} ===`, roomError);
+        // Continue with other rooms instead of failing entirely
+        
+        // Add a placeholder page for this room
+        doc.text(`Error processing room: ${room.name}`, 20, 50);
+        if (i < report.rooms.length - 1) {
+          doc.addPage();
+        }
       }
     }
   };
