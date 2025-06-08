@@ -1,4 +1,21 @@
 
+
+// Import specific room-related APIs directly
+import { RoomCrudAPI } from './roomCrudApi';
+import { RoomUpdateAPI } from './roomUpdateApi';
+import { RoomImageAPI } from './roomImageApi';
+
+// Import other report APIs
+import { BaseReportsAPI } from './baseReportsApi';
+import { BatchReportsAPI } from './batchOperationsApi';
+import { CheckoutAPI } from './checkoutApi';
+import { CheckoutComparisonAPI } from './checkoutComparisonApi';
+import { CheckoutReportAPI } from './checkoutReportApi';
+import { OptimizedDashboardAPI } from './optimizedDashboardApi';
+import { ReportCreationAPI } from './reportCreation';
+import { ReportUpdateAPI } from './reportUpdateApi';
+import { ReportStatusUpdater } from './reportStatusUpdater';
+
 // Export specific room-related APIs directly
 export { RoomCrudAPI } from './roomCrudApi';
 export { RoomUpdateAPI } from './roomUpdateApi';
@@ -35,3 +52,4 @@ export const ReportsAPI = {
   updateReportStatus: ReportStatusUpdater.updateReportStatus,
   completeReport: ReportStatusUpdater.completeReport
 };
+
