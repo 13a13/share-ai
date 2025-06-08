@@ -20,9 +20,10 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
   const title = report.type === "comparison" ? "PROPERTY COMPARISON" : "INSPECTION REPORT";
   doc.text(title, pageWidth / 2, 60, { align: "center" });
   
-  // Property Address - centered and prominent
+  // Property Name - centered and prominent (instead of address)
   doc.setFontSize(pdfStyles.fontSizes.subtitle);
-  doc.text(property.address, pageWidth / 2, 80, { align: "center" });
+  const propertyTitle = property.name || property.address; // Fallback to address if name is not available
+  doc.text(propertyTitle, pageWidth / 2, 80, { align: "center" });
   doc.text(`${property.city}, ${property.state} ${property.zipCode}`, pageWidth / 2, 90, { align: "center" });
   
   // Date and Report Details
@@ -77,13 +78,5 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
     doc.text("Logo", pageWidth / 2, 160, { align: "center" });
   }
   
-  // Footer at bottom of page
-  doc.setFont(pdfStyles.fonts.body, "italic");
-  doc.setFontSize(pdfStyles.fontSizes.small);
-  doc.text(
-    "This inspection report was created using VerifyVision AI Property Reports", 
-    pageWidth / 2, 
-    pageHeight - 20, 
-    { align: "center" }
-  );
+  // Footer removed - no longer showing "This inspection report was created using VerifyVision AI Property Reports"
 }

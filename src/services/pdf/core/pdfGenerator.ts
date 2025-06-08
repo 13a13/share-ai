@@ -34,9 +34,10 @@ export const generatePDFDocument = async (
   // Generate all sections
   await generatePDFSections(doc, report, property);
   
-  // Add headers and footers to all pages
+  // Add headers and footers to all pages using property name instead of address
   console.log("=== Adding headers and footers ===");
-  addHeadersAndFooters(doc, property.address);
+  const propertyTitle = property.name || property.address; // Fallback to address if name is not available
+  addHeadersAndFooters(doc, propertyTitle);
   
   // Convert the PDF to base64
   console.log("=== Finalizing PDF ===");
