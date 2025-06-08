@@ -19,3 +19,19 @@ export { ReportStatusUpdater } from './reportStatusUpdater';
 export * from './reportTransformers';
 export * from './reportQueries';
 export * from './reportQueryUtils';
+
+// Create a unified ReportsAPI that combines all report-related functionality
+export const ReportsAPI = {
+  // Core report operations
+  ...BaseReportsAPI,
+  
+  // Room operations
+  addRoom: RoomCrudAPI.addRoom,
+  deleteRoom: RoomCrudAPI.deleteRoom,
+  updateRoom: RoomUpdateAPI.updateRoom,
+  addImageToRoom: RoomImageAPI.addImageToRoom,
+  
+  // Report status and updates
+  updateReportStatus: ReportStatusUpdater.updateReportStatus,
+  completeReport: ReportStatusUpdater.completeReport
+};

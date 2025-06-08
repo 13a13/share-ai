@@ -94,3 +94,10 @@ export const createReport = async (propertyId: string, type: string): Promise<Re
     return null;
   }
 };
+
+/**
+ * Report Creation API
+ */
+export const ReportCreationAPI = {
+  create: createReport
+};
