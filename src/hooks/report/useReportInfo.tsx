@@ -1,10 +1,10 @@
 
 import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ReportsAPI } from "@/lib/api";
 import { Report } from "@/types";
 import { useNavigate } from "react-router-dom";
-import { useOptimizedReportSaving } from "@/hooks/useOptimizedReportSaving";
+import { useUltraFastReportSaving } from "@/hooks/useUltraFastReportSaving";
 
 export type ReportInfoFormValues = {
   reportDate: string;
@@ -16,7 +16,7 @@ export type ReportInfoFormValues = {
 };
 
 /**
- * Hook for managing report information and status with optimized saving
+ * Hook for managing report information and status with ultra-fast saving
  */
 export const useReportInfo = (
   report: Report | null,
@@ -25,7 +25,7 @@ export const useReportInfo = (
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const { saveReportOptimized, completeReportOptimized, saveProgress } = useOptimizedReportSaving();
+  const { ultraFastSave, ultraFastComplete, saveProgress } = useUltraFastReportSaving();
   
   const handleSaveReportInfo = async (values: ReportInfoFormValues) => {
     if (!report) return;
@@ -76,9 +76,9 @@ export const useReportInfo = (
   const handleSaveReport = async () => {
     if (!report) return;
     
-    console.log("Starting optimized save for report:", report.id);
+    console.log("🚀 Starting ultra-fast save for report:", report.id);
     
-    const success = await saveReportOptimized(report, true);
+    const success = await ultraFastSave(report, true);
     
     if (success) {
       console.log("Navigating to report view:", `/reports/${report.id}/view`);
@@ -89,9 +89,9 @@ export const useReportInfo = (
   const handleCompleteReport = async () => {
     if (!report) return;
     
-    console.log("Starting optimized completion for report:", report.id);
+    console.log("🚀 Starting ultra-fast completion for report:", report.id);
     
-    const success = await completeReportOptimized(report);
+    const success = await ultraFastComplete(report);
     
     if (success) {
       console.log("Navigating to completed report view:", `/reports/${report.id}/view`);

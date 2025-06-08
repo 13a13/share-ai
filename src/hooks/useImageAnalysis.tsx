@@ -1,9 +1,9 @@
 
 import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
 import { uploadReportImage } from "@/utils/supabaseStorage";
-import { useOptimizedBatchSaving } from "./useOptimizedBatchSaving";
+import { useUltraFastBatchSaving } from "./useUltraFastBatchSaving";
 
 interface UseImageAnalysisProps {
   componentId: string;
@@ -24,7 +24,7 @@ export function useImageAnalysis({
 }: UseImageAnalysisProps) {
   const { toast } = useToast();
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
-  const { queueComponentUpdate, isSaving, getPendingCount } = useOptimizedBatchSaving();
+  const { queueComponentUpdate, isSaving, getPendingCount } = useUltraFastBatchSaving();
 
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
@@ -50,7 +50,7 @@ export function useImageAnalysis({
         throw new Error("Invalid report or room ID");
       }
       
-      console.log(`Processing ${stagingImages.length} images for component ${componentName}`);
+      console.log(`🚀 Processing ${stagingImages.length} images for component ${componentName}`);
       
       // Upload all images to Supabase Storage in parallel
       const uploadPromises = stagingImages.map(imageUrl => 
@@ -61,7 +61,7 @@ export function useImageAnalysis({
       // Process stored images with AI
       const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
       
-      // Queue the update for batch saving instead of saving immediately
+      // Queue the update for ultra-fast batch saving
       queueComponentUpdate(
         reportId,
         componentId,
@@ -76,8 +76,8 @@ export function useImageAnalysis({
       
       const pendingCount = getPendingCount();
       toast({
-        title: "Images processed successfully",
-        description: `AI analyzed ${stagingImages.length} image(s) for ${componentName}. ${pendingCount} update(s) queued for saving.`,
+        title: "Images processed",
+        description: `AI analyzed ${stagingImages.length} image(s). ${pendingCount} queued for ultra-fast save.`,
       });
       
       return true;
