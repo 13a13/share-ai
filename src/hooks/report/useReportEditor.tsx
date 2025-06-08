@@ -105,10 +105,10 @@ export const useReportEditor = (reportId: string | undefined) => {
     if (!report) return;
     
     try {
-      const updatedReport = await ReportsAPI.deleteRoom(report.id, roomId);
-      if (updatedReport) {
-        setReport(updatedReport);
-      }
+      await ReportsAPI.deleteRoom(report.id, roomId);
+      // Update the local state by removing the deleted room
+      const updatedRooms = report.rooms.filter(room => room.id !== roomId);
+      setReport({ ...report, rooms: updatedRooms });
     } catch (error) {
       console.error("Error deleting room:", error);
       throw error;
