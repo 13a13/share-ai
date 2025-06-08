@@ -16,7 +16,7 @@ export function addHeadersAndFooters(doc: jsPDF, propertyTitle: string): void {
   for (let i = 2; i <= pageCount; i++) {
     doc.setPage(i);
     
-    // Header - property name (instead of address)
+    // Header - property title
     doc.setFont(pdfStyles.fonts.header, "normal");
     doc.setFontSize(pdfStyles.fontSizes.small);
     doc.setTextColor(pdfStyles.colors.gray[0], pdfStyles.colors.gray[1], pdfStyles.colors.gray[2]);

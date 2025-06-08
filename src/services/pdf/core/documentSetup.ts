@@ -1,6 +1,7 @@
 
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
+import { getReportTitle, getReportSubject } from "../utils/reportNaming";
 
 /**
  * Sets up PDF document with metadata
@@ -13,17 +14,10 @@ export const setupPDFDocument = (report: Report, property: Property): jsPDF => {
     format: "a4",
   });
   
-  // Set up document metadata with updated title using property name
-  const propertyTitle = property.name || property.address; // Fallback to address if name is not available
-  const reportTitle = report.type === "comparison" 
-    ? `Property Comparison - ${propertyTitle}` 
-    : `VerifyVision Inspection Report - ${propertyTitle}`;
-  
+  // Set up document metadata using centralized naming utilities
   doc.setProperties({
-    title: reportTitle,
-    subject: report.type === "comparison" 
-      ? `Comparison Report for ${propertyTitle}` 
-      : `VerifyVision Inspection Report for ${propertyTitle}`,
+    title: getReportTitle(report, property),
+    subject: getReportSubject(report, property),
     author: report.reportInfo?.clerk || "VerifyVision",
     creator: "VerifyVision AI Property Reports"
   });

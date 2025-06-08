@@ -5,6 +5,7 @@ import { setupPDFDocument } from "./documentSetup";
 import { generatePDFSections } from "./sectionOrchestrator";
 import { addHeadersAndFooters } from "../utils/headerFooter";
 import { preloadImages } from "../utils/imagePreloader";
+import { getPropertyTitle } from "../utils/reportNaming";
 
 /**
  * Core PDF generation logic
@@ -34,9 +35,9 @@ export const generatePDFDocument = async (
   // Generate all sections
   await generatePDFSections(doc, report, property);
   
-  // Add headers and footers to all pages using property name instead of address
+  // Add headers and footers to all pages using centralized property title utility
   console.log("=== Adding headers and footers ===");
-  const propertyTitle = property.name || property.address; // Fallback to address if name is not available
+  const propertyTitle = getPropertyTitle(property);
   addHeadersAndFooters(doc, propertyTitle);
   
   // Convert the PDF to base64

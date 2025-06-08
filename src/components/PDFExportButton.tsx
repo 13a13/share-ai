@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { usePDFGeneration, PDFGenerationStatus } from "@/services/pdf";
@@ -6,6 +7,7 @@ import { Loader2, Eye, Download, FileText, AlertCircle } from "lucide-react";
 import PDFPreviewDialog from "./PDFPreviewDialog";
 import { downloadPdf, isIosDevice } from "@/utils/pdfUtils";
 import { useToast } from "@/components/ui/use-toast";
+import { getReportFileName } from "@/services/pdf/utils/reportNaming";
 
 interface PDFExportButtonProps {
   report: Report;
@@ -47,7 +49,7 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
       
       // If direct download is requested, trigger the download
       if (directDownload) {
-        const fileName = `${getReportTitle()}.pdf`;
+        const fileName = `${getReportFileName(property)}.pdf`;
         console.log("=== Triggering direct download ===", fileName);
         downloadPdf(pdfData, fileName);
       }
@@ -70,12 +72,6 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
     } finally {
       setIsGenerating(false);
     }
-  };
-  
-  // Determine report title with new naming convention using property name
-  const getReportTitle = () => {
-    const propertyTitle = property.name || property.address; // Fallback to address if name is not available
-    return `Inspection Report - ${propertyTitle.replace(/\s+/g, '_')}`;
   };
   
   const handlePreviewPDF = async () => {
@@ -143,7 +139,7 @@ const PDFExportButton = ({ report, property, directDownload = false }: PDFExport
         pdfUrl={downloadUrl}
         isLoading={isProcessing}
         downloadUrl={downloadUrl}
-        reportTitle={getReportTitle()}
+        reportTitle={getReportFileName(property)}
         report={report}
         property={property}
       />

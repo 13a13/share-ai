@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { pdfStyles } from "../styles";
 import { addCompressedImage } from "../utils/imageHelpers";
+import { getCoverPageTitle, getPropertyTitle } from "../utils/reportNaming";
 
 /**
  * Generate the cover page
@@ -16,13 +17,13 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
   doc.setFontSize(pdfStyles.fontSizes.title + 6);
   doc.setTextColor(pdfStyles.colors.black[0], pdfStyles.colors.black[1], pdfStyles.colors.black[2]);
   
-  // Use appropriate title based on report type
-  const title = report.type === "comparison" ? "PROPERTY COMPARISON" : "INSPECTION REPORT";
+  // Use centralized title generation
+  const title = getCoverPageTitle(report);
   doc.text(title, pageWidth / 2, 60, { align: "center" });
   
-  // Property Name - centered and prominent (instead of address)
+  // Property Name - centered and prominent using centralized utility
   doc.setFontSize(pdfStyles.fontSizes.subtitle);
-  const propertyTitle = property.name || property.address; // Fallback to address if name is not available
+  const propertyTitle = getPropertyTitle(property);
   doc.text(propertyTitle, pageWidth / 2, 80, { align: "center" });
   doc.text(`${property.city}, ${property.state} ${property.zipCode}`, pageWidth / 2, 90, { align: "center" });
   
@@ -54,7 +55,7 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
     doc.text("Report Type: Comparison Analysis", pageWidth / 2, 130, { align: "center" });
   }
   
-  // Add the new logo with updated path and size
+  // Add the logo
   try {
     await addCompressedImage(
       doc,
@@ -77,6 +78,4 @@ export async function generateCoverPage(doc: jsPDF, report: Report, property: Pr
     doc.setFontSize(pdfStyles.fontSizes.small);
     doc.text("Logo", pageWidth / 2, 160, { align: "center" });
   }
-  
-  // Footer removed - no longer showing "This inspection report was created using VerifyVision AI Property Reports"
 }
