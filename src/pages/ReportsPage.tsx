@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import ReportCard from "@/components/ReportCard";
 import EmptyState from "@/components/EmptyState";
@@ -222,6 +223,10 @@ const ReportsPage = () => {
             <h1 className="text-3xl font-bold text-shareai-blue">Reports</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
             <Button 
               onClick={() => navigate("/reports/new")}
               className="bg-shareai-teal hover:bg-shareai-teal/90"
@@ -236,10 +241,6 @@ const ReportsPage = () => {
             >
               <Upload className="h-4 w-4 mr-2" />
               Upload Report
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
             </Button>
           </div>
         </div>

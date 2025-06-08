@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowLeft } from "lucide-react";
@@ -97,6 +98,10 @@ const PropertiesPage = () => {
             <p className="text-gray-600">Manage your property portfolio and create inspection reports.</p>
           </div>
           <div className="flex items-center space-x-2">
+            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
             <Button 
               onClick={handleCreateProperty}
               className="bg-verifyvision-teal hover:bg-verifyvision-teal/90"
@@ -104,10 +109,6 @@ const PropertiesPage = () => {
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Property
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
             </Button>
           </div>
         </div>
