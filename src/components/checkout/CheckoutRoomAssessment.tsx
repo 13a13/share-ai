@@ -27,23 +27,44 @@ const CheckoutRoomAssessment = ({
     setIsUpdating
   } = useAssessmentActions({ onComparisonUpdate });
 
-  // Helper function to get display name for rooms
-  const getRoomDisplayName = (roomId: string, comparison: CheckoutComparison): string => {
-    if (roomId === 'general') return 'General Assessment';
-    
-    // Try to extract room name from component data
+  // Enhanced function to get proper room display names
+  const getRoomDisplayName = (comparison: CheckoutComparison): string => {
+    // First, try to get room name from AI analysis
     if (comparison.ai_analysis?.roomName) {
       return comparison.ai_analysis.roomName;
     }
     
-    // Fallback to formatted room ID
-    return roomId.charAt(0).toUpperCase() + roomId.slice(1).replace(/[-_]/g, ' ');
+    // Try to get room name from component data if available
+    if (comparison.ai_analysis?.checkinData?.roomName) {
+      return comparison.ai_analysis.checkinData.roomName;
+    }
+    
+    // Check if room_id looks like a readable name (not a UUID)
+    const roomId = comparison.room_id || 'general';
+    if (roomId && !roomId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      // If it's not a UUID, format it as a readable name
+      return roomId.charAt(0).toUpperCase() + roomId.slice(1).replace(/[-_]/g, ' ');
+    }
+    
+    // Fallback based on component name context
+    if (comparison.component_name) {
+      // Try to infer room type from component name
+      const componentName = comparison.component_name.toLowerCase();
+      if (componentName.includes('kitchen')) return 'Kitchen';
+      if (componentName.includes('bathroom') || componentName.includes('toilet')) return 'Bathroom';
+      if (componentName.includes('bedroom')) return 'Bedroom';
+      if (componentName.includes('living') || componentName.includes('lounge')) return 'Living Room';
+      if (componentName.includes('dining')) return 'Dining Room';
+    }
+    
+    // Final fallback
+    return 'General Assessment';
   };
 
   // Enhanced room grouping with better room name handling
   const roomGroups = comparisons.reduce((groups, comparison) => {
     const roomKey = comparison.room_id || 'general';
-    const roomName = getRoomDisplayName(comparison.room_id, comparison);
+    const roomName = getRoomDisplayName(comparison);
     
     if (!groups[roomKey]) {
       groups[roomKey] = {

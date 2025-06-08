@@ -22,8 +22,9 @@ export const CheckoutComponentExtractor = {
       console.log('Found additionalRooms with', reportInfo.additionalRooms.length, 'rooms');
       
       reportInfo.additionalRooms.forEach((room: any) => {
-        const roomId = room.id || room.name || 'unknown-room';
-        const roomName = room.name || room.type || 'Unknown Room';
+        // Enhanced room name extraction
+        const roomName = room.name || room.type || room.roomType || 'Unknown Room';
+        const roomId = this.createReadableRoomId(roomName, room.id);
         
         if (room.components && Array.isArray(room.components)) {
           room.components.forEach((component: any, index: number) => {
@@ -45,12 +46,15 @@ export const CheckoutComponentExtractor = {
     if (reportInfo.components && Array.isArray(reportInfo.components)) {
       console.log('Found main room components:', reportInfo.components.length);
       
+      const mainRoomName = reportInfo.roomName || reportInfo.mainRoomName || 'Main Room';
+      const mainRoomId = this.createReadableRoomId(mainRoomName);
+      
       reportInfo.components.forEach((component: any, index: number) => {
         const processedComponent = this.processComponentData(
           component, 
           index, 
-          'main-room', 
-          reportInfo.roomName || 'Main Room'
+          mainRoomId, 
+          mainRoomName
         );
         if (processedComponent) {
           allComponents.push(processedComponent);
@@ -71,6 +75,8 @@ export const CheckoutComponentExtractor = {
 
     possibleRoomKeys.forEach(roomKey => {
       const roomData = reportInfo[roomKey];
+      const roomName = roomData.name || roomData.roomName || roomKey;
+      const roomId = this.createReadableRoomId(roomName, roomKey);
       
       if (roomData.components && Array.isArray(roomData.components)) {
         console.log(`Found components in room key "${roomKey}":`, roomData.components.length);
@@ -79,8 +85,8 @@ export const CheckoutComponentExtractor = {
           const processedComponent = this.processComponentData(
             component, 
             index, 
-            roomKey, 
-            roomData.name || roomKey
+            roomId, 
+            roomName
           );
           if (processedComponent) {
             allComponents.push(processedComponent);
@@ -91,6 +97,22 @@ export const CheckoutComponentExtractor = {
 
     console.log(`Total components extracted: ${allComponents.length}`);
     return allComponents;
+  },
+
+  /**
+   * Create a readable room ID from room name
+   */
+  createReadableRoomId(roomName: string, fallbackId?: string): string {
+    if (!roomName || roomName === 'Unknown Room') {
+      return fallbackId || 'general';
+    }
+    
+    // Convert room name to a readable ID
+    return roomName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .trim();
   },
 
   /**
@@ -115,16 +137,17 @@ export const CheckoutComponentExtractor = {
       notes: component.notes || component.additionalNotes || '',
       cleanliness: component.cleanliness || 'unknown',
       conditionPoints: component.conditionPoints || [],
-      // Store original check-in data for comparison
+      // Store enhanced check-in data for comparison
       checkinData: {
         originalCondition: component.condition,
         originalDescription: component.description,
         originalImages: componentImages,
+        roomName: roomName, // Store room name in checkin data
         timestamp: component.timestamp || new Date().toISOString()
       }
     };
 
-    console.log('Processed component:', componentData.name, 'in room:', roomName);
+    console.log('Processed component:', componentData.name, 'in room:', roomName, 'with roomId:', roomId);
     return componentData;
   },
 
@@ -171,11 +194,14 @@ export const CheckoutComponentExtractor = {
    * Create fallback component when no components are found
    */
   createFallbackComponent(): any {
+    const roomName = 'General Assessment';
+    const roomId = this.createReadableRoomId(roomName);
+    
     return {
       id: 'general-assessment',
       name: 'General Property Condition',
-      roomId: 'general',
-      roomName: 'General Assessment',
+      roomId: roomId,
+      roomName: roomName,
       condition: 'unknown',
       conditionSummary: 'Overall property condition assessment',
       description: 'No specific components found in check-in report - assess general property condition',
@@ -185,6 +211,7 @@ export const CheckoutComponentExtractor = {
         originalCondition: 'unknown',
         originalDescription: 'General assessment',
         originalImages: [],
+        roomName: roomName,
         timestamp: new Date().toISOString()
       }
     };
