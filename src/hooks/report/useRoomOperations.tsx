@@ -19,9 +19,16 @@ export const useRoomOperations = (
     
     setIsSubmittingRoom(true);
     try {
-      const updatedReport = await ReportsAPI.addRoom(report.id, roomData.name, roomData.type as RoomType);
-      if (updatedReport) {
-        setReport(updatedReport);
+      const newRoom = await ReportsAPI.addRoom(report.id, roomData.name, roomData.type as RoomType);
+      if (newRoom) {
+        // Update the report by adding the new room to the existing rooms array
+        setReport(prevReport => {
+          if (!prevReport) return null;
+          return {
+            ...prevReport,
+            rooms: [...prevReport.rooms, newRoom]
+          };
+        });
         toast({
           title: "Room Added",
           description: `${roomData.name} has been added to the report.`,
@@ -45,8 +52,11 @@ export const useRoomOperations = (
     try {
       await ReportsAPI.deleteRoom(report.id, roomId);
       // Update the local state by removing the deleted room
-      const updatedRooms = report.rooms.filter(room => room.id !== roomId);
-      setReport({ ...report, rooms: updatedRooms });
+      setReport(prevReport => {
+        if (!prevReport) return null;
+        const updatedRooms = prevReport.rooms.filter(room => room.id !== roomId);
+        return { ...prevReport, rooms: updatedRooms };
+      });
     } catch (error) {
       console.error("Error deleting room:", error);
       throw error;
@@ -56,11 +66,13 @@ export const useRoomOperations = (
   const handleUpdateGeneralCondition = useCallback(async (roomId: string, generalCondition: string) => {
     if (!report) return;
     
-    const updatedRooms = report.rooms.map(room => 
-      room.id === roomId ? { ...room, generalCondition } : room
-    );
-    
-    setReport({ ...report, rooms: updatedRooms });
+    setReport(prevReport => {
+      if (!prevReport) return null;
+      const updatedRooms = prevReport.rooms.map(room => 
+        room.id === roomId ? { ...room, generalCondition } : room
+      );
+      return { ...prevReport, rooms: updatedRooms };
+    });
   }, [report, setReport]);
 
   return {
