@@ -1,9 +1,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Report, Property, Room, RoomComponent, RoomSection, RoomType } from "@/types";
+import { Report, Property, RoomComponent, RoomSection } from "@/types";
 import { ReportsAPI, PropertiesAPI } from "@/lib/api";
 import { useReportInfo, ReportInfoFormValues } from "./useReportInfo";
+import { useRoomOperations } from "./useRoomOperations";
 import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
 import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
 
@@ -18,10 +19,9 @@ export const useReportEditor = (reportId: string | undefined) => {
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [isSubmittingRoom, setIsSubmittingRoom] = useState(false);
   const [activeRoomIndex, setActiveRoomIndex] = useState(0);
 
-  // Use optimized hooks
+  // Use focused hooks for specific functionality
   const { saveBatch, saveProgress: batchProgress } = useBatchRoomSaving();
   const { completeReportInstantly, completionProgress } = useUltraFastCompletion();
   
@@ -32,6 +32,13 @@ export const useReportEditor = (reportId: string | undefined) => {
     handleSaveReport,
     handleCompleteReport,
   } = useReportInfo(report, setReport);
+
+  const {
+    isSubmittingRoom,
+    handleAddRoom,
+    handleDeleteRoom,
+    handleUpdateGeneralCondition,
+  } = useRoomOperations(report, setReport);
 
   // Combined progress from all saving operations
   const saveProgress = completionProgress || batchProgress || reportInfoProgress;
@@ -74,56 +81,6 @@ export const useReportEditor = (reportId: string | undefined) => {
 
     fetchData();
   }, [reportId, toast]);
-
-  // Room management functions
-  const handleAddRoom = async (roomData: { name: string; type: string }) => {
-    if (!report) return;
-    
-    setIsSubmittingRoom(true);
-    try {
-      const updatedReport = await ReportsAPI.addRoom(report.id, roomData.name, roomData.type as RoomType);
-      if (updatedReport) {
-        setReport(updatedReport);
-        toast({
-          title: "Room Added",
-          description: `${roomData.name} has been added to the report.`,
-        });
-      }
-    } catch (error) {
-      console.error("Error adding room:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add room. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmittingRoom(false);
-    }
-  };
-
-  const handleDeleteRoom = async (roomId: string) => {
-    if (!report) return;
-    
-    try {
-      await ReportsAPI.deleteRoom(report.id, roomId);
-      // Update the local state by removing the deleted room
-      const updatedRooms = report.rooms.filter(room => room.id !== roomId);
-      setReport({ ...report, rooms: updatedRooms });
-    } catch (error) {
-      console.error("Error deleting room:", error);
-      throw error;
-    }
-  };
-
-  const handleUpdateGeneralCondition = async (roomId: string, generalCondition: string) => {
-    if (!report) return;
-    
-    const updatedRooms = report.rooms.map(room => 
-      room.id === roomId ? { ...room, generalCondition } : room
-    );
-    
-    setReport({ ...report, rooms: updatedRooms });
-  };
 
   const handleSaveSection = async (updatedSection: RoomSection) => {
     console.log("Saving section:", updatedSection);

@@ -4,8 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ReportsAPI } from "@/lib/api";
 import { Report } from "@/types";
 import { useNavigate } from "react-router-dom";
-import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
-import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
+import { useReportSaving } from "./useReportSaving";
 
 export type ReportInfoFormValues = {
   reportDate: string;
@@ -17,7 +16,7 @@ export type ReportInfoFormValues = {
 };
 
 /**
- * Hook for managing report information with ultra-fast completion
+ * Hook for managing report information with optimized saving
  */
 export const useReportInfo = (
   report: Report | null,
@@ -26,8 +25,7 @@ export const useReportInfo = (
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const { saveBatch, saveProgress: batchProgress } = useBatchRoomSaving();
-  const { completeReportInstantly, isCompleting, completionProgress } = useUltraFastCompletion();
+  const { saveReport, isSaving: isSavingReport, saveProgress } = useReportSaving();
   
   const handleSaveReportInfo = async (values: ReportInfoFormValues) => {
     if (!report) return;
@@ -77,9 +75,9 @@ export const useReportInfo = (
   const handleSaveReport = async () => {
     if (!report) return;
     
-    console.log("🚀 Starting batch save for report:", report.id);
+    console.log("🚀 Starting optimized save for report:", report.id);
     
-    const success = await saveBatch(report);
+    const success = await saveReport(report, { updateStatus: true });
     
     if (success) {
       console.log("Navigating to report view:", `/reports/${report.id}/view`);
@@ -90,9 +88,9 @@ export const useReportInfo = (
   const handleCompleteReport = async () => {
     if (!report) return;
     
-    console.log("🚀 Starting ultra-fast completion for report:", report.id);
+    console.log("🚀 Starting completion for report:", report.id);
     
-    const success = await completeReportInstantly(report);
+    const success = await saveReport(report, { markCompleted: true });
     
     if (success) {
       console.log("Navigating to completed report view:", `/reports/${report.id}/view`);
@@ -101,8 +99,8 @@ export const useReportInfo = (
   };
 
   return {
-    isSaving: isSaving || isCompleting,
-    saveProgress: completionProgress || batchProgress,
+    isSaving: isSaving || isSavingReport,
+    saveProgress,
     handleSaveReportInfo,
     handleSaveReport,
     handleCompleteReport,
