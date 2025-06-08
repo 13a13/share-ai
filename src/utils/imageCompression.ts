@@ -160,6 +160,122 @@ export const compressImageFromDataUrl = async (
 };
 
 /**
+ * Compresses an image file and returns a data URL
+ */
+export const compressImageFile = async (
+  file: File,
+  options: {
+    maxWidth?: number;
+    maxHeight?: number;
+    quality?: number;
+  } = {}
+): Promise<string> => {
+  const {
+    maxWidth = DEFAULT_MAX_WIDTH,
+    maxHeight = DEFAULT_MAX_HEIGHT,
+    quality = DEFAULT_QUALITY,
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        // Calculate new dimensions
+        const { width: newWidth, height: newHeight } = calculateDimensions(
+          img.width,
+          img.height,
+          maxWidth,
+          maxHeight
+        );
+
+        // Set canvas dimensions
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+
+        // Draw image on canvas
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        // Convert to data URL with error handling for tainted canvas
+        try {
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        } catch (error) {
+          console.warn('Canvas toDataURL failed (likely CORS), falling back to file reader:', error);
+          // Fallback to file reader
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              resolve(e.target.result as string);
+            } else {
+              reject(new Error('Failed to read file'));
+            }
+          };
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        }
+      } catch (error) {
+        console.warn('Image compression failed, falling back to file reader:', error);
+        // Fallback to file reader
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            resolve(e.target.result as string);
+          } else {
+            reject(new Error('Failed to read file'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      }
+    };
+
+    img.onerror = () => {
+      console.warn('Image load failed, falling back to file reader');
+      // Fallback to file reader
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          resolve(e.target.result as string);
+        } else {
+          reject(new Error('Failed to read file'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    };
+
+    // Handle CORS by setting crossOrigin before setting src
+    img.crossOrigin = 'anonymous';
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+/**
+ * Compresses a data URL image with optional filename
+ */
+export const compressDataURLImage = async (
+  dataUrl: string,
+  filename?: string,
+  maxWidth: number = DEFAULT_MAX_WIDTH,
+  maxHeight: number = DEFAULT_MAX_HEIGHT,
+  quality: number = DEFAULT_QUALITY
+): Promise<string> => {
+  return compressImageFromDataUrl(dataUrl, {
+    maxWidth,
+    maxHeight,
+    quality
+  });
+};
+
+/**
  * Calculate new dimensions while maintaining aspect ratio
  */
 const calculateDimensions = (
