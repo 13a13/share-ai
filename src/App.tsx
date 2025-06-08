@@ -1,24 +1,25 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
-import { Header } from './components/Header';
-import { Footer } from './components/Footer';
-import { Index } from './pages';
-import { LoginPage } from './pages/Login';
-import { RegisterPage } from './pages/Register';
-import { AuthCallbackPage } from './pages/AuthCallback';
-import { Dashboard } from './pages/Dashboard';
-import { ProfilePage } from './pages/Profile';
-import { PropertiesPage } from './pages/Properties';
-import { PropertyCreationPage } from './pages/PropertyCreation';
-import { PropertyDetailsPage } from './pages/PropertyDetails';
-import { ReportsPage } from './pages/Reports';
-import { ReportCreationPage } from './pages/ReportCreation';
-import { ReportEditPage } from './pages/ReportEdit';
-import { ReportViewPage } from './pages/ReportView';
-import { CheckoutPage } from './pages/Checkout';
-import { NotFound } from './pages/NotFound';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import { Index } from './pages/Index';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import AuthCallbackPage from './pages/auth/AuthCallbackPage';
+import Dashboard from './pages/Dashboard';
+import ProfilePage from './pages/ProfilePage';
+import PropertiesPage from './pages/PropertiesPage';
+import PropertyCreationPage from './pages/PropertyCreationPage';
+import PropertyDetailsPage from './pages/PropertyDetailsPage';
+import ReportsPage from './pages/ReportsPage';
+import ReportCreationPage from './pages/ReportCreationPage';
+import ReportEditPage from './pages/ReportEditPage';
+import ReportViewPage from './pages/ReportViewPage';
+import CheckoutPage from './pages/CheckoutPage';
+import NotFound from './pages/NotFound';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import ImageDiagnosticPage from "./pages/ImageDiagnosticPage";
 
 function App() {
