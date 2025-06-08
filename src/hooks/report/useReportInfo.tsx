@@ -4,6 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI } from "@/lib/api";
 import { Report } from "@/types";
 import { useNavigate } from "react-router-dom";
+import { useOptimizedReportSaving } from "@/hooks/useOptimizedReportSaving";
 
 export type ReportInfoFormValues = {
   reportDate: string;
@@ -15,7 +16,7 @@ export type ReportInfoFormValues = {
 };
 
 /**
- * Hook for managing report information and status
+ * Hook for managing report information and status with optimized saving
  */
 export const useReportInfo = (
   report: Report | null,
@@ -24,6 +25,7 @@ export const useReportInfo = (
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const { saveReportOptimized, completeReportOptimized, saveProgress } = useOptimizedReportSaving();
   
   const handleSaveReportInfo = async (values: ReportInfoFormValues) => {
     if (!report) return;
@@ -74,120 +76,32 @@ export const useReportInfo = (
   const handleSaveReport = async () => {
     if (!report) return;
     
-    setIsSaving(true);
+    console.log("Starting optimized save for report:", report.id);
     
-    try {
-      console.log("Saving report with rooms:", report.rooms.length);
-      console.log("Report ID:", report.id);
-      
-      let updatedStatus = report.status;
-      
-      if (updatedStatus === "draft") {
-        updatedStatus = "in_progress";
-      }
-      
-      const hasRoomsWithImages = report.rooms.some(room => 
-        room.images.length > 0 || (room.components && room.components.some(comp => comp.images.length > 0))
-      );
-      if (hasRoomsWithImages && updatedStatus === "in_progress") {
-        updatedStatus = "pending_review";
-      }
-      
-      // Save each room individually before updating the report
-      for (const room of report.rooms) {
-        console.log(`Saving room: ${room.name} (${room.id})`);
-        const savedRoom = await ReportsAPI.updateRoom(report.id, room.id, room);
-        if (!savedRoom) {
-          console.error(`Failed to save room: ${room.name} (${room.id})`);
-        }
-      }
-      
-      // Then update the report status
-      const updatedReport = await ReportsAPI.update(report.id, {
-        status: updatedStatus,
-      });
-      
-      if (updatedReport) {
-        // Make sure we preserve all rooms from the current state
-        const completeReport = {
-          ...updatedReport,
-          rooms: report.rooms
-        };
-        
-        setReport(completeReport);
-        
-        toast({
-          title: "Report Saved",
-          description: "Your report has been saved successfully.",
-        });
-        
-        console.log("Navigating to report view:", `/reports/${report.id}/view`);
-        // Navigate to the report view page with /view suffix
-        navigate(`/reports/${report.id}/view`);
-      }
-    } catch (error) {
-      console.error("Error saving report:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save report. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
+    const success = await saveReportOptimized(report, true);
+    
+    if (success) {
+      console.log("Navigating to report view:", `/reports/${report.id}/view`);
+      navigate(`/reports/${report.id}/view`);
     }
   };
   
   const handleCompleteReport = async () => {
     if (!report) return;
     
-    setIsSaving(true);
+    console.log("Starting optimized completion for report:", report.id);
     
-    try {
-      // Save each room individually before completing the report
-      for (const room of report.rooms) {
-        console.log(`Saving room for completion: ${room.name} (${room.id})`);
-        const savedRoom = await ReportsAPI.updateRoom(report.id, room.id, room);
-        if (!savedRoom) {
-          console.error(`Failed to save room for completion: ${room.name} (${room.id})`);
-        }
-      }
-      
-      const updatedReport = await ReportsAPI.update(report.id, {
-        status: "completed",
-        completedAt: new Date(),
-      });
-      
-      if (updatedReport) {
-        // Make sure we preserve all rooms from the current state
-        const completeReport = {
-          ...updatedReport,
-          rooms: report.rooms
-        };
-        
-        setReport(completeReport);
-        
-        toast({
-          title: "Report Completed",
-          description: "Your report has been marked as completed.",
-        });
-        
-        console.log("Navigating to completed report view:", `/reports/${report.id}/view`);
-        navigate(`/reports/${report.id}/view`);
-      }
-    } catch (error) {
-      console.error("Error completing report:", error);
-      toast({
-        title: "Error",
-        description: "Failed to complete report. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
+    const success = await completeReportOptimized(report);
+    
+    if (success) {
+      console.log("Navigating to completed report view:", `/reports/${report.id}/view`);
+      navigate(`/reports/${report.id}/view`);
     }
   };
 
   return {
-    isSaving,
+    isSaving: isSaving || saveProgress !== null,
+    saveProgress,
     handleSaveReportInfo,
     handleSaveReport,
     handleCompleteReport,

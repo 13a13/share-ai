@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ const ReportEditPage = () => {
     isSubmittingRoom,
     activeRoomIndex,
     hasError,
+    saveProgress,
     handleAddRoom,
     handleUpdateGeneralCondition,
     handleSaveSection,
@@ -62,6 +62,13 @@ const ReportEditPage = () => {
         onSave={handleSaveReport}
         onComplete={handleCompleteReport}
       />
+      
+      {/* Add save progress indicator */}
+      {saveProgress && (
+        <div className="mb-4">
+          <SaveProgressIndicator progress={saveProgress} />
+        </div>
+      )}
       
       <ReportInfoForm 
         defaultValues={reportInfoDefaults}

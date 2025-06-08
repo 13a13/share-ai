@@ -5,7 +5,7 @@ import { useReportSections } from "./useReportSections";
 import { useReportInfo, ReportInfoFormValues } from "./useReportInfo";
 
 /**
- * Main hook that combines all report editing functionality
+ * Main hook that combines all report editing functionality with optimized saving
  */
 export const useReportEditor = (reportId: string | undefined) => {
   // Use the individual hooks
@@ -25,6 +25,7 @@ export const useReportEditor = (reportId: string | undefined) => {
   
   const {
     isSaving,
+    saveProgress,
     handleSaveReportInfo,
     handleSaveReport,
     handleCompleteReport,
@@ -39,6 +40,7 @@ export const useReportEditor = (reportId: string | undefined) => {
     isSubmittingRoom,
     activeRoomIndex,
     hasError,
+    saveProgress,
     handleAddRoom,
     handleUpdateGeneralCondition,
     handleSaveSection,
