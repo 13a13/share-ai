@@ -2,7 +2,7 @@
 import { jsPDF } from "jspdf";
 import { Report, Property } from "@/types";
 import { setupPDFDocument } from "./documentSetup";
-import { generatePDFSections } from "./sectionGenerator";
+import { generatePDFSections } from "./sectionOrchestrator";
 import { addHeadersAndFooters } from "../utils/headerFooter";
 import { preloadImages } from "../utils/imagePreloader";
 

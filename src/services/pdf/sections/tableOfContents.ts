@@ -6,7 +6,7 @@ import { pdfStyles } from "../styles";
 /**
  * Generate table of contents with dot leaders
  */
-export function generateTableOfContents(doc: jsPDF, pageMap: Record<string, number>, report?: Report): void {
+export function generateTableOfContents(doc: jsPDF, pageMap: Record<string, number>, report?: Report | null): void {
   const pageWidth = doc.internal.pageSize.width;
   const margins = pdfStyles.margins.page;
   
