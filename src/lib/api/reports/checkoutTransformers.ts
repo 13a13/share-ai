@@ -2,33 +2,42 @@
 import { CheckoutComparison } from './checkoutTypes';
 
 /**
- * Transform checkout comparison data from database format
+ * Transform raw checkout comparison data from database to application format
  */
-export const transformCheckoutComparison = (dbData: any): CheckoutComparison => {
+export const transformCheckoutComparison = (rawData: any): CheckoutComparison => {
+  console.log('Transforming checkout comparison:', rawData);
+  
   return {
-    id: dbData.id,
-    checkout_report_id: dbData.checkout_report_id,
-    checkin_report_id: dbData.checkin_report_id,
-    room_id: dbData.room_id,
-    component_id: dbData.component_id,
-    component_name: dbData.component_name,
-    status: dbData.status || 'pending',
-    change_description: dbData.change_description,
-    checkout_condition: dbData.checkout_condition,
-    checkout_images: Array.isArray(dbData.checkout_images) 
-      ? dbData.checkout_images 
-      : (dbData.checkout_images ? JSON.parse(dbData.checkout_images) : []),
-    ai_analysis: dbData.ai_analysis ? 
-      (typeof dbData.ai_analysis === 'string' ? JSON.parse(dbData.ai_analysis) : dbData.ai_analysis) 
-      : null,
-    created_at: dbData.created_at,
-    updated_at: dbData.updated_at
+    id: rawData.id,
+    checkout_report_id: rawData.checkout_report_id,
+    checkin_report_id: rawData.checkin_report_id,
+    room_id: rawData.room_id,
+    component_id: rawData.component_id,
+    component_name: rawData.component_name,
+    status: rawData.status,
+    change_description: rawData.change_description,
+    checkout_condition: rawData.checkout_condition,
+    checkout_images: rawData.checkout_images || [],
+    created_at: rawData.created_at,
+    updated_at: rawData.updated_at,
+    // Ensure ai_analysis is properly parsed and includes check-in data
+    ai_analysis: rawData.ai_analysis || {
+      checkinData: {
+        originalCondition: 'unknown',
+        originalDescription: '',
+        originalImages: [],
+        roomName: '',
+        timestamp: new Date().toISOString()
+      }
+    }
   };
 };
 
 /**
- * Transform array of checkout comparisons
+ * Transform array of raw checkout comparison data
  */
-export const transformCheckoutComparisons = (dbDataArray: any[]): CheckoutComparison[] => {
-  return dbDataArray.map(transformCheckoutComparison);
+export const transformCheckoutComparisons = (rawDataArray: any[]): CheckoutComparison[] => {
+  console.log('Transforming checkout comparisons array:', rawDataArray.length, 'items');
+  
+  return rawDataArray.map(transformCheckoutComparison);
 };

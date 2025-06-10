@@ -38,6 +38,7 @@ export const CheckoutComparisonAPI = {
 
   /**
    * Initialize checkout comparisons for all components in a check-in report
+   * Now stores complete component data including check-in reference data
    */
   async initializeCheckoutComparisons(checkoutReportId: string, checkinReportId: string, components: any[]): Promise<void> {
     try {
@@ -54,10 +55,30 @@ export const CheckoutComparisonAPI = {
         room_id: component.roomId || component.roomName || 'unknown',
         component_id: component.id,
         component_name: component.name,
-        status: 'pending'
+        status: 'pending',
+        // Store complete component data including check-in reference data
+        ai_analysis: {
+          // Check-in reference data
+          checkinData: {
+            originalCondition: component.condition,
+            originalDescription: component.description,
+            originalImages: component.images || [],
+            originalNotes: component.notes || '',
+            roomName: component.roomName,
+            timestamp: component.checkinData?.timestamp || new Date().toISOString()
+          },
+          // Current component data for reference
+          condition: component.condition,
+          conditionSummary: component.conditionSummary || '',
+          description: component.description,
+          images: component.images || [],
+          notes: component.notes || '',
+          cleanliness: component.cleanliness || 'unknown',
+          conditionPoints: component.conditionPoints || []
+        }
       }));
 
-      console.log('Inserting comparisons:', comparisons);
+      console.log('Inserting comparisons with complete data:', comparisons);
 
       const { error } = await supabase
         .from('checkout_comparisons')
@@ -68,7 +89,7 @@ export const CheckoutComparisonAPI = {
         throw error;
       }
 
-      console.log('Checkout comparisons initialized successfully');
+      console.log('Checkout comparisons initialized successfully with complete component data');
     } catch (error) {
       console.error('Error in initializeCheckoutComparisons:', error);
       throw error;

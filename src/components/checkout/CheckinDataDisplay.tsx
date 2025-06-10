@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar, Image as ImageIcon, FileText, AlertCircle } from 'lucide-react';
-import ComponentImages from '@/components/component/ComponentImages';
 
 interface CheckinDataDisplayProps {
   componentName: string;
@@ -27,9 +26,21 @@ const CheckinDataDisplay = ({
   description,
   images = []
 }: CheckinDataDisplayProps) => {
-  const displayImages = images.length > 0 ? images : checkinData.originalImages || [];
-  const displayDescription = description || checkinData.originalDescription || '';
-  const displayCondition = condition || checkinData.originalCondition || 'Unknown';
+  // Enhanced data extraction with better fallbacks
+  const displayImages = images?.length > 0 ? images : (checkinData?.originalImages || []);
+  const displayDescription = description || checkinData?.originalDescription || '';
+  const displayCondition = condition || checkinData?.originalCondition || 'Unknown';
+  
+  console.log('CheckinDataDisplay props:', {
+    componentName,
+    checkinData,
+    condition,
+    description,
+    images,
+    displayImages,
+    displayDescription,
+    displayCondition
+  });
 
   const getConditionColor = (condition: string) => {
     switch (condition.toLowerCase()) {
@@ -48,6 +59,8 @@ const CheckinDataDisplay = ({
     }
   };
 
+  const hasAnyData = displayImages.length > 0 || displayDescription.trim() !== '';
+
   return (
     <Card className="mb-4 border-blue-200 bg-blue-50/30">
       <CardHeader className="pb-3">
@@ -60,7 +73,7 @@ const CheckinDataDisplay = ({
             <Badge className={`${getConditionColor(displayCondition)} text-white`}>
               {displayCondition}
             </Badge>
-            {checkinData.timestamp && (
+            {checkinData?.timestamp && (
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Calendar className="h-3 w-3" />
                 {new Date(checkinData.timestamp).toLocaleDateString()}
@@ -84,7 +97,7 @@ const CheckinDataDisplay = ({
         {/* Description */}
         {displayDescription && (
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-1">Description</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-1">Check-in Description</h4>
             <p className="text-sm text-gray-600 bg-white p-2 rounded border">
               {displayDescription}
             </p>
@@ -121,11 +134,31 @@ const CheckinDataDisplay = ({
           </div>
         )}
 
-        {displayImages.length === 0 && !displayDescription && (
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
+        {/* No data message */}
+        {!hasAnyData && (
+          <div className="flex items-center gap-2 text-gray-500 text-sm bg-white p-3 rounded border">
             <AlertCircle className="h-4 w-4" />
-            <span>No detailed check-in data available for this component</span>
+            <span>
+              No detailed check-in data available for this component. 
+              {checkinData ? ' Check-in data structure exists but may be empty.' : ' No check-in data found.'}
+            </span>
           </div>
+        )}
+
+        {/* Debug info in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <details className="text-xs text-gray-400">
+            <summary>Debug: Data Sources</summary>
+            <pre className="mt-2 text-xs overflow-auto">
+              {JSON.stringify({
+                hasCheckinData: !!checkinData,
+                checkinDataKeys: checkinData ? Object.keys(checkinData) : [],
+                hasImages: displayImages.length > 0,
+                hasDescription: !!displayDescription,
+                condition: displayCondition
+              }, null, 2)}
+            </pre>
+          </details>
         )}
       </CardContent>
     </Card>

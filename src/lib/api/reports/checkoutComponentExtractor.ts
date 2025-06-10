@@ -1,4 +1,3 @@
-
 /**
  * Component Extraction Service for Checkout Reports
  * Handles extraction and processing of components from check-in reports
@@ -133,6 +132,7 @@ export const CheckoutComponentExtractor = {
   /**
    * Process individual component data with enhanced extraction and validation
    * Returns null if component doesn't have both photos and description
+   * Enhanced to preserve all data for checkout comparison
    */
   processComponentData(component: any, index: number, roomId: string, roomName: string): any | null {
     if (!component) return null;
@@ -143,18 +143,12 @@ export const CheckoutComponentExtractor = {
     // Extract component description
     const description = component.description || component.analysis || component.notes || '';
     
-    // Validation: Must have both photos and description
-    if (componentImages.length === 0) {
-      console.log(`Component "${component.name || `Component ${index + 1}`}" filtered out: no photos found`);
-      return null;
-    }
+    // For checkout comparison, we need components even without images/descriptions
+    // as we want to show "no data available" rather than hide the component entirely
     
-    if (!description || description.trim() === '') {
-      console.log(`Component "${component.name || `Component ${index + 1}`}" filtered out: no description found`);
-      return null;
-    }
+    console.log(`Processing component "${component.name || `Component ${index + 1}`}" with ${componentImages.length} photos and ${description ? 'description' : 'no description'}`);
 
-    // Extract component details for valid components
+    // Extract component details - now preserving all data
     const componentData = {
       id: component.id || component.componentId || `${roomId}-component-${index}`,
       name: component.name || component.componentName || component.title || `Component ${index + 1}`,
@@ -169,15 +163,16 @@ export const CheckoutComponentExtractor = {
       conditionPoints: component.conditionPoints || [],
       // Store enhanced check-in data for comparison
       checkinData: {
-        originalCondition: component.condition,
+        originalCondition: component.condition || 'unknown',
         originalDescription: description,
         originalImages: componentImages,
-        roomName: roomName, // Store room name in checkin data
+        originalNotes: component.notes || '',
+        roomName: roomName,
         timestamp: component.timestamp || new Date().toISOString()
       }
     };
 
-    console.log('Processed valid component:', componentData.name, 'in room:', roomName, 'with', componentImages.length, 'photos');
+    console.log('Processed component with full data:', componentData.name, 'in room:', roomName, 'with', componentImages.length, 'photos');
     return componentData;
   },
 
@@ -241,6 +236,7 @@ export const CheckoutComponentExtractor = {
         originalCondition: 'unknown',
         originalDescription: 'General assessment',
         originalImages: [],
+        originalNotes: '',
         roomName: roomName,
         timestamp: new Date().toISOString()
       }
