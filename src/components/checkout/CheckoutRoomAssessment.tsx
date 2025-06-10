@@ -1,9 +1,10 @@
-
+import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
 import { useAssessmentActions } from '@/hooks/useAssessmentActions';
+import { useToast } from '@/components/ui/use-toast';
 import AssessmentInstructions from './AssessmentInstructions';
-import RoomAssessmentCard from './RoomAssessmentCard';
+import ComponentAssessmentCard from './ComponentAssessmentCard';
 
 interface CheckoutRoomAssessmentProps {
   checkoutReportId: string;
@@ -16,6 +17,9 @@ const CheckoutRoomAssessment = ({
   comparisons, 
   onComparisonUpdate 
 }: CheckoutRoomAssessmentProps) => {
+  const { toast } = useToast();
+  const [currentComponentIndex, setCurrentComponentIndex] = useState(0);
+  
   const {
     expandedComponent,
     isUpdating,
@@ -76,6 +80,33 @@ const CheckoutRoomAssessment = ({
     return groups;
   }, {} as Record<string, { name: string; components: CheckoutComparison[] }>);
 
+  const handleSaveAndNext = async () => {
+    if (currentComponentIndex < comparisons.length - 1) {
+      setCurrentComponentIndex(currentComponentIndex + 1);
+      // Auto-expand the next component
+      const nextComparison = comparisons[currentComponentIndex + 1];
+      if (nextComparison && expandedComponent !== nextComparison.id) {
+        toggleExpanded(nextComparison.id);
+      }
+      
+      toast({
+        title: "Progress Saved",
+        description: `Moving to component ${currentComponentIndex + 2} of ${comparisons.length}`,
+      });
+    }
+  };
+
+  const handleNext = () => {
+    if (currentComponentIndex < comparisons.length - 1) {
+      setCurrentComponentIndex(currentComponentIndex + 1);
+      // Auto-expand the next component
+      const nextComparison = comparisons[currentComponentIndex + 1];
+      if (nextComparison && expandedComponent !== nextComparison.id) {
+        toggleExpanded(nextComparison.id);
+      }
+    }
+  };
+
   if (comparisons.length === 0) {
     return (
       <div className="text-center py-12">
@@ -97,22 +128,44 @@ const CheckoutRoomAssessment = ({
       <AssessmentInstructions />
 
       {Object.entries(roomGroups).map(([roomId, roomData]) => (
-        <RoomAssessmentCard
-          key={roomId}
-          roomId={roomId}
-          roomName={roomData.name}
-          components={roomData.components}
-          expandedComponent={expandedComponent}
-          isUpdating={isUpdating}
-          changeDescriptions={changeDescriptions}
-          onToggleExpanded={toggleExpanded}
-          onStatusChange={handleStatusChange}
-          onDescriptionSave={handleDescriptionSave}
-          onImagesProcessed={handleImagesProcessed}
-          onProcessingStateChange={(componentId, processing) => 
-            setIsUpdating(prev => ({ ...prev, [componentId]: processing }))
-          }
-        />
+        <div key={roomId} className="space-y-4">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="p-4 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {roomData.name}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {roomData.components.length} component{roomData.components.length !== 1 ? 's' : ''} to assess
+              </p>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              {roomData.components.map((comparison, index) => {
+                const globalIndex = comparisons.findIndex(c => c.id === comparison.id);
+                return (
+                  <ComponentAssessmentCard
+                    key={comparison.id}
+                    comparison={comparison}
+                    isExpanded={expandedComponent === comparison.id}
+                    isUpdating={isUpdating[comparison.id] || false}
+                    changeDescription={changeDescriptions[comparison.id] || ''}
+                    currentIndex={globalIndex}
+                    totalComponents={comparisons.length}
+                    onToggleExpanded={toggleExpanded}
+                    onStatusChange={handleStatusChange}
+                    onDescriptionSave={handleDescriptionSave}
+                    onImagesProcessed={handleImagesProcessed}
+                    onProcessingStateChange={(componentId, processing) => 
+                      setIsUpdating(prev => ({ ...prev, [componentId]: processing }))
+                    }
+                    onSaveAndNext={globalIndex === currentComponentIndex ? handleSaveAndNext : undefined}
+                    onNext={globalIndex === currentComponentIndex ? handleNext : undefined}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   );

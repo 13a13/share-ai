@@ -20,28 +20,38 @@ const AssessmentActions = ({
   if (status !== 'pending') return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg">
-      <Button
-        onClick={() => onStatusChange(comparisonId, 'unchanged')}
-        disabled={isUpdating}
-        className="w-full bg-green-600 hover:bg-green-700"
-      >
-        {isUpdating ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <CheckCircle className="h-4 w-4 mr-2" />
-        )}
-        No Changes
-      </Button>
+    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+      <h4 className="font-medium text-gray-900 mb-3">Component Assessment</h4>
+      <p className="text-sm text-gray-600 mb-4">
+        Compare the check-in reference data above with the current condition of this component.
+      </p>
       
-      <Button
-        onClick={onFoundChanges}
-        variant="outline"
-        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
-      >
-        <AlertTriangle className="h-4 w-4 mr-2" />
-        Found Changes
-      </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Button
+          onClick={() => onStatusChange(comparisonId, 'unchanged')}
+          disabled={isUpdating}
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
+          size="lg"
+        >
+          {isUpdating ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <CheckCircle className="h-4 w-4 mr-2" />
+          )}
+          No Changes Found
+        </Button>
+        
+        <Button
+          onClick={onFoundChanges}
+          variant="outline"
+          className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+          size="lg"
+          disabled={isUpdating}
+        >
+          <AlertTriangle className="h-4 w-4 mr-2" />
+          Document Changes
+        </Button>
+      </div>
     </div>
   );
 };
