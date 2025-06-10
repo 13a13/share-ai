@@ -1,30 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  Building, 
-  Clock, 
-  Sparkles, 
-  CheckCircle2, 
-  BadgeCheck,
-  ArrowRight,
-  Brain,
-  Shield,
-  Smartphone
-} from "lucide-react";
-
+import { Building, Clock, Sparkles, CheckCircle2, BadgeCheck, ArrowRight, Brain, Shield, Smartphone } from "lucide-react";
 const LandingPage = () => {
-  return (
-    <div className="flex flex-col min-h-screen">
+  return <div className="flex flex-col min-h-screen">
       {/* Navigation */}
       <header className="sticky top-0 z-50 w-full border-b bg-brand-blue-950 text-white">
         <div className="container flex h-16 items-center">
           <div className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
-              alt="VerifyVision AI Logo" 
-              className="h-10 w-15" 
-            />
+            <img src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" alt="VerifyVision AI Logo" className="h-10 w-15" />
             <span className="text-xl font-bold text-white">
               VerifyVision AI
             </span>
@@ -88,13 +72,7 @@ const LandingPage = () => {
               </div>
               <div className="mx-auto w-full max-w-sm lg:max-w-none">
                 <div className="aspect-video overflow-hidden rounded-xl shadow-xl card-hover">
-                  <img
-                    alt="Property inspection with AI"
-                    className="object-cover w-full h-full"
-                    src="https://images.unsplash.com/photo-1560184897-ae75f418493e?q=80&w=1200&auto=format&fit=crop"
-                    width={550}
-                    height={310}
-                  />
+                  <img alt="Property inspection with AI" className="object-cover w-full h-full" src="https://images.unsplash.com/photo-1560184897-ae75f418493e?q=80&w=1200&auto=format&fit=crop" width={550} height={310} />
                 </div>
               </div>
             </div>
@@ -109,9 +87,7 @@ const LandingPage = () => {
               <h2 className="text-3xl font-bold tracking-tight text-white">
                 Reduce Time Spent Inside Properties by Half!
               </h2>
-              <p className="max-w-[800px] text-white md:text-xl/relaxed">
-                Our AI technology allows you to capture images while our system automatically documents and analyzes property conditions, cutting inspection time dramatically.
-              </p>
+              <p className="max-w-[800px] text-white md:text-xl/relaxed">Our AI technology allows you to capture images while our system automatically documents and analyses property conditions, cutting inspection time dramatically.</p>
             </div>
           </div>
         </section>
@@ -215,11 +191,7 @@ const LandingPage = () => {
                 </ul>
               </div>
               <div className="mx-auto w-full max-w-sm lg:max-w-none aspect-square overflow-hidden rounded-xl shadow-lg card-hover">
-                <img
-                  alt="Feature illustration"
-                  className="object-cover w-full h-full"
-                  src="https://images.unsplash.com/photo-1484154218962-a197022b5858?q=80&w=1200&auto=format&fit=crop"
-                />
+                <img alt="Feature illustration" className="object-cover w-full h-full" src="https://images.unsplash.com/photo-1484154218962-a197022b5858?q=80&w=1200&auto=format&fit=crop" />
               </div>
             </div>
           </div>
@@ -231,11 +203,7 @@ const LandingPage = () => {
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <div className="mx-auto w-full max-w-sm lg:max-w-none">
                 <div className="aspect-square overflow-hidden rounded-xl shadow-lg card-hover">
-                  <img
-                    alt="AI analyzing property"
-                    className="object-cover w-full h-full"
-                    src="https://images.unsplash.com/photo-1593642532842-98d0fd5ebc1a?q=80&w=1200&auto=format&fit=crop"
-                  />
+                  <img alt="AI analyzing property" className="object-cover w-full h-full" src="https://images.unsplash.com/photo-1593642532842-98d0fd5ebc1a?q=80&w=1200&auto=format&fit=crop" />
                 </div>
               </div>
               <div className="flex flex-col justify-center space-y-4">
@@ -304,7 +272,7 @@ const LandingPage = () => {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-brand-blue-900">Michael Rodriguez</p>
-                      <p className="text-xs text-gray-500">Real Estate Inspector</p>
+                      <p className="text-xs text-gray-500">Inspection Clerk</p>
                     </div>
                   </div>
                   <p className="text-gray-500">
@@ -376,11 +344,7 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <img 
-                  src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" 
-                  alt="VerifyVision AI Logo" 
-                  className="h-10 w-15" 
-                />
+                <img src="/lovable-uploads/995debfe-a235-4aaf-a9c8-0681858a1a57.png" alt="VerifyVision AI Logo" className="h-10 w-15" />
                 <span className="text-xl font-bold text-white">VerifyVision AI</span>
               </div>
               <p className="text-sm text-white">
@@ -422,27 +386,25 @@ const LandingPage = () => {
               <a href="#twitter" className="text-white hover:text-verifyvision-teal transition-colors">
                 <span className="sr-only">Twitter</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
                 </svg>
               </a>
               <a href="#facebook" className="text-white hover:text-verifyvision-teal transition-colors">
                 <span className="sr-only">Facebook</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+                  <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
                 </svg>
               </a>
               <a href="#linkedin" className="text-white hover:text-verifyvision-teal transition-colors">
                 <span className="sr-only">LinkedIn</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z"/>
+                  <path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z" />
                 </svg>
               </a>
             </div>
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default LandingPage;
