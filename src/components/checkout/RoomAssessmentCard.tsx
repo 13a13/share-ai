@@ -47,13 +47,15 @@ const RoomAssessmentCard = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {components.map((comparison) => (
+        {components.map((comparison, index) => (
           <div key={comparison.id} className="space-y-3">
             <ComponentAssessmentCard
               comparison={comparison}
               isExpanded={expandedComponent === comparison.id}
               isUpdating={isUpdating[comparison.id] || false}
               changeDescription={changeDescriptions[comparison.id] || comparison.change_description || ''}
+              currentIndex={index}
+              totalComponents={components.length}
               onToggleExpanded={onToggleExpanded}
               onStatusChange={onStatusChange}
               onDescriptionSave={onDescriptionSave}
