@@ -6,6 +6,7 @@
 export const CheckoutComponentExtractor = {
   /**
    * Enhanced component extraction from check-in report
+   * Only includes components that have both photos and descriptions
    */
   extractComponentsFromCheckinReport(reportInfo: any): any[] {
     console.log('Extracting components from report info:', reportInfo);
@@ -16,6 +17,8 @@ export const CheckoutComponentExtractor = {
     }
 
     const allComponents: any[] = [];
+    let totalProcessed = 0;
+    let totalFiltered = 0;
 
     // Strategy 1: Check for additionalRooms in report_info
     if (reportInfo.additionalRooms && Array.isArray(reportInfo.additionalRooms)) {
@@ -28,6 +31,7 @@ export const CheckoutComponentExtractor = {
         
         if (room.components && Array.isArray(room.components)) {
           room.components.forEach((component: any, index: number) => {
+            totalProcessed++;
             const processedComponent = this.processComponentData(
               component, 
               index, 
@@ -36,6 +40,9 @@ export const CheckoutComponentExtractor = {
             );
             if (processedComponent) {
               allComponents.push(processedComponent);
+            } else {
+              totalFiltered++;
+              console.log(`Filtered out component "${component.name || `Component ${index + 1}`}" in room "${roomName}" - missing photos or description`);
             }
           });
         }
@@ -50,6 +57,7 @@ export const CheckoutComponentExtractor = {
       const mainRoomId = this.createReadableRoomId(mainRoomName);
       
       reportInfo.components.forEach((component: any, index: number) => {
+        totalProcessed++;
         const processedComponent = this.processComponentData(
           component, 
           index, 
@@ -58,6 +66,9 @@ export const CheckoutComponentExtractor = {
         );
         if (processedComponent) {
           allComponents.push(processedComponent);
+        } else {
+          totalFiltered++;
+          console.log(`Filtered out component "${component.name || `Component ${index + 1}`}" in main room "${mainRoomName}" - missing photos or description`);
         }
       });
     }
@@ -82,6 +93,7 @@ export const CheckoutComponentExtractor = {
         console.log(`Found components in room key "${roomKey}":`, roomData.components.length);
         
         roomData.components.forEach((component: any, index: number) => {
+          totalProcessed++;
           const processedComponent = this.processComponentData(
             component, 
             index, 
@@ -90,12 +102,15 @@ export const CheckoutComponentExtractor = {
           );
           if (processedComponent) {
             allComponents.push(processedComponent);
+          } else {
+            totalFiltered++;
+            console.log(`Filtered out component "${component.name || `Component ${index + 1}`}" in room "${roomName}" - missing photos or description`);
           }
         });
       }
     });
 
-    console.log(`Total components extracted: ${allComponents.length}`);
+    console.log(`Component extraction summary: ${totalProcessed} total processed, ${totalFiltered} filtered out, ${allComponents.length} valid components extracted`);
     return allComponents;
   },
 
@@ -116,7 +131,8 @@ export const CheckoutComponentExtractor = {
   },
 
   /**
-   * Process individual component data with enhanced extraction
+   * Process individual component data with enhanced extraction and validation
+   * Returns null if component doesn't have both photos and description
    */
   processComponentData(component: any, index: number, roomId: string, roomName: string): any | null {
     if (!component) return null;
@@ -124,7 +140,21 @@ export const CheckoutComponentExtractor = {
     // Extract component images with better handling
     const componentImages = this.extractComponentImages(component);
     
-    // Extract component details
+    // Extract component description
+    const description = component.description || component.analysis || component.notes || '';
+    
+    // Validation: Must have both photos and description
+    if (componentImages.length === 0) {
+      console.log(`Component "${component.name || `Component ${index + 1}`}" filtered out: no photos found`);
+      return null;
+    }
+    
+    if (!description || description.trim() === '') {
+      console.log(`Component "${component.name || `Component ${index + 1}`}" filtered out: no description found`);
+      return null;
+    }
+
+    // Extract component details for valid components
     const componentData = {
       id: component.id || component.componentId || `${roomId}-component-${index}`,
       name: component.name || component.componentName || component.title || `Component ${index + 1}`,
@@ -132,7 +162,7 @@ export const CheckoutComponentExtractor = {
       roomName: roomName,
       condition: component.condition || component.conditionRating || 'unknown',
       conditionSummary: component.conditionSummary || component.summary || '',
-      description: component.description || component.analysis || component.notes || '',
+      description: description,
       images: componentImages,
       notes: component.notes || component.additionalNotes || '',
       cleanliness: component.cleanliness || 'unknown',
@@ -140,14 +170,14 @@ export const CheckoutComponentExtractor = {
       // Store enhanced check-in data for comparison
       checkinData: {
         originalCondition: component.condition,
-        originalDescription: component.description,
+        originalDescription: description,
         originalImages: componentImages,
         roomName: roomName, // Store room name in checkin data
         timestamp: component.timestamp || new Date().toISOString()
       }
     };
 
-    console.log('Processed component:', componentData.name, 'in room:', roomName, 'with roomId:', roomId);
+    console.log('Processed valid component:', componentData.name, 'in room:', roomName, 'with', componentImages.length, 'photos');
     return componentData;
   },
 

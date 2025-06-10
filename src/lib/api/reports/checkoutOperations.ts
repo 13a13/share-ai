@@ -63,6 +63,7 @@ export const CheckoutOperations = {
 
   /**
    * Phase 3: Initialize component comparisons for existing checkout
+   * Only includes components with both photos and descriptions
    */
   async initializeComponentComparisons(checkoutReportId: string, checkinReportId: string): Promise<any[]> {
     try {
@@ -82,25 +83,26 @@ export const CheckoutOperations = {
 
       console.log('Raw check-in report data:', checkinReport);
 
-      // Use enhanced component extraction
+      // Use enhanced component extraction with filtering
       const allComponents = CheckoutComponentExtractor.extractComponentsFromCheckinReport(checkinReport.report_info);
 
-      console.log('Enhanced extraction found components:', allComponents.length);
+      console.log('Enhanced extraction with filtering found valid components:', allComponents.length);
 
-      // If no components found, create a general assessment component
+      // If no valid components found, create a general assessment component
       if (allComponents.length === 0) {
-        console.warn('No components found in check-in report, creating general assessment');
+        console.warn('No valid components found in check-in report (all filtered out due to missing photos or descriptions), creating general assessment');
         const fallbackComponent = CheckoutComponentExtractor.createFallbackComponent();
         allComponents.push(fallbackComponent);
       }
 
-      // Initialize comparison records for all components
+      // Initialize comparison records for all valid components
       await CheckoutComparisonAPI.initializeCheckoutComparisons(
         checkoutReportId,
         checkinReportId,
         allComponents
       );
 
+      console.log(`Successfully initialized ${allComponents.length} component comparisons for checkout`);
       return allComponents;
     } catch (error) {
       console.error('Error in initializeComponentComparisons:', error);
