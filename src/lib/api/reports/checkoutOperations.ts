@@ -6,17 +6,21 @@ import { CheckoutComponentExtractor } from './checkoutComponentExtractor';
 
 /**
  * Checkout Operations Service
- * Handles core checkout report operations
+ * Handles core checkout report operations with the new data flow
  */
 export const CheckoutOperations = {
   /**
-   * Phase 2: Create a basic checkout report
+   * Create a completed checkout report (only called on final completion)
    */
-  async createBasicCheckoutReport(checkinReportId: string, checkoutData: CheckoutData): Promise<any> {
+  async createCompletedCheckoutReport(
+    checkinReportId: string, 
+    checkoutData: CheckoutData, 
+    assessmentData: any[]
+  ): Promise<any> {
     try {
-      console.log('Creating basic checkout report for:', checkinReportId);
+      console.log('Creating completed checkout report for:', checkinReportId);
       
-      // First, fetch the check-in report to get the room_id
+      // First, fetch the check-in report to get the room_id and property info
       const { data: checkinReport, error: fetchError } = await supabase
         .from('inspections')
         .select('room_id, report_info')
@@ -32,7 +36,19 @@ export const CheckoutOperations = {
         throw new Error('Check-in report does not have a valid room_id');
       }
 
-      // Create the checkout inspection record with the same room_id as check-in
+      // Get property info from the room
+      const { data: room, error: roomError } = await supabase
+        .from('rooms')
+        .select('property_id')
+        .eq('id', checkinReport.room_id)
+        .single();
+
+      if (roomError) {
+        console.error('Error fetching room:', roomError);
+        throw roomError;
+      }
+
+      // Create the checkout inspection record
       const { data: checkoutInspection, error: createError } = await supabase
         .from('inspections')
         .insert({
@@ -43,7 +59,14 @@ export const CheckoutOperations = {
           checkout_clerk: checkoutData.clerk || '',
           checkout_tenant_name: checkoutData.tenantName || '',
           checkout_tenant_present: checkoutData.tenantPresent || false,
-          status: 'in_progress'
+          status: 'completed',
+          report_info: {
+            checkoutData,
+            assessmentData,
+            completedAt: new Date().toISOString(),
+            propertyId: room.property_id,
+            checkinReportId: checkinReportId
+          }
         })
         .select()
         .single();
@@ -53,23 +76,91 @@ export const CheckoutOperations = {
         throw createError;
       }
 
-      console.log('Basic checkout report created successfully:', checkoutInspection);
+      // Update the check-in report to reference the new checkout report
+      const updatedCheckinInfo = {
+        ...checkinReport.report_info,
+        checkoutReportId: checkoutInspection.id,
+        hasCheckout: true
+      };
+
+      const { error: updateError } = await supabase
+        .from('inspections')
+        .update({ report_info: updatedCheckinInfo })
+        .eq('id', checkinReportId);
+
+      if (updateError) {
+        console.error('Error updating check-in report:', updateError);
+        // Don't throw here as the checkout was created successfully
+      }
+
+      console.log('Completed checkout report created successfully:', checkoutInspection);
       return checkoutInspection;
     } catch (error) {
-      console.error('Error in createBasicCheckoutReport:', error);
+      console.error('Error in createCompletedCheckoutReport:', error);
       throw error;
     }
   },
 
   /**
-   * Phase 3: Initialize component comparisons for existing checkout
-   * Only includes components with both photos and descriptions - strict filtering
+   * Save checkout draft/in-progress data (optional feature)
    */
-  async initializeComponentComparisons(checkoutReportId: string, checkinReportId: string): Promise<any[]> {
+  async saveDraftCheckout(checkinReportId: string, draftData: any): Promise<void> {
     try {
-      console.log('Initializing component comparisons for checkout:', checkoutReportId);
+      // Save draft data to local storage or optionally to backend
+      const draftKey = `checkout_draft_${checkinReportId}`;
+      localStorage.setItem(draftKey, JSON.stringify({
+        ...draftData,
+        lastSaved: new Date().toISOString()
+      }));
       
-      // Fetch the check-in report to get all components and room_id
+      console.log('Draft checkout data saved:', draftKey);
+    } catch (error) {
+      console.error('Error saving draft checkout:', error);
+    }
+  },
+
+  /**
+   * Load checkout draft data
+   */
+  async loadDraftCheckout(checkinReportId: string): Promise<any | null> {
+    try {
+      const draftKey = `checkout_draft_${checkinReportId}`;
+      const draftData = localStorage.getItem(draftKey);
+      
+      if (draftData) {
+        const parsed = JSON.parse(draftData);
+        console.log('Loaded draft checkout data:', parsed);
+        return parsed;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error loading draft checkout:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Clear checkout draft data
+   */
+  async clearDraftCheckout(checkinReportId: string): Promise<void> {
+    try {
+      const draftKey = `checkout_draft_${checkinReportId}`;
+      localStorage.removeItem(draftKey);
+      console.log('Draft checkout data cleared:', draftKey);
+    } catch (error) {
+      console.error('Error clearing draft checkout:', error);
+    }
+  },
+
+  /**
+   * Extract components for checkout assessment (preparation only)
+   */
+  async prepareCheckoutComponents(checkinReportId: string): Promise<any[]> {
+    try {
+      console.log('Preparing checkout components for:', checkinReportId);
+      
+      // Fetch the check-in report to get all components
       const { data: checkinReport, error: fetchError } = await supabase
         .from('inspections')
         .select('room_id, report_info')
@@ -81,58 +172,13 @@ export const CheckoutOperations = {
         throw fetchError;
       }
 
-      console.log('Raw check-in report data:', checkinReport);
+      // Extract components using the existing extractor
+      const components = CheckoutComponentExtractor.extractComponentsFromCheckinReport(checkinReport.report_info);
 
-      // Use enhanced component extraction with STRICT filtering
-      const allComponents = CheckoutComponentExtractor.extractComponentsFromCheckinReport(checkinReport.report_info);
-
-      console.log('STRICT filtering extraction found valid components:', allComponents.length);
-
-      // If no valid components found after strict filtering, create a general assessment component
-      if (allComponents.length === 0) {
-        console.warn('No valid components found in check-in report after strict filtering (missing photos AND descriptions), creating general assessment');
-        const fallbackComponent = CheckoutComponentExtractor.createFallbackComponent();
-        allComponents.push(fallbackComponent);
-      } else {
-        console.log(`Successfully found ${allComponents.length} components with both description and images for checkout assessment`);
-      }
-
-      // Initialize comparison records for all valid components
-      await CheckoutComparisonAPI.initializeCheckoutComparisons(
-        checkoutReportId,
-        checkinReportId,
-        allComponents
-      );
-
-      console.log(`Successfully initialized ${allComponents.length} component comparisons for checkout`);
-      return allComponents;
+      console.log(`Prepared ${components.length} components for checkout assessment`);
+      return components;
     } catch (error) {
-      console.error('Error in initializeComponentComparisons:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Complete a checkout report
-   */
-  async completeCheckoutReport(checkoutReportId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('inspections')
-        .update({ 
-          status: 'completed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', checkoutReportId);
-
-      if (error) {
-        console.error('Error completing checkout report:', error);
-        throw error;
-      }
-
-      console.log('Checkout report completed:', checkoutReportId);
-    } catch (error) {
-      console.error('Error in completeCheckoutReport:', error);
+      console.error('Error in prepareCheckoutComponents:', error);
       throw error;
     }
   }

@@ -4,29 +4,47 @@ import { CheckoutOperations } from './checkoutOperations';
 import { CheckoutComponentExtractor } from './checkoutComponentExtractor';
 
 /**
- * Checkout Report API - Refactored Implementation
+ * Checkout Report API - Updated for new data flow
  * Main API interface for checkout report operations
  */
 export const CheckoutReportAPI = {
   /**
-   * Phase 2: Create a basic checkout report
+   * Create a completed checkout report (only on final completion)
    */
-  async createBasicCheckoutReport(checkinReportId: string, checkoutData: CheckoutData): Promise<any> {
-    return CheckoutOperations.createBasicCheckoutReport(checkinReportId, checkoutData);
+  async createCompletedCheckoutReport(
+    checkinReportId: string, 
+    checkoutData: CheckoutData, 
+    assessmentData: any[]
+  ): Promise<any> {
+    return CheckoutOperations.createCompletedCheckoutReport(checkinReportId, checkoutData, assessmentData);
   },
 
   /**
-   * Phase 3: Initialize component comparisons for existing checkout
+   * Prepare components for checkout assessment
    */
-  async initializeComponentComparisons(checkoutReportId: string, checkinReportId: string): Promise<any[]> {
-    return CheckoutOperations.initializeComponentComparisons(checkoutReportId, checkinReportId);
+  async prepareCheckoutComponents(checkinReportId: string): Promise<any[]> {
+    return CheckoutOperations.prepareCheckoutComponents(checkinReportId);
   },
 
   /**
-   * Complete a checkout report
+   * Save checkout draft
    */
-  async completeCheckoutReport(checkoutReportId: string): Promise<void> {
-    return CheckoutOperations.completeCheckoutReport(checkoutReportId);
+  async saveDraftCheckout(checkinReportId: string, draftData: any): Promise<void> {
+    return CheckoutOperations.saveDraftCheckout(checkinReportId, draftData);
+  },
+
+  /**
+   * Load checkout draft
+   */
+  async loadDraftCheckout(checkinReportId: string): Promise<any | null> {
+    return CheckoutOperations.loadDraftCheckout(checkinReportId);
+  },
+
+  /**
+   * Clear checkout draft
+   */
+  async clearDraftCheckout(checkinReportId: string): Promise<void> {
+    return CheckoutOperations.clearDraftCheckout(checkinReportId);
   },
 
   // Re-export component extraction methods for backward compatibility

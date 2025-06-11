@@ -10,7 +10,6 @@ import { useCheckoutProcedure } from '@/hooks/useCheckoutProcedure';
 import { Report } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
-import { supabase } from '@/integrations/supabase/client';
 import CheckoutPageHeader from '@/components/checkout/CheckoutPageHeader';
 import CheckoutProgress from '@/components/checkout/CheckoutProgress';
 import CheckinReportInfo from '@/components/checkout/CheckinReportInfo';
@@ -28,15 +27,16 @@ const CheckoutPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const {
-    checkoutReport,
+    checkoutData,
     isCreatingCheckout,
     comparisons,
     isLoadingComparisons,
     currentStep,
-    createBasicCheckout,
-    initializeComparisons,
+    isDraftSaved,
+    startCheckoutProcess,
+    initializeAssessments,
     completeCheckout,
-    setComparisons
+    updateComparison
   } = useCheckoutProcedure({ checkinReport });
 
   useEffect(() => {
@@ -64,8 +64,18 @@ const CheckoutPage = () => {
           return;
         }
 
+        // Check if report is completed
+        if (report.status !== 'completed') {
+          setError('Only completed check-in reports can be used for checkout');
+          toast({
+            title: "Report Not Ready",
+            description: "Only completed check-in reports can be used for checkout.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         console.log('Fetched report:', report);
-        console.log('Report rooms:', report.rooms);
         setCheckinReport(report);
       } catch (error) {
         console.error('Error fetching report:', error);
@@ -84,53 +94,21 @@ const CheckoutPage = () => {
     fetchReport();
   }, [reportId, toast]);
 
-  const handleComparisonUpdate = (updatedComparison: CheckoutComparison) => {
-    setComparisons(prev => 
-      prev.map(comp => 
-        comp.id === updatedComparison.id ? updatedComparison : comp
-      )
-    );
-  };
-
-  const handleSaveReport = async () => {
-    if (!checkoutReport) return;
-    
-    try {
-      toast({
-        title: "Saving Report",
-        description: "Saving checkout report progress...",
-      });
-      
-      const { error } = await supabase
-        .from('inspections')
-        .update({ 
-          status: 'saved',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', checkoutReport.id);
-
-      if (error) throw error;
-      
-      toast({
-        title: "Report Saved",
-        description: "Checkout report has been saved successfully.",
-      });
-    } catch (error) {
-      console.error('Error saving report:', error);
-      toast({
-        title: "Save Failed",
-        description: "Failed to save report. Please try again.",
-        variant: "destructive",
-      });
+  const handleCompleteCheckout = async () => {
+    const result = await completeCheckout();
+    if (result) {
+      // Navigate back to the check-in report view to see the completed checkout
+      navigate(`/reports/${reportId}/view`);
     }
   };
 
   console.log('CheckoutPage state:', {
     currentStep,
-    checkoutReport,
+    checkoutData,
     comparisons: comparisons.length,
     isLoadingComparisons,
-    checkinReport: checkinReport?.id
+    checkinReport: checkinReport?.id,
+    isDraftSaved
   });
 
   if (isLoading) {
@@ -183,8 +161,7 @@ const CheckoutPage = () => {
         <CheckoutPageHeader
           currentStep={currentStep}
           propertyName={checkinReport?.property?.name}
-          checkoutReport={checkoutReport}
-          onSaveReport={handleSaveReport}
+          isDraftSaved={isDraftSaved}
         />
 
         <CheckoutProgress currentStep={currentStep} />
@@ -194,26 +171,26 @@ const CheckoutPage = () => {
         {currentStep === 1 && (
           <CheckoutStep1
             checkinReport={checkinReport}
-            onStartCheckout={createBasicCheckout}
+            onStartCheckout={startCheckoutProcess}
             isCreating={isCreatingCheckout}
           />
         )}
 
-        {currentStep === 2 && checkoutReport && (
+        {currentStep === 2 && checkoutData && (
           <CheckoutStep2
-            checkoutReport={checkoutReport}
-            onInitializeComparisons={initializeComparisons}
+            checkoutData={checkoutData}
+            onInitializeAssessments={initializeAssessments}
             isLoadingComparisons={isLoadingComparisons}
           />
         )}
 
-        {currentStep === 3 && checkoutReport && (
+        {currentStep === 3 && checkoutData && (
           <CheckoutStep3
-            checkoutReport={checkoutReport}
+            checkoutData={checkoutData}
             comparisons={comparisons}
             isLoadingComparisons={isLoadingComparisons}
-            onComparisonUpdate={handleComparisonUpdate}
-            onCompleteCheckout={completeCheckout}
+            onComparisonUpdate={updateComparison}
+            onCompleteCheckout={handleCompleteCheckout}
           />
         )}
       </div>

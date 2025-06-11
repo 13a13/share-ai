@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Loader2, AlertTriangle } from 'lucide-react';
-import { CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
+import { CheckoutComparison, CheckoutData } from '@/lib/api/reports/checkoutTypes';
 import ComponentProcessingStatus from '../ComponentProcessingStatus';
 import CheckoutRoomAssessment from '../CheckoutRoomAssessment';
 
 interface CheckoutStep3Props {
-  checkoutReport: any;
+  checkoutData: CheckoutData;
   comparisons: CheckoutComparison[];
   isLoadingComparisons: boolean;
   onComparisonUpdate: (updatedComparison: CheckoutComparison) => void;
@@ -16,7 +16,7 @@ interface CheckoutStep3Props {
 }
 
 const CheckoutStep3 = ({
-  checkoutReport,
+  checkoutData,
   comparisons,
   isLoadingComparisons,
   onComparisonUpdate,
@@ -51,7 +51,7 @@ const CheckoutStep3 = ({
             <Badge className="bg-blue-500">
               {getCompletedAssessments()}/{getTotalAssessments()} Assessed
             </Badge>
-            <Badge className="bg-green-500">Setup Complete</Badge>
+            <Badge className="bg-green-500">Ready for Assessment</Badge>
           </div>
         </CardTitle>
       </CardHeader>
@@ -74,11 +74,11 @@ const CheckoutStep3 = ({
                 pendingComponents={getPendingAssessments()}
                 unchangedComponents={getUnchangedAssessments()}
                 changedComponents={getChangedAssessments()}
-                isProcessing={Object.values(comparisons).some(comp => comp.status === 'pending')}
+                isProcessing={false}
               />
               
               <CheckoutRoomAssessment
-                checkoutReportId={checkoutReport.id}
+                checkoutReportId="pending"
                 comparisons={comparisons}
                 onComparisonUpdate={onComparisonUpdate}
               />
@@ -102,7 +102,7 @@ const CheckoutStep3 = ({
               </h3>
               <p className="text-green-700">
                 You've completed the assessment of all {getTotalAssessments()} components. 
-                You can now complete the checkout process.
+                You can now complete the checkout process to create the final report.
               </p>
             </div>
             

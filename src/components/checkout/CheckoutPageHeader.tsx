@@ -1,46 +1,54 @@
 
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface CheckoutPageHeaderProps {
   currentStep: number;
-  propertyName: string;
-  checkoutReport: any;
-  onSaveReport: () => void;
+  propertyName?: string;
+  isDraftSaved?: boolean;
 }
 
-const CheckoutPageHeader = ({
-  currentStep,
+const CheckoutPageHeader = ({ 
+  currentStep, 
   propertyName,
-  checkoutReport,
-  onSaveReport
+  isDraftSaved = false 
 }: CheckoutPageHeaderProps) => {
   const navigate = useNavigate();
 
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Checkout Procedure - Step {currentStep}</h1>
-          <p className="text-gray-600">
-            Property: {propertyName || 'Unknown Property'}
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
         
-        {currentStep === 3 && checkoutReport && (
-          <Button onClick={onSaveReport} className="bg-blue-600 hover:bg-blue-700">
-            <FileCheck className="h-4 w-4 mr-2" />
-            Save Report
-          </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Checkout Process</h1>
+          <p className="text-gray-600">
+            {propertyName && `Property: ${propertyName}`}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        {isDraftSaved && (
+          <Badge variant="outline" className="text-blue-600 border-blue-200">
+            <Save className="h-3 w-3 mr-1" />
+            Draft Saved
+          </Badge>
         )}
+        
+        <Badge className="bg-blue-500">
+          <FileText className="h-3 w-3 mr-1" />
+          Step {currentStep} of 3
+        </Badge>
       </div>
     </div>
   );

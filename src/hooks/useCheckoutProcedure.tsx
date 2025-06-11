@@ -1,8 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { CheckoutReportAPI, CheckoutComparisonAPI } from '@/lib/api/reports/checkoutApi';
 import { CheckoutData, CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
+import { CheckoutOperations } from '@/lib/api/reports/checkoutOperations';
 import { Report } from '@/types';
 
 export interface UseCheckoutProcedureProps {
@@ -11,16 +12,40 @@ export interface UseCheckoutProcedureProps {
 
 export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProps) => {
   const { toast } = useToast();
-  const [checkoutReport, setCheckoutReport] = useState<any>(null);
+  const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [comparisons, setComparisons] = useState<CheckoutComparison[]>([]);
   const [isLoadingComparisons, setIsLoadingComparisons] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isDraftSaved, setIsDraftSaved] = useState(false);
+  const [checkoutComponents, setCheckoutComponents] = useState<any[]>([]);
+
+  // Load any existing draft on mount
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (checkinReport) {
+        const draft = await CheckoutOperations.loadDraftCheckout(checkinReport.id);
+        if (draft) {
+          setCheckoutData(draft.checkoutData || null);
+          setComparisons(draft.comparisons || []);
+          setCurrentStep(draft.currentStep || 1);
+          setIsDraftSaved(true);
+          
+          toast({
+            title: "Draft Loaded",
+            description: "Your previous checkout progress has been restored.",
+          });
+        }
+      }
+    };
+    
+    loadDraft();
+  }, [checkinReport, toast]);
 
   /**
-   * Phase 2: Create basic checkout report
+   * Start checkout process (Step 1 → Step 2)
    */
-  const createBasicCheckout = async (checkoutData: CheckoutData) => {
+  const startCheckoutProcess = async (formData: CheckoutData) => {
     if (!checkinReport) {
       console.error('No check-in report found');
       toast({
@@ -31,37 +56,30 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
       return;
     }
 
-    console.log('Creating basic checkout...', {
-      checkinReportId: checkinReport.id,
-      checkinReport: checkinReport,
-      checkoutData
-    });
+    console.log('Starting checkout process...', formData);
     
     setIsCreatingCheckout(true);
     
     try {
-      const newCheckoutReport = await CheckoutReportAPI.createBasicCheckoutReport(
-        checkinReport.id,
-        checkoutData
-      );
-
-      if (newCheckoutReport) {
-        console.log('Basic checkout report created:', newCheckoutReport);
-        setCheckoutReport(newCheckoutReport);
-        setCurrentStep(2);
-        
-        toast({
-          title: "Checkout Created",
-          description: "Basic checkout record created successfully. Ready for component setup.",
-        });
-      } else {
-        throw new Error('Failed to create basic checkout report');
-      }
+      // Prepare components for assessment
+      const components = await CheckoutOperations.prepareCheckoutComponents(checkinReport.id);
+      
+      setCheckoutData(formData);
+      setCheckoutComponents(components);
+      setCurrentStep(2);
+      
+      // Save draft
+      await saveDraft(formData, [], 2);
+      
+      toast({
+        title: "Checkout Started",
+        description: "Checkout process initiated. Ready for component assessment.",
+      });
     } catch (error) {
-      console.error('Error creating basic checkout:', error);
+      console.error('Error starting checkout process:', error);
       toast({
         title: "Error",
-        description: `Failed to create checkout: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to start checkout: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -70,56 +88,55 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
   };
 
   /**
-   * Phase 3: Initialize component comparisons
+   * Initialize component assessments (Step 2 → Step 3)
    */
-  const initializeComparisons = async () => {
-    if (!checkoutReport || !checkinReport) {
-      console.error('Missing required data for initialization:', { checkoutReport, checkinReport });
+  const initializeAssessments = async () => {
+    if (!checkinReport || !checkoutData) {
+      console.error('Missing required data for initialization');
       return;
     }
 
-    console.log('Starting component initialization...', {
-      checkoutReportId: checkoutReport.id,
-      checkinReportId: checkinReport.id,
-      checkinReportStructure: {
-        id: checkinReport.id,
-        rooms: checkinReport.rooms?.length || 0,
-        roomsData: checkinReport.rooms
-      }
-    });
-
     setIsLoadingComparisons(true);
     try {
-      console.log('Initializing component comparisons...');
+      // Create comparison objects for UI (in memory only)
+      const initialComparisons: CheckoutComparison[] = checkoutComponents.map((component, index) => ({
+        id: `temp_${index}`,
+        checkout_report_id: 'pending',
+        checkin_report_id: checkinReport.id,
+        room_id: component.roomId || 'general',
+        component_id: component.id,
+        component_name: component.name,
+        status: 'pending' as const,
+        ai_analysis: {
+          checkinData: {
+            originalCondition: component.condition,
+            originalDescription: component.description,
+            originalImages: component.images || [],
+            timestamp: component.timestamp
+          }
+        },
+        checkout_images: [],
+        change_description: null,
+        checkout_condition: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
       
-      const components = await CheckoutReportAPI.initializeComponentComparisons(
-        checkoutReport.id,
-        checkinReport.id
-      );
-
-      console.log('Components found for initialization:', components);
-
-      // Load the created comparison records
-      const comparisonData = await CheckoutComparisonAPI.getCheckoutComparisons(checkoutReport.id);
-      console.log('Loaded comparison data from database:', comparisonData);
-      
-      setComparisons(comparisonData);
+      setComparisons(initialComparisons);
       setCurrentStep(3);
       
-      toast({
-        title: "Components Initialized",
-        description: `Setup complete! ${comparisonData.length} components ready for comparison.`,
-      });
+      // Save draft
+      await saveDraft(checkoutData, initialComparisons, 3);
       
-      console.log('Component comparisons initialized successfully:', {
-        componentsFound: components.length,
-        comparisonsCreated: comparisonData.length
+      toast({
+        title: "Components Ready",
+        description: `${initialComparisons.length} components ready for assessment.`,
       });
     } catch (error) {
-      console.error('Error initializing comparisons:', error);
+      console.error('Error initializing assessments:', error);
       toast({
         title: "Error",
-        description: "Failed to initialize component comparisons.",
+        description: "Failed to initialize component assessments.",
         variant: "destructive",
       });
     } finally {
@@ -128,21 +145,35 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
   };
 
   /**
-   * Complete the checkout procedure
+   * Complete the checkout process - create final report
    */
   const completeCheckout = async () => {
-    if (!checkoutReport) return;
+    if (!checkinReport || !checkoutData) {
+      console.error('Missing required data for completion');
+      return;
+    }
 
     try {
-      console.log('Completing checkout report:', checkoutReport.id);
-      await CheckoutReportAPI.completeCheckoutReport(checkoutReport.id);
+      console.log('Completing checkout process...');
       
-      setCheckoutReport(prev => prev ? { ...prev, status: 'completed' } : prev);
+      // Create the final checkout report with all assessment data
+      const finalCheckoutReport = await CheckoutOperations.createCompletedCheckoutReport(
+        checkinReport.id,
+        checkoutData,
+        comparisons
+      );
+      
+      // Clear draft data
+      await CheckoutOperations.clearDraftCheckout(checkinReport.id);
+      setIsDraftSaved(false);
       
       toast({
         title: "Checkout Completed",
-        description: "The checkout procedure has been completed successfully.",
+        description: "The checkout report has been created and saved successfully.",
       });
+
+      console.log('Checkout completed successfully:', finalCheckoutReport);
+      return finalCheckoutReport;
     } catch (error) {
       console.error('Error completing checkout:', error);
       toast({
@@ -153,15 +184,52 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
     }
   };
 
+  /**
+   * Save draft progress
+   */
+  const saveDraft = async (data: CheckoutData, comps: CheckoutComparison[], step: number) => {
+    if (!checkinReport) return;
+    
+    const draftData = {
+      checkoutData: data,
+      comparisons: comps,
+      currentStep: step,
+      components: checkoutComponents
+    };
+    
+    await CheckoutOperations.saveDraftCheckout(checkinReport.id, draftData);
+    setIsDraftSaved(true);
+  };
+
+  /**
+   * Update a comparison assessment
+   */
+  const updateComparison = (updatedComparison: CheckoutComparison) => {
+    setComparisons(prev => {
+      const updated = prev.map(comp => 
+        comp.id === updatedComparison.id ? updatedComparison : comp
+      );
+      
+      // Auto-save draft when comparisons change
+      if (checkoutData) {
+        saveDraft(checkoutData, updated, currentStep);
+      }
+      
+      return updated;
+    });
+  };
+
   return {
-    checkoutReport,
+    checkoutData,
     isCreatingCheckout,
     comparisons,
     isLoadingComparisons,
     currentStep,
-    createBasicCheckout,
-    initializeComparisons,
+    isDraftSaved,
+    startCheckoutProcess,
+    initializeAssessments,
     completeCheckout,
+    updateComparison,
     setComparisons
   };
 };
