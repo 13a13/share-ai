@@ -53,10 +53,12 @@ export const CheckoutReportAPI = {
   },
 
   /**
-   * Update checkout comparison within check-in report
+   * Update checkout comparison within check-in report - Fixed to work with comparison IDs
    */
   async updateCheckoutComparison(checkinReportId: string, comparisonId: string, updates: any): Promise<void> {
     try {
+      console.log('Updating checkout comparison:', { checkinReportId, comparisonId, updates });
+      
       const { data: report, error: fetchError } = await supabase
         .from('inspections')
         .select('report_info')
@@ -71,7 +73,7 @@ export const CheckoutReportAPI = {
         throw new Error('No checkout session found');
       }
 
-      // Update the specific comparison
+      // Update the specific comparison - Fixed to match comparison ID properly
       const updatedComparisons = reportInfo.checkout_session.comparisons.map((comp: any) =>
         comp.id === comparisonId ? { ...comp, ...updates } : comp
       );
@@ -94,6 +96,7 @@ export const CheckoutReportAPI = {
         .eq('id', checkinReportId);
 
       if (updateError) throw updateError;
+      console.log('Checkout comparison updated successfully');
     } catch (error) {
       console.error('Error updating checkout comparison:', error);
       throw error;

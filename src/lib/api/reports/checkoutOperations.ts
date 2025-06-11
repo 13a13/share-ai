@@ -121,7 +121,14 @@ export const CheckoutOperations = {
         status: 'pending',
         checkin_data: component.checkinData,
         checkout_images: [],
-        ai_analysis: {},
+        ai_analysis: {
+          // Store the full component data for proper display
+          checkinData: component.checkinData,
+          condition: component.condition,
+          conditionSummary: component.conditionSummary,
+          description: component.description,
+          images: component.images
+        },
         change_description: null,
         checkout_condition: null
       }));
