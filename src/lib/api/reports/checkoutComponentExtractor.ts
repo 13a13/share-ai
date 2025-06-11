@@ -1,3 +1,4 @@
+
 /**
  * Component Extraction Service for Checkout Reports
  * Handles extraction and processing of components from check-in reports
@@ -130,9 +131,8 @@ export const CheckoutComponentExtractor = {
   },
 
   /**
-   * Process individual component data with enhanced extraction and validation
+   * Process individual component data with strict validation
    * Returns null if component doesn't have both photos and description
-   * Enhanced to preserve all data for checkout comparison
    */
   processComponentData(component: any, index: number, roomId: string, roomName: string): any | null {
     if (!component) return null;
@@ -142,13 +142,17 @@ export const CheckoutComponentExtractor = {
     
     // Extract component description
     const description = component.description || component.analysis || component.notes || '';
+    const trimmedDescription = description.trim();
     
-    // For checkout comparison, we need components even without images/descriptions
-    // as we want to show "no data available" rather than hide the component entirely
+    // STRICT FILTERING: Only include components with BOTH description AND images
+    if (!trimmedDescription || componentImages.length === 0) {
+      console.log(`Filtering out component "${component.name || `Component ${index + 1}`}" - missing description: ${!trimmedDescription}, missing images: ${componentImages.length === 0}`);
+      return null;
+    }
     
-    console.log(`Processing component "${component.name || `Component ${index + 1}`}" with ${componentImages.length} photos and ${description ? 'description' : 'no description'}`);
+    console.log(`Processing component "${component.name || `Component ${index + 1}`}" with ${componentImages.length} photos and description present`);
 
-    // Extract component details - now preserving all data
+    // Extract component details - now only for valid components
     const componentData = {
       id: component.id || component.componentId || `${roomId}-component-${index}`,
       name: component.name || component.componentName || component.title || `Component ${index + 1}`,
@@ -156,7 +160,7 @@ export const CheckoutComponentExtractor = {
       roomName: roomName,
       condition: component.condition || component.conditionRating || 'unknown',
       conditionSummary: component.conditionSummary || component.summary || '',
-      description: description,
+      description: trimmedDescription,
       images: componentImages,
       notes: component.notes || component.additionalNotes || '',
       cleanliness: component.cleanliness || 'unknown',
@@ -164,7 +168,7 @@ export const CheckoutComponentExtractor = {
       // Store enhanced check-in data for comparison
       checkinData: {
         originalCondition: component.condition || 'unknown',
-        originalDescription: description,
+        originalDescription: trimmedDescription,
         originalImages: componentImages,
         originalNotes: component.notes || '',
         roomName: roomName,
@@ -172,7 +176,7 @@ export const CheckoutComponentExtractor = {
       }
     };
 
-    console.log('Processed component with full data:', componentData.name, 'in room:', roomName, 'with', componentImages.length, 'photos');
+    console.log('Successfully processed component with full data:', componentData.name, 'in room:', roomName, 'with', componentImages.length, 'photos');
     return componentData;
   },
 
@@ -216,7 +220,7 @@ export const CheckoutComponentExtractor = {
   },
 
   /**
-   * Create fallback component when no components are found
+   * Create fallback component when no valid components are found
    */
   createFallbackComponent(): any {
     const roomName = 'General Assessment';
@@ -229,12 +233,12 @@ export const CheckoutComponentExtractor = {
       roomName: roomName,
       condition: 'unknown',
       conditionSummary: 'Overall property condition assessment',
-      description: 'No specific components found in check-in report - assess general property condition',
+      description: 'No specific components with valid check-in data found - assess general property condition',
       images: [],
-      notes: 'General property assessment based on available check-in data',
+      notes: 'General property assessment - no detailed component data available',
       checkinData: {
         originalCondition: 'unknown',
-        originalDescription: 'General assessment',
+        originalDescription: 'General assessment - no detailed component data available',
         originalImages: [],
         originalNotes: '',
         roomName: roomName,
