@@ -1,4 +1,3 @@
-
 /**
  * Component Extraction Service for Checkout Reports
  * Handles extraction and processing of components from check-in reports
@@ -133,7 +132,7 @@ export const CheckoutComponentExtractor = {
   /**
    * Process individual component data with enhanced extraction and validation
    * Returns null if component doesn't have both photos and description
-   * STRICT FILTERING: Only returns components with both valid description AND images
+   * Enhanced to preserve all data for checkout comparison
    */
   processComponentData(component: any, index: number, roomId: string, roomName: string): any | null {
     if (!component) return null;
@@ -143,25 +142,13 @@ export const CheckoutComponentExtractor = {
     
     // Extract component description
     const description = component.description || component.analysis || component.notes || '';
-    const trimmedDescription = description.trim();
     
-    // STRICT VALIDATION: Must have both valid description AND at least one image
-    const hasValidDescription = trimmedDescription.length > 0;
-    const hasValidImages = componentImages.length > 0;
+    // For checkout comparison, we need components even without images/descriptions
+    // as we want to show "no data available" rather than hide the component entirely
     
-    if (!hasValidDescription || !hasValidImages) {
-      console.log(`Filtering out component "${component.name || `Component ${index + 1}`}":`, {
-        hasValidDescription,
-        hasValidImages,
-        descriptionLength: trimmedDescription.length,
-        imageCount: componentImages.length
-      });
-      return null; // Filter out this component
-    }
-    
-    console.log(`Processing valid component "${component.name || `Component ${index + 1}`}" with ${componentImages.length} photos and description of ${trimmedDescription.length} characters`);
+    console.log(`Processing component "${component.name || `Component ${index + 1}`}" with ${componentImages.length} photos and ${description ? 'description' : 'no description'}`);
 
-    // Extract component details - now only for valid components
+    // Extract component details - now preserving all data
     const componentData = {
       id: component.id || component.componentId || `${roomId}-component-${index}`,
       name: component.name || component.componentName || component.title || `Component ${index + 1}`,
@@ -169,7 +156,7 @@ export const CheckoutComponentExtractor = {
       roomName: roomName,
       condition: component.condition || component.conditionRating || 'unknown',
       conditionSummary: component.conditionSummary || component.summary || '',
-      description: trimmedDescription,
+      description: description,
       images: componentImages,
       notes: component.notes || component.additionalNotes || '',
       cleanliness: component.cleanliness || 'unknown',
@@ -177,7 +164,7 @@ export const CheckoutComponentExtractor = {
       // Store enhanced check-in data for comparison
       checkinData: {
         originalCondition: component.condition || 'unknown',
-        originalDescription: trimmedDescription,
+        originalDescription: description,
         originalImages: componentImages,
         originalNotes: component.notes || '',
         roomName: roomName,
@@ -185,7 +172,7 @@ export const CheckoutComponentExtractor = {
       }
     };
 
-    console.log('Processed valid component with full data:', componentData.name, 'in room:', roomName, 'with', componentImages.length, 'photos');
+    console.log('Processed component with full data:', componentData.name, 'in room:', roomName, 'with', componentImages.length, 'photos');
     return componentData;
   },
 
@@ -206,38 +193,30 @@ export const CheckoutComponentExtractor = {
     imageSources.forEach(source => {
       if (Array.isArray(source)) {
         source.forEach(img => {
-          if (typeof img === 'string' && img.trim().length > 0) {
-            images.push(img.trim());
-          } else if (img && img.url && typeof img.url === 'string' && img.url.trim().length > 0) {
-            images.push(img.url.trim());
-          } else if (img && img.src && typeof img.src === 'string' && img.src.trim().length > 0) {
-            images.push(img.src.trim());
+          if (typeof img === 'string') {
+            images.push(img);
+          } else if (img && img.url) {
+            images.push(img.url);
+          } else if (img && img.src) {
+            images.push(img.src);
           }
         });
       }
     });
 
     // Also check for single image properties
-    if (component.image && typeof component.image === 'string' && component.image.trim().length > 0) {
-      images.push(component.image.trim());
+    if (component.image && typeof component.image === 'string') {
+      images.push(component.image);
     }
-    if (component.imageUrl && typeof component.imageUrl === 'string' && component.imageUrl.trim().length > 0) {
-      images.push(component.imageUrl.trim());
+    if (component.imageUrl && typeof component.imageUrl === 'string') {
+      images.push(component.imageUrl);
     }
 
-    // Remove duplicates and filter out empty/invalid URLs
-    const validImages = [...new Set(images)].filter(url => 
-      url && 
-      typeof url === 'string' && 
-      url.trim().length > 0 && 
-      (url.startsWith('http') || url.startsWith('/') || url.startsWith('blob:'))
-    );
-
-    return validImages;
+    return [...new Set(images)]; // Remove duplicates
   },
 
   /**
-   * Create fallback component when no valid components are found
+   * Create fallback component when no components are found
    */
   createFallbackComponent(): any {
     const roomName = 'General Assessment';
@@ -250,12 +229,12 @@ export const CheckoutComponentExtractor = {
       roomName: roomName,
       condition: 'unknown',
       conditionSummary: 'Overall property condition assessment',
-      description: 'No specific components with detailed check-in data found - assess general property condition',
+      description: 'No specific components found in check-in report - assess general property condition',
       images: [],
-      notes: 'General property assessment - original check-in did not contain components with both descriptions and images',
+      notes: 'General property assessment based on available check-in data',
       checkinData: {
         originalCondition: 'unknown',
-        originalDescription: 'General assessment - no detailed component data available from check-in',
+        originalDescription: 'General assessment',
         originalImages: [],
         originalNotes: '',
         roomName: roomName,

@@ -59,32 +59,7 @@ const CheckinDataDisplay = ({
     }
   };
 
-  const hasValidData = displayImages.length > 0 && displayDescription.trim() !== '';
-
-  // This component should only be rendered for components that passed strict filtering
-  // But we'll still show a warning if somehow invalid data gets through
-  if (!hasValidData) {
-    console.warn('CheckinDataDisplay rendered for component without valid data:', componentName);
-    return (
-      <Card className="mb-4 border-red-200 bg-red-50/30">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            Invalid Component Data: {componentName}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 text-red-600 text-sm bg-white p-3 rounded border">
-            <AlertCircle className="h-4 w-4" />
-            <span>
-              This component should not appear in checkout as it lacks valid check-in data.
-              This indicates a filtering issue that should be reported.
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasAnyData = displayImages.length > 0 || displayDescription.trim() !== '';
 
   return (
     <Card className="mb-4 border-blue-200 bg-blue-50/30">
@@ -119,53 +94,68 @@ const CheckinDataDisplay = ({
           </div>
         )}
 
-        {/* Description - Should always exist for filtered components */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-1">Check-in Description</h4>
-          <p className="text-sm text-gray-600 bg-white p-2 rounded border">
-            {displayDescription}
-          </p>
-        </div>
+        {/* Description */}
+        {displayDescription && (
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-1">Check-in Description</h4>
+            <p className="text-sm text-gray-600 bg-white p-2 rounded border">
+              {displayDescription}
+            </p>
+          </div>
+        )}
 
-        {/* Images - Should always exist for filtered components */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-            <ImageIcon className="h-4 w-4" />
-            Check-in Images ({displayImages.length})
-          </h4>
-          <ScrollArea className="max-h-48">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {displayImages.map((imageUrl, index) => (
-                <div key={index} className="relative border rounded overflow-hidden aspect-square bg-white">
-                  <img 
-                    src={imageUrl} 
-                    alt={`Check-in ${componentName} ${index + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-blue-600/80 text-white p-1 text-xs text-center">
-                    Check-in #{index + 1}
+        {/* Images */}
+        {displayImages.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+              <ImageIcon className="h-4 w-4" />
+              Check-in Images ({displayImages.length})
+            </h4>
+            <ScrollArea className="max-h-48">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {displayImages.map((imageUrl, index) => (
+                  <div key={index} className="relative border rounded overflow-hidden aspect-square bg-white">
+                    <img 
+                      src={imageUrl} 
+                      alt={`Check-in ${componentName} ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-blue-600/80 text-white p-1 text-xs text-center">
+                      Check-in #{index + 1}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* No data message */}
+        {!hasAnyData && (
+          <div className="flex items-center gap-2 text-gray-500 text-sm bg-white p-3 rounded border">
+            <AlertCircle className="h-4 w-4" />
+            <span>
+              No detailed check-in data available for this component. 
+              {checkinData ? ' Check-in data structure exists but may be empty.' : ' No check-in data found.'}
+            </span>
+          </div>
+        )}
 
         {/* Debug info in development */}
         {process.env.NODE_ENV === 'development' && (
           <details className="text-xs text-gray-400">
-            <summary>Debug: Validated Component Data</summary>
+            <summary>Debug: Data Sources</summary>
             <pre className="mt-2 text-xs overflow-auto">
               {JSON.stringify({
-                hasValidData,
+                hasCheckinData: !!checkinData,
+                checkinDataKeys: checkinData ? Object.keys(checkinData) : [],
                 hasImages: displayImages.length > 0,
-                hasDescription: displayDescription.trim() !== '',
-                condition: displayCondition,
-                passedFiltering: true
+                hasDescription: !!displayDescription,
+                condition: displayCondition
               }, null, 2)}
             </pre>
           </details>

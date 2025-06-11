@@ -63,7 +63,7 @@ export const CheckoutOperations = {
 
   /**
    * Phase 3: Initialize component comparisons for existing checkout
-   * STRICT FILTERING: Only includes components with both photos and descriptions
+   * Only includes components with both photos and descriptions
    */
   async initializeComponentComparisons(checkoutReportId: string, checkinReportId: string): Promise<any[]> {
     try {
@@ -83,29 +83,27 @@ export const CheckoutOperations = {
 
       console.log('Raw check-in report data:', checkinReport);
 
-      // Use STRICT component extraction with filtering
-      const validComponents = CheckoutComponentExtractor.extractComponentsFromCheckinReport(checkinReport.report_info);
+      // Use enhanced component extraction with filtering
+      const allComponents = CheckoutComponentExtractor.extractComponentsFromCheckinReport(checkinReport.report_info);
 
-      console.log('STRICT extraction found valid components (with both description and images):', validComponents.length);
+      console.log('Enhanced extraction with filtering found valid components:', allComponents.length);
 
       // If no valid components found, create a general assessment component
-      if (validComponents.length === 0) {
-        console.warn('No valid components found in check-in report (all filtered out due to missing descriptions or images), creating general assessment');
+      if (allComponents.length === 0) {
+        console.warn('No valid components found in check-in report (all filtered out due to missing photos or descriptions), creating general assessment');
         const fallbackComponent = CheckoutComponentExtractor.createFallbackComponent();
-        validComponents.push(fallbackComponent);
-        
-        console.log('Created fallback general assessment component');
+        allComponents.push(fallbackComponent);
       }
 
-      // Initialize comparison records ONLY for valid components
+      // Initialize comparison records for all valid components
       await CheckoutComparisonAPI.initializeCheckoutComparisons(
         checkoutReportId,
         checkinReportId,
-        validComponents
+        allComponents
       );
 
-      console.log(`Successfully initialized ${validComponents.length} component comparisons for checkout (all with valid check-in data)`);
-      return validComponents;
+      console.log(`Successfully initialized ${allComponents.length} component comparisons for checkout`);
+      return allComponents;
     } catch (error) {
       console.error('Error in initializeComponentComparisons:', error);
       throw error;
