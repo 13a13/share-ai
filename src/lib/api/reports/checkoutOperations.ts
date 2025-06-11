@@ -48,6 +48,20 @@ export const CheckoutOperations = {
         throw roomError;
       }
 
+      // Prepare JSON-compatible data for the report_info field
+      const reportInfo = {
+        checkoutData: {
+          clerk: checkoutData.clerk || '',
+          tenantName: checkoutData.tenantName || '',
+          tenantPresent: checkoutData.tenantPresent || false,
+          date: checkoutData.date || new Date().toISOString()
+        },
+        assessmentData: assessmentData || [],
+        completedAt: new Date().toISOString(),
+        propertyId: room.property_id,
+        checkinReportId: checkinReportId
+      };
+
       // Create the checkout inspection record
       const { data: checkoutInspection, error: createError } = await supabase
         .from('inspections')
@@ -60,13 +74,7 @@ export const CheckoutOperations = {
           checkout_tenant_name: checkoutData.tenantName || '',
           checkout_tenant_present: checkoutData.tenantPresent || false,
           status: 'completed',
-          report_info: {
-            checkoutData,
-            assessmentData,
-            completedAt: new Date().toISOString(),
-            propertyId: room.property_id,
-            checkinReportId: checkinReportId
-          }
+          report_info: reportInfo
         })
         .select()
         .single();
@@ -77,8 +85,9 @@ export const CheckoutOperations = {
       }
 
       // Update the check-in report to reference the new checkout report
+      const existingReportInfo = checkinReport.report_info || {};
       const updatedCheckinInfo = {
-        ...checkinReport.report_info,
+        ...existingReportInfo,
         checkoutReportId: checkoutInspection.id,
         hasCheckout: true
       };
@@ -173,7 +182,7 @@ export const CheckoutOperations = {
       }
 
       // Extract components using the existing extractor
-      const components = CheckoutComponentExtractor.extractComponentsFromCheckinReport(checkinReport.report_info);
+      const components = CheckoutComponentExtractor.extractComponentsFromCheckinReport(checkinReport.report_info || {});
 
       console.log(`Prepared ${components.length} components for checkout assessment`);
       return components;

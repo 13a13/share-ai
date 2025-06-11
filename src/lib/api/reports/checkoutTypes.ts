@@ -16,6 +16,7 @@ export interface CheckoutComparison {
 }
 
 export interface CheckoutData {
+  [key: string]: any; // Make it JSON-compatible
   clerk?: string;
   tenantName?: string;
   tenantPresent?: boolean;
