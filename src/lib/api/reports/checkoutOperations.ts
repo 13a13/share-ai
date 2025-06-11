@@ -85,7 +85,7 @@ export const CheckoutOperations = {
       }
 
       // Update the check-in report to reference the new checkout report
-      const existingReportInfo = checkinReport.report_info || {};
+      const existingReportInfo = checkinReport.report_info as Record<string, any> || {};
       const updatedCheckinInfo = {
         ...existingReportInfo,
         checkoutReportId: checkoutInspection.id,
