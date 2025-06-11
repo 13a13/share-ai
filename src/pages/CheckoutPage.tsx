@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,7 +29,6 @@ const CheckoutPage = () => {
 
   const {
     checkoutReport,
-    checkoutSession,
     isCreatingCheckout,
     comparisons,
     isLoadingComparisons,
@@ -36,7 +36,6 @@ const CheckoutPage = () => {
     createBasicCheckout,
     initializeComparisons,
     completeCheckout,
-    loadExistingCheckout,
     setComparisons
   } = useCheckoutProcedure({ checkinReport });
 
@@ -66,12 +65,8 @@ const CheckoutPage = () => {
         }
 
         console.log('Fetched report:', report);
+        console.log('Report rooms:', report.rooms);
         setCheckinReport(report);
-        
-        // Load existing checkout session if it exists
-        if (report) {
-          await loadExistingCheckout();
-        }
       } catch (error) {
         console.error('Error fetching report:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -89,13 +84,6 @@ const CheckoutPage = () => {
     fetchReport();
   }, [reportId, toast]);
 
-  // Load existing checkout when checkinReport changes
-  useEffect(() => {
-    if (checkinReport && !checkoutSession) {
-      loadExistingCheckout();
-    }
-  }, [checkinReport]);
-
   const handleComparisonUpdate = (updatedComparison: CheckoutComparison) => {
     setComparisons(prev => 
       prev.map(comp => 
@@ -105,33 +93,33 @@ const CheckoutPage = () => {
   };
 
   const handleSaveReport = async () => {
-    if (!checkoutSession || !checkinReport) return;
+    if (!checkoutReport) return;
     
     try {
       toast({
-        title: "Saving Progress",
-        description: "Saving checkout progress...",
+        title: "Saving Report",
+        description: "Saving checkout report progress...",
       });
       
-      // Save progress within the check-in report
       const { error } = await supabase
         .from('inspections')
         .update({ 
+          status: 'saved',
           updated_at: new Date().toISOString()
         })
-        .eq('id', checkinReport.id);
+        .eq('id', checkoutReport.id);
 
       if (error) throw error;
       
       toast({
-        title: "Progress Saved",
-        description: "Checkout progress has been saved successfully.",
+        title: "Report Saved",
+        description: "Checkout report has been saved successfully.",
       });
     } catch (error) {
-      console.error('Error saving progress:', error);
+      console.error('Error saving report:', error);
       toast({
         title: "Save Failed",
-        description: "Failed to save progress. Please try again.",
+        description: "Failed to save report. Please try again.",
         variant: "destructive",
       });
     }
@@ -139,7 +127,7 @@ const CheckoutPage = () => {
 
   console.log('CheckoutPage state:', {
     currentStep,
-    checkoutSession,
+    checkoutReport,
     comparisons: comparisons.length,
     isLoadingComparisons,
     checkinReport: checkinReport?.id
@@ -195,7 +183,7 @@ const CheckoutPage = () => {
         <CheckoutPageHeader
           currentStep={currentStep}
           propertyName={checkinReport?.property?.name}
-          checkoutReport={checkoutSession}
+          checkoutReport={checkoutReport}
           onSaveReport={handleSaveReport}
         />
 
@@ -211,17 +199,17 @@ const CheckoutPage = () => {
           />
         )}
 
-        {currentStep === 2 && checkoutSession && (
+        {currentStep === 2 && checkoutReport && (
           <CheckoutStep2
-            checkoutReport={checkoutSession}
+            checkoutReport={checkoutReport}
             onInitializeComparisons={initializeComparisons}
             isLoadingComparisons={isLoadingComparisons}
           />
         )}
 
-        {currentStep === 3 && checkoutSession && (
+        {currentStep === 3 && checkoutReport && (
           <CheckoutStep3
-            checkoutReport={checkoutSession}
+            checkoutReport={checkoutReport}
             comparisons={comparisons}
             isLoadingComparisons={isLoadingComparisons}
             onComparisonUpdate={handleComparisonUpdate}

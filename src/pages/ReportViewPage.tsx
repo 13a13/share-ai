@@ -10,8 +10,6 @@ import CollapsibleRoomSection from "@/components/CollapsibleRoomSection";
 import PDFExportButton from "@/components/PDFExportButton";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import CheckoutReportSection from "@/components/checkout/CheckoutReportSection";
-import { parseReportInfo } from "@/lib/api/reports/reportTransformers";
 
 const ReportViewPage = () => {
   const navigate = useNavigate();
@@ -76,9 +74,6 @@ const ReportViewPage = () => {
   // Check if this is a check-in report that can have a checkout
   const canStartCheckout = report?.type === 'check_in' && report?.status === 'completed';
   
-  // Parse checkout session from report info
-  const checkoutSession = report?.reportInfo ? parseReportInfo(report.reportInfo).checkout_session : null;
-  
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -139,7 +134,7 @@ const ReportViewPage = () => {
               <Eye className="h-4 w-4 mr-2" />
               Edit Report
             </Button>
-            {canStartCheckout && !checkoutSession && (
+            {canStartCheckout && (
               <Button 
                 onClick={handleStartCheckout}
                 variant="outline"
@@ -147,16 +142,6 @@ const ReportViewPage = () => {
               >
                 <CheckSquare className="h-4 w-4 mr-2" />
                 Start Checkout
-              </Button>
-            )}
-            {checkoutSession && (
-              <Button 
-                onClick={handleStartCheckout}
-                variant="outline"
-                className="border-shareai-teal text-shareai-teal hover:bg-shareai-teal hover:text-white px-6"
-              >
-                <CheckSquare className="h-4 w-4 mr-2" />
-                Continue Checkout
               </Button>
             )}
             <PDFExportButton 
@@ -204,11 +189,6 @@ const ReportViewPage = () => {
             )}
           </div>
         </div>
-
-        {/* Display checkout section if checkout data exists */}
-        {checkoutSession && (
-          <CheckoutReportSection checkoutSession={checkoutSession} />
-        )}
         
         <h2 className="text-xl font-bold mb-4 text-shareai-blue">Rooms</h2>
         
