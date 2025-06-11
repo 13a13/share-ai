@@ -1,9 +1,11 @@
 
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { CheckoutReportAPI, CheckoutComparisonAPI } from '@/lib/api/reports/checkoutApi';
+import { CheckoutReportAPI } from '@/lib/api/reports/checkoutReportApi';
 import { CheckoutData, CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
 import { Report } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { parseReportInfo } from '@/lib/api/reports/reportTransformers';
 
 export interface UseCheckoutProcedureProps {
   checkinReport: Report | null;
@@ -11,14 +13,14 @@ export interface UseCheckoutProcedureProps {
 
 export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProps) => {
   const { toast } = useToast();
-  const [checkoutReport, setCheckoutReport] = useState<any>(null);
+  const [checkoutSession, setCheckoutSession] = useState<any>(null);
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [comparisons, setComparisons] = useState<CheckoutComparison[]>([]);
   const [isLoadingComparisons, setIsLoadingComparisons] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
   /**
-   * Phase 2: Create basic checkout report
+   * Phase 2: Start checkout session within check-in report
    */
   const createBasicCheckout = async (checkoutData: CheckoutData) => {
     if (!checkinReport) {
@@ -31,37 +33,36 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
       return;
     }
 
-    console.log('Creating basic checkout...', {
+    console.log('Starting checkout session...', {
       checkinReportId: checkinReport.id,
-      checkinReport: checkinReport,
       checkoutData
     });
     
     setIsCreatingCheckout(true);
     
     try {
-      const newCheckoutReport = await CheckoutReportAPI.createBasicCheckoutReport(
+      const checkoutSessionData = await CheckoutReportAPI.createBasicCheckoutReport(
         checkinReport.id,
         checkoutData
       );
 
-      if (newCheckoutReport) {
-        console.log('Basic checkout report created:', newCheckoutReport);
-        setCheckoutReport(newCheckoutReport);
+      if (checkoutSessionData) {
+        console.log('Checkout session started:', checkoutSessionData);
+        setCheckoutSession(checkoutSessionData);
         setCurrentStep(2);
         
         toast({
-          title: "Checkout Created",
-          description: "Basic checkout record created successfully. Ready for component setup.",
+          title: "Checkout Started",
+          description: "Checkout session started successfully. Ready for component setup.",
         });
       } else {
-        throw new Error('Failed to create basic checkout report');
+        throw new Error('Failed to start checkout session');
       }
     } catch (error) {
-      console.error('Error creating basic checkout:', error);
+      console.error('Error starting checkout session:', error);
       toast({
         title: "Error",
-        description: `Failed to create checkout: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to start checkout: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -73,35 +74,26 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
    * Phase 3: Initialize component comparisons
    */
   const initializeComparisons = async () => {
-    if (!checkoutReport || !checkinReport) {
-      console.error('Missing required data for initialization:', { checkoutReport, checkinReport });
+    if (!checkoutSession || !checkinReport) {
+      console.error('Missing required data for initialization:', { checkoutSession, checkinReport });
       return;
     }
 
     console.log('Starting component initialization...', {
-      checkoutReportId: checkoutReport.id,
-      checkinReportId: checkinReport.id,
-      checkinReportStructure: {
-        id: checkinReport.id,
-        rooms: checkinReport.rooms?.length || 0,
-        roomsData: checkinReport.rooms
-      }
+      checkoutSessionId: checkoutSession.id,
+      checkinReportId: checkinReport.id
     });
 
     setIsLoadingComparisons(true);
     try {
       console.log('Initializing component comparisons...');
       
-      const components = await CheckoutReportAPI.initializeComponentComparisons(
-        checkoutReport.id,
+      const comparisonData = await CheckoutReportAPI.initializeComponentComparisons(
+        checkoutSession.id,
         checkinReport.id
       );
 
-      console.log('Components found for initialization:', components);
-
-      // Load the created comparison records
-      const comparisonData = await CheckoutComparisonAPI.getCheckoutComparisons(checkoutReport.id);
-      console.log('Loaded comparison data from database:', comparisonData);
+      console.log('Components initialized:', comparisonData);
       
       setComparisons(comparisonData);
       setCurrentStep(3);
@@ -112,7 +104,6 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
       });
       
       console.log('Component comparisons initialized successfully:', {
-        componentsFound: components.length,
         comparisonsCreated: comparisonData.length
       });
     } catch (error) {
@@ -128,16 +119,51 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
   };
 
   /**
+   * Load existing checkout session if it exists
+   */
+  const loadExistingCheckout = async () => {
+    if (!checkinReport) return;
+
+    try {
+      const { data: report, error } = await supabase
+        .from('inspections')
+        .select('report_info')
+        .eq('id', checkinReport.id)
+        .single();
+
+      if (error) throw error;
+
+      const reportInfo = parseReportInfo(report.report_info);
+      
+      if (reportInfo.checkout_session) {
+        console.log('Found existing checkout session:', reportInfo.checkout_session);
+        setCheckoutSession(reportInfo.checkout_session);
+        
+        if (reportInfo.checkout_session.comparisons) {
+          setComparisons(reportInfo.checkout_session.comparisons);
+          setCurrentStep(3);
+        } else if (reportInfo.checkout_session.components_initialized) {
+          setCurrentStep(3);
+        } else {
+          setCurrentStep(2);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading existing checkout session:', error);
+    }
+  };
+
+  /**
    * Complete the checkout procedure
    */
   const completeCheckout = async () => {
-    if (!checkoutReport) return;
+    if (!checkinReport) return;
 
     try {
-      console.log('Completing checkout report:', checkoutReport.id);
-      await CheckoutReportAPI.completeCheckoutReport(checkoutReport.id);
+      console.log('Completing checkout session for report:', checkinReport.id);
+      await CheckoutReportAPI.completeCheckoutReport(checkinReport.id);
       
-      setCheckoutReport(prev => prev ? { ...prev, status: 'completed' } : prev);
+      setCheckoutSession(prev => prev ? { ...prev, status: 'completed' } : prev);
       
       toast({
         title: "Checkout Completed",
@@ -154,7 +180,8 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
   };
 
   return {
-    checkoutReport,
+    checkoutReport: checkoutSession, // For backward compatibility
+    checkoutSession,
     isCreatingCheckout,
     comparisons,
     isLoadingComparisons,
@@ -162,6 +189,7 @@ export const useCheckoutProcedure = ({ checkinReport }: UseCheckoutProcedureProp
     createBasicCheckout,
     initializeComparisons,
     completeCheckout,
+    loadExistingCheckout,
     setComparisons
   };
 };
