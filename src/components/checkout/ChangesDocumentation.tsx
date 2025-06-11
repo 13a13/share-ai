@@ -44,7 +44,7 @@ const ChangesDocumentation = ({
     try {
       console.log('Processing checkout images for comparison:', componentId, imageUrls);
       
-      // Call the checkout-specific image processing
+      // Call the checkout-specific image processing using same structure as check-in
       const checkoutResult = await processCheckoutImages(
         imageUrls,
         componentName,
@@ -60,7 +60,7 @@ const ChangesDocumentation = ({
     } catch (error) {
       console.error('Error processing checkout images:', error);
       toast({
-        title: "Analysis Failed",
+        title: "Analysis Failed", 
         description: "Failed to analyze images. Please try again.",
         variant: "destructive",
       });
