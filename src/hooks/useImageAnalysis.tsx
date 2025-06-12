@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
-import { uploadReportImage } from "@/utils/supabaseStorage";
+import { uploadMultipleReportImages, checkStorageBucket } from "@/utils/supabaseStorage";
 import { useUltraFastBatchSaving } from "./useUltraFastBatchSaving";
 
 interface UseImageAnalysisProps {
@@ -52,11 +52,22 @@ export function useImageAnalysis({
       
       console.log(`🚀 Processing ${stagingImages.length} images for component ${componentName}`);
       
-      // Upload all images to Supabase Storage in parallel
-      const uploadPromises = stagingImages.map(imageUrl => 
-        uploadReportImage(imageUrl, reportId, roomId)
-      );
-      const storedImageUrls = await Promise.all(uploadPromises);
+      // Check if storage is available
+      const storageAvailable = await checkStorageBucket();
+      let storedImageUrls: string[] = stagingImages;
+      
+      if (storageAvailable) {
+        try {
+          // Upload all images to Supabase Storage in parallel
+          storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
+          console.log("Images uploaded to storage successfully");
+        } catch (storageError) {
+          console.warn("Storage upload failed, using original URLs:", storageError);
+          storedImageUrls = stagingImages;
+        }
+      } else {
+        console.warn("Storage bucket not available, using original image URLs");
+      }
       
       // Process stored images with AI
       const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
@@ -75,9 +86,10 @@ export function useImageAnalysis({
       onImagesProcessed(componentId, storedImageUrls, result);
       
       const pendingCount = getPendingCount();
+      const storageStatus = storageAvailable ? "uploaded to storage" : "processed locally";
       toast({
         title: "Images processed",
-        description: `AI analyzed ${stagingImages.length} image(s). ${pendingCount} queued for ultra-fast save.`,
+        description: `AI analyzed ${stagingImages.length} image(s) and ${storageStatus}. ${pendingCount} queued for ultra-fast save.`,
       });
       
       return true;
@@ -89,7 +101,7 @@ export function useImageAnalysis({
         variant: "destructive",
       });
       
-      // Even if AI fails, still upload the images without AI data
+      // Even if AI fails, still try to save the images
       try {
         const reportElement = document.querySelector('[data-report-id]');
         const roomElement = document.querySelector('[data-room-id]');
@@ -99,10 +111,16 @@ export function useImageAnalysis({
           const roomId = roomElement.getAttribute('data-room-id');
           
           if (reportId && roomId) {
-            const uploadPromises = stagingImages.map(imageUrl => 
-              uploadReportImage(imageUrl, reportId, roomId)
-            );
-            const storedImageUrls = await Promise.all(uploadPromises);
+            const storageAvailable = await checkStorageBucket();
+            let storedImageUrls = stagingImages;
+            
+            if (storageAvailable) {
+              try {
+                storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
+              } catch (storageError) {
+                console.warn("Fallback storage upload failed:", storageError);
+              }
+            }
             
             onImagesProcessed(componentId, storedImageUrls, {
               description: "",

@@ -4,7 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
 import { Room } from "@/types";
 import { compressImageFile } from "@/utils/imageCompression";
-import { uploadReportImage } from "@/utils/supabaseStorage";
+import { uploadReportImage, checkStorageBucket } from "@/utils/supabaseStorage";
 
 interface UseRoomImageUploadProps {
   reportId: string;
@@ -82,22 +82,36 @@ export const useRoomImageUpload = ({
     try {
       console.log("Processing and uploading image for room:", roomId, "in report:", reportId);
       
-      // Upload to Supabase Storage first
-      const storedImageUrl = await uploadReportImage(imageUrl, reportId, roomId);
+      // Check if storage bucket is available
+      const storageAvailable = await checkStorageBucket();
+      let finalImageUrl = imageUrl;
       
-      if (!storedImageUrl) {
-        throw new Error("Failed to get stored image URL");
+      if (storageAvailable) {
+        try {
+          // Upload to Supabase Storage
+          finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId);
+          console.log("Image uploaded to storage successfully");
+        } catch (storageError) {
+          console.warn("Storage upload failed, using original URL:", storageError);
+          finalImageUrl = imageUrl;
+        }
+      } else {
+        console.warn("Storage bucket not available, using original image URL");
       }
       
-      // Add the image to the room using the stored URL
-      const image = await ReportsAPI.addImageToRoom(reportId, roomId, storedImageUrl);
+      // Add the image to the room using the final URL
+      const image = await ReportsAPI.addImageToRoom(reportId, roomId, finalImageUrl);
       
       if (image) {
         setUploadedImageId(image.id);
-        setUploadedImage(storedImageUrl); // Use the stored URL
+        setUploadedImage(finalImageUrl);
+        
+        const storageStatus = storageAvailable && finalImageUrl !== imageUrl ? 
+          "uploaded to Supabase Storage" : "saved locally";
+        
         toast({
           title: "Image uploaded",
-          description: "Image has been added to the room and stored in Supabase",
+          description: `Image has been added to the room and ${storageStatus}`,
         });
       }
       
@@ -106,7 +120,7 @@ export const useRoomImageUpload = ({
       console.error("Error uploading image:", error);
       toast({
         title: "Upload failed",
-        description: "There was a problem uploading your image to storage",
+        description: "There was a problem processing your image",
         variant: "destructive",
       });
       setIsUploading(false);

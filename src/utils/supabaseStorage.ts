@@ -17,22 +17,6 @@ export const uploadReportImage = async (
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     
-    // Check if the inspection-images bucket exists, create if it doesn't
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const reportsBucket = buckets?.find(b => b.name === 'inspection-images');
-    
-    if (!reportsBucket) {
-      const { error: createBucketError } = await supabase.storage.createBucket('inspection-images', {
-        public: true
-      });
-      
-      if (createBucketError) {
-        console.error("Error creating inspection-images bucket:", createBucketError);
-        throw createBucketError;
-      }
-      console.log("Created new bucket: inspection-images");
-    }
-    
     // Generate a unique filename with property and room folder structure
     const fileExt = dataUrl.substring(dataUrl.indexOf('/') + 1, dataUrl.indexOf(';base64'));
     const fileName = `${reportId}/${roomId}/${uuidv4()}.${fileExt || 'jpg'}`;
@@ -45,7 +29,7 @@ export const uploadReportImage = async (
       .upload(fileName, blob, {
         contentType: blob.type,
         cacheControl: '3600',
-        upsert: true // Change to true to ensure file is always uploaded
+        upsert: false // Change to false to avoid conflicts
       });
     
     if (error) {
@@ -109,5 +93,52 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
     }
   } catch (error) {
     console.error("Error in deleteReportImage:", error);
+  }
+};
+
+/**
+ * Upload multiple images to Supabase Storage
+ */
+export const uploadMultipleReportImages = async (
+  imageUrls: string[],
+  reportId: string,
+  roomId: string
+): Promise<string[]> => {
+  try {
+    const uploadPromises = imageUrls.map(imageUrl => 
+      uploadReportImage(imageUrl, reportId, roomId)
+    );
+    
+    const uploadedUrls = await Promise.all(uploadPromises);
+    console.log(`Successfully uploaded ${uploadedUrls.length} images`);
+    
+    return uploadedUrls;
+  } catch (error) {
+    console.error("Error uploading multiple images:", error);
+    // Return original URLs as fallback
+    return imageUrls;
+  }
+};
+
+/**
+ * Check if storage bucket exists and is accessible
+ */
+export const checkStorageBucket = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      console.error("Error checking storage buckets:", error);
+      return false;
+    }
+    
+    const inspectionBucket = data?.find(bucket => bucket.name === 'inspection-images');
+    const bucketExists = !!inspectionBucket;
+    
+    console.log("Inspection images bucket exists:", bucketExists);
+    return bucketExists;
+  } catch (error) {
+    console.error("Error checking storage bucket:", error);
+    return false;
   }
 };
