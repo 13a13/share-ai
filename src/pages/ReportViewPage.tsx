@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, FileText, Download, Eye, CheckSquare } from "lucide-react";
 import CollapsibleRoomSection from "@/components/CollapsibleRoomSection";
 import PDFExportButton from "@/components/PDFExportButton";
+import CheckoutButton from "@/components/CheckoutButton";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -39,6 +40,7 @@ const ReportViewPage = () => {
         }
         
         console.log("Report data loaded:", reportData);
+        console.log("Report type:", reportData.type, "Status:", reportData.status);
         setReport(reportData);
         
         const propertyData = await PropertiesAPI.getById(reportData.propertyId);
@@ -65,14 +67,22 @@ const ReportViewPage = () => {
     }
   };
 
-  const handleStartCheckout = () => {
-    if (report) {
-      navigate(`/reports/${report.id}/checkout`);
-    }
-  };
-
   // Check if this is a check-in report that can have a checkout
-  const canStartCheckout = report?.type === 'check_in' && report?.status === 'completed';
+  const canStartCheckout = report && (
+    report.type === 'check_in' || 
+    report.type === 'checkin' || 
+    !report.type || 
+    report.type.includes('check')
+  ) && (
+    report.status === 'completed' || 
+    report.status === 'pending_review'
+  );
+  
+  console.log("Checkout eligibility:", { 
+    reportType: report?.type, 
+    reportStatus: report?.status, 
+    canStartCheckout 
+  });
   
   if (isLoading) {
     return (
@@ -117,6 +127,14 @@ const ReportViewPage = () => {
             <p className="text-gray-600">
               {property.address}, {property.city}, {property.state} {property.zipCode}
             </p>
+            <div className="flex items-center gap-4 mt-2">
+              <span className="text-sm text-gray-500">
+                Status: <span className="font-medium">{report.status}</span>
+              </span>
+              <span className="text-sm text-gray-500">
+                Type: <span className="font-medium">{report.type}</span>
+              </span>
+            </div>
           </div>
           
           <div className="flex flex-wrap gap-3">
@@ -135,14 +153,10 @@ const ReportViewPage = () => {
               Edit Report
             </Button>
             {canStartCheckout && (
-              <Button 
-                onClick={handleStartCheckout}
-                variant="outline"
+              <CheckoutButton 
+                report={report}
                 className="border-shareai-teal text-shareai-teal hover:bg-shareai-teal hover:text-white px-6"
-              >
-                <CheckSquare className="h-4 w-4 mr-2" />
-                Start Checkout
-              </Button>
+              />
             )}
             <PDFExportButton 
               report={report} 
@@ -151,6 +165,24 @@ const ReportViewPage = () => {
             />
           </div>
         </div>
+
+        {/* Add checkout status info if applicable */}
+        {canStartCheckout && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-blue-900">Ready for Checkout</h3>
+                <p className="text-blue-700 text-sm">
+                  This completed check-in report can be used to create a checkout assessment.
+                </p>
+              </div>
+              <CheckoutButton 
+                report={report}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              />
+            </div>
+          </div>
+        )}
         
         <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
           <div className="p-6">

@@ -27,12 +27,16 @@ const ReportHeader = ({
   const [showSignature, setShowSignature] = useState(false);
 
   const handleSignatureSave = (data: { name: string; date: string; signature: string }) => {
-    // Here you would typically save the signature data
     console.log("Signature data:", data);
     if (onComplete) {
       onComplete();
     }
   };
+
+  // Show complete button for reports that can be completed
+  const canComplete = onComplete && (status === "pending_review" || status === "in_progress");
+  
+  console.log("ReportHeader status check:", { status, canComplete, onComplete: !!onComplete });
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -42,6 +46,9 @@ const ReportHeader = ({
         </h1>
         <p className="text-gray-600">
           {address}
+        </p>
+        <p className="text-sm text-gray-500 mt-1">
+          Status: {status}
         </p>
       </div>
       
@@ -54,7 +61,7 @@ const ReportHeader = ({
           Cancel
         </Button>
 
-        {status === "pending_review" && onComplete ? (
+        {canComplete && (
           <>
             <Button 
               onClick={() => setShowSignature(true)}
@@ -82,7 +89,9 @@ const ReportHeader = ({
               )}
             </ShimmerButton>
           </>
-        ) : (
+        )}
+        
+        {!canComplete && (
           <ShimmerButton
             onClick={onSave}
             disabled={isSaving}
