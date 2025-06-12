@@ -1,4 +1,3 @@
-
 import { RoomComponent } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
@@ -39,10 +38,24 @@ export function useComponentOperations({
   const { toast } = useToast();
 
   const handleAddComponent = () => {
-    if (!selectedComponentType) return;
+    console.log("🔧 handleAddComponent called", { 
+      selectedComponentType, 
+      availableComponents: availableComponents.map(c => c.name),
+      componentsCount: components.length 
+    });
+
+    if (!selectedComponentType) {
+      console.log("❌ No component type selected");
+      return;
+    }
 
     const config = availableComponents.find(c => c.name === selectedComponentType);
-    if (!config) return;
+    if (!config) {
+      console.log("❌ Component config not found for:", selectedComponentType);
+      return;
+    }
+
+    console.log("✅ Adding component:", config);
 
     const newComponent: RoomComponent = {
       id: uuidv4(),
