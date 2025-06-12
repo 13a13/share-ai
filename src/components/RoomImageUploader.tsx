@@ -10,10 +10,11 @@ import ImagePreview from "./room-uploader/ImagePreview";
 interface RoomImageUploaderProps {
   reportId: string;
   roomId: string;
+  propertyName?: string;
   onImageProcessed: (updatedRoom: any) => void;
 }
 
-const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUploaderProps) => {
+const RoomImageUploader = ({ reportId, roomId, propertyName, onImageProcessed }: RoomImageUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   
@@ -28,6 +29,7 @@ const RoomImageUploader = ({ reportId, roomId, onImageProcessed }: RoomImageUplo
   } = useRoomImageUpload({
     reportId,
     roomId,
+    propertyName,
     onImageProcessed
   });
   

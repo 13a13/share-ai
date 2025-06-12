@@ -6,12 +6,14 @@ import RoomImageUploader from "@/components/RoomImageUploader";
 interface RoomDetailsPhotosTabProps {
   reportId: string;
   room: Room;
+  propertyName?: string;
   onImageProcessed: (updatedRoom: Room) => void;
 }
 
 const RoomDetailsPhotosTab = ({
   reportId,
   room,
+  propertyName,
   onImageProcessed
 }: RoomDetailsPhotosTabProps) => {
   return (
@@ -40,6 +42,7 @@ const RoomDetailsPhotosTab = ({
       <RoomImageUploader 
         reportId={reportId}
         roomId={room.id}
+        propertyName={propertyName}
         onImageProcessed={onImageProcessed}
       />
     </div>

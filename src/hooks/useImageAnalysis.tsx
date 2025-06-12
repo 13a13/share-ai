@@ -10,6 +10,7 @@ interface UseImageAnalysisProps {
   componentId: string;
   componentName: string;
   roomType: string;
+  propertyName?: string;
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
   processComponentImage: (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => Promise<ProcessedImageResult>;
@@ -19,6 +20,7 @@ export function useImageAnalysis({
   componentId,
   componentName,
   roomType,
+  propertyName,
   onImagesProcessed,
   onProcessingStateChange,
   processComponentImage
@@ -30,7 +32,7 @@ export function useImageAnalysis({
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
     
-    console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName}`);
+    console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${propertyName}`);
     
     onProcessingStateChange(componentId, true);
     setAnalysisInProgress(true);
@@ -53,7 +55,7 @@ export function useImageAnalysis({
         throw new Error("Invalid report or room ID");
       }
       
-      console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}`);
+      console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}, property: ${propertyName}`);
       
       // Step 1: Check storage availability 
       console.log("🔍 Step 1: Checking storage availability...");
@@ -71,19 +73,19 @@ export function useImageAnalysis({
         console.log("✅ Storage bucket confirmed available");
       }
       
-      // Step 2: Upload images to storage (if available)
-      console.log("📤 Step 2: Uploading images to storage...");
+      // Step 2: Upload images to storage with property folder structure
+      console.log(`📤 Step 2: Uploading images to ${propertyName} folder in storage...`);
       let storedImageUrls = stagingImages;
       
       if (storageAvailable) {
         try {
-          storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
+          storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId, propertyName);
           
           // Verify upload success
           const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
           const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
           
-          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to storage`);
+          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${propertyName} folder`);
           
           if (failedUploads > 0) {
             console.warn(`⚠️ ${failedUploads} images failed to upload, proceeding with local storage`);
@@ -137,12 +139,12 @@ export function useImageAnalysis({
       const pendingCount = getPendingCount();
       const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
       
-      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to storage, ${pendingCount} updates queued`);
+      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${propertyName} folder, ${pendingCount} updates queued`);
       
       // Show success message
       toast({
         title: "Images processed successfully",
-        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to storage` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
+        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to ${propertyName} folder` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
       });
       
       return true;
