@@ -65,6 +65,7 @@ export function useRoomComponents({
     const newComponent: RoomComponent = {
       id: uuidv4(),
       name: config.name,
+      type: config.type, // Add the missing type property
       description: "",
       condition: "fair",
       conditionSummary: "",
@@ -102,6 +103,7 @@ export function useRoomComponents({
     const newComponent: RoomComponent = {
       id: uuidv4(),
       name,
+      type: "custom", // Add the missing type property for custom components
       description: "",
       condition: "fair",
       conditionSummary: "",

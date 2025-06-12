@@ -1,3 +1,4 @@
+
 import { ConditionRating, RoomType } from "@/types";
 
 export const conditionOptions: { value: ConditionRating; label: string; color: string }[] = [
@@ -103,6 +104,21 @@ export const getDefaultComponentsByRoomType = (roomType: RoomType) => {
     default:
       return [...baseComponents, ...additionalComponents];
   }
+};
+
+// Add the missing export that was causing the error
+export const ROOM_COMPONENT_CONFIGS = {
+  kitchen: kitchenComponents,
+  bathroom: bathroomComponents,
+  bedroom: getDefaultComponentsByRoomType("bedroom"),
+  living_room: getDefaultComponentsByRoomType("living_room"),
+  dining_room: getDefaultComponentsByRoomType("dining_room"),
+  entrance: getDefaultComponentsByRoomType("entrance"),
+  hallway: getDefaultComponentsByRoomType("hallway"),
+  garage: getDefaultComponentsByRoomType("garage"),
+  basement: getDefaultComponentsByRoomType("basement"),
+  attic: getDefaultComponentsByRoomType("attic"),
+  outdoor: getDefaultComponentsByRoomType("outdoor"),
 };
 
 export const commonComponentTypes = [

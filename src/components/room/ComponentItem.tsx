@@ -48,6 +48,11 @@ const ComponentItem = ({
   const hasDescription = Boolean(component.description);
   const hasCondition = Boolean(component.condition && component.condition !== "fair");
 
+  // Helper function to handle component field updates
+  const handleUpdateField = (field: string, value: string | string[]) => {
+    onUpdate({ [field]: value });
+  };
+
   return (
     <Card 
       id={`component-${component.id}`}
@@ -62,11 +67,12 @@ const ComponentItem = ({
           <CollapsibleTrigger asChild>
             <div className="cursor-pointer">
               <ComponentHeader
-                component={component}
-                isExpanded={shouldBeExpanded}
-                hasImages={hasImages}
-                hasDescription={hasDescription}
-                hasCondition={hasCondition}
+                name={component.name}
+                isOptional={component.isOptional}
+                condition={component.condition}
+                imagesCount={component.images.length}
+                isAnalyzed={hasDescription || hasCondition}
+                isCustom={component.isOptional && !component.type}
               />
             </div>
           </CollapsibleTrigger>
@@ -78,14 +84,37 @@ const ComponentItem = ({
               {/* Edit Form */}
               {component.isEditing && (
                 <ComponentEditForm
-                  component={component}
-                  onUpdate={onUpdate}
+                  componentId={component.id}
+                  description={component.description}
+                  conditionSummary={component.conditionSummary}
+                  conditionPoints={component.conditionPoints || []}
+                  condition={component.condition}
+                  cleanliness={component.cleanliness}
+                  cleanlinessOptions={[
+                    { value: "poor", label: "Poor" },
+                    { value: "fair", label: "Fair" },
+                    { value: "good", label: "Good" },
+                    { value: "excellent", label: "Excellent" }
+                  ]}
+                  conditionRatingOptions={[
+                    { value: "excellent", label: "Excellent", color: "bg-green-500" },
+                    { value: "good", label: "Good", color: "bg-blue-500" },
+                    { value: "fair", label: "Fair", color: "bg-yellow-500" },
+                    { value: "poor", label: "Poor", color: "bg-orange-500" },
+                    { value: "needs_replacement", label: "Needs Replacement", color: "bg-red-500" }
+                  ]}
+                  notes={component.notes}
+                  onUpdateComponent={handleUpdateField}
+                  onToggleEditMode={onToggleEditMode}
                 />
               )}
               
               {/* Analysis Summary */}
               {!component.isEditing && (hasDescription || hasCondition) && (
-                <ComponentAnalysisSummary component={component} />
+                <ComponentAnalysisSummary 
+                  component={component}
+                  onEdit={onToggleEditMode}
+                />
               )}
               
               {/* Images */}
@@ -105,16 +134,19 @@ const ComponentItem = ({
                 roomName={roomName}
                 isProcessing={isProcessing}
                 currentImages={component.images}
-                onImagesProcessed={onImageProcessed}
-                onProcessingStateChange={onProcessingStateChange}
+                onImagesProcessed={(componentId, imageUrls, result) => onImageProcessed(imageUrls, result)}
+                onProcessingStateChange={(componentId, isProcessing) => onProcessingStateChange(isProcessing)}
                 onRemoveImage={onRemoveImage}
               />
               
               {/* Actions */}
               <ComponentActions
-                component={component}
+                componentId={component.id}
+                isEditing={!!component.isEditing}
+                isOptional={component.isOptional}
+                isAnalyzed={hasDescription || hasCondition}
                 onToggleEditMode={onToggleEditMode}
-                onRemove={onRemove}
+                onRemoveComponent={onRemove}
               />
             </div>
           </CardContent>

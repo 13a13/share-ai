@@ -87,7 +87,6 @@ const ComponentList = ({
         {/* Add new components */}
         {availableToAdd.length > 0 && (
           <ComponentSelector
-            roomType={roomType}
             availableComponents={availableToAdd}
             selectedComponentType={selectedComponentType}
             onSelectComponent={onSelectComponent}
@@ -96,7 +95,7 @@ const ComponentList = ({
         )}
         
         {/* Add custom component */}
-        <AddCustomComponent onAddCustomComponent={onAddCustomComponent} />
+        <AddCustomComponent onAddComponent={onAddCustomComponent} />
       </div>
     </div>
   );
