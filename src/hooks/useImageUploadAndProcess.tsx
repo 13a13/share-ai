@@ -9,6 +9,7 @@ interface UseImageUploadAndProcessProps {
   componentName: string;
   roomType: string;
   propertyName?: string;
+  roomName?: string;
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
@@ -20,6 +21,7 @@ export function useImageUploadAndProcess({
   componentName,
   roomType,
   propertyName,
+  roomName,
   currentImages,
   onImagesProcessed,
   onProcessingStateChange,
@@ -43,7 +45,7 @@ export function useImageUploadAndProcess({
     currentImagesCount: currentImages.length
   });
 
-  // Use the image analysis hook with property name
+  // Use the image analysis hook with property name and room name
   const {
     analysisInProgress,
     processImages
@@ -52,6 +54,7 @@ export function useImageUploadAndProcess({
     componentName,
     roomType,
     propertyName,
+    roomName,
     onImagesProcessed,
     onProcessingStateChange,
     processComponentImage

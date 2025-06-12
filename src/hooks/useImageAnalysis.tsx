@@ -11,6 +11,7 @@ interface UseImageAnalysisProps {
   componentName: string;
   roomType: string;
   propertyName?: string;
+  roomName?: string;
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
   processComponentImage: (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => Promise<ProcessedImageResult>;
@@ -21,6 +22,7 @@ export function useImageAnalysis({
   componentName,
   roomType,
   propertyName,
+  roomName,
   onImagesProcessed,
   onProcessingStateChange,
   processComponentImage
@@ -32,7 +34,7 @@ export function useImageAnalysis({
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
     
-    console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${propertyName}`);
+    console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${propertyName}, room: ${roomName}`);
     
     onProcessingStateChange(componentId, true);
     setAnalysisInProgress(true);
@@ -55,7 +57,7 @@ export function useImageAnalysis({
         throw new Error("Invalid report or room ID");
       }
       
-      console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}, property: ${propertyName}`);
+      console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}, property: ${propertyName}, roomName: ${roomName}, componentName: ${componentName}`);
       
       // Step 1: Check storage availability 
       console.log("🔍 Step 1: Checking storage availability...");
@@ -73,19 +75,19 @@ export function useImageAnalysis({
         console.log("✅ Storage bucket confirmed available");
       }
       
-      // Step 2: Upload images to storage with property folder structure
-      console.log(`📤 Step 2: Uploading images to ${propertyName} folder in storage...`);
+      // Step 2: Upload images to storage with organized folder structure
+      console.log(`📤 Step 2: Uploading images to organized folders: ${propertyName}/${roomName}/${componentName}...`);
       let storedImageUrls = stagingImages;
       
       if (storageAvailable) {
         try {
-          storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId, propertyName);
+          storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId, propertyName, roomName, componentName);
           
           // Verify upload success
           const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
           const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
           
-          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${propertyName} folder`);
+          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${propertyName}/${roomName}/${componentName}`);
           
           if (failedUploads > 0) {
             console.warn(`⚠️ ${failedUploads} images failed to upload, proceeding with local storage`);
@@ -139,12 +141,12 @@ export function useImageAnalysis({
       const pendingCount = getPendingCount();
       const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
       
-      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${propertyName} folder, ${pendingCount} updates queued`);
+      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${propertyName}/${roomName}/${componentName}, ${pendingCount} updates queued`);
       
       // Show success message
       toast({
         title: "Images processed successfully",
-        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to ${propertyName} folder` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
+        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to ${propertyName}/${roomName}/${componentName}` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
       });
       
       return true;

@@ -11,10 +11,11 @@ interface RoomImageUploaderProps {
   reportId: string;
   roomId: string;
   propertyName?: string;
+  roomName?: string;
   onImageProcessed: (updatedRoom: any) => void;
 }
 
-const RoomImageUploader = ({ reportId, roomId, propertyName, onImageProcessed }: RoomImageUploaderProps) => {
+const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImageProcessed }: RoomImageUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   
@@ -30,6 +31,7 @@ const RoomImageUploader = ({ reportId, roomId, propertyName, onImageProcessed }:
     reportId,
     roomId,
     propertyName,
+    roomName,
     onImageProcessed
   });
   

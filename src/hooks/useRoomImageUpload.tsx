@@ -10,6 +10,7 @@ interface UseRoomImageUploadProps {
   reportId: string;
   roomId: string;
   propertyName?: string;
+  roomName?: string;
   onImageProcessed: (updatedRoom: Room) => void;
 }
 
@@ -17,6 +18,7 @@ export const useRoomImageUpload = ({
   reportId, 
   roomId, 
   propertyName,
+  roomName,
   onImageProcessed 
 }: UseRoomImageUploadProps) => {
   const { toast } = useToast();
@@ -82,7 +84,7 @@ export const useRoomImageUpload = ({
   
   const processImage = async (imageUrl: string) => {
     try {
-      console.log("Processing and uploading image for room:", roomId, "in report:", reportId, "property:", propertyName);
+      console.log("Processing and uploading image for room:", roomId, "in report:", reportId, "property:", propertyName, "roomName:", roomName);
       
       // Check if storage bucket is available
       const storageAvailable = await checkStorageBucket();
@@ -90,9 +92,9 @@ export const useRoomImageUpload = ({
       
       if (storageAvailable) {
         try {
-          // Upload to Supabase Storage with property folder structure
-          finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId, propertyName);
-          console.log("✅ Image uploaded to property folder successfully:", finalImageUrl);
+          // Upload to Supabase Storage with organized folder structure (property/room/general for room photos)
+          finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId, propertyName, roomName, 'general');
+          console.log("✅ Image uploaded to organized folder successfully:", finalImageUrl);
         } catch (storageError) {
           console.warn("⚠️ Storage upload failed, using original URL:", storageError);
           finalImageUrl = imageUrl;
@@ -109,7 +111,7 @@ export const useRoomImageUpload = ({
         setUploadedImage(finalImageUrl);
         
         const storageStatus = storageAvailable && finalImageUrl !== imageUrl ? 
-          `uploaded to ${propertyName || 'property'} folder in Supabase Storage` : "saved locally";
+          `uploaded to ${propertyName}/${roomName}/general folder in Supabase Storage` : "saved locally";
         
         toast({
           title: "Image uploaded",

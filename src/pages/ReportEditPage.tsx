@@ -55,7 +55,7 @@ const ReportEditPage = () => {
   const hasRooms = report.rooms && report.rooms.length > 0;
   
   return (
-    <div className="shareai-container pb-24 sm:pb-8">
+    <div className="shareai-container pb-24 sm:pb-8" data-report-id={report.id}>
       <ReportHeader 
         title={report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) + " Report"}
         address={`${property.address}, ${property.city}, ${property.state} ${property.zipCode}`}
@@ -94,6 +94,7 @@ const ReportEditPage = () => {
                 room={room}
                 roomIndex={index}
                 totalRooms={report.rooms.length}
+                propertyName={property.name}
                 onNavigateRoom={handleNavigateRoom}
                 onUpdateGeneralCondition={handleUpdateGeneralCondition}
                 onUpdateComponents={handleUpdateComponents}

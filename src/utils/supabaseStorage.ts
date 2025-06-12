@@ -1,36 +1,45 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Upload a base64 image to Supabase Storage with property-based folder structure
+ * Upload a base64 image to Supabase Storage with property/room/component-based folder structure
  */
 export const uploadReportImage = async (
   dataUrl: string,
   reportId: string,
   roomId: string,
-  propertyName?: string
+  propertyName?: string,
+  roomName?: string,
+  componentName?: string
 ): Promise<string> => {
   try {
-    console.log("🔄 Starting image upload to storage for report:", reportId, "room:", roomId, "property:", propertyName);
+    console.log("🔄 Starting image upload to storage for report:", reportId, "room:", roomId, "property:", propertyName, "roomName:", roomName, "component:", componentName);
     
     // Convert data URL to blob
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     console.log("📦 Image converted to blob, size:", blob.size, "type:", blob.type);
     
-    // Generate a unique filename with property-based folder structure
+    // Generate a unique filename with property/room/component-based folder structure
     const fileExt = dataUrl.substring(dataUrl.indexOf('/') + 1, dataUrl.indexOf(';base64'));
     
-    // Clean property name for folder structure (remove special characters)
+    // Clean names for folder structure (remove special characters)
     const cleanPropertyName = propertyName 
       ? propertyName.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_').toLowerCase()
       : 'unknown_property';
     
-    // Create folder structure: property_name/report_id/room_id/filename
-    const fileName = `${cleanPropertyName}/${reportId}/${roomId}/${uuidv4()}.${fileExt || 'jpg'}`;
+    const cleanRoomName = roomName
+      ? roomName.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_').toLowerCase()
+      : `room_${roomId.substring(0, 8)}`;
     
-    console.log("📂 Upload path with property folder:", fileName);
+    const cleanComponentName = componentName
+      ? componentName.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_').toLowerCase()
+      : 'general';
+    
+    // Create folder structure: property_name/room_name/component_name/filename
+    const fileName = `${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/${uuidv4()}.${fileExt || 'jpg'}`;
+    
+    console.log("📂 Upload path with organized folder structure:", fileName);
     
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
@@ -46,7 +55,7 @@ export const uploadReportImage = async (
       throw error;
     }
     
-    console.log("✅ File uploaded successfully to property folder:", data.path);
+    console.log("✅ File uploaded successfully to organized folder:", data.path);
     
     // Get the public URL
     const { data: publicUrlData } = supabase.storage
@@ -110,16 +119,18 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
 };
 
 /**
- * Upload multiple images to Supabase Storage with property-based organization
+ * Upload multiple images to Supabase Storage with property/room/component-based organization
  */
 export const uploadMultipleReportImages = async (
   imageUrls: string[],
   reportId: string,
   roomId: string,
-  propertyName?: string
+  propertyName?: string,
+  roomName?: string,
+  componentName?: string
 ): Promise<string[]> => {
   try {
-    console.log(`🚀 Starting batch upload of ${imageUrls.length} images to property folder: ${propertyName}`);
+    console.log(`🚀 Starting batch upload of ${imageUrls.length} images to organized folders: ${propertyName}/${roomName}/${componentName}`);
     
     // Filter only data URLs that need uploading
     const dataUrls = imageUrls.filter(url => url.startsWith('data:'));
@@ -138,10 +149,10 @@ export const uploadMultipleReportImages = async (
     
     for (let i = 0; i < dataUrls.length; i++) {
       try {
-        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length} to property folder`);
-        const uploadedUrl = await uploadReportImage(dataUrls[i], reportId, roomId, propertyName);
+        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length} to organized folder`);
+        const uploadedUrl = await uploadReportImage(dataUrls[i], reportId, roomId, propertyName, roomName, componentName);
         uploadedUrls.push(uploadedUrl);
-        console.log(`✅ Image ${i + 1} uploaded successfully to property folder`);
+        console.log(`✅ Image ${i + 1} uploaded successfully to organized folder`);
       } catch (error) {
         console.error(`❌ Failed to upload image ${i + 1}:`, error);
         failedUploads.push(dataUrls[i]);
