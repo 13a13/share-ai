@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertiesAPI, ReportsAPI } from "@/lib/api";
@@ -70,7 +69,6 @@ const ReportViewPage = () => {
   // Check if this is a check-in report that can have a checkout
   const canStartCheckout = report && (
     report.type === 'check_in' || 
-    report.type === 'checkin' || 
     !report.type || 
     report.type.includes('check')
   ) && (
