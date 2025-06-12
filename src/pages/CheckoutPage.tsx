@@ -1,21 +1,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertTriangle, Loader2 } from 'lucide-react';
-import Header from '@/components/Header';
 import { ReportsAPI } from '@/lib/api';
 import { useCheckoutProcedure } from '@/hooks/useCheckoutProcedure';
 import { Report } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
-import { CheckoutComparison } from '@/lib/api/reports/checkoutTypes';
-import CheckoutPageHeader from '@/components/checkout/CheckoutPageHeader';
-import CheckoutProgress from '@/components/checkout/CheckoutProgress';
-import CheckinReportInfo from '@/components/checkout/CheckinReportInfo';
-import CheckoutStep1 from '@/components/checkout/steps/CheckoutStep1';
-import CheckoutStep2 from '@/components/checkout/steps/CheckoutStep2';
-import CheckoutStep3 from '@/components/checkout/steps/CheckoutStep3';
+import CheckoutLoadingState from '@/components/checkout/CheckoutLoadingState';
+import CheckoutErrorState from '@/components/checkout/CheckoutErrorState';
+import CheckoutPageLayout from '@/components/checkout/CheckoutPageLayout';
+import CheckoutPageContent from '@/components/checkout/CheckoutPageContent';
 
 const CheckoutPage = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -112,89 +105,32 @@ const CheckoutPage = () => {
   });
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">Loading checkout page...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <CheckoutLoadingState />;
   }
 
   if (error || !checkinReport) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Error Loading Report</h2>
-              <p className="text-gray-600 mb-4">{error || 'The requested report could not be found.'}</p>
-              <div className="flex gap-2 justify-center">
-                <Button onClick={() => navigate('/reports')}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Reports
-                </Button>
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  Try Again
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+    return <CheckoutErrorState error={error || 'The requested report could not be found.'} />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="container mx-auto px-4 py-8">
-        <CheckoutPageHeader
-          currentStep={currentStep}
-          propertyName={checkinReport?.property?.name}
-          isDraftSaved={isDraftSaved}
-        />
-
-        <CheckoutProgress currentStep={currentStep} />
-
-        <CheckinReportInfo checkinReport={checkinReport} />
-
-        {currentStep === 1 && (
-          <CheckoutStep1
-            checkinReport={checkinReport}
-            onStartCheckout={startCheckoutProcess}
-            isCreating={isCreatingCheckout}
-          />
-        )}
-
-        {currentStep === 2 && checkoutData && (
-          <CheckoutStep2
-            checkoutData={checkoutData}
-            onInitializeAssessments={initializeAssessments}
-            isLoadingComparisons={isLoadingComparisons}
-          />
-        )}
-
-        {currentStep === 3 && checkoutData && (
-          <CheckoutStep3
-            checkoutData={checkoutData}
-            comparisons={comparisons}
-            isLoadingComparisons={isLoadingComparisons}
-            onComparisonUpdate={updateComparison}
-            onCompleteCheckout={handleCompleteCheckout}
-          />
-        )}
-      </div>
-    </div>
+    <CheckoutPageLayout
+      checkinReport={checkinReport}
+      currentStep={currentStep}
+      isDraftSaved={isDraftSaved}
+    >
+      <CheckoutPageContent
+        checkinReport={checkinReport}
+        currentStep={currentStep}
+        checkoutData={checkoutData}
+        comparisons={comparisons}
+        isCreatingCheckout={isCreatingCheckout}
+        isLoadingComparisons={isLoadingComparisons}
+        onStartCheckout={startCheckoutProcess}
+        onInitializeAssessments={initializeAssessments}
+        onUpdateComparison={updateComparison}
+        onCompleteCheckout={handleCompleteCheckout}
+      />
+    </CheckoutPageLayout>
   );
 };
 
