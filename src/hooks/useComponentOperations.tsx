@@ -3,14 +3,28 @@ import { RoomComponent } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
 
+interface ComponentConfig {
+  name: string;
+  type: string;
+  isOptional?: boolean;
+}
+
 interface UseComponentOperationsProps {
   components: RoomComponent[];
   updateComponents: (updatedComponents: RoomComponent[]) => void;
   expandedComponents: string[];
-  setExpandedComponents: (components: string[]) => void;
-  availableComponents: any[];
+  setExpandedComponents: React.Dispatch<React.SetStateAction<string[]>>;
+  availableComponents: ComponentConfig[];
   selectedComponentType: string;
-  setSelectedComponentType: (type: string) => void;
+  setSelectedComponentType: React.Dispatch<React.SetStateAction<string>>;
+}
+
+interface UseComponentOperationsReturn {
+  handleAddComponent: () => void;
+  addCustomComponent: (name: string) => void;
+  handleRemoveComponent: (componentId: string) => void;
+  handleUpdateComponent: (componentId: string, updates: Partial<RoomComponent>) => void;
+  toggleEditMode: (componentId: string) => void;
 }
 
 export function useComponentOperations({
@@ -21,7 +35,7 @@ export function useComponentOperations({
   availableComponents,
   selectedComponentType,
   setSelectedComponentType
-}: UseComponentOperationsProps) {
+}: UseComponentOperationsProps): UseComponentOperationsReturn {
   const { toast } = useToast();
 
   const handleAddComponent = () => {

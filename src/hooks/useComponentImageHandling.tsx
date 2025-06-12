@@ -7,10 +7,15 @@ interface UseComponentImageHandlingProps {
   components: RoomComponent[];
   updateComponents: (updatedComponents: RoomComponent[]) => void;
   expandedComponents: string[];
-  setExpandedComponents: (components: string[]) => void;
+  setExpandedComponents: React.Dispatch<React.SetStateAction<string[]>>;
   onChange: (updatedComponents: RoomComponent[]) => void;
   propertyName?: string;
   roomName?: string;
+}
+
+interface UseComponentImageHandlingReturn {
+  handleRemoveImage: (componentId: string, imageId: string) => void;
+  handleImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
 }
 
 export function useComponentImageHandling({
@@ -21,7 +26,7 @@ export function useComponentImageHandling({
   onChange,
   propertyName,
   roomName
-}: UseComponentImageHandlingProps) {
+}: UseComponentImageHandlingProps): UseComponentImageHandlingReturn {
   const { toast } = useToast();
 
   // Use the image processing hook

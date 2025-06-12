@@ -7,14 +7,28 @@ interface UseComponentStateProps {
   onChange: (updatedComponents: RoomComponent[]) => void;
 }
 
+interface UseComponentStateReturn {
+  components: RoomComponent[];
+  setComponents: React.Dispatch<React.SetStateAction<RoomComponent[]>>;
+  updateComponents: (updatedComponents: RoomComponent[]) => void;
+  isProcessing: { [key: string]: boolean };
+  expandedComponents: string[];
+  setExpandedComponents: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedComponentType: string;
+  setSelectedComponentType: React.Dispatch<React.SetStateAction<string>>;
+  componentRefs: React.MutableRefObject<{ [key: string]: HTMLDivElement | null }>;
+  handleComponentProcessingState: (componentId: string, isProcessing: boolean) => void;
+  toggleExpandComponent: (componentId: string) => void;
+}
+
 export function useComponentState({
   initialComponents,
   onChange
-}: UseComponentStateProps) {
+}: UseComponentStateProps): UseComponentStateReturn {
   const [components, setComponents] = useState<RoomComponent[]>(initialComponents);
   const [isProcessing, setIsProcessing] = useState<{ [key: string]: boolean }>({});
   const [expandedComponents, setExpandedComponents] = useState<string[]>([]);
-  const [selectedComponentType, setSelectedComponentType] = useState("");
+  const [selectedComponentType, setSelectedComponentType] = useState<string>("");
   const componentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const updateComponents = (updatedComponents: RoomComponent[]) => {
