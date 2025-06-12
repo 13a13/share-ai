@@ -56,7 +56,9 @@ const MultiImageComponentCapture = ({
     currentImages,
     onImagesProcessed,
     onProcessingStateChange,
-    processComponentImage
+    // Fix the function signature to match the expected interface
+    processComponentImage: (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => 
+      processComponentImage(imageUrls, roomType, componentName, { multipleImages })
   });
 
   const isAnyProcessing = isProcessing || analysisInProgress || compressionInProgress;
@@ -68,40 +70,45 @@ const MultiImageComponentCapture = ({
       {/* Staging images grid */}
       {hasStagingImages && (
         <StagingImagesGrid
-          stagingImages={stagingImages}
+          images={stagingImages}
           onRemoveImage={handleRemoveStagingImage}
           onMoveImage={moveImage}
-          isProcessing={isAnyProcessing}
+          onCancel={cancelStagingImages}
+          onProcess={processImages}
+          analysisInProgress={analysisInProgress}
+          compressionInProgress={compressionInProgress}
+          totalImages={totalImages}
+          maxImages={maxImages}
         />
       )}
 
       {/* Progress indicator */}
       {(compressionInProgress || analysisInProgress) && (
         <ProgressIndicator
-          compressionInProgress={compressionInProgress}
-          analysisInProgress={analysisInProgress}
-          stagingImagesCount={stagingImages.length}
+          value={compressionInProgress ? 50 : analysisInProgress ? 75 : 0}
+          text={compressionInProgress ? "Compressing images..." : "Analyzing images..."}
+          isLoading={true}
         />
       )}
 
       {/* Max images warning */}
       {showMaxWarning && (
         <MaxImagesWarning
-          currentCount={totalImages}
-          maxCount={maxImages}
+          maxImages={maxImages}
         />
       )}
 
       {/* Upload controls */}
       <ImageUploadControls
+        componentId={componentId}
         canAddMore={canAddMore}
-        hasStagingImages={hasStagingImages}
         isProcessing={isAnyProcessing}
-        disabled={disabled}
-        onImageCapture={handleImageCapture}
-        onCameraCapture={handleCameraCapture}
-        onProcessImages={processImages}
-        onCancelStaging={cancelStagingImages}
+        compressionInProgress={compressionInProgress}
+        handleImageCapture={handleImageCapture}
+        handleCameraCapture={(imageData: string) => handleCameraCapture([imageData])}
+        disabled={disabled || false}
+        totalImages={totalImages}
+        maxImages={maxImages}
       />
     </div>
   );

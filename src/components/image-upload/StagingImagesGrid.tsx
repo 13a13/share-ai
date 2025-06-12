@@ -10,6 +10,7 @@ import DraggableImage from './DraggableImage';
 
 interface StagingImagesGridProps {
   images: string[];
+  stagingImages?: string[]; // Alternative prop name for compatibility
   onRemoveImage: (index: number) => void;
   onMoveImage: (dragIndex: number, hoverIndex: number) => void;
   onCancel?: () => void;
@@ -18,10 +19,12 @@ interface StagingImagesGridProps {
   compressionInProgress?: boolean;
   totalImages?: number;
   maxImages?: number;
+  isProcessing?: boolean;
 }
 
 const StagingImagesGrid = ({
-  images = [], // Provide default empty array to prevent undefined errors
+  images = [],
+  stagingImages = [],
   onRemoveImage,
   onMoveImage,
   onCancel,
@@ -29,13 +32,17 @@ const StagingImagesGrid = ({
   analysisInProgress = false,
   compressionInProgress = false,
   totalImages = 0,
-  maxImages = 20
+  maxImages = 20,
+  isProcessing = false
 }: StagingImagesGridProps) => {
+  // Use images or stagingImages, whichever is provided
+  const displayImages = images.length > 0 ? images : stagingImages;
+  
   // Only show drag hint if there's more than one image
-  const showDragHint = React.useMemo(() => images && images.length > 1, [images]);
+  const showDragHint = React.useMemo(() => displayImages && displayImages.length > 1, [displayImages]);
   
   // If no images, don't render anything
-  if (!images || images.length === 0) {
+  if (!displayImages || displayImages.length === 0) {
     return null;
   }
 
@@ -44,7 +51,7 @@ const StagingImagesGrid = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="font-medium">
-            Pending Images ({images.length})
+            Pending Images ({displayImages.length})
           </div>
           
           {showDragHint && (
@@ -56,7 +63,7 @@ const StagingImagesGrid = ({
         
         <ScrollArea className="h-full max-h-[250px]">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {images.map((url, index) => (
+            {displayImages.map((url, index) => (
               <DraggableImage
                 key={index}
                 index={index}
@@ -79,7 +86,7 @@ const StagingImagesGrid = ({
                 variant="outline"
                 size="sm"
                 onClick={onCancel}
-                disabled={analysisInProgress || compressionInProgress}
+                disabled={analysisInProgress || compressionInProgress || isProcessing}
               >
                 <X className="h-4 w-4 mr-1" />
                 Cancel
@@ -89,7 +96,7 @@ const StagingImagesGrid = ({
             {onProcess && (
               <RainbowButton
                 onClick={onProcess}
-                disabled={analysisInProgress || compressionInProgress || images.length === 0}
+                disabled={analysisInProgress || compressionInProgress || isProcessing || displayImages.length === 0}
                 className="text-sm px-4 py-2 h-8"
               >
                 {analysisInProgress ? (
@@ -117,7 +124,7 @@ const StagingImagesGrid = ({
           <div className="p-3 border border-shareai-teal/30 rounded bg-shareai-teal/5">
             <p className="text-sm text-shareai-teal flex items-center">
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              AI is analyzing {images.length} {images.length === 1 ? 'image' : 'images'}...
+              AI is analyzing {displayImages.length} {displayImages.length === 1 ? 'image' : 'images'}...
             </p>
           </div>
         )}
