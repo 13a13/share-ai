@@ -34,6 +34,8 @@ const MultiImageComponentCapture = ({
   disabled
 }: MultiImageComponentCaptureProps) => {
   
+  console.log(`🔍 MultiImageComponentCapture props: propertyName="${propertyName}", roomName="${roomName}", componentName="${componentName}"`);
+  
   const {
     stagingImages,
     analysisInProgress,
@@ -51,8 +53,8 @@ const MultiImageComponentCapture = ({
     componentId,
     componentName,
     roomType,
-    propertyName,
-    roomName,
+    propertyName: propertyName || "unknown_property",
+    roomName: roomName || "unknown_room",
     currentImages,
     onImagesProcessed,
     onProcessingStateChange,

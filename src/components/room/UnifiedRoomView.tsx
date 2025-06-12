@@ -13,6 +13,7 @@ interface UnifiedRoomViewProps {
   room: Room;
   roomIndex: number;
   totalRooms: number;
+  propertyName?: string;
   onNavigateRoom: (index: number) => void;
   onUpdateGeneralCondition: (roomId: string, generalCondition: string) => Promise<void>;
   onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
@@ -25,6 +26,7 @@ const UnifiedRoomView = ({
   room, 
   roomIndex,
   totalRooms,
+  propertyName,
   onNavigateRoom,
   onUpdateGeneralCondition,
   onUpdateComponents,
@@ -114,6 +116,7 @@ const UnifiedRoomView = ({
             <RoomContent
               reportId={reportId}
               room={room}
+              propertyName={propertyName}
               onUpdateGeneralCondition={onUpdateGeneralCondition}
               onUpdateComponents={onUpdateComponents}
             />

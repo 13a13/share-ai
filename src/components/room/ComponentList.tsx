@@ -1,25 +1,24 @@
 
-import { Accordion } from "@/components/ui/accordion";
-import { RoomComponent, RoomType } from "@/types";
+import { RoomComponent } from "@/types";
 import ComponentItem from "./ComponentItem";
-import ComponentsEmptyState from "../ComponentsEmptyState";
 import ComponentSelector from "./ComponentSelector";
 import AddCustomComponent from "./AddCustomComponent";
+import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 
 interface ComponentListProps {
-  roomType: RoomType;
+  roomType: string;
   components: RoomComponent[];
-  isProcessing: Record<string, boolean>;
+  isProcessing: { [key: string]: boolean };
   expandedComponents: string[];
   selectedComponentType: string;
-  availableComponents: Array<{ name: string; type: string; isOptional: boolean }>;
-  onSelectComponent: (value: string) => void;
+  availableComponents: any[];
+  onSelectComponent: (type: string) => void;
   onAddComponent: () => void;
-  onAddCustomComponent: (name: string, type: string) => void;
+  onAddCustomComponent: (name: string) => void;
   onToggleExpand: (componentId: string) => void;
   onRemoveComponent: (componentId: string) => void;
   onToggleEditMode: (componentId: string) => void;
-  onUpdateComponent: (componentId: string, field: string, value: string) => void;
+  onUpdateComponent: (componentId: string, updates: Partial<RoomComponent>) => void;
   onRemoveImage: (componentId: string, imageId: string) => void;
   onImageProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
@@ -43,47 +42,62 @@ const ComponentList = ({
   onImageProcessed,
   onProcessingStateChange
 }: ComponentListProps) => {
+  
+  // Get property name and room name from the DOM
+  const reportElement = document.querySelector('[data-report-id]');
+  const roomElement = document.querySelector('[data-room-id]');
+  const propertyName = reportElement?.getAttribute('data-property-name') || undefined;
+  const roomName = roomElement?.getAttribute('data-room-name') || undefined;
+
+  // Get room components that are already added
+  const addedComponentNames = components.map(c => c.name);
+  
+  // Filter available components to show only those not added yet
+  const availableToAdd = availableComponents.filter(
+    comp => !addedComponentNames.includes(comp.name)
+  );
+
   return (
-    <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-        <h3 className="text-lg font-medium">Room Components</h3>
-        <ComponentSelector 
-          selectedComponentType={selectedComponentType}
-          availableComponents={availableComponents}
-          onSelectComponent={onSelectComponent}
-          onAddComponent={onAddComponent}
-        />
-      </div>
-      
-      {components.length === 0 ? (
-        <ComponentsEmptyState onAddComponent={onAddComponent} />
-      ) : (
-        <Accordion
-          type="multiple"
-          value={expandedComponents}
-          className="space-y-4"
-        >
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">Components</h3>
+        
+        {/* Component list */}
+        <div className="space-y-3">
           {components.map((component) => (
-            <ComponentItem 
+            <ComponentItem
               key={component.id}
               component={component}
               roomType={roomType}
-              expanded={expandedComponents.includes(component.id)}
+              propertyName={propertyName}
+              roomName={roomName}
+              isExpanded={expandedComponents.includes(component.id)}
               isProcessing={isProcessing[component.id] || false}
-              onToggleExpand={onToggleExpand}
-              onRemoveComponent={onRemoveComponent}
-              onToggleEditMode={onToggleEditMode}
-              onUpdateComponent={onUpdateComponent}
-              onRemoveImage={onRemoveImage}
-              onImageProcessed={onImageProcessed}
-              onProcessingStateChange={onProcessingStateChange}
+              onToggleExpand={() => onToggleExpand(component.id)}
+              onRemove={() => onRemoveComponent(component.id)}
+              onToggleEditMode={() => onToggleEditMode(component.id)}
+              onUpdate={(updates) => onUpdateComponent(component.id, updates)}
+              onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
+              onImageProcessed={(imageUrls, result) => onImageProcessed(component.id, imageUrls, result)}
+              onProcessingStateChange={(isProcessing) => onProcessingStateChange(component.id, isProcessing)}
             />
           ))}
-        </Accordion>
-      )}
-      
-      {/* Add the custom component interface */}
-      <AddCustomComponent onAddComponent={onAddCustomComponent} />
+        </div>
+        
+        {/* Add new components */}
+        {availableToAdd.length > 0 && (
+          <ComponentSelector
+            roomType={roomType}
+            availableComponents={availableToAdd}
+            selectedComponentType={selectedComponentType}
+            onSelectComponent={onSelectComponent}
+            onAddComponent={onAddComponent}
+          />
+        )}
+        
+        {/* Add custom component */}
+        <AddCustomComponent onAddCustomComponent={onAddCustomComponent} />
+      </div>
     </div>
   );
 };

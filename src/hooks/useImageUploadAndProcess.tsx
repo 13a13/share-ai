@@ -29,6 +29,8 @@ export function useImageUploadAndProcess({
 }: UseImageUploadAndProcessProps) {
   const MAX_IMAGES = 20;
 
+  console.log(`🔍 useImageUploadAndProcess: propertyName="${propertyName}", roomName="${roomName}", componentName="${componentName}"`);
+
   // Use the staging images hook
   const {
     stagingImages,
@@ -53,8 +55,8 @@ export function useImageUploadAndProcess({
     componentId,
     componentName,
     roomType,
-    propertyName,
-    roomName,
+    propertyName: propertyName || "unknown_property",
+    roomName: roomName || "unknown_room",
     onImagesProcessed,
     onProcessingStateChange,
     processComponentImage
@@ -62,6 +64,7 @@ export function useImageUploadAndProcess({
 
   // Process the staged images
   const handleProcessImages = async () => {
+    console.log(`🚀 Processing images for component "${componentName}" in property: "${propertyName}", room: "${roomName}"`);
     if (await processImages(stagingImages)) {
       clearStagingImages();
     }

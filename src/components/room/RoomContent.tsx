@@ -7,6 +7,7 @@ import ComponentList from "./ComponentList";
 interface RoomContentProps {
   reportId: string;
   room: Room;
+  propertyName?: string;
   onUpdateGeneralCondition: (roomId: string, generalCondition: string) => Promise<void>;
   onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
 }
@@ -14,6 +15,7 @@ interface RoomContentProps {
 const RoomContent = ({
   reportId,
   room,
+  propertyName,
   onUpdateGeneralCondition,
   onUpdateComponents
 }: RoomContentProps) => {
@@ -37,6 +39,8 @@ const RoomContent = ({
   } = useRoomComponents({
     roomId: room.id,
     roomType: room.type,
+    propertyName: propertyName,
+    roomName: room.name,
     initialComponents: room.components || [],
     onChange: (updatedComponents) => onUpdateComponents(room.id, updatedComponents)
   });

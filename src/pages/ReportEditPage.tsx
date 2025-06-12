@@ -94,6 +94,7 @@ const ReportEditPage = () => {
                 room={room}
                 roomIndex={index}
                 totalRooms={report.rooms.length}
+                propertyName={property.name}
                 onNavigateRoom={handleNavigateRoom}
                 onUpdateGeneralCondition={handleUpdateGeneralCondition}
                 onUpdateComponents={handleUpdateComponents}
