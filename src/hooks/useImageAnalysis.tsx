@@ -55,42 +55,38 @@ export function useImageAnalysis({
       
       console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}`);
       
-      // Step 1: Check storage availability
+      // Step 1: Check storage availability (now always returns true since bucket exists)
       console.log("🔍 Step 1: Checking storage availability...");
       const storageAvailable = await checkStorageBucket();
       
       if (!storageAvailable) {
-        console.warn("⚠️ Storage bucket not available - proceeding with local URLs");
-        // Don't throw error, just proceed with data URLs
+        console.error("❌ Storage bucket not available - this should not happen after migration");
+        throw new Error("Storage bucket 'inspection-images' is not available. Please contact support.");
       }
       
-      // Step 2: Upload images to storage (if available)
-      let finalImageUrls = stagingImages;
-      if (storageAvailable) {
-        console.log("📤 Step 2: Uploading images to storage...");
-        try {
-          const storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
-          
-          // Verify upload success
-          const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
-          const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
-          
-          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to storage`);
-          
-          if (successfulUploads > 0) {
-            finalImageUrls = storedImageUrls;
-            console.log("✅ Using storage URLs for processing");
-          } else {
-            console.warn("⚠️ All uploads failed, using original data URLs");
-            finalImageUrls = stagingImages;
-          }
-        } catch (uploadError) {
-          console.warn("⚠️ Storage upload failed, using original data URLs:", uploadError);
-          finalImageUrls = stagingImages;
-        }
-      } else {
-        console.log("⏭️ Step 2: Skipping storage upload (bucket unavailable)");
+      console.log("✅ Storage bucket confirmed available");
+      
+      // Step 2: Upload images to storage
+      console.log("📤 Step 2: Uploading images to storage...");
+      const storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
+      
+      // Verify upload success
+      const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
+      const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
+      
+      console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to storage`);
+      
+      if (successfulUploads === 0) {
+        console.error("❌ All image uploads failed");
+        throw new Error("Failed to upload any images to storage. Please try again.");
       }
+      
+      if (failedUploads > 0) {
+        console.warn(`⚠️ ${failedUploads} images failed to upload, proceeding with ${successfulUploads} successful uploads`);
+      }
+      
+      // Use only successfully uploaded images for processing
+      const finalImageUrls = storedImageUrls;
       
       // Step 3: Save image records to database (only for successfully uploaded images)
       console.log("💾 Step 3: Saving image records to database...");
@@ -131,18 +127,13 @@ export function useImageAnalysis({
       onImagesProcessed(componentId, finalImageUrls, result);
       
       const pendingCount = getPendingCount();
-      const successfulStorageUploads = finalImageUrls.filter(url => !url.startsWith('data:')).length;
       
-      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulStorageUploads} uploaded to storage, ${pendingCount} updates queued`);
+      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to storage, ${pendingCount} updates queued`);
       
-      // Show appropriate success message
-      const storageMessage = storageAvailable && successfulStorageUploads > 0 
-        ? `uploaded ${successfulStorageUploads} to storage` 
-        : "processed locally";
-      
+      // Show success message
       toast({
         title: "Images processed successfully",
-        description: `AI analyzed ${stagingImages.length} image(s) and ${storageMessage}. ${pendingCount} updates queued for saving.`,
+        description: `AI analyzed ${stagingImages.length} image(s) and uploaded ${successfulUploads} to storage. ${pendingCount} updates queued for saving.`,
       });
       
       return true;
@@ -155,7 +146,7 @@ export function useImageAnalysis({
         if (error.message.includes("Report or room ID")) {
           errorMessage = "Could not identify the current report and room. Please refresh the page.";
         } else if (error.message.includes("Storage")) {
-          errorMessage = "Storage service unavailable. Images processed locally.";
+          errorMessage = error.message;
         } else {
           errorMessage = error.message;
         }
