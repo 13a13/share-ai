@@ -1,5 +1,6 @@
 
-import { Report, CheckoutComparison, CheckoutData } from '@/types';
+import { Report } from '@/types';
+import { CheckoutComparison, CheckoutData } from '@/lib/api/reports/checkoutTypes';
 import CheckoutStep1 from './steps/CheckoutStep1';
 import CheckoutStep2 from './steps/CheckoutStep2';
 import CheckoutStep3 from './steps/CheckoutStep3';
