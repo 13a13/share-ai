@@ -12,47 +12,35 @@ export const RoomImageAPI = {
    */
   addImageToRoom: async (reportId: string, roomId: string, imageUrl: string): Promise<RoomImage | null> => {
     try {
-      console.log("Adding image to room:", roomId, "in report:", reportId);
+      console.log("💾 Adding image to room:", roomId, "in report:", reportId);
+      console.log("🔗 Image URL type:", imageUrl.startsWith('data:') ? 'data URL' : 'external URL');
       
-      // Check if storage bucket is available
-      const bucketExists = await checkStorageBucket();
-      console.log("Storage bucket available:", bucketExists);
-      
-      // Store the image in Supabase Storage if it's a data URL and bucket exists
-      let finalImageUrl = imageUrl;
-      
-      if (imageUrl.startsWith('data:') && bucketExists) {
-        try {
-          console.log("Uploading data URL to storage...");
-          finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId);
-          console.log("Upload successful, new URL:", finalImageUrl);
-        } catch (storageError) {
-          console.warn("Failed to upload to storage, using original URL:", storageError);
-          finalImageUrl = imageUrl;
-        }
-      } else if (!bucketExists) {
-        console.warn("Storage bucket not available, using original image URL");
-      }
-      
+      // Generate a unique image ID
       const imageId = crypto.randomUUID();
+      console.log("🆔 Generated image ID:", imageId);
       
-      // Save the image URL to the database
+      // Save the image URL to the database (inspection_images table)
       const { data, error } = await supabase
         .from('inspection_images')
         .insert({
           id: imageId,
           inspection_id: reportId,
-          image_url: finalImageUrl
+          image_url: imageUrl
         })
         .select()
         .single();
       
       if (error) {
-        console.error('Error saving inspection image:', error);
+        console.error('❌ Error saving image to database:', error);
         throw error;
       }
       
-      console.log("Image saved to database:", data);
+      console.log("✅ Image record saved to database:", {
+        id: data.id,
+        inspection_id: data.inspection_id,
+        image_url: data.image_url.substring(0, 50) + (data.image_url.length > 50 ? '...' : ''),
+        created_at: data.created_at
+      });
       
       return {
         id: data.id,
@@ -61,7 +49,7 @@ export const RoomImageAPI = {
         aiProcessed: false
       };
     } catch (error) {
-      console.error("Error adding image to room:", error);
+      console.error("❌ Error adding image to room:", error);
       return null;
     }
   },
@@ -71,6 +59,8 @@ export const RoomImageAPI = {
    */
   getImagesForRoom: async (reportId: string): Promise<RoomImage[]> => {
     try {
+      console.log("📖 Fetching images for inspection:", reportId);
+      
       const { data, error } = await supabase
         .from('inspection_images')
         .select('*')
@@ -78,18 +68,20 @@ export const RoomImageAPI = {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error fetching inspection images:', error);
+        console.error('❌ Error fetching inspection images:', error);
         throw error;
       }
 
-      return data.map(image => ({
+      console.log(`✅ Found ${data?.length || 0} images for inspection ${reportId}`);
+      
+      return (data || []).map(image => ({
         id: image.id,
         url: image.image_url,
         timestamp: new Date(image.created_at),
         aiProcessed: !!image.analysis
       }));
     } catch (error) {
-      console.error("Error getting images for room:", error);
+      console.error("❌ Error getting images for room:", error);
       return [];
     }
   },
@@ -99,6 +91,8 @@ export const RoomImageAPI = {
    */
   deleteImageFromRoom: async (imageId: string): Promise<boolean> => {
     try {
+      console.log("🗑️ Deleting image with ID:", imageId);
+      
       // First get the image to delete from storage
       const { data: imageData, error: fetchError } = await supabase
         .from('inspection_images')
@@ -107,7 +101,7 @@ export const RoomImageAPI = {
         .single();
 
       if (fetchError) {
-        console.error('Error fetching image for deletion:', fetchError);
+        console.error('❌ Error fetching image for deletion:', fetchError);
         return false;
       }
 
@@ -116,8 +110,9 @@ export const RoomImageAPI = {
         try {
           const { deleteReportImage } = await import('@/utils/supabaseStorage');
           await deleteReportImage(imageData.image_url);
+          console.log("✅ Image deleted from storage");
         } catch (storageError) {
-          console.warn("Failed to delete from storage:", storageError);
+          console.warn("⚠️ Failed to delete from storage:", storageError);
           // Continue with database deletion even if storage deletion fails
         }
       }
@@ -129,14 +124,14 @@ export const RoomImageAPI = {
         .eq('id', imageId);
 
       if (error) {
-        console.error('Error deleting inspection image:', error);
+        console.error('❌ Error deleting image from database:', error);
         return false;
       }
 
-      console.log("Image deleted successfully from database");
+      console.log("✅ Image deleted successfully from database");
       return true;
     } catch (error) {
-      console.error("Error deleting image from room:", error);
+      console.error("❌ Error deleting image from room:", error);
       return false;
     }
   }
