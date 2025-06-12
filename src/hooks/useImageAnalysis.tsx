@@ -60,32 +60,44 @@ export function useImageAnalysis({
       const storageAvailable = await checkStorageBucket();
       
       if (!storageAvailable) {
-        console.error("❌ Storage bucket not available - cannot proceed");
-        throw new Error("Storage bucket 'inspection-images' is not available");
+        console.warn("⚠️ Storage bucket not available - proceeding with local URLs");
+        // Don't throw error, just proceed with data URLs
       }
       
-      // Step 2: Upload ALL images to storage BEFORE processing
-      console.log("📤 Step 2: Uploading images to storage...");
-      const storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
-      
-      // Verify all images were uploaded successfully (no data URLs remaining)
-      const dataUrlsRemaining = storedImageUrls.filter(url => url.startsWith('data:')).length;
-      const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
-      
-      console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to storage`);
-      
-      if (dataUrlsRemaining > 0) {
-        console.warn(`⚠️ ${dataUrlsRemaining} images failed to upload to storage`);
+      // Step 2: Upload images to storage (if available)
+      let finalImageUrls = stagingImages;
+      if (storageAvailable) {
+        console.log("📤 Step 2: Uploading images to storage...");
+        try {
+          const storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
+          
+          // Verify upload success
+          const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
+          const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
+          
+          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to storage`);
+          
+          if (successfulUploads > 0) {
+            finalImageUrls = storedImageUrls;
+            console.log("✅ Using storage URLs for processing");
+          } else {
+            console.warn("⚠️ All uploads failed, using original data URLs");
+            finalImageUrls = stagingImages;
+          }
+        } catch (uploadError) {
+          console.warn("⚠️ Storage upload failed, using original data URLs:", uploadError);
+          finalImageUrls = stagingImages;
+        }
+      } else {
+        console.log("⏭️ Step 2: Skipping storage upload (bucket unavailable)");
       }
       
-      if (successfulUploads === 0) {
-        throw new Error("Failed to upload any images to storage");
-      }
-      
-      // Step 3: Save image records to database with storage URLs
+      // Step 3: Save image records to database (only for successfully uploaded images)
       console.log("💾 Step 3: Saving image records to database...");
       const savedImages = [];
-      for (const imageUrl of storedImageUrls) {
+      const storageUrls = finalImageUrls.filter(url => !url.startsWith('data:'));
+      
+      for (const imageUrl of storageUrls) {
         try {
           const savedImage = await RoomImageAPI.addImageToRoom(reportId, roomId, imageUrl);
           if (savedImage) {
@@ -97,11 +109,11 @@ export function useImageAnalysis({
         }
       }
       
-      console.log(`📊 Database save results: ${savedImages.length}/${storedImageUrls.length} images saved`);
+      console.log(`📊 Database save results: ${savedImages.length}/${storageUrls.length} images saved`);
       
-      // Step 4: Process images with AI using storage URLs
+      // Step 4: Process images with AI
       console.log("🤖 Step 4: Processing images with AI...");
-      const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
+      const result = await processComponentImage(finalImageUrls, roomType, componentName, true);
       console.log("✅ AI processing completed:", result);
       
       // Step 5: Queue the update for ultra-fast batch saving
@@ -109,30 +121,49 @@ export function useImageAnalysis({
       queueComponentUpdate(
         reportId,
         componentId,
-        storedImageUrls,
+        finalImageUrls,
         result.description || "",
         result.condition || { summary: "", points: [], rating: "fair" },
         result
       );
       
       // Step 6: Update UI immediately
-      onImagesProcessed(componentId, storedImageUrls, result);
+      onImagesProcessed(componentId, finalImageUrls, result);
       
       const pendingCount = getPendingCount();
+      const successfulStorageUploads = finalImageUrls.filter(url => !url.startsWith('data:')).length;
       
-      console.log(`🎉 Processing complete: ${stagingImages.length} images uploaded and analyzed, ${pendingCount} updates queued`);
+      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulStorageUploads} uploaded to storage, ${pendingCount} updates queued`);
+      
+      // Show appropriate success message
+      const storageMessage = storageAvailable && successfulStorageUploads > 0 
+        ? `uploaded ${successfulStorageUploads} to storage` 
+        : "processed locally";
       
       toast({
-        title: "Images processed and stored",
-        description: `AI analyzed ${stagingImages.length} image(s) and uploaded ${successfulUploads} to storage. ${pendingCount} updates queued for saving.`,
+        title: "Images processed successfully",
+        description: `AI analyzed ${stagingImages.length} image(s) and ${storageMessage}. ${pendingCount} updates queued for saving.`,
       });
       
       return true;
     } catch (error) {
       console.error("❌ Error in image processing pipeline:", error);
+      
+      // Provide more specific error messages
+      let errorMessage = "Unknown error occurred";
+      if (error instanceof Error) {
+        if (error.message.includes("Report or room ID")) {
+          errorMessage = "Could not identify the current report and room. Please refresh the page.";
+        } else if (error.message.includes("Storage")) {
+          errorMessage = "Storage service unavailable. Images processed locally.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error processing images",
-        description: `Failed to process and store images: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to process images: ${errorMessage}`,
         variant: "destructive",
       });
       
