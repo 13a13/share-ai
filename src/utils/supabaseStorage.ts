@@ -29,7 +29,7 @@ export const uploadReportImage = async (
       .upload(fileName, blob, {
         contentType: blob.type,
         cacheControl: '3600',
-        upsert: false // Change to false to avoid conflicts
+        upsert: false
       });
     
     if (error) {
@@ -56,7 +56,7 @@ export const uploadReportImage = async (
  */
 export const deleteReportImage = async (imageUrl: string): Promise<void> => {
   try {
-    // Check if this is a Supabase storage URL by looking for the bucket name in the URL
+    // Check if this is a Supabase storage URL
     if (!imageUrl.includes('/storage/v1/object/public/inspection-images/') && !imageUrl.includes('inspection-images/')) {
       console.log("Not a Supabase storage URL, skipping deletion");
       return;
@@ -110,7 +110,7 @@ export const uploadMultipleReportImages = async (
     );
     
     const uploadedUrls = await Promise.all(uploadPromises);
-    console.log(`Successfully uploaded ${uploadedUrls.length} images`);
+    console.log(`Successfully uploaded ${uploadedUrls.length} images to storage`);
     
     return uploadedUrls;
   } catch (error) {
@@ -136,6 +136,28 @@ export const checkStorageBucket = async (): Promise<boolean> => {
     const bucketExists = !!inspectionBucket;
     
     console.log("Inspection images bucket exists:", bucketExists);
+    
+    // Also try to test upload access
+    if (bucketExists) {
+      try {
+        // Try to list objects to test access
+        const { error: listError } = await supabase.storage
+          .from('inspection-images')
+          .list('', { limit: 1 });
+        
+        if (listError) {
+          console.error("Storage bucket exists but access denied:", listError);
+          return false;
+        }
+        
+        console.log("Storage bucket accessible for uploads");
+        return true;
+      } catch (accessError) {
+        console.error("Error testing storage access:", accessError);
+        return false;
+      }
+    }
+    
     return bucketExists;
   } catch (error) {
     console.error("Error checking storage bucket:", error);

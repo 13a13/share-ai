@@ -16,20 +16,22 @@ export const RoomImageAPI = {
       
       // Check if storage bucket is available
       const bucketExists = await checkStorageBucket();
-      if (!bucketExists) {
-        console.warn("Storage bucket not available, saving image URL directly");
-      }
+      console.log("Storage bucket available:", bucketExists);
       
       // Store the image in Supabase Storage if it's a data URL and bucket exists
       let finalImageUrl = imageUrl;
       
       if (imageUrl.startsWith('data:') && bucketExists) {
         try {
+          console.log("Uploading data URL to storage...");
           finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId);
+          console.log("Upload successful, new URL:", finalImageUrl);
         } catch (storageError) {
           console.warn("Failed to upload to storage, using original URL:", storageError);
           finalImageUrl = imageUrl;
         }
+      } else if (!bucketExists) {
+        console.warn("Storage bucket not available, using original image URL");
       }
       
       const imageId = crypto.randomUUID();
@@ -49,6 +51,8 @@ export const RoomImageAPI = {
         console.error('Error saving inspection image:', error);
         throw error;
       }
+      
+      console.log("Image saved to database:", data);
       
       return {
         id: data.id,
@@ -129,6 +133,7 @@ export const RoomImageAPI = {
         return false;
       }
 
+      console.log("Image deleted successfully from database");
       return true;
     } catch (error) {
       console.error("Error deleting image from room:", error);
