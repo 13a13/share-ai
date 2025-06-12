@@ -1,25 +1,31 @@
 
 import { RoomImage } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { uploadReportImage, checkStorageBucket } from '@/utils/supabaseStorage';
 
 /**
- * API functions for room image operations
+ * API functions for room image operations with guaranteed storage persistence
  */
 export const RoomImageAPI = {
   /**
-   * Add an image to a room
+   * Add an image to a room - only accepts storage URLs, not data URLs
    */
   addImageToRoom: async (reportId: string, roomId: string, imageUrl: string): Promise<RoomImage | null> => {
     try {
       console.log("💾 Adding image to room:", roomId, "in report:", reportId);
-      console.log("🔗 Image URL type:", imageUrl.startsWith('data:') ? 'data URL' : 'external URL');
+      
+      // Validate that we're not storing data URLs in the database
+      if (imageUrl.startsWith('data:')) {
+        console.error("❌ Cannot save data URL to database - image must be uploaded to storage first");
+        throw new Error("Image must be uploaded to storage before saving to database");
+      }
+      
+      console.log("🔗 Storage URL validated:", imageUrl.substring(0, 100) + '...');
       
       // Generate a unique image ID
       const imageId = crypto.randomUUID();
       console.log("🆔 Generated image ID:", imageId);
       
-      // Save the image URL to the database (inspection_images table)
+      // Save the storage URL to the database (inspection_images table)
       const { data, error } = await supabase
         .from('inspection_images')
         .insert({
@@ -38,7 +44,7 @@ export const RoomImageAPI = {
       console.log("✅ Image record saved to database:", {
         id: data.id,
         inspection_id: data.inspection_id,
-        image_url: data.image_url.substring(0, 50) + (data.image_url.length > 50 ? '...' : ''),
+        image_url: data.image_url.substring(0, 80) + '...',
         created_at: data.created_at
       });
       
@@ -106,7 +112,7 @@ export const RoomImageAPI = {
       }
 
       // Delete from storage if it's a Supabase storage URL
-      if (imageData?.image_url) {
+      if (imageData?.image_url && !imageData.image_url.startsWith('data:')) {
         try {
           const { deleteReportImage } = await import('@/utils/supabaseStorage');
           await deleteReportImage(imageData.image_url);

@@ -55,41 +55,35 @@ export function useImageAnalysis({
       
       console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}`);
       
-      // Step 1: Upload images to storage BEFORE AI processing
-      console.log("📤 Step 1: Uploading images to storage...");
+      // Step 1: Check storage availability
+      console.log("🔍 Step 1: Checking storage availability...");
       const storageAvailable = await checkStorageBucket();
-      let storedImageUrls: string[] = stagingImages;
       
-      if (storageAvailable) {
-        try {
-          // Upload all images to Supabase Storage in parallel
-          storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
-          console.log("✅ Images successfully uploaded to storage:", storedImageUrls.length);
-          
-          // Verify uploads by checking if URLs changed from data URLs
-          const uploadedCount = storedImageUrls.filter(url => !url.startsWith('data:')).length;
-          console.log(`📊 Upload verification: ${uploadedCount}/${stagingImages.length} images uploaded to storage`);
-          
-        } catch (storageError) {
-          console.error("❌ Storage upload failed:", storageError);
-          toast({
-            title: "Storage upload failed",
-            description: "Images will be processed locally. Please check your connection.",
-            variant: "destructive",
-          });
-          storedImageUrls = stagingImages;
-        }
-      } else {
-        console.warn("⚠️ Storage bucket not available, using original image URLs");
-        toast({
-          title: "Storage unavailable",
-          description: "Images will be processed locally.",
-          variant: "destructive",
-        });
+      if (!storageAvailable) {
+        console.error("❌ Storage bucket not available - cannot proceed");
+        throw new Error("Storage bucket 'inspection-images' is not available");
       }
       
-      // Step 2: Save images to database inspection_images table
-      console.log("💾 Step 2: Saving images to database...");
+      // Step 2: Upload ALL images to storage BEFORE processing
+      console.log("📤 Step 2: Uploading images to storage...");
+      const storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
+      
+      // Verify all images were uploaded successfully (no data URLs remaining)
+      const dataUrlsRemaining = storedImageUrls.filter(url => url.startsWith('data:')).length;
+      const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
+      
+      console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to storage`);
+      
+      if (dataUrlsRemaining > 0) {
+        console.warn(`⚠️ ${dataUrlsRemaining} images failed to upload to storage`);
+      }
+      
+      if (successfulUploads === 0) {
+        throw new Error("Failed to upload any images to storage");
+      }
+      
+      // Step 3: Save image records to database with storage URLs
+      console.log("💾 Step 3: Saving image records to database...");
       const savedImages = [];
       for (const imageUrl of storedImageUrls) {
         try {
@@ -105,13 +99,13 @@ export function useImageAnalysis({
       
       console.log(`📊 Database save results: ${savedImages.length}/${storedImageUrls.length} images saved`);
       
-      // Step 3: Process stored images with AI
-      console.log("🤖 Step 3: Processing images with AI...");
+      // Step 4: Process images with AI using storage URLs
+      console.log("🤖 Step 4: Processing images with AI...");
       const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
       console.log("✅ AI processing completed:", result);
       
-      // Step 4: Queue the update for ultra-fast batch saving
-      console.log("⚡ Step 4: Queueing component update...");
+      // Step 5: Queue the update for ultra-fast batch saving
+      console.log("⚡ Step 5: Queueing component update...");
       queueComponentUpdate(
         reportId,
         componentId,
@@ -121,18 +115,16 @@ export function useImageAnalysis({
         result
       );
       
-      // Step 5: Update UI immediately
+      // Step 6: Update UI immediately
       onImagesProcessed(componentId, storedImageUrls, result);
       
       const pendingCount = getPendingCount();
-      const storageStatus = storageAvailable && storedImageUrls.some(url => !url.startsWith('data:')) ? 
-        "uploaded to storage" : "processed locally";
       
-      console.log(`🎉 Processing complete: ${stagingImages.length} images ${storageStatus}, ${pendingCount} updates queued`);
+      console.log(`🎉 Processing complete: ${stagingImages.length} images uploaded and analyzed, ${pendingCount} updates queued`);
       
       toast({
-        title: "Images processed successfully",
-        description: `AI analyzed ${stagingImages.length} image(s) and ${storageStatus}. ${pendingCount} updates queued for saving.`,
+        title: "Images processed and stored",
+        description: `AI analyzed ${stagingImages.length} image(s) and uploaded ${successfulUploads} to storage. ${pendingCount} updates queued for saving.`,
       });
       
       return true;
@@ -140,59 +132,9 @@ export function useImageAnalysis({
       console.error("❌ Error in image processing pipeline:", error);
       toast({
         title: "Error processing images",
-        description: "AI analysis failed. Please try again or check your internet connection.",
+        description: `Failed to process and store images: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
-      
-      // Fallback: still try to save the images without AI analysis
-      try {
-        console.log("🔄 Attempting fallback image save...");
-        const reportElement = document.querySelector('[data-report-id]');
-        const roomElement = document.querySelector('[data-room-id]');
-        
-        if (reportElement && roomElement) {
-          const reportId = reportElement.getAttribute('data-report-id');
-          const roomId = roomElement.getAttribute('data-room-id');
-          
-          if (reportId && roomId) {
-            const storageAvailable = await checkStorageBucket();
-            let storedImageUrls = stagingImages;
-            
-            if (storageAvailable) {
-              try {
-                storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId);
-                console.log("✅ Fallback storage upload successful");
-              } catch (storageError) {
-                console.warn("⚠️ Fallback storage upload failed:", storageError);
-              }
-            }
-            
-            // Save to database even without AI analysis
-            for (const imageUrl of storedImageUrls) {
-              try {
-                await RoomImageAPI.addImageToRoom(reportId, roomId, imageUrl);
-              } catch (dbError) {
-                console.error("❌ Fallback database save failed:", dbError);
-              }
-            }
-            
-            onImagesProcessed(componentId, storedImageUrls, {
-              description: "",
-              condition: {
-                summary: "",
-                points: [],
-                rating: "fair"
-              },
-              cleanliness: "domestic_clean",
-              notes: "AI analysis failed - please add description manually"
-            });
-            
-            console.log("✅ Fallback processing completed");
-          }
-        }
-      } catch (uploadError) {
-        console.error("❌ Fallback processing also failed:", uploadError);
-      }
       
       return false;
     } finally {

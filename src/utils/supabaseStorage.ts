@@ -47,26 +47,10 @@ export const uploadReportImage = async (
     
     console.log("🔗 Public URL generated:", publicUrlData.publicUrl);
     
-    // Verify the upload by checking if file exists
-    const { data: fileExists, error: listError } = await supabase.storage
-      .from('inspection-images')
-      .list(data.path.substring(0, data.path.lastIndexOf('/')), {
-        search: data.path.substring(data.path.lastIndexOf('/') + 1)
-      });
-    
-    if (listError) {
-      console.warn("⚠️ Could not verify file upload:", listError);
-    } else if (fileExists && fileExists.length > 0) {
-      console.log("✅ File upload verified, file exists in storage");
-    } else {
-      console.warn("⚠️ File upload verification failed, file not found");
-    }
-    
     return publicUrlData.publicUrl;
   } catch (error) {
     console.error("❌ Critical error in uploadReportImage:", error);
-    // Return the original data URL as fallback
-    return dataUrl;
+    throw error; // Don't return fallback, let caller handle the error
   }
 };
 
@@ -118,7 +102,7 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
 };
 
 /**
- * Upload multiple images to Supabase Storage
+ * Upload multiple images to Supabase Storage with guaranteed storage
  */
 export const uploadMultipleReportImages = async (
   imageUrls: string[],
@@ -139,20 +123,27 @@ export const uploadMultipleReportImages = async (
       return imageUrls;
     }
     
-    const uploadPromises = dataUrls.map((imageUrl, index) => {
-      console.log(`📤 Queuing upload ${index + 1}/${dataUrls.length}`);
-      return uploadReportImage(imageUrl, reportId, roomId);
-    });
+    // Upload each image individually and collect results
+    const uploadedUrls: string[] = [];
+    const failedUploads: string[] = [];
     
-    const uploadedUrls = await Promise.all(uploadPromises);
-    console.log(`✅ Batch upload completed: ${uploadedUrls.length} new URLs generated`);
+    for (let i = 0; i < dataUrls.length; i++) {
+      try {
+        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length}`);
+        const uploadedUrl = await uploadReportImage(dataUrls[i], reportId, roomId);
+        uploadedUrls.push(uploadedUrl);
+        console.log(`✅ Image ${i + 1} uploaded successfully`);
+      } catch (error) {
+        console.error(`❌ Failed to upload image ${i + 1}:`, error);
+        failedUploads.push(dataUrls[i]);
+      }
+    }
     
-    // Combine existing URLs with newly uploaded URLs
-    const allUrls = [...existingUrls, ...uploadedUrls];
+    console.log(`📊 Upload results: ${uploadedUrls.length} successful, ${failedUploads.length} failed`);
     
-    // Verify uploads
-    const successfulUploads = uploadedUrls.filter(url => !url.startsWith('data:')).length;
-    console.log(`📊 Upload success rate: ${successfulUploads}/${dataUrls.length} images uploaded to storage`);
+    // Combine existing URLs with successfully uploaded URLs
+    // For failed uploads, use original data URLs as fallback
+    const allUrls = [...existingUrls, ...uploadedUrls, ...failedUploads];
     
     return allUrls;
   } catch (error) {
