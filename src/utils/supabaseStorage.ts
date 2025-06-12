@@ -160,42 +160,27 @@ export const checkStorageBucket = async (): Promise<boolean> => {
   try {
     console.log("🔍 Checking storage bucket availability...");
     
-    const { data, error } = await supabase.storage.listBuckets();
-    
-    if (error) {
-      console.error("❌ Error checking storage buckets:", error);
-      return false;
-    }
-    
-    const inspectionBucket = data?.find(bucket => bucket.name === 'inspection-images');
-    const bucketExists = !!inspectionBucket;
-    
-    console.log("📦 Inspection images bucket exists:", bucketExists);
-    
-    // Test upload access if bucket exists
-    if (bucketExists) {
-      try {
-        console.log("🔐 Testing bucket access permissions...");
-        
-        // Try to list objects to test access
-        const { data: listData, error: listError } = await supabase.storage
-          .from('inspection-images')
-          .list('', { limit: 1 });
-        
-        if (listError) {
-          console.error("❌ Storage bucket exists but access denied:", listError);
-          return false;
-        }
-        
-        console.log("✅ Storage bucket accessible, found", listData?.length || 0, "items");
-        return true;
-      } catch (accessError) {
-        console.error("❌ Error testing storage access:", accessError);
+    // Since we just created the bucket with the migration, we know it exists
+    // But let's still test access to be sure
+    try {
+      console.log("🔐 Testing bucket access permissions...");
+      
+      // Try to list objects to test access
+      const { data: listData, error: listError } = await supabase.storage
+        .from('inspection-images')
+        .list('', { limit: 1 });
+      
+      if (listError) {
+        console.error("❌ Storage bucket exists but access denied:", listError);
         return false;
       }
+      
+      console.log("✅ Storage bucket accessible and ready for uploads");
+      return true;
+    } catch (accessError) {
+      console.error("❌ Error testing storage access:", accessError);
+      return false;
     }
-    
-    return bucketExists;
   } catch (error) {
     console.error("❌ Error checking storage bucket:", error);
     return false;

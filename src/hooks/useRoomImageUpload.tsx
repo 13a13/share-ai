@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
@@ -90,13 +89,13 @@ export const useRoomImageUpload = ({
         try {
           // Upload to Supabase Storage
           finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId);
-          console.log("Image uploaded to storage successfully");
+          console.log("✅ Image uploaded to storage successfully:", finalImageUrl);
         } catch (storageError) {
-          console.warn("Storage upload failed, using original URL:", storageError);
+          console.warn("⚠️ Storage upload failed, using original URL:", storageError);
           finalImageUrl = imageUrl;
         }
       } else {
-        console.warn("Storage bucket not available, using original image URL");
+        console.warn("⚠️ Storage bucket not available, using original image URL");
       }
       
       // Add the image to the room using the final URL
