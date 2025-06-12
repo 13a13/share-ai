@@ -1,8 +1,52 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Upload a base64 image to Supabase Storage with property/room/component-based folder structure
+ * Get the current user's full name for folder structure
+ */
+const getUserFullName = async (): Promise<string> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.warn("⚠️ No authenticated user found, using 'unknown_user'");
+      return 'unknown_user';
+    }
+
+    // Try to get user profile information
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !profile) {
+      console.warn("⚠️ Could not fetch user profile, using email or fallback");
+      // Fallback to email or user ID
+      const emailName = user.email?.split('@')[0] || user.id.substring(0, 8);
+      return emailName.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_').toLowerCase();
+    }
+
+    // Combine first and last name
+    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+    
+    if (!fullName) {
+      console.warn("⚠️ No name found in profile, using email or fallback");
+      const emailName = user.email?.split('@')[0] || user.id.substring(0, 8);
+      return emailName.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_').toLowerCase();
+    }
+
+    // Clean the full name for folder structure
+    return fullName.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_').toLowerCase();
+  } catch (error) {
+    console.error("❌ Error getting user full name:", error);
+    return 'unknown_user';
+  }
+};
+
+/**
+ * Upload a base64 image to Supabase Storage with user/property/room/component-based folder structure
  */
 export const uploadReportImage = async (
   dataUrl: string,
@@ -20,7 +64,11 @@ export const uploadReportImage = async (
     const blob = await res.blob();
     console.log("📦 Image converted to blob, size:", blob.size, "type:", blob.type);
     
-    // Generate a unique filename with property/room/component-based folder structure
+    // Get user's full name for folder structure
+    const userFullName = await getUserFullName();
+    console.log("👤 User full name for folder structure:", userFullName);
+    
+    // Generate a unique filename with user/property/room/component-based folder structure
     const fileExt = dataUrl.substring(dataUrl.indexOf('/') + 1, dataUrl.indexOf(';base64'));
     
     // Clean names for folder structure (remove special characters)
@@ -36,10 +84,10 @@ export const uploadReportImage = async (
       ? componentName.replace(/[^a-zA-Z0-9\s-_]/g, '').replace(/\s+/g, '_').toLowerCase()
       : 'general';
     
-    // Create folder structure: property_name/room_name/component_name/filename
-    const fileName = `${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/${uuidv4()}.${fileExt || 'jpg'}`;
+    // Create folder structure: user_full_name/property_name/room_name/component_name/filename
+    const fileName = `${userFullName}/${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/${uuidv4()}.${fileExt || 'jpg'}`;
     
-    console.log("📂 Upload path with organized folder structure:", fileName);
+    console.log("📂 Upload path with user-based folder structure:", fileName);
     
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
@@ -55,7 +103,7 @@ export const uploadReportImage = async (
       throw error;
     }
     
-    console.log("✅ File uploaded successfully to organized folder:", data.path);
+    console.log("✅ File uploaded successfully to user-organized folder:", data.path);
     
     // Get the public URL
     const { data: publicUrlData } = supabase.storage
@@ -101,7 +149,7 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
       return;
     }
     
-    console.log("🗑️ Deleting file from property folder:", fileName);
+    console.log("🗑️ Deleting file from user-organized folder:", fileName);
     
     // Delete from storage
     const { error } = await supabase.storage
@@ -119,7 +167,7 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
 };
 
 /**
- * Upload multiple images to Supabase Storage with property/room/component-based organization
+ * Upload multiple images to Supabase Storage with user/property/room/component-based organization
  */
 export const uploadMultipleReportImages = async (
   imageUrls: string[],
@@ -130,7 +178,9 @@ export const uploadMultipleReportImages = async (
   componentName?: string
 ): Promise<string[]> => {
   try {
-    console.log(`🚀 Starting batch upload of ${imageUrls.length} images to organized folders: ${propertyName}/${roomName}/${componentName}`);
+    // Get user's full name once for the batch
+    const userFullName = await getUserFullName();
+    console.log(`🚀 Starting batch upload of ${imageUrls.length} images to user-organized folders: ${userFullName}/${propertyName}/${roomName}/${componentName}`);
     
     // Filter only data URLs that need uploading
     const dataUrls = imageUrls.filter(url => url.startsWith('data:'));
@@ -149,10 +199,10 @@ export const uploadMultipleReportImages = async (
     
     for (let i = 0; i < dataUrls.length; i++) {
       try {
-        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length} to organized folder`);
+        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length} to user-organized folder`);
         const uploadedUrl = await uploadReportImage(dataUrls[i], reportId, roomId, propertyName, roomName, componentName);
         uploadedUrls.push(uploadedUrl);
-        console.log(`✅ Image ${i + 1} uploaded successfully to organized folder`);
+        console.log(`✅ Image ${i + 1} uploaded successfully to user-organized folder`);
       } catch (error) {
         console.error(`❌ Failed to upload image ${i + 1}:`, error);
         failedUploads.push(dataUrls[i]);

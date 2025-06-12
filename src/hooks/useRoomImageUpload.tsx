@@ -92,9 +92,9 @@ export const useRoomImageUpload = ({
       
       if (storageAvailable) {
         try {
-          // Upload to Supabase Storage with organized folder structure (property/room/general for room photos)
+          // Upload to Supabase Storage with user-organized folder structure (user/property/room/general for room photos)
           finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId, propertyName, roomName, 'general');
-          console.log("✅ Image uploaded to organized folder successfully:", finalImageUrl);
+          console.log("✅ Image uploaded to user-organized folder successfully:", finalImageUrl);
         } catch (storageError) {
           console.warn("⚠️ Storage upload failed, using original URL:", storageError);
           finalImageUrl = imageUrl;
@@ -111,7 +111,7 @@ export const useRoomImageUpload = ({
         setUploadedImage(finalImageUrl);
         
         const storageStatus = storageAvailable && finalImageUrl !== imageUrl ? 
-          `uploaded to ${propertyName}/${roomName}/general folder in Supabase Storage` : "saved locally";
+          `uploaded to user's account folder in Supabase Storage` : "saved locally";
         
         toast({
           title: "Image uploaded",
