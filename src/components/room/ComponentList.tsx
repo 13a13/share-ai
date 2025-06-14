@@ -13,7 +13,7 @@ interface ComponentListProps {
   isProcessing: Record<string, boolean>;
   expandedComponents: string[];
   selectedComponentType: string;
-  availableComponents: string[];
+  availableComponents: { name: string; type: string; isOptional: boolean }[];
   propertyName?: string;
   roomName?: string;
   onSelectComponent: (type: string) => void;
@@ -86,7 +86,7 @@ const ComponentList = ({
 
         {showCustomComponent && (
           <AddCustomComponent
-            onAdd={(name) => {
+            onAddComponent={(name) => {
               onAddCustomComponent(name);
               setShowCustomComponent(false);
             }}

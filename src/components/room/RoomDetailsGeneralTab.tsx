@@ -1,12 +1,11 @@
 
 import { Textarea } from "@/components/ui/textarea";
-import { Room, RoomSection } from "@/types";
-import RoomSectionEditor from "@/components/RoomSectionEditor";
+import { Room } from "@/types";
 
 interface RoomDetailsGeneralTabProps {
   room: Room;
-  onUpdateGeneralCondition: (roomId: string, condition: string) => Promise<void>;
-  onSaveSection: (updatedSection: RoomSection) => Promise<void>;
+  onUpdateGeneralCondition: (roomId: string, generalCondition: string) => Promise<void>;
+  onSaveSection?: (sectionType: string, data: any) => Promise<void>;
 }
 
 const RoomDetailsGeneralTab = ({
@@ -15,27 +14,15 @@ const RoomDetailsGeneralTab = ({
   onSaveSection
 }: RoomDetailsGeneralTabProps) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="space-y-2">
-        <h3 className="text-lg font-medium">General Condition</h3>
+        <h3 className="text-sm font-medium">General Condition</h3>
         <Textarea 
-          value={room.generalCondition}
+          value={room.generalCondition || ""}
           onChange={(e) => onUpdateGeneralCondition(room.id, e.target.value)}
           placeholder="Describe the general condition of the room..."
-          className="min-h-[100px]"
+          className="min-h-[80px]"
         />
-      </div>
-      
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Detailed Sections</h3>
-        
-        {room.sections.map((section) => (
-          <RoomSectionEditor 
-            key={section.id} 
-            section={section}
-            onSave={onSaveSection}
-          />
-        ))}
       </div>
     </div>
   );

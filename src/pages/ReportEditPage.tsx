@@ -55,6 +55,20 @@ const ReportEditPage = () => {
   
   // Ensure report.rooms is always defined
   const hasRooms = report.rooms && report.rooms.length > 0;
+
+  // Create a navigation handler that converts direction to index
+  const handleRoomNavigation = (direction: 'prev' | 'next') => {
+    const currentIndex = activeRoomIndex;
+    let newIndex = currentIndex;
+    
+    if (direction === 'prev' && currentIndex > 0) {
+      newIndex = currentIndex - 1;
+    } else if (direction === 'next' && currentIndex < (report?.rooms.length || 0) - 1) {
+      newIndex = currentIndex + 1;
+    }
+    
+    handleNavigateRoom(newIndex);
+  };
   
   return (
     <div className="shareai-container pb-24 sm:pb-8" data-report-id={report.id}>
@@ -97,7 +111,7 @@ const ReportEditPage = () => {
                 roomIndex={index}
                 totalRooms={report.rooms.length}
                 propertyName={property.name}
-                onNavigateRoom={handleNavigateRoom}
+                onNavigateRoom={handleRoomNavigation}
                 onUpdateGeneralCondition={handleUpdateGeneralCondition}
                 onUpdateComponents={handleUpdateComponents}
                 onDeleteRoom={handleDeleteRoom}

@@ -5,58 +5,46 @@ import { getDefaultComponentsByRoomType } from "@/utils/roomComponentUtils";
 import { v4 as uuidv4 } from "uuid";
 
 interface UseComponentAdditionProps {
+  roomId: string;
   roomType: RoomType;
-  components: RoomComponent[];
-  expandedComponents: string[];
   selectedComponentType: string;
-  setComponents: (components: RoomComponent[]) => void;
-  setExpandedComponents: (ids: string[]) => void;
-  onChange: (updatedComponents: RoomComponent[]) => void;
+  components: RoomComponent[];
+  updateComponents: (components: RoomComponent[]) => void;
+  expandedComponents: string[];
+  setExpandedComponents: React.Dispatch<React.SetStateAction<string[]>>;
+  setSelectedComponentType: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function useComponentAddition({
+  roomId,
   roomType,
-  components,
-  expandedComponents,
   selectedComponentType,
-  setComponents,
+  components,
+  updateComponents,
+  expandedComponents,
   setExpandedComponents,
-  onChange
+  setSelectedComponentType
 }: UseComponentAdditionProps) {
   const { toast } = useToast();
 
-  const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
-    comp => !components.some(c => c.type === comp.type)
-  );
-
   const handleAddComponent = () => {
-    if (!selectedComponentType) {
-      if (availableComponents.length === 0) {
-        toast({
-          title: "No more components available",
-          description: "All possible components for this room type have been added.",
-        });
-        return;
-      }
-      
-      const newComponent = availableComponents[0];
-      addComponentToRoom(newComponent);
-    } else {
-      const componentToAdd = getDefaultComponentsByRoomType(roomType).find(
-        comp => comp.type === selectedComponentType
-      );
-      
-      if (!componentToAdd) {
-        toast({
-          title: "Component not found",
-          description: "The selected component type is not valid for this room.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      addComponentToRoom(componentToAdd);
+    if (!selectedComponentType) return;
+    
+    const availableComponents = getDefaultComponentsByRoomType(roomType);
+    const componentToAdd = availableComponents.find(
+      comp => comp.name === selectedComponentType
+    );
+    
+    if (!componentToAdd) {
+      toast({
+        title: "Component not found",
+        description: "The selected component type is not valid for this room.",
+        variant: "destructive",
+      });
+      return;
     }
+    
+    addComponentToRoom(componentToAdd);
   };
 
   const addComponentToRoom = (componentToAdd: { name: string; type: string; isOptional: boolean }) => {
@@ -78,10 +66,9 @@ export function useComponentAddition({
       } as RoomComponent
     ];
     
-    setComponents(updatedComponents);
-    onChange(updatedComponents);
-    
+    updateComponents(updatedComponents);
     setExpandedComponents([...expandedComponents, newComponentId]);
+    setSelectedComponentType("");
     
     toast({
       title: "Component added",
@@ -89,18 +76,15 @@ export function useComponentAddition({
     });
   };
 
-  // New function to add a custom component
-  const addCustomComponent = (name: string, type: string) => {
+  const addCustomComponent = (name: string) => {
     const newComponentId = uuidv4();
-    
-    const customType = `custom_${type}_${Date.now()}`;
     
     const updatedComponents = [
       ...components,
       {
         id: newComponentId,
         name: name,
-        type: customType,
+        type: `custom_${Date.now()}`,
         description: "",
         condition: "fair" as ConditionRating,
         conditionSummary: "",
@@ -112,9 +96,7 @@ export function useComponentAddition({
       } as RoomComponent
     ];
     
-    setComponents(updatedComponents);
-    onChange(updatedComponents);
-    
+    updateComponents(updatedComponents);
     setExpandedComponents([...expandedComponents, newComponentId]);
     
     toast({

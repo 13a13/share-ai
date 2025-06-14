@@ -65,6 +65,9 @@ const UnifiedRoomView = ({
             <RoomDetailsGeneralTab
               room={room}
               onUpdateGeneralCondition={onUpdateGeneralCondition}
+              onSaveSection={async (sectionType, data) => {
+                console.log(`Saving section ${sectionType}:`, data);
+              }}
             />
           </TabsContent>
           

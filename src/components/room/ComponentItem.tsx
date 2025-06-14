@@ -46,20 +46,29 @@ const ComponentItem = ({
       className={`transition-all duration-300 ${isExpanded ? 'shadow-md' : ''}`}
     >
       <ComponentHeader
-        component={component}
-        isExpanded={isExpanded}
-        isProcessing={isProcessing}
-        onToggleExpand={onToggleExpand}
-        onRemove={onRemove}
+        name={component.name}
+        isOptional={component.isOptional}
+        condition={component.condition}
+        imagesCount={component.images.length}
+        isAnalyzed={!!component.conditionSummary}
+        isCustom={!!component.isCustom}
       />
       
       {isExpanded && (
         <CardContent className="pt-0 space-y-4">
           {component.isEditing ? (
             <ComponentEditForm
-              component={component}
-              onSave={onUpdate}
-              onCancel={onToggleEditMode}
+              componentId={component.id}
+              description={component.description}
+              conditionSummary={component.conditionSummary}
+              conditionPoints={component.conditionPoints || []}
+              condition={component.condition}
+              cleanliness={component.cleanliness}
+              notes={component.notes}
+              onUpdateComponent={(componentId, field, value) => {
+                onUpdate({ [field]: value });
+              }}
+              onToggleEditMode={onToggleEditMode}
             />
           ) : (
             <>
@@ -81,8 +90,8 @@ const ComponentItem = ({
                 roomName={roomName}
                 isProcessing={isProcessing}
                 currentImages={component.images}
-                onImagesProcessed={onImageProcessed}
-                onProcessingStateChange={onProcessingStateChange}
+                onImagesProcessed={(componentId, imageUrls, result) => onImageProcessed(imageUrls, result)}
+                onProcessingStateChange={(componentId, isProcessing) => onProcessingStateChange(isProcessing)}
                 onRemoveImage={onRemoveImage}
               />
             </>
