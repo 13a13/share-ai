@@ -107,35 +107,40 @@ serve(async (req) => {
     const processedImages = [];
     const correctedImageUrls = [];
     
-    for (const imageUrl of limitedImages) {
+    for (let i = 0; i < limitedImages.length; i++) {
+      const imageUrl = limitedImages[i];
       try {
         let finalImageUrl = imageUrl;
         
         // Fix folder structure if we have property/room info and this is a storage URL
         if (propertyRoomInfo && imageUrl.includes('supabase.co/storage') && reportId) {
-          console.log(`📂 Checking folder structure for image: ${imageUrl}`);
+          console.log(`📂 [Image ${i + 1}/${limitedImages.length}] Checking folder structure for: ${imageUrl}`);
           
           // Check if this URL needs folder correction
           if (needsFolderCorrection(imageUrl)) {
-            console.log(`📂 Image needs folder correction: ${imageUrl}`);
+            console.log(`📂 [Image ${i + 1}/${limitedImages.length}] Image needs folder correction: ${imageUrl}`);
             
             try {
               const { newPath, shouldMove } = await buildCorrectStoragePath(imageUrl, reportId, roomId);
               
               if (shouldMove) {
-                console.log(`📦 Moving file to correct folder structure...`);
+                console.log(`📦 [Image ${i + 1}/${limitedImages.length}] Moving file to correct folder structure...`);
                 const newUrl = await moveFileToCorrectFolder(imageUrl, newPath);
-                finalImageUrl = newUrl;
-                console.log(`✅ Folder structure corrected: ${imageUrl} → ${finalImageUrl}`);
+                if (newUrl !== imageUrl) {
+                  finalImageUrl = newUrl;
+                  console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Folder structure corrected: ${imageUrl} → ${finalImageUrl}`);
+                } else {
+                  console.log(`⚠️ [Image ${i + 1}/${limitedImages.length}] Folder correction failed, using original URL`);
+                }
               } else {
-                console.log(`✅ Folder structure is already correct for: ${imageUrl}`);
+                console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Folder structure is already correct`);
               }
             } catch (moveError) {
-              console.error('⚠️ Could not fix folder structure, using original URL:', moveError);
+              console.error(`⚠️ [Image ${i + 1}/${limitedImages.length}] Could not fix folder structure, using original URL:`, moveError);
               // Continue with original URL if moving fails
             }
           } else {
-            console.log(`✅ Image folder structure is correct: ${imageUrl}`);
+            console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Image folder structure is correct: ${imageUrl}`);
           }
         }
         
@@ -147,22 +152,22 @@ serve(async (req) => {
           processedImages.push(finalImageUrl.split(",")[1]);
         } else if (finalImageUrl.includes('supabase.co/storage')) {
           // Fetch the image from Supabase storage and convert to base64
-          console.log(`📥 Fetching image from storage: ${finalImageUrl}`);
+          console.log(`📥 [Image ${i + 1}/${limitedImages.length}] Fetching image from storage: ${finalImageUrl}`);
           const imageResponse = await fetch(finalImageUrl);
           if (!imageResponse.ok) {
-            console.error(`❌ Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
+            console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
             continue;
           }
           const arrayBuffer = await imageResponse.arrayBuffer();
           const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
           processedImages.push(base64);
-          console.log(`✅ Successfully converted storage image to base64`);
+          console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Successfully converted storage image to base64`);
         } else {
           // Assume it's already base64
           processedImages.push(finalImageUrl);
         }
       } catch (error) {
-        console.error(`❌ Error processing image ${imageUrl}:`, error);
+        console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Error processing image ${imageUrl}:`, error);
         // Skip this image and continue with others
       }
     }
@@ -252,7 +257,8 @@ serve(async (req) => {
         formattedResponse.correctedImageUrls = correctedImageUrls;
         const correctedCount = correctedImageUrls.filter((url, index) => url !== limitedImages[index]).length;
         if (correctedCount > 0) {
-          console.log(`📂 Folder structure corrections applied to ${correctedCount} images`);
+          console.log(`📂 Folder structure corrections applied to ${correctedCount}/${limitedImages.length} images`);
+          formattedResponse.folderCorrectionsApplied = correctedCount;
         }
       }
 

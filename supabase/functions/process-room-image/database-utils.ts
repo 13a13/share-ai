@@ -139,29 +139,41 @@ function cleanNameForFolder(name: string): string {
  */
 export function needsFolderCorrection(imageUrl: string): boolean {
   try {
+    console.log(`🔍 Checking if URL needs folder correction: ${imageUrl}`);
+    
     // Check if this is a Supabase storage URL
     if (!imageUrl.includes('supabase.co/storage') && !imageUrl.includes('/storage/v1/object/public/')) {
+      console.log('❌ Not a Supabase storage URL');
       return false;
     }
     
-    // Check if URL contains problematic folder names
+    // Check if URL contains problematic folder names - broader detection
     const problematicPatterns = [
       'unknown_property',
       'unknown_room',
+      'unknown_user',
       '/property_[a-f0-9]{8}/', // Matches property_5690e738 pattern
-      '/room_[a-f0-9]{8}/'       // Matches room_9836d4c8 pattern
+      '/room_[a-f0-9]{8}/',     // Matches room_9836d4c8 pattern
+      '/user_[a-f0-9]{8}/'      // Matches user_1234abcd pattern
     ];
     
-    return problematicPatterns.some(pattern => {
+    const needsCorrection = problematicPatterns.some(pattern => {
       if (pattern.startsWith('/') && pattern.endsWith('/')) {
         // Use regex for UUID patterns
         const regex = new RegExp(pattern);
-        return regex.test(imageUrl);
+        const matches = regex.test(imageUrl);
+        if (matches) console.log(`✅ Found problematic pattern: ${pattern}`);
+        return matches;
       } else {
         // Simple string match for unknown_ patterns
-        return imageUrl.includes(pattern);
+        const matches = imageUrl.includes(pattern);
+        if (matches) console.log(`✅ Found problematic name: ${pattern}`);
+        return matches;
       }
     });
+    
+    console.log(`🔍 Needs correction: ${needsCorrection}`);
+    return needsCorrection;
   } catch (error) {
     console.error('❌ Error checking folder correction need:', error);
     return false;
@@ -235,58 +247,97 @@ export async function moveFileToCorrectFolder(
   try {
     console.log(`📦 Moving file from ${originalUrl} to ${correctPath}`);
     
-    // Extract the bucket name and original file path
-    const bucketName = 'report-images'; // Default bucket name
+    // Extract the bucket name - try multiple possible bucket names
+    const possibleBuckets = ['report-images', 'inspection-images'];
+    let bucketName = 'report-images'; // Default
+    
+    // Determine which bucket is being used
+    for (const bucket of possibleBuckets) {
+      if (originalUrl.includes(`/storage/v1/object/public/${bucket}/`)) {
+        bucketName = bucket;
+        break;
+      }
+    }
     
     // Extract original path from URL
-    const pathAfterPublic = originalUrl.split('/storage/v1/object/public/')[1];
+    const bucketPattern = `/storage/v1/object/public/${bucketName}/`;
+    const pathAfterPublic = originalUrl.split(bucketPattern)[1];
+    
     if (!pathAfterPublic) {
       console.error('❌ Could not extract path from URL');
       return originalUrl;
     }
     
-    const pathSegments = pathAfterPublic.split('/');
-    if (pathSegments.length < 2) {
-      console.error('❌ Invalid URL structure');
-      return originalUrl;
-    }
-    
-    // The original path is everything after the bucket name
-    const originalPath = pathSegments.slice(1).join('/');
-    
     console.log(`📦 Storage operation:`, {
       bucketName,
-      originalPath,
+      originalPath: pathAfterPublic,
       correctPath,
       originalUrl
     });
     
-    // First, check if the source file exists
-    const { data: existsData, error: existsError } = await supabase.storage
+    // First, check if the target path already exists
+    const { data: existingFiles, error: listError } = await supabase.storage
       .from(bucketName)
-      .list('', { search: originalPath });
+      .list('', { search: correctPath });
     
-    if (existsError) {
-      console.error('❌ Error checking file existence:', existsError);
-      return originalUrl;
+    if (listError) {
+      console.error('❌ Error checking existing files:', listError);
+    } else if (existingFiles && existingFiles.length > 0) {
+      console.log('✅ Target file already exists, skipping move');
+      const baseUrl = originalUrl.split(bucketPattern)[0];
+      return `${baseUrl}${bucketPattern}${correctPath}`;
     }
     
     // Copy the file to the new location
+    console.log(`📋 Copying from "${pathAfterPublic}" to "${correctPath}"`);
     const { data: copyData, error: copyError } = await supabase.storage
       .from(bucketName)
-      .copy(originalPath, correctPath);
+      .copy(pathAfterPublic, correctPath);
     
     if (copyError) {
       console.error('❌ Error copying file:', copyError);
-      return originalUrl;
+      
+      // If copy fails, try to create the directory structure first
+      if (copyError.message?.includes('NotFound') || copyError.message?.includes('no such file')) {
+        console.log('🔄 Trying to create directory structure first...');
+        
+        // Create an empty file in the target directory to ensure it exists
+        const dirPath = correctPath.substring(0, correctPath.lastIndexOf('/'));
+        const tempFileName = `${dirPath}/.temp`;
+        
+        const { error: tempError } = await supabase.storage
+          .from(bucketName)
+          .upload(tempFileName, new Blob(['temp']), { upsert: true });
+        
+        if (!tempError) {
+          // Try the copy operation again
+          const { data: retryData, error: retryError } = await supabase.storage
+            .from(bucketName)
+            .copy(pathAfterPublic, correctPath);
+          
+          if (retryError) {
+            console.error('❌ Retry copy also failed:', retryError);
+            return originalUrl;
+          }
+          
+          // Clean up temp file
+          await supabase.storage.from(bucketName).remove([tempFileName]);
+          console.log('✅ File copied successfully after directory creation');
+        } else {
+          console.error('❌ Could not create directory structure:', tempError);
+          return originalUrl;
+        }
+      } else {
+        return originalUrl;
+      }
+    } else {
+      console.log('✅ File copied successfully:', copyData);
     }
-    
-    console.log('✅ File copied successfully:', copyData);
     
     // Delete the original file only if copy was successful
     const { error: deleteError } = await supabase.storage
       .from(bucketName)
-      .remove([originalPath]);
+      .remove([pathAfterPublic]);
     
     if (deleteError) {
       console.warn('⚠️ Could not delete original file (keeping both):', deleteError);
@@ -296,8 +347,8 @@ export async function moveFileToCorrectFolder(
     }
     
     // Construct and return the new URL
-    const baseUrl = originalUrl.split('/storage/v1/object/public/')[0];
-    const newUrl = `${baseUrl}/storage/v1/object/public/${bucketName}/${correctPath}`;
+    const baseUrl = originalUrl.split(bucketPattern)[0];
+    const newUrl = `${baseUrl}${bucketPattern}${correctPath}`;
     
     console.log(`✅ File moved successfully. New URL: ${newUrl}`);
     
