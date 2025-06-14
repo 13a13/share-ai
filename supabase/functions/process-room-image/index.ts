@@ -91,20 +91,52 @@ serve(async (req) => {
     if (reportId) {
       try {
         propertyRoomInfo = await getPropertyAndRoomInfo(reportId, roomId);
-        console.log(`🏠 Retrieved property and room info:`, propertyRoomInfo);
+        console.log(`🏠 Successfully retrieved property and room info:`, propertyRoomInfo);
       } catch (error) {
         console.error('⚠️ Failed to fetch property/room info from database:', error);
         // Continue with processing even if database lookup fails
       }
     }
 
-    // Extract base64 data from each image
-    const imageDataArray = limitedImages.map(imageUrl => {
-      if (imageUrl.startsWith("data:")) {
-        return imageUrl.split(",")[1];
+    // For image processing, we need to convert storage URLs to base64
+    const imageDataArray = [];
+    
+    for (const imageUrl of limitedImages) {
+      try {
+        if (imageUrl.startsWith("data:")) {
+          // Already base64 data URL
+          imageDataArray.push(imageUrl.split(",")[1]);
+        } else if (imageUrl.includes('supabase.co/storage')) {
+          // Fetch the image from Supabase storage and convert to base64
+          console.log(`📥 Fetching image from storage: ${imageUrl}`);
+          const imageResponse = await fetch(imageUrl);
+          if (!imageResponse.ok) {
+            console.error(`❌ Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
+            continue;
+          }
+          const arrayBuffer = await imageResponse.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          imageDataArray.push(base64);
+          console.log(`✅ Successfully converted storage image to base64`);
+        } else {
+          // Assume it's already base64
+          imageDataArray.push(imageUrl);
+        }
+      } catch (error) {
+        console.error(`❌ Error processing image ${imageUrl}:`, error);
+        // Skip this image and continue with others
       }
-      return imageUrl;
-    });
+    }
+
+    if (imageDataArray.length === 0) {
+      console.error('❌ No valid images to process');
+      return new Response(
+        JSON.stringify({ error: "No valid images to process" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`📸 Successfully prepared ${imageDataArray.length} images for AI processing`);
 
     // Determine if we should use advanced analysis
     const shouldUseAdvancedAnalysis = useAdvancedAnalysis && 
@@ -176,14 +208,14 @@ serve(async (req) => {
         console.log(`✅ Enhanced response with property info: ${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}`);
       }
 
-      console.log("Successfully processed images with Gemini");
+      console.log("✅ Successfully processed images with Gemini");
       
       return new Response(
         JSON.stringify(formattedResponse),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (error) {
-      console.error("Error processing with Gemini:", error);
+      console.error("❌ Error processing with Gemini:", error);
       console.log("Returning fallback response");
       
       // Return a fallback response if processing fails
@@ -195,7 +227,7 @@ serve(async (req) => {
       );
     }
   } catch (error) {
-    console.error("Server error:", error);
+    console.error("❌ Server error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error", details: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
