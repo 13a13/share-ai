@@ -16,6 +16,8 @@ const RoomDetailsPhotosTab = ({
   propertyName,
   onImageProcessed
 }: RoomDetailsPhotosTabProps) => {
+  console.log(`📸 RoomDetailsPhotosTab: propertyName="${propertyName}", roomName="${room.name}"`);
+  
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Room Photos</h3>
@@ -43,6 +45,7 @@ const RoomDetailsPhotosTab = ({
         reportId={reportId}
         roomId={room.id}
         propertyName={propertyName}
+        roomName={room.name}
         onImageProcessed={onImageProcessed}
       />
     </div>

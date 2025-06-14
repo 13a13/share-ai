@@ -14,7 +14,22 @@ export const uploadReportImage = async (
   componentName?: string
 ): Promise<string> => {
   try {
-    console.log("🔄 Starting image upload to storage for report:", reportId, "room:", roomId, "property:", propertyName, "roomName:", roomName, "component:", componentName);
+    console.log("🔄 uploadReportImage called with parameters:", {
+      reportId,
+      roomId,
+      propertyName,
+      roomName,
+      componentName,
+      dataUrlLength: dataUrl.length
+    });
+    
+    // Validate input parameters
+    if (!propertyName || propertyName.trim() === '') {
+      console.warn("⚠️ propertyName is empty or undefined in uploadReportImage");
+    }
+    if (!roomName || roomName.trim() === '') {
+      console.warn("⚠️ roomName is empty or undefined in uploadReportImage");
+    }
     
     // Convert data URL to blob
     const blob = await dataUrlToBlob(dataUrl);
@@ -45,7 +60,22 @@ export const uploadMultipleReportImages = async (
   componentName?: string
 ): Promise<string[]> => {
   try {
-    console.log(`🚀 Starting batch upload of ${imageUrls.length} images to user-organized folders: ${propertyName}/${roomName}/${componentName}`);
+    console.log(`🚀 uploadMultipleReportImages called with:`, {
+      imageCount: imageUrls.length,
+      reportId,
+      roomId,
+      propertyName,
+      roomName,
+      componentName
+    });
+    
+    // Validate input parameters
+    if (!propertyName || propertyName.trim() === '') {
+      console.warn("⚠️ propertyName is empty or undefined in uploadMultipleReportImages");
+    }
+    if (!roomName || roomName.trim() === '') {
+      console.warn("⚠️ roomName is empty or undefined in uploadMultipleReportImages");
+    }
     
     // Filter only data URLs that need uploading
     const dataUrls = imageUrls.filter(url => url.startsWith('data:'));
@@ -64,10 +94,10 @@ export const uploadMultipleReportImages = async (
     
     for (let i = 0; i < dataUrls.length; i++) {
       try {
-        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length} to user-organized folder`);
+        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length} to organized folder: ${propertyName}/${roomName}/${componentName}`);
         const uploadedUrl = await uploadReportImage(dataUrls[i], reportId, roomId, propertyName, roomName, componentName);
         uploadedUrls.push(uploadedUrl);
-        console.log(`✅ Image ${i + 1} uploaded successfully to user-organized folder`);
+        console.log(`✅ Image ${i + 1} uploaded successfully to organized folder`);
       } catch (error) {
         console.error(`❌ Failed to upload image ${i + 1}:`, error);
         failedUploads.push(dataUrls[i]);

@@ -7,6 +7,8 @@ interface MultiImageComponentCaptureProps {
   componentId: string;
   componentName: string;
   roomType: string;
+  propertyName?: string;
+  roomName?: string;
   isProcessing: boolean;
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
@@ -22,7 +24,9 @@ interface MultiImageComponentCaptureProps {
 const MultiImageComponentCapture = ({ 
   componentId, 
   componentName,
-  roomType, 
+  roomType,
+  propertyName,
+  roomName,
   isProcessing,
   currentImages,
   onImagesProcessed,
@@ -30,11 +34,15 @@ const MultiImageComponentCapture = ({
   onRemoveImage,
   disabled = false
 }: MultiImageComponentCaptureProps) => {
+  console.log(`🖼️ MultiImageComponentCapture: propertyName="${propertyName}", roomName="${roomName}", componentName="${componentName}"`);
+  
   return (
     <ImageCapture
       componentId={componentId}
       componentName={componentName}
       roomType={roomType}
+      propertyName={propertyName}
+      roomName={roomName}
       isProcessing={isProcessing}
       currentImages={currentImages}
       onImagesProcessed={onImagesProcessed}

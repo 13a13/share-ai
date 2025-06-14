@@ -14,6 +14,8 @@ const ComponentImageCapture = ({
   componentId,
   componentType,
   roomType,
+  propertyName,
+  roomName,
   isProcessing,
   currentImages,
   onImagesProcessed,
@@ -21,11 +23,15 @@ const ComponentImageCapture = ({
   onRemoveImage,
   disabled
 }: ComponentImageCaptureProps) => {
+  console.log(`📷 ComponentImageCapture: propertyName="${propertyName}", roomName="${roomName}", componentType="${componentType}"`);
+  
   return (
     <ImageCapture
       componentId={componentId}
       componentName={componentType}
       roomType={roomType}
+      propertyName={propertyName}
+      roomName={roomName}
       isProcessing={isProcessing}
       currentImages={currentImages}
       onImagesProcessed={onImagesProcessed}
@@ -37,4 +43,3 @@ const ComponentImageCapture = ({
 };
 
 export default ComponentImageCapture;
-
