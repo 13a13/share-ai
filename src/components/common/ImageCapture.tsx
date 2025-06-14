@@ -12,6 +12,8 @@ export interface ImageCaptureProps {
   componentId: string;
   componentName: string;
   roomType: string;
+  propertyName?: string;
+  roomName?: string;
   isProcessing: boolean;
   currentImages: { id: string, url: string, timestamp: Date }[];
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
@@ -25,6 +27,8 @@ const ImageCapture = ({
   componentId,
   componentName,
   roomType,
+  propertyName,
+  roomName,
   isProcessing,
   currentImages,
   onImagesProcessed,
@@ -71,6 +75,8 @@ const ImageCapture = ({
     componentId,
     componentName,
     roomType,
+    propertyName,
+    roomName,
     currentImages,
     onImagesProcessed,
     onProcessingStateChange,

@@ -4,6 +4,8 @@ import ImageCapture, { ImageCaptureProps } from "@/components/common/ImageCaptur
 
 type ComponentImageCaptureProps = Omit<ImageCaptureProps, 'componentName'> & {
   componentType: string;
+  propertyName?: string;
+  roomName?: string;
 }
 
 /**
