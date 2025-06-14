@@ -54,10 +54,6 @@ const ReportEditPage = () => {
   // Ensure report.rooms is always defined
   const hasRooms = report.rooms && report.rooms.length > 0;
   
-  const handleRoomDelete = (roomId: string) => {
-    handleDeleteRoom(roomId);
-  };
-  
   return (
     <div className="shareai-container pb-24 sm:pb-8" data-report-id={report.id}>
       <ReportHeader 
@@ -102,7 +98,7 @@ const ReportEditPage = () => {
                 onNavigateRoom={handleNavigateRoom}
                 onUpdateGeneralCondition={handleUpdateGeneralCondition}
                 onUpdateComponents={handleUpdateComponents}
-                onDeleteRoom={() => handleRoomDelete(room.id)}
+                onDeleteRoom={handleDeleteRoom}
                 isComplete={room.components?.filter(c => !c.isOptional).every(c => 
                   c.description && c.condition && (c.images.length > 0 || c.notes)
                 )}

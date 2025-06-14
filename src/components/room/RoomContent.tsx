@@ -1,17 +1,15 @@
 
-import { useState } from "react";
-import { Room } from "@/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RoomDetailsGeneralTab from "./RoomDetailsGeneralTab";
-import RoomDetailsComponentsTab from "./RoomDetailsComponentsTab";
-import RoomDetailsPhotosTab from "./RoomDetailsPhotosTab";
+import { Textarea } from "@/components/ui/textarea";
+import { Room, RoomComponent } from "@/types";
+import { useRoomComponents } from "@/hooks/useRoomComponents";
+import ComponentList from "./ComponentList";
 
 interface RoomContentProps {
   reportId: string;
   room: Room;
   propertyName?: string;
-  onUpdateGeneralCondition: (roomId: string, condition: string, summary: string) => void;
-  onUpdateComponents: (roomId: string, components: any[]) => void;
+  onUpdateGeneralCondition: (roomId: string, generalCondition: string) => Promise<void>;
+  onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
 }
 
 const RoomContent = ({
@@ -21,59 +19,67 @@ const RoomContent = ({
   onUpdateGeneralCondition,
   onUpdateComponents
 }: RoomContentProps) => {
-  const [activeTab, setActiveTab] = useState("general");
-
-  console.log(`📋 RoomContent for room "${room.name}" in property "${propertyName}"`);
-
-  const handleImageProcessed = (updatedRoom: Room) => {
-    // Handle room image processing if needed
-    console.log("Room image processed:", updatedRoom);
-  };
-
-  const handleGeneralConditionUpdate = async (roomId: string, condition: string) => {
-    // Call the original function with an empty summary since it expects 3 parameters
-    onUpdateGeneralCondition(roomId, condition, "");
-  };
-
-  const handleSaveSection = async (section: any) => {
-    // Handle section saving
-    console.log("Saving section:", section);
-  };
+  // Room components hook
+  const {
+    components,
+    isProcessing,
+    expandedComponents,
+    selectedComponentType,
+    availableComponents,
+    setSelectedComponentType,
+    handleAddComponent,
+    addCustomComponent,
+    handleRemoveComponent,
+    handleUpdateComponent,
+    toggleEditMode,
+    handleRemoveImage,
+    handleImagesProcessed,
+    handleComponentProcessingState,
+    toggleExpandComponent
+  } = useRoomComponents({
+    roomId: room.id,
+    roomType: room.type,
+    propertyName: propertyName,
+    roomName: room.name,
+    initialComponents: room.components || [],
+    onChange: (updatedComponents) => onUpdateComponents(room.id, updatedComponents)
+  });
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="general">General</TabsTrigger>
-        <TabsTrigger value="components">Components</TabsTrigger>
-        <TabsTrigger value="photos">Photos</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="general" className="mt-4">
-        <RoomDetailsGeneralTab
-          room={room}
-          onUpdateGeneralCondition={handleGeneralConditionUpdate}
-          onSaveSection={handleSaveSection}
+    <div 
+      className="px-4 py-3 space-y-4" 
+      data-report-id={reportId}
+      data-room-id={room.id}
+    >
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">General Condition</h3>
+        <Textarea 
+          value={room.generalCondition}
+          onChange={(e) => onUpdateGeneralCondition(room.id, e.target.value)}
+          placeholder="Describe the general condition of the room..."
+          className="min-h-[80px]"
         />
-      </TabsContent>
-
-      <TabsContent value="components" className="mt-4">
-        <RoomDetailsComponentsTab
-          reportId={reportId}
-          room={room}
-          propertyName={propertyName}
-          onUpdateComponents={onUpdateComponents}
-        />
-      </TabsContent>
-
-      <TabsContent value="photos" className="mt-4">
-        <RoomDetailsPhotosTab
-          reportId={reportId}
-          room={room}
-          propertyName={propertyName}
-          onImageProcessed={handleImageProcessed}
-        />
-      </TabsContent>
-    </Tabs>
+      </div>
+      
+      <ComponentList
+        roomType={room.type}
+        components={components}
+        isProcessing={isProcessing}
+        expandedComponents={expandedComponents}
+        selectedComponentType={selectedComponentType}
+        availableComponents={availableComponents}
+        onSelectComponent={setSelectedComponentType}
+        onAddComponent={handleAddComponent}
+        onAddCustomComponent={addCustomComponent}
+        onToggleExpand={toggleExpandComponent}
+        onRemoveComponent={handleRemoveComponent}
+        onToggleEditMode={toggleEditMode}
+        onUpdateComponent={handleUpdateComponent}
+        onRemoveImage={handleRemoveImage}
+        onImageProcessed={handleImagesProcessed}
+        onProcessingStateChange={handleComponentProcessingState}
+      />
+    </div>
   );
 };
 

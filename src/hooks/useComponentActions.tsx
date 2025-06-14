@@ -1,19 +1,19 @@
-
+import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { RoomComponent } from "@/types";
+import { RoomComponent, ConditionRating } from "@/types";
 
 interface UseComponentActionsProps {
-  components: RoomComponent[];
-  setComponents: (components: RoomComponent[]) => void;
+  initialComponents: RoomComponent[];
   onChange: (updatedComponents: RoomComponent[]) => void;
 }
 
 export function useComponentActions({
-  components,
-  setComponents,
+  initialComponents,
   onChange
 }: UseComponentActionsProps) {
   const { toast } = useToast();
+  const [components, setComponents] = useState<RoomComponent[]>(initialComponents);
+  const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
 
   const handleRemoveComponent = (componentId: string) => {
     const component = components.find(c => c.id === componentId);
@@ -30,12 +30,12 @@ export function useComponentActions({
     });
   };
 
-  const handleUpdateComponent = (componentId: string, updates: Partial<RoomComponent>) => {
+  const handleUpdateComponent = (componentId: string, field: string, value: string) => {
     const updatedComponents = components.map(comp => {
       if (comp.id === componentId) {
         return {
           ...comp,
-          ...updates,
+          [field]: value,
         };
       }
       return comp;
@@ -60,9 +60,33 @@ export function useComponentActions({
     onChange(updatedComponents);
   };
 
+  const handleRemoveImage = (componentId: string, imageId: string) => {
+    const updatedComponents = components.map(comp => {
+      if (comp.id === componentId) {
+        return {
+          ...comp,
+          images: comp.images.filter(img => img.id !== imageId),
+        };
+      }
+      return comp;
+    });
+    
+    setComponents(updatedComponents);
+    onChange(updatedComponents);
+  };
+
+  const handleComponentProcessingState = (componentId: string, processing: boolean) => {
+    setIsProcessing((prev) => ({ ...prev, [componentId]: processing }));
+  };
+
   return {
+    components,
+    isProcessing,
     handleRemoveComponent,
     handleUpdateComponent,
-    toggleEditMode
+    toggleEditMode,
+    handleRemoveImage,
+    handleComponentProcessingState,
+    setComponents
   };
 }

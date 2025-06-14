@@ -29,7 +29,7 @@ export function useImageUploadAndProcess({
 }: UseImageUploadAndProcessProps) {
   const MAX_IMAGES = 20;
 
-  console.log(`🔍 useImageUploadAndProcess: Component "${componentName}" in "${propertyName || 'unknown_property'}/${roomName || 'unknown_room'}"`);
+  console.log(`🔍 useImageUploadAndProcess: propertyName="${propertyName}", roomName="${roomName}", componentName="${componentName}"`);
 
   // Use the staging images hook
   const {

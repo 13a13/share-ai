@@ -1,24 +1,33 @@
 
 import { useToast } from "@/components/ui/use-toast";
-import { ConditionRating, RoomComponent } from "@/types";
+import { ConditionRating, RoomComponent, RoomType } from "@/types";
+import { getDefaultComponentsByRoomType } from "@/utils/roomComponentUtils";
 import { v4 as uuidv4 } from "uuid";
 
 interface UseComponentAdditionProps {
-  selectedComponentType: string;
+  roomType: RoomType;
   components: RoomComponent[];
+  expandedComponents: string[];
+  selectedComponentType: string;
   setComponents: (components: RoomComponent[]) => void;
+  setExpandedComponents: (ids: string[]) => void;
   onChange: (updatedComponents: RoomComponent[]) => void;
-  availableComponents: Array<{ name: string; type: string; isOptional: boolean }>;
 }
 
 export function useComponentAddition({
-  selectedComponentType,
+  roomType,
   components,
+  expandedComponents,
+  selectedComponentType,
   setComponents,
-  onChange,
-  availableComponents
+  setExpandedComponents,
+  onChange
 }: UseComponentAdditionProps) {
   const { toast } = useToast();
+
+  const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
+    comp => !components.some(c => c.type === comp.type)
+  );
 
   const handleAddComponent = () => {
     if (!selectedComponentType) {
@@ -33,8 +42,8 @@ export function useComponentAddition({
       const newComponent = availableComponents[0];
       addComponentToRoom(newComponent);
     } else {
-      const componentToAdd = availableComponents.find(
-        comp => comp.name === selectedComponentType
+      const componentToAdd = getDefaultComponentsByRoomType(roomType).find(
+        comp => comp.type === selectedComponentType
       );
       
       if (!componentToAdd) {
@@ -72,16 +81,19 @@ export function useComponentAddition({
     setComponents(updatedComponents);
     onChange(updatedComponents);
     
+    setExpandedComponents([...expandedComponents, newComponentId]);
+    
     toast({
       title: "Component added",
       description: `${componentToAdd.name} has been added to the room inspection.`,
     });
   };
 
-  const addCustomComponent = (name: string) => {
+  // New function to add a custom component
+  const addCustomComponent = (name: string, type: string) => {
     const newComponentId = uuidv4();
     
-    const customType = `custom_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
+    const customType = `custom_${type}_${Date.now()}`;
     
     const updatedComponents = [
       ...components,
@@ -102,6 +114,8 @@ export function useComponentAddition({
     
     setComponents(updatedComponents);
     onChange(updatedComponents);
+    
+    setExpandedComponents([...expandedComponents, newComponentId]);
     
     toast({
       title: "Custom component added",

@@ -1,11 +1,11 @@
 
 import { useState } from "react";
-import { RoomType, RoomComponent } from "@/types";
+import { RoomType } from "@/types";
 import { getDefaultComponentsByRoomType } from "@/utils/roomComponentUtils";
 
 interface UseComponentSelectionProps {
   roomType: RoomType;
-  components: RoomComponent[];
+  components: Array<{ type: string }>;
 }
 
 export function useComponentSelection({ roomType, components }: UseComponentSelectionProps) {

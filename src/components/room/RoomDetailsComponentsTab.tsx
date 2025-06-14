@@ -1,39 +1,33 @@
 
-import RoomComponentInspection from "../RoomComponentInspection";
 import { Room, RoomComponent } from "@/types";
+import RoomComponentInspection from "@/components/RoomComponentInspection";
 
 interface RoomDetailsComponentsTabProps {
   reportId: string;
   room: Room;
-  propertyName?: string;
-  onUpdateComponents: (roomId: string, components: RoomComponent[]) => void;
+  onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
 }
 
 const RoomDetailsComponentsTab = ({
   reportId,
   room,
-  propertyName,
   onUpdateComponents
 }: RoomDetailsComponentsTabProps) => {
-  
-  console.log(`🔧 RoomDetailsComponentsTab for room "${room.name}" in property "${propertyName}"`);
-  
-  const handleComponentsChange = (updatedComponents: RoomComponent[]) => {
+  const handleComponentUpdate = (updatedComponents: RoomComponent[]) => {
     onUpdateComponents(room.id, updatedComponents);
   };
 
   return (
-    <div className="space-y-4">
-      <RoomComponentInspection
-        reportId={reportId}
-        roomId={room.id}
-        roomType={room.type}
-        propertyName={propertyName}
-        roomName={room.name}
-        components={room.components || []}
-        onChange={handleComponentsChange}
-      />
-    </div>
+    <RoomComponentInspection
+      reportId={reportId}
+      roomId={room.id}
+      roomType={room.type}
+      components={(room.components || []).map(comp => ({
+        ...comp,
+        notes: comp.notes,
+      }))}
+      onChange={handleComponentUpdate}
+    />
   );
 };
 

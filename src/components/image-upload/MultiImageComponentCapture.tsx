@@ -34,11 +34,7 @@ const MultiImageComponentCapture = ({
   disabled
 }: MultiImageComponentCaptureProps) => {
   
-  console.log(`🔧 MultiImageComponentCapture for component "${componentName}" with folder structure:`, {
-    propertyName: propertyName || "UNDEFINED",
-    roomName: roomName || "UNDEFINED",
-    componentName
-  });
+  console.log(`🔍 MultiImageComponentCapture props: propertyName="${propertyName}", roomName="${roomName}", componentName="${componentName}"`);
   
   const {
     stagingImages,

@@ -7,8 +7,6 @@ interface RoomComponentInspectionProps {
   reportId: string;
   roomId: string;
   roomType: RoomType;
-  propertyName?: string;
-  roomName?: string;
   components: RoomComponent[];
   onChange: (updatedComponents: RoomComponent[]) => void;
 }
@@ -17,14 +15,9 @@ const RoomComponentInspection = ({
   reportId, 
   roomId, 
   roomType, 
-  propertyName,
-  roomName,
   components, 
   onChange 
 }: RoomComponentInspectionProps) => {
-  
-  console.log(`🔧 RoomComponentInspection for room "${roomName}" in property "${propertyName}"`);
-  
   // Use the custom hook to manage all room component state and logic
   const {
     components: roomComponents,
@@ -45,8 +38,6 @@ const RoomComponentInspection = ({
   } = useRoomComponents({
     roomId,
     roomType,
-    propertyName,
-    roomName,
     initialComponents: components,
     onChange
   });
@@ -54,8 +45,6 @@ const RoomComponentInspection = ({
   return (
     <ComponentList
       roomType={roomType}
-      propertyName={propertyName}
-      roomName={roomName}
       components={roomComponents}
       isProcessing={isProcessing}
       expandedComponents={expandedComponents}
