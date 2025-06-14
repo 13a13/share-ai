@@ -42,6 +42,16 @@ const UnifiedRoomView = ({
     console.log("Room image processed:", updatedRoom);
   };
 
+  // Convert the direction-based navigation to index-based for RoomHeader
+  const handleRoomNavigation = (index: number) => {
+    const currentIndex = roomIndex;
+    if (index < currentIndex) {
+      onNavigateRoom('prev');
+    } else if (index > currentIndex) {
+      onNavigateRoom('next');
+    }
+  };
+
   return (
     <Card className="w-full">
       <RoomHeader
@@ -49,7 +59,7 @@ const UnifiedRoomView = ({
         roomIndex={roomIndex}
         totalRooms={totalRooms}
         isComplete={isComplete}
-        onNavigateRoom={onNavigateRoom}
+        onNavigateRoom={handleRoomNavigation}
         onDeleteRoom={() => onDeleteRoom(room.id)}
       />
       
