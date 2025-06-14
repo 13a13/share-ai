@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
 import { uploadMultipleReportImages, checkStorageBucket } from "@/utils/supabaseStorage";
@@ -40,7 +41,6 @@ export function useImageAnalysis({
     async function fetchNamesIfNeeded() {
       if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && supabase) {
         try {
-          // Try to get from current DOM context
           const roomElement = document.querySelector('[data-room-id]');
           const roomId = roomElement?.getAttribute('data-room-id');
           if (roomId) {
@@ -49,9 +49,9 @@ export function useImageAnalysis({
               .select('id, name, property_id, properties(name)')
               .eq('id', roomId)
               .maybeSingle();
-            if (data) {
-              setRoomName(data.name ?? "");
-              setPropertyName(data.properties?.name ?? "");
+            if (data && !error) {
+              setRoomName((data as any).name ?? "");
+              setPropertyName((data as any).properties?.name ?? "");
             }
           }
         } catch (err) {}

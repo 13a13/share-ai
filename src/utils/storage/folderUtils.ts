@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { getUserFullName } from './userUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,9 +25,9 @@ async function resolveNamesIfMissing(reportId: string, roomId: string, propertyN
         .select('id, name, property_id, properties(name)')
         .eq('id', roomId)
         .maybeSingle();
-      if (data) {
-        if (!room) room = data.name ?? "room";
-        if (!prop && data.properties) prop = data.properties.name ?? "property";
+      if (data && !error) {
+        if (!room) room = (data as any).name ?? "room";
+        if (!prop && (data as any).properties) prop = (data as any).properties.name ?? "property";
       }
     } catch (err) {}
   }

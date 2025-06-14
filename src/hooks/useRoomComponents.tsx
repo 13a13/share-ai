@@ -1,8 +1,11 @@
+
 import { RoomComponent } from "@/types";
 import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 import { useComponentState } from "./useComponentState";
 import { useComponentOperations } from "./useComponentOperations";
 import { useComponentImageHandling } from "./useComponentImageHandling";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UseRoomComponentsProps {
   roomId: string;
@@ -47,28 +50,26 @@ export function useRoomComponents({
   initialComponents,
   onChange
 }: UseRoomComponentsProps): UseRoomComponentsReturn {
-  // --------- NEW: fetch real property/room name if missing ---------
   const [propertyName, setPropertyName] = useState(initialPropertyName ?? "");
   const [roomName, setRoomName] = useState(initialRoomName ?? "");
 
   useEffect(() => {
     async function fetchNamesIfNeeded() {
-      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && window.supabase) {
-        try {
-          const { data, error } = await window.supabase
-            .from('rooms')
-            .select('id, name, property_id, properties(name)')
-            .eq('id', roomId)
-            .maybeSingle();
-          if (data) {
-            setRoomName(data.name ?? "");
-            setPropertyName(data.properties?.name ?? "");
-          }
-        } catch (err) { /* ignore */ }
+      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && roomId && supabase) {
+        const { data, error } = await supabase
+          .from('rooms')
+          .select('id, name, property_id, properties(name)')
+          .eq('id', roomId)
+          .maybeSingle();
+        if (data && !error) {
+          setRoomName((data as any).name ?? "");
+          setPropertyName((data as any).properties?.name ?? "");
+        }
       }
     }
     fetchNamesIfNeeded();
-  }, [roomId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, propertyName, roomName]);
 
   // Get available components for the room type
   const availableComponents = ROOM_COMPONENT_CONFIGS[roomType as keyof typeof ROOM_COMPONENT_CONFIGS] || [];
@@ -106,7 +107,7 @@ export function useRoomComponents({
     setSelectedComponentType
   });
 
-  // Image handling operations
+  // Image handling operations: pass roomId for context
   const {
     handleRemoveImage,
     handleImagesProcessed
@@ -117,7 +118,8 @@ export function useRoomComponents({
     setExpandedComponents,
     onChange,
     propertyName,
-    roomName
+    roomName,
+    roomId
   });
 
   return {

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
@@ -40,9 +41,9 @@ export const useRoomImageUpload = ({
             .select('id, name, property_id, properties(name)')
             .eq('id', roomId)
             .maybeSingle();
-          if (data) {
-            setRoomName(data.name ?? "");
-            setPropertyName(data.properties?.name ?? "");
+          if (data && !error) {
+            setRoomName((data as any).name ?? "");
+            setPropertyName((data as any).properties?.name ?? "");
           }
         } catch (err) {}
       }

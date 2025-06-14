@@ -1,7 +1,9 @@
+
 import { RoomComponent } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { useComponentImageProcessing } from "./useComponentImageProcessing";
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UseComponentImageHandlingProps {
   components: RoomComponent[];
@@ -11,6 +13,8 @@ interface UseComponentImageHandlingProps {
   onChange: (updatedComponents: RoomComponent[]) => void;
   propertyName?: string;
   roomName?: string;
+  // Pass roomId to allow resolving missing names:
+  roomId?: string;
 }
 
 interface UseComponentImageHandlingReturn {
@@ -25,38 +29,32 @@ export function useComponentImageHandling({
   setExpandedComponents,
   onChange,
   propertyName: propName,
-  roomName: rmName
+  roomName: rmName,
+  roomId
 }: UseComponentImageHandlingProps): UseComponentImageHandlingReturn {
   const { toast } = useToast();
 
-  // Ensure actual property and room names (to pass to image handling hooks)
   const [propertyName, setPropertyName] = useState(propName ?? "");
   const [roomName, setRoomName] = useState(rmName ?? "");
 
   useEffect(() => {
     async function fetchNamesIfNeeded() {
-      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && window.supabase) {
-        const componentWithRoomId = components[0];
-        if (componentWithRoomId && (componentWithRoomId.roomId || componentWithRoomId.id)) {
-          const roomIdToFetch = componentWithRoomId.roomId || componentWithRoomId.id;
-          try {
-            const { data, error } = await window.supabase
-              .from('rooms')
-              .select('id, name, property_id, properties(name)')
-              .eq('id', roomIdToFetch)
-              .maybeSingle();
-            if (data) {
-              setRoomName(data.name ?? "");
-              setPropertyName(data.properties?.name ?? "");
-            }
-          } catch (err) {}
+      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && roomId && supabase) {
+        const { data, error } = await supabase
+          .from('rooms')
+          .select('id, name, property_id, properties(name)')
+          .eq('id', roomId)
+          .maybeSingle();
+        if (data && !error) {
+          setRoomName((data as any).name ?? "");
+          setPropertyName((data as any).properties?.name ?? "");
         }
       }
     }
     fetchNamesIfNeeded();
-  }, [propertyName, roomName, components]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyName, roomName, roomId]);
 
-  // Use the image processing hook
   const { handleImagesProcessed } = useComponentImageProcessing({
     components,
     expandedComponents,
@@ -83,7 +81,6 @@ export function useComponentImageHandling({
     });
   };
 
-  // Modified handleImagesProcessed to include property and room names
   const handleImagesProcessedWithContext = (componentId: string, imageUrls: string[], result: any) => {
     console.log(`🖼️ Images processed for component ${componentId} in property: ${propertyName}, room: ${roomName}`);
     handleImagesProcessed(componentId, imageUrls, result);
