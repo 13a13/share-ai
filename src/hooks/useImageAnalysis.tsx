@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
 import { uploadMultipleReportImages, checkStorageBucket } from "@/utils/supabaseStorage";
 import { useUltraFastBatchSaving } from "./useUltraFastBatchSaving";
 import { RoomImageAPI } from "@/lib/api/reports/roomImageApi";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UseImageAnalysisProps {
   componentId: string;
@@ -21,8 +21,8 @@ export function useImageAnalysis({
   componentId,
   componentName,
   roomType,
-  propertyName,
-  roomName,
+  propertyName: initialPropName,
+  roomName: initialRmName,
   onImagesProcessed,
   onProcessingStateChange,
   processComponentImage
@@ -31,9 +31,40 @@ export function useImageAnalysis({
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
   const { queueComponentUpdate, isSaving, getPendingCount } = useUltraFastBatchSaving();
 
+  // Ensure actual property, room name available for upload
+  const [propertyName, setPropertyName] = useState(initialPropName ?? "");
+  const [roomName, setRoomName] = useState(initialRmName ?? "");
+  const [namesLoaded, setNamesLoaded] = useState(false);
+
+  useEffect(() => {
+    async function fetchNamesIfNeeded() {
+      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && supabase) {
+        try {
+          // Try to get from current DOM context
+          const roomElement = document.querySelector('[data-room-id]');
+          const roomId = roomElement?.getAttribute('data-room-id');
+          if (roomId) {
+            const { data, error } = await supabase
+              .from('rooms')
+              .select('id, name, property_id, properties(name)')
+              .eq('id', roomId)
+              .maybeSingle();
+            if (data) {
+              setRoomName(data.name ?? "");
+              setPropertyName(data.properties?.name ?? "");
+            }
+          }
+        } catch (err) {}
+      }
+      setNamesLoaded(true);
+    }
+    fetchNamesIfNeeded();
+  }, [initialPropName, initialRmName, propertyName, roomName]);
+
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
-    
+    if (!namesLoaded) return false;
+
     console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${propertyName}, room: ${roomName}`);
     
     onProcessingStateChange(componentId, true);

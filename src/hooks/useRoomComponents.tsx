@@ -1,4 +1,3 @@
-
 import { RoomComponent } from "@/types";
 import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 import { useComponentState } from "./useComponentState";
@@ -43,11 +42,34 @@ interface UseRoomComponentsReturn {
 export function useRoomComponents({
   roomId,
   roomType,
-  propertyName,
-  roomName,
+  propertyName: initialPropertyName,
+  roomName: initialRoomName,
   initialComponents,
   onChange
 }: UseRoomComponentsProps): UseRoomComponentsReturn {
+  // --------- NEW: fetch real property/room name if missing ---------
+  const [propertyName, setPropertyName] = useState(initialPropertyName ?? "");
+  const [roomName, setRoomName] = useState(initialRoomName ?? "");
+
+  useEffect(() => {
+    async function fetchNamesIfNeeded() {
+      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && window.supabase) {
+        try {
+          const { data, error } = await window.supabase
+            .from('rooms')
+            .select('id, name, property_id, properties(name)')
+            .eq('id', roomId)
+            .maybeSingle();
+          if (data) {
+            setRoomName(data.name ?? "");
+            setPropertyName(data.properties?.name ?? "");
+          }
+        } catch (err) { /* ignore */ }
+      }
+    }
+    fetchNamesIfNeeded();
+  }, [roomId]);
+
   // Get available components for the room type
   const availableComponents = ROOM_COMPONENT_CONFIGS[roomType as keyof typeof ROOM_COMPONENT_CONFIGS] || [];
 

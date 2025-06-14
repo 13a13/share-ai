@@ -1,10 +1,10 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
 import { Room } from "@/types";
 import { compressImageFile } from "@/utils/imageCompression";
 import { uploadReportImage, checkStorageBucket } from "@/utils/supabaseStorage";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UseRoomImageUploadProps {
   reportId: string;
@@ -17,8 +17,8 @@ interface UseRoomImageUploadProps {
 export const useRoomImageUpload = ({ 
   reportId, 
   roomId, 
-  propertyName,
-  roomName,
+  propertyName: propName,
+  roomName: rmName,
   onImageProcessed 
 }: UseRoomImageUploadProps) => {
   const { toast } = useToast();
@@ -26,6 +26,29 @@ export const useRoomImageUpload = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
+
+  // --- NEW: Fetch real property/room name if blank
+  const [propertyName, setPropertyName] = useState(propName ?? "");
+  const [roomName, setRoomName] = useState(rmName ?? "");
+
+  useEffect(() => {
+    async function fetchNamesIfNeeded() {
+      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && supabase && roomId) {
+        try {
+          const { data, error } = await supabase
+            .from('rooms')
+            .select('id, name, property_id, properties(name)')
+            .eq('id', roomId)
+            .maybeSingle();
+          if (data) {
+            setRoomName(data.name ?? "");
+            setPropertyName(data.properties?.name ?? "");
+          }
+        } catch (err) {}
+      }
+    }
+    fetchNamesIfNeeded();
+  }, [roomId, propertyName, roomName]);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -84,7 +107,17 @@ export const useRoomImageUpload = ({
   
   const processImage = async (imageUrl: string) => {
     try {
-      console.log("Processing and uploading image for room:", roomId, "in report:", reportId, "property:", propertyName, "roomName:", roomName);
+      // ------------- MAIN UPLOAD: make sure property/room names are NOT blank -------------
+      let propNameFinal = propertyName && propertyName.trim() !== "" ? propertyName : "unknown_property";
+      let roomNameFinal = roomName && roomName.trim() !== "" ? roomName : "unknown_room";
+      if ((!propertyName || propertyName.trim() === "") && propName && propName.trim() !== "") {
+        propNameFinal = propName;
+      }
+      if ((!roomName || roomName.trim() === "") && rmName && rmName.trim() !== "") {
+        roomNameFinal = rmName;
+      }
+
+      console.log("Processing and uploading image for room:", roomId, "in report:", reportId, "property:", propNameFinal, "roomName:", roomNameFinal);
       
       // Check if storage bucket is available
       const storageAvailable = await checkStorageBucket();
@@ -93,7 +126,7 @@ export const useRoomImageUpload = ({
       if (storageAvailable) {
         try {
           // Upload to Supabase Storage with user-organized folder structure (user/property/room/general for room photos)
-          finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId, propertyName, roomName, 'general');
+          finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId, propNameFinal, roomNameFinal, 'general');
           console.log("✅ Image uploaded to user-organized folder successfully:", finalImageUrl);
         } catch (storageError) {
           console.warn("⚠️ Storage upload failed, using original URL:", storageError);

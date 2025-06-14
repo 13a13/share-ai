@@ -1,7 +1,7 @@
-
 import { RoomComponent } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { useComponentImageProcessing } from "./useComponentImageProcessing";
+import { useState, useEffect } from "react";
 
 interface UseComponentImageHandlingProps {
   components: RoomComponent[];
@@ -24,10 +24,37 @@ export function useComponentImageHandling({
   expandedComponents,
   setExpandedComponents,
   onChange,
-  propertyName,
-  roomName
+  propertyName: propName,
+  roomName: rmName
 }: UseComponentImageHandlingProps): UseComponentImageHandlingReturn {
   const { toast } = useToast();
+
+  // Ensure actual property and room names (to pass to image handling hooks)
+  const [propertyName, setPropertyName] = useState(propName ?? "");
+  const [roomName, setRoomName] = useState(rmName ?? "");
+
+  useEffect(() => {
+    async function fetchNamesIfNeeded() {
+      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && window.supabase) {
+        const componentWithRoomId = components[0];
+        if (componentWithRoomId && (componentWithRoomId.roomId || componentWithRoomId.id)) {
+          const roomIdToFetch = componentWithRoomId.roomId || componentWithRoomId.id;
+          try {
+            const { data, error } = await window.supabase
+              .from('rooms')
+              .select('id, name, property_id, properties(name)')
+              .eq('id', roomIdToFetch)
+              .maybeSingle();
+            if (data) {
+              setRoomName(data.name ?? "");
+              setPropertyName(data.properties?.name ?? "");
+            }
+          } catch (err) {}
+        }
+      }
+    }
+    fetchNamesIfNeeded();
+  }, [propertyName, roomName, components]);
 
   // Use the image processing hook
   const { handleImagesProcessed } = useComponentImageProcessing({
