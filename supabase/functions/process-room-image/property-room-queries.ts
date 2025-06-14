@@ -94,7 +94,7 @@ export async function getPropertyAndRoomInfo(reportId: string, roomId?: string):
       }
     }
 
-    // Smart logic: prefer .name, fallback to .type, else unknown
+    // Smart logic: prefer .name, fallback to .type, else "room"
     let roomName: string|null = null;
     if (roomData.name && roomData.name.trim() !== "") {
       roomName = roomData.name;
@@ -102,11 +102,11 @@ export async function getPropertyAndRoomInfo(reportId: string, roomId?: string):
       roomName = roomData.type;
       console.warn(`⚠️ Room name missing; falling back to type: "${roomData.type}"`);
     } else {
-      roomName = "unknown_room";
-      console.warn(`⚠️ No name or type found for room id: ${actualRoomId}`);
+      roomName = "room";
+      console.warn(`⚠️ No name or type found for room id: ${actualRoomId}; defaulting to "room"`);
     }
 
-    let roomType: string = (roomData.type && roomData.type.trim() !== "") ? roomData.type : 'unknown_room';
+    let roomType: string = (roomData.type && roomData.type.trim() !== "") ? roomData.type : 'room';
 
     // Step 3: Get user account name
     const userAccountName = await getUserAccountName();
