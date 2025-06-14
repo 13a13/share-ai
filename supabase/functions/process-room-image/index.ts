@@ -20,7 +20,11 @@ import {
   parseAdvancedAnalysisResponse,
   formatAdvancedResponse
 } from "./advanced-analysis.ts";
-import { getPropertyAndRoomInfo } from "./database-utils.ts";
+import { 
+  getPropertyAndRoomInfo, 
+  getCorrectStoragePath, 
+  moveFileToCorrectFolder 
+} from "./database-utils.ts";
 
 // Use the provided API key directly
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -98,29 +102,53 @@ serve(async (req) => {
       }
     }
 
-    // For image processing, we need to convert storage URLs to base64
-    const imageDataArray = [];
+    // Process each image URL to fix folder structure and convert to base64
+    const processedImages = [];
+    const correctedImageUrls = [];
     
     for (const imageUrl of limitedImages) {
       try {
-        if (imageUrl.startsWith("data:")) {
+        let finalImageUrl = imageUrl;
+        
+        // Fix folder structure if we have property/room info and this is a storage URL
+        if (propertyRoomInfo && imageUrl.includes('supabase.co/storage') && reportId) {
+          console.log(`📂 Fixing folder structure for image: ${imageUrl}`);
+          
+          // Check if the URL contains 'unknown_property' or 'unknown_room'
+          if (imageUrl.includes('unknown_property') || imageUrl.includes('unknown_room')) {
+            try {
+              const correctPath = await getCorrectStoragePath(imageUrl, reportId, roomId);
+              const newUrl = await moveFileToCorrectFolder(imageUrl, correctPath);
+              finalImageUrl = newUrl;
+              console.log(`✅ Folder structure corrected: ${imageUrl} → ${finalImageUrl}`);
+            } catch (moveError) {
+              console.error('⚠️ Could not fix folder structure, using original URL:', moveError);
+              // Continue with original URL if moving fails
+            }
+          }
+        }
+        
+        correctedImageUrls.push(finalImageUrl);
+        
+        // Convert to base64 for AI processing
+        if (finalImageUrl.startsWith("data:")) {
           // Already base64 data URL
-          imageDataArray.push(imageUrl.split(",")[1]);
-        } else if (imageUrl.includes('supabase.co/storage')) {
+          processedImages.push(finalImageUrl.split(",")[1]);
+        } else if (finalImageUrl.includes('supabase.co/storage')) {
           // Fetch the image from Supabase storage and convert to base64
-          console.log(`📥 Fetching image from storage: ${imageUrl}`);
-          const imageResponse = await fetch(imageUrl);
+          console.log(`📥 Fetching image from storage: ${finalImageUrl}`);
+          const imageResponse = await fetch(finalImageUrl);
           if (!imageResponse.ok) {
             console.error(`❌ Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
             continue;
           }
           const arrayBuffer = await imageResponse.arrayBuffer();
           const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-          imageDataArray.push(base64);
+          processedImages.push(base64);
           console.log(`✅ Successfully converted storage image to base64`);
         } else {
           // Assume it's already base64
-          imageDataArray.push(imageUrl);
+          processedImages.push(finalImageUrl);
         }
       } catch (error) {
         console.error(`❌ Error processing image ${imageUrl}:`, error);
@@ -128,7 +156,7 @@ serve(async (req) => {
       }
     }
 
-    if (imageDataArray.length === 0) {
+    if (processedImages.length === 0) {
       console.error('❌ No valid images to process');
       return new Response(
         JSON.stringify({ error: "No valid images to process" }),
@@ -136,7 +164,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`📸 Successfully prepared ${imageDataArray.length} images for AI processing`);
+    console.log(`📸 Successfully prepared ${processedImages.length} images for AI processing`);
 
     // Determine if we should use advanced analysis
     const shouldUseAdvancedAnalysis = useAdvancedAnalysis && 
@@ -161,7 +189,7 @@ serve(async (req) => {
     }
     
     // Create and send request to Gemini API with all images
-    const geminiRequest = createGeminiRequest(promptText, imageDataArray, shouldUseAdvancedAnalysis);
+    const geminiRequest = createGeminiRequest(promptText, processedImages, shouldUseAdvancedAnalysis);
     
     try {
       // Call Gemini API and get the text response
@@ -208,7 +236,13 @@ serve(async (req) => {
         console.log(`✅ Enhanced response with property info: ${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}`);
       }
 
-      console.log("✅ Successfully processed images with Gemini");
+      // Add corrected image URLs to response if any were changed
+      if (correctedImageUrls.length > 0) {
+        formattedResponse.correctedImageUrls = correctedImageUrls;
+        console.log(`📂 Folder structure corrections applied to ${correctedImageUrls.length} images`);
+      }
+
+      console.log("✅ Successfully processed images with Gemini and corrected folder structure");
       
       return new Response(
         JSON.stringify(formattedResponse),
