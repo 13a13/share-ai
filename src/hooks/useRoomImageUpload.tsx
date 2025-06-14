@@ -84,7 +84,12 @@ export const useRoomImageUpload = ({
   
   const processImage = async (imageUrl: string) => {
     try {
-      console.log("Processing and uploading image for room:", roomId, "in report:", reportId, "property:", propertyName, "roomName:", roomName);
+      console.log(`🚀 Processing and uploading room image for:`, {
+        reportId,
+        roomId,
+        propertyName: propertyName || "NO_PROPERTY_NAME",
+        roomName: roomName || "NO_ROOM_NAME"
+      });
       
       // Check if storage bucket is available
       const storageAvailable = await checkStorageBucket();
@@ -92,9 +97,17 @@ export const useRoomImageUpload = ({
       
       if (storageAvailable) {
         try {
-          // Upload to Supabase Storage with user-organized folder structure (user/property/room/general for room photos)
-          finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId, propertyName, roomName, 'general');
-          console.log("✅ Image uploaded to user-organized folder successfully:", finalImageUrl);
+          // Upload to Supabase Storage with user-organized folder structure
+          // Use 'room_photos' as component name for room-level photos
+          finalImageUrl = await uploadReportImage(
+            imageUrl, 
+            reportId, 
+            roomId, 
+            propertyName || "unknown_property", 
+            roomName || "unknown_room", 
+            'room_photos'
+          );
+          console.log("✅ Room image uploaded to organized folder successfully:", finalImageUrl);
         } catch (storageError) {
           console.warn("⚠️ Storage upload failed, using original URL:", storageError);
           finalImageUrl = imageUrl;
@@ -111,7 +124,7 @@ export const useRoomImageUpload = ({
         setUploadedImage(finalImageUrl);
         
         const storageStatus = storageAvailable && finalImageUrl !== imageUrl ? 
-          `uploaded to user's account folder in Supabase Storage` : "saved locally";
+          `uploaded to ${propertyName || 'unknown_property'}/${roomName || 'unknown_room'}/room_photos folder` : "saved locally";
         
         toast({
           title: "Image uploaded",
@@ -121,7 +134,7 @@ export const useRoomImageUpload = ({
       
       setIsUploading(false);
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error("Error uploading room image:", error);
       toast({
         title: "Upload failed",
         description: "There was a problem processing your image",

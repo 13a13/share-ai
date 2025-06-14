@@ -19,6 +19,13 @@ const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImagePr
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   
+  console.log(`🏠 RoomImageUploader props received:`, {
+    reportId,
+    roomId,
+    propertyName: propertyName || "UNDEFINED",
+    roomName: roomName || "UNDEFINED"
+  });
+  
   const {
     isUploading,
     isProcessing,
@@ -30,8 +37,8 @@ const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImagePr
   } = useRoomImageUpload({
     reportId,
     roomId,
-    propertyName,
-    roomName,
+    propertyName: propertyName || undefined,
+    roomName: roomName || undefined,
     onImageProcessed
   });
   

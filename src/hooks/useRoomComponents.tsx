@@ -1,96 +1,83 @@
 
-import { RoomComponent } from "@/types";
-import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
-import { useComponentState } from "./useComponentState";
-import { useComponentOperations } from "./useComponentOperations";
+import { useState, useEffect } from "react";
+import { RoomType, RoomComponent } from "@/types";
+import { useComponentSelection } from "./useComponentSelection";
+import { useComponentAddition } from "./useComponentAddition";
+import { useComponentExpansion } from "./useComponentExpansion";
+import { useComponentActions } from "./useComponentActions";
 import { useComponentImageHandling } from "./useComponentImageHandling";
 
 interface UseRoomComponentsProps {
   roomId: string;
-  roomType: string;
+  roomType: RoomType;
   propertyName?: string;
   roomName?: string;
   initialComponents: RoomComponent[];
   onChange: (updatedComponents: RoomComponent[]) => void;
 }
 
-interface ComponentConfig {
-  name: string;
-  type: string;
-  isOptional?: boolean;
-}
-
-interface UseRoomComponentsReturn {
-  components: RoomComponent[];
-  isProcessing: { [key: string]: boolean };
-  expandedComponents: string[];
-  selectedComponentType: string;
-  availableComponents: ComponentConfig[];
-  propertyName?: string;
-  roomName?: string;
-  setSelectedComponentType: React.Dispatch<React.SetStateAction<string>>;
-  handleAddComponent: () => void;
-  addCustomComponent: (name: string) => void;
-  handleRemoveComponent: (componentId: string) => void;
-  handleUpdateComponent: (componentId: string, updates: Partial<RoomComponent>) => void;
-  toggleEditMode: (componentId: string) => void;
-  handleRemoveImage: (componentId: string, imageId: string) => void;
-  handleImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
-  handleComponentProcessingState: (componentId: string, isProcessing: boolean) => void;
-  toggleExpandComponent: (componentId: string) => void;
-}
-
-export function useRoomComponents({
+export const useRoomComponents = ({
   roomId,
   roomType,
   propertyName,
   roomName,
   initialComponents,
   onChange
-}: UseRoomComponentsProps): UseRoomComponentsReturn {
-  // Get available components for the room type
-  const availableComponents = ROOM_COMPONENT_CONFIGS[roomType as keyof typeof ROOM_COMPONENT_CONFIGS] || [];
+}: UseRoomComponentsProps) => {
+  const [components, setComponents] = useState<RoomComponent[]>(initialComponents);
+  const [isProcessing, setIsProcessing] = useState<Record<string, boolean>>({});
 
-  // Component state management
+  console.log(`🏗️ useRoomComponents for room "${roomName}" in property "${propertyName}" with ${components.length} components`);
+
+  // Update components when initialComponents change
+  useEffect(() => {
+    setComponents(initialComponents);
+  }, [initialComponents]);
+
+  // Component selection logic
   const {
-    components,
-    updateComponents,
-    isProcessing,
-    expandedComponents,
-    setExpandedComponents,
     selectedComponentType,
-    setSelectedComponentType,
-    handleComponentProcessingState,
-    toggleExpandComponent
-  } = useComponentState({
-    initialComponents,
+    availableComponents,
+    setSelectedComponentType
+  } = useComponentSelection({ roomType });
+
+  // Component addition logic
+  const {
+    handleAddComponent,
+    addCustomComponent
+  } = useComponentAddition({
+    selectedComponentType,
+    roomId,
+    components,
+    setComponents,
     onChange
   });
 
-  // Component CRUD operations
+  // Component expansion logic
   const {
-    handleAddComponent,
-    addCustomComponent,
+    expandedComponents,
+    setExpandedComponents,
+    toggleExpandComponent
+  } = useComponentExpansion();
+
+  // Component actions (edit, remove, update)
+  const {
     handleRemoveComponent,
     handleUpdateComponent,
     toggleEditMode
-  } = useComponentOperations({
+  } = useComponentActions({
     components,
-    updateComponents,
-    expandedComponents,
-    setExpandedComponents,
-    availableComponents,
-    selectedComponentType,
-    setSelectedComponentType
+    setComponents,
+    onChange
   });
 
-  // Image handling operations
+  // Component image handling with property and room names
   const {
     handleRemoveImage,
     handleImagesProcessed
   } = useComponentImageHandling({
     components,
-    updateComponents,
+    updateComponents: setComponents,
     expandedComponents,
     setExpandedComponents,
     onChange,
@@ -98,14 +85,25 @@ export function useRoomComponents({
     roomName
   });
 
+  // Handle component processing state
+  const handleComponentProcessingState = (componentId: string, processing: boolean) => {
+    setIsProcessing(prev => ({
+      ...prev,
+      [componentId]: processing
+    }));
+  };
+
+  // Update parent component when components change
+  useEffect(() => {
+    onChange(components);
+  }, [components, onChange]);
+
   return {
     components,
     isProcessing,
     expandedComponents,
     selectedComponentType,
     availableComponents,
-    propertyName,
-    roomName,
     setSelectedComponentType,
     handleAddComponent,
     addCustomComponent,
@@ -117,4 +115,4 @@ export function useRoomComponents({
     handleComponentProcessingState,
     toggleExpandComponent
   };
-}
+};

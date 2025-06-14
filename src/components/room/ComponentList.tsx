@@ -1,17 +1,18 @@
 
-import { RoomComponent } from "@/types";
-import ComponentItem from "./ComponentItem";
+import { RoomType, RoomComponent } from "@/types";
 import ComponentSelector from "./ComponentSelector";
+import ComponentItem from "./ComponentItem";
 import AddCustomComponent from "./AddCustomComponent";
-import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 
 interface ComponentListProps {
-  roomType: string;
+  roomType: RoomType;
+  propertyName?: string;
+  roomName?: string;
   components: RoomComponent[];
-  isProcessing: { [key: string]: boolean };
+  isProcessing: Record<string, boolean>;
   expandedComponents: string[];
   selectedComponentType: string;
-  availableComponents: any[];
+  availableComponents: string[];
   onSelectComponent: (type: string) => void;
   onAddComponent: () => void;
   onAddCustomComponent: (name: string) => void;
@@ -26,6 +27,8 @@ interface ComponentListProps {
 
 const ComponentList = ({
   roomType,
+  propertyName,
+  roomName,
   components,
   isProcessing,
   expandedComponents,
@@ -43,59 +46,41 @@ const ComponentList = ({
   onProcessingStateChange
 }: ComponentListProps) => {
   
-  // Get property name and room name from the DOM
-  const reportElement = document.querySelector('[data-report-id]');
-  const roomElement = document.querySelector('[data-room-id]');
-  const propertyName = reportElement?.getAttribute('data-property-name') || undefined;
-  const roomName = roomElement?.getAttribute('data-room-name') || undefined;
-
-  // Get room components that are already added
-  const addedComponentNames = components.map(c => c.name);
+  console.log(`📋 ComponentList for room "${roomName}" in property "${propertyName}" with ${components.length} components`);
   
-  // Filter available components to show only those not added yet
-  const availableToAdd = availableComponents.filter(
-    comp => !addedComponentNames.includes(comp.name)
-  );
-
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium">Components</h3>
-        
-        {/* Component list */}
-        <div className="space-y-3">
-          {components.map((component) => (
-            <ComponentItem
-              key={component.id}
-              component={component}
-              roomType={roomType}
-              propertyName={propertyName}
-              roomName={roomName}
-              isExpanded={expandedComponents.includes(component.id)}
-              isProcessing={isProcessing[component.id] || false}
-              onToggleExpand={() => onToggleExpand(component.id)}
-              onRemove={() => onRemoveComponent(component.id)}
-              onToggleEditMode={() => onToggleEditMode(component.id)}
-              onUpdate={(updates) => onUpdateComponent(component.id, updates)}
-              onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
-              onImageProcessed={(imageUrls, result) => onImageProcessed(component.id, imageUrls, result)}
-              onProcessingStateChange={(isProcessing) => onProcessingStateChange(component.id, isProcessing)}
-            />
-          ))}
-        </div>
-        
-        {/* Add new components */}
-        {availableToAdd.length > 0 && (
-          <ComponentSelector
-            availableComponents={availableToAdd}
-            selectedComponentType={selectedComponentType}
-            onSelectComponent={onSelectComponent}
-            onAddComponent={onAddComponent}
+      {/* Component Selector */}
+      <ComponentSelector
+        selectedType={selectedComponentType}
+        availableComponents={availableComponents}
+        onSelectComponent={onSelectComponent}
+        onAddComponent={onAddComponent}
+      />
+
+      {/* Add Custom Component */}
+      <AddCustomComponent onAddCustomComponent={onAddCustomComponent} />
+
+      {/* Component List */}
+      <div className="space-y-4">
+        {components.map((component) => (
+          <ComponentItem
+            key={component.id}
+            component={component}
+            roomType={roomType}
+            propertyName={propertyName}
+            roomName={roomName}
+            isExpanded={expandedComponents.includes(component.id)}
+            isProcessing={isProcessing[component.id] || false}
+            onToggleExpand={onToggleExpand}
+            onRemoveComponent={onRemoveComponent}
+            onToggleEditMode={onToggleEditMode}
+            onUpdateComponent={onUpdateComponent}
+            onRemoveImage={onRemoveImage}
+            onImageProcessed={onImageProcessed}
+            onProcessingStateChange={onProcessingStateChange}
           />
-        )}
-        
-        {/* Add custom component */}
-        <AddCustomComponent onAddComponent={onAddCustomComponent} />
+        ))}
       </div>
     </div>
   );
