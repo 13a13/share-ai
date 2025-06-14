@@ -40,6 +40,8 @@ const ReportEditPage = () => {
     return <ReportLoadingState isLoading={isLoading} hasError={hasError} />;
   }
   
+  console.log(`📄 ReportEditPage: propertyName="${property.name}"`);
+  
   const reportInfoDefaults: ReportInfoFormValues = {
     reportDate: report.reportInfo?.reportDate 
       ? new Date(report.reportInfo.reportDate).toISOString().substring(0, 10)

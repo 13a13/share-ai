@@ -1,17 +1,21 @@
 
-import { RoomComponent } from "@/types";
-import ComponentItem from "./ComponentItem";
+import { useState } from "react";
+import { RoomType, RoomComponent } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import ComponentSelector from "./ComponentSelector";
+import ComponentItem from "./ComponentItem";
 import AddCustomComponent from "./AddCustomComponent";
-import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 
 interface ComponentListProps {
-  roomType: string;
+  roomType: RoomType;
   components: RoomComponent[];
-  isProcessing: { [key: string]: boolean };
+  isProcessing: Record<string, boolean>;
   expandedComponents: string[];
   selectedComponentType: string;
-  availableComponents: any[];
+  availableComponents: string[];
+  propertyName?: string;
+  roomName?: string;
   onSelectComponent: (type: string) => void;
   onAddComponent: () => void;
   onAddCustomComponent: (name: string) => void;
@@ -31,6 +35,8 @@ const ComponentList = ({
   expandedComponents,
   selectedComponentType,
   availableComponents,
+  propertyName,
+  roomName,
   onSelectComponent,
   onAddComponent,
   onAddCustomComponent,
@@ -42,60 +48,72 @@ const ComponentList = ({
   onImageProcessed,
   onProcessingStateChange
 }: ComponentListProps) => {
-  
-  // Get property name and room name from the DOM
-  const reportElement = document.querySelector('[data-report-id]');
-  const roomElement = document.querySelector('[data-room-id]');
-  const propertyName = reportElement?.getAttribute('data-property-name') || undefined;
-  const roomName = roomElement?.getAttribute('data-room-name') || undefined;
+  const [showCustomComponent, setShowCustomComponent] = useState(false);
 
-  // Get room components that are already added
-  const addedComponentNames = components.map(c => c.name);
-  
-  // Filter available components to show only those not added yet
-  const availableToAdd = availableComponents.filter(
-    comp => !addedComponentNames.includes(comp.name)
-  );
+  console.log(`🏗️ ComponentList: propertyName="${propertyName}", roomName="${roomName}"`);
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium">Components</h3>
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Room Components</h3>
         
-        {/* Component list */}
-        <div className="space-y-3">
-          {components.map((component) => (
-            <ComponentItem
-              key={component.id}
-              component={component}
-              roomType={roomType}
-              propertyName={propertyName}
-              roomName={roomName}
-              isExpanded={expandedComponents.includes(component.id)}
-              isProcessing={isProcessing[component.id] || false}
-              onToggleExpand={() => onToggleExpand(component.id)}
-              onRemove={() => onRemoveComponent(component.id)}
-              onToggleEditMode={() => onToggleEditMode(component.id)}
-              onUpdate={(updates) => onUpdateComponent(component.id, updates)}
-              onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
-              onImageProcessed={(imageUrls, result) => onImageProcessed(component.id, imageUrls, result)}
-              onProcessingStateChange={(isProcessing) => onProcessingStateChange(component.id, isProcessing)}
-            />
-          ))}
-        </div>
-        
-        {/* Add new components */}
-        {availableToAdd.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
           <ComponentSelector
-            availableComponents={availableToAdd}
-            selectedComponentType={selectedComponentType}
-            onSelectComponent={onSelectComponent}
-            onAddComponent={onAddComponent}
+            roomType={roomType}
+            selectedType={selectedComponentType}
+            availableComponents={availableComponents}
+            onSelect={onSelectComponent}
+          />
+          
+          <Button 
+            onClick={onAddComponent}
+            disabled={!selectedComponentType}
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Component
+          </Button>
+          
+          <Button 
+            onClick={() => setShowCustomComponent(true)}
+            variant="outline"
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Custom
+          </Button>
+        </div>
+
+        {showCustomComponent && (
+          <AddCustomComponent
+            onAdd={(name) => {
+              onAddCustomComponent(name);
+              setShowCustomComponent(false);
+            }}
+            onCancel={() => setShowCustomComponent(false)}
           />
         )}
-        
-        {/* Add custom component */}
-        <AddCustomComponent onAddComponent={onAddCustomComponent} />
+      </div>
+
+      <div className="space-y-3">
+        {components.map((component) => (
+          <ComponentItem
+            key={component.id}
+            component={component}
+            roomType={roomType}
+            propertyName={propertyName}
+            roomName={roomName}
+            isExpanded={expandedComponents.includes(component.id)}
+            isProcessing={isProcessing[component.id] || false}
+            onToggleExpand={() => onToggleExpand(component.id)}
+            onRemove={() => onRemoveComponent(component.id)}
+            onToggleEditMode={() => onToggleEditMode(component.id)}
+            onUpdate={(updates) => onUpdateComponent(component.id, updates)}
+            onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
+            onImageProcessed={(imageUrls, result) => onImageProcessed(component.id, imageUrls, result)}
+            onProcessingStateChange={(isProcessing) => onProcessingStateChange(component.id, isProcessing)}
+          />
+        ))}
       </div>
     </div>
   );

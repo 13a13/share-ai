@@ -19,6 +19,8 @@ const RoomContent = ({
   onUpdateGeneralCondition,
   onUpdateComponents
 }: RoomContentProps) => {
+  console.log(`🏠 RoomContent: propertyName="${propertyName}", roomName="${room.name}"`);
+  
   // Room components hook
   const {
     components,
@@ -68,6 +70,8 @@ const RoomContent = ({
         expandedComponents={expandedComponents}
         selectedComponentType={selectedComponentType}
         availableComponents={availableComponents}
+        propertyName={propertyName}
+        roomName={room.name}
         onSelectComponent={setSelectedComponentType}
         onAddComponent={handleAddComponent}
         onAddCustomComponent={addCustomComponent}
