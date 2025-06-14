@@ -6,6 +6,10 @@ import ComponentAnalysisSummary from "../component/ComponentAnalysisSummary";
 import ComponentImages from "../component/ComponentImages";
 import ComponentActions from "../component/ComponentActions";
 import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
+import { 
+  cleanlinessOptions, 
+  conditionRatingOptions 
+} from "@/services/imageProcessingService";
 
 interface ComponentItemProps {
   component: RoomComponent;
@@ -62,10 +66,8 @@ const ComponentItem = ({
           {/* Analysis Summary */}
           {component.conditionSummary && (
             <ComponentAnalysisSummary
-              conditionSummary={component.conditionSummary}
-              conditionPoints={component.conditionPoints || []}
-              condition={component.condition}
-              cleanliness={component.cleanliness}
+              component={component}
+              onEdit={() => onToggleEditMode(component.id)}
             />
           )}
 
@@ -103,8 +105,13 @@ const ComponentItem = ({
               conditionPoints={component.conditionPoints || []}
               condition={component.condition}
               cleanliness={component.cleanliness}
+              cleanlinessOptions={cleanlinessOptions}
+              conditionRatingOptions={conditionRatingOptions}
               notes={component.notes}
-              onUpdateComponent={(updates) => onUpdateComponent(component.id, updates)}
+              onUpdateComponent={(componentId, field, value) => {
+                onUpdateComponent(componentId, { [field]: value });
+              }}
+              onToggleEditMode={() => onToggleEditMode(component.id)}
             />
           )}
 

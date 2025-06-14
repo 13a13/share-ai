@@ -52,7 +52,7 @@ const ComponentList = ({
     <div className="space-y-4">
       {/* Component Selector */}
       <ComponentSelector
-        selectedType={selectedComponentType}
+        selectedComponentType={selectedComponentType}
         availableComponents={availableComponents}
         onSelectComponent={onSelectComponent}
         onAddComponent={onAddComponent}

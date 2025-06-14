@@ -35,6 +35,11 @@ const RoomContent = ({
     onUpdateGeneralCondition(roomId, condition, "");
   };
 
+  const handleSaveSection = async (section: any) => {
+    // Handle section saving
+    console.log("Saving section:", section);
+  };
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-3">
@@ -47,6 +52,7 @@ const RoomContent = ({
         <RoomDetailsGeneralTab
           room={room}
           onUpdateGeneralCondition={handleGeneralConditionUpdate}
+          onSaveSection={handleSaveSection}
         />
       </TabsContent>
 
