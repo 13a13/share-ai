@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Room, RoomSection, RoomComponent } from "@/types";
+import { Room, RoomComponent } from "@/types";
 import RoomDetailsGeneralTab from "./RoomDetailsGeneralTab";
 import RoomDetailsComponentsTab from "./RoomDetailsComponentsTab";
 import RoomDetailsPhotosTab from "./RoomDetailsPhotosTab";
@@ -9,8 +9,9 @@ import RoomDetailsPhotosTab from "./RoomDetailsPhotosTab";
 interface RoomDetailsContentProps {
   reportId: string;
   room: Room;
+  propertyName?: string;
   onUpdateGeneralCondition: (roomId: string, condition: string) => Promise<void>;
-  onSaveSection: (updatedSection: RoomSection) => Promise<void>;
+  onSaveSection: (sectionType: string, data: any) => Promise<void>;
   onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
   onImageProcessed: (updatedRoom: Room) => void;
 }
@@ -18,6 +19,7 @@ interface RoomDetailsContentProps {
 const RoomDetailsContent = ({
   reportId,
   room,
+  propertyName,
   onUpdateGeneralCondition,
   onSaveSection,
   onUpdateComponents,
@@ -45,6 +47,7 @@ const RoomDetailsContent = ({
         <RoomDetailsComponentsTab
           reportId={reportId}
           room={room}
+          propertyName={propertyName}
           onUpdateComponents={onUpdateComponents}
         />
       </TabsContent>
@@ -53,6 +56,7 @@ const RoomDetailsContent = ({
         <RoomDetailsPhotosTab
           reportId={reportId}
           room={room}
+          propertyName={propertyName}
           onImageProcessed={onImageProcessed}
         />
       </TabsContent>

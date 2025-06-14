@@ -6,6 +6,7 @@ import ComponentEditForm from "@/components/component/ComponentEditForm";
 import ComponentAnalysisSummary from "@/components/component/ComponentAnalysisSummary";
 import ComponentImages from "@/components/component/ComponentImages";
 import ComponentImageCapture from "@/components/ComponentImageCapture";
+import { cleanlinessOptions, conditionRatingOptions } from "@/services/imageProcessingService";
 
 interface ComponentItemProps {
   component: RoomComponent;
@@ -64,6 +65,8 @@ const ComponentItem = ({
               conditionPoints={component.conditionPoints || []}
               condition={component.condition}
               cleanliness={component.cleanliness}
+              cleanlinessOptions={cleanlinessOptions}
+              conditionRatingOptions={conditionRatingOptions}
               notes={component.notes}
               onUpdateComponent={(componentId, field, value) => {
                 onUpdate({ [field]: value });

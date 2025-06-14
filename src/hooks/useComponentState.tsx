@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { RoomComponent } from "@/types";
 
 interface UseComponentStateProps {
@@ -15,10 +15,10 @@ interface UseComponentStateReturn {
   setProcessingState: (componentId: string, isProcessing: boolean) => void;
 }
 
-export function useComponentState({
-  initialComponents,
-  onChange
-}: UseComponentStateProps): UseComponentStateReturn {
+export function useComponentState(
+  initialComponents: RoomComponent[],
+  onChange: (updatedComponents: RoomComponent[]) => void
+): UseComponentStateReturn {
   const [components, setComponents] = useState<RoomComponent[]>(initialComponents);
   const [isProcessing, setIsProcessing] = useState<{ [key: string]: boolean }>({});
 

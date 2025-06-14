@@ -59,7 +59,6 @@ const ComponentList = ({
         
         <div className="flex gap-2 flex-wrap">
           <ComponentSelector
-            roomType={roomType}
             selectedType={selectedComponentType}
             availableComponents={availableComponents}
             onSelect={onSelectComponent}

@@ -27,7 +27,7 @@ export function useRoomComponents({
 }: UseRoomComponentsProps) {
   console.log(`🔧 useRoomComponents: propertyName="${propertyName}", roomName="${roomName}"`);
   
-  // Component state management
+  // Component state management - fix argument order
   const {
     components,
     isProcessing,
