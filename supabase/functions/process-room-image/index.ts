@@ -1,30 +1,25 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { 
-  corsHeaders, 
-  createPrompt, 
-  extractJsonFromText, 
-  formatResponse, 
-  createFallbackResponse 
-} from "./utils.ts";
-import { 
-  callGeminiApi, 
-  createGeminiRequest 
-} from "./gemini-api.ts";
 import {
-  parseInventoryResponse,
-  createInventoryPrompt
-} from "./inventory-parser.ts";
+  handleCorsRequest,
+  handleTestRequest,
+  validateRequest,
+  parseRequestData,
+  ProcessImageRequest
+} from "./request-handler.ts";
 import {
-  createAdvancedMultiImagePrompt,
-  parseAdvancedAnalysisResponse,
-  formatAdvancedResponse
-} from "./advanced-analysis.ts";
-import { 
-  getPropertyAndRoomInfo, 
-  organizeImageIntoFolders,
-  needsFolderCorrection
-} from "./database-utils.ts";
+  processAndOrganizeImages
+} from "./image-processor.ts";
+import {
+  processImagesWithAI
+} from "./ai-processor.ts";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  createValidationErrorResponse,
+  createApiErrorResponse,
+  createFallbackErrorResponse
+} from "./response-formatter.ts";
 
 // Use the provided API key directly
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -32,256 +27,79 @@ const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 serve(async (req) => {
   // CORS preflight request
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsRequest();
   }
 
   try {
-    const requestData = await req.json();
+    const requestData: ProcessImageRequest = await req.json();
     
     console.log("🚀 Room image processing function started");
     console.log("📥 Request data received:", JSON.stringify(requestData, null, 2));
     
     // Handle test connection request
     if (requestData.test === true) {
-      if (!GEMINI_API_KEY) {
-        return new Response(
-          JSON.stringify({ error: "API key not configured", configured: false }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ message: "Gemini API key is configured", configured: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return handleTestRequest(GEMINI_API_KEY);
     }
     
-    const { 
-      imageUrls, 
-      componentName, 
-      roomType, 
-      reportId,
-      roomId,
-      inventoryMode = false, 
-      useAdvancedAnalysis = false,
-      multipleImages = false,
-      maxImages = 20 
-    } = requestData;
-    
-    if (!imageUrls || (Array.isArray(imageUrls) && imageUrls.length === 0)) {
-      return new Response(
-        JSON.stringify({ error: "At least one image URL is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Validate request
+    const validationError = validateRequest(requestData);
+    if (validationError) {
+      return createValidationErrorResponse(validationError);
     }
 
     if (!GEMINI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "Gemini API key not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createApiErrorResponse();
     }
 
-    // Convert to array if single string was passed
-    const images = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
-    
-    // Enforce maximum number of images
-    const limitedImages = images.slice(0, maxImages);
-    
-    console.log(`📸 Processing ${componentName || 'component'} with ${limitedImages.length} images for ${roomType || 'unknown room type'}`);
+    // Parse and normalize request data
+    const {
+      images,
+      componentName,
+      roomType,
+      reportId,
+      roomId,
+      inventoryMode,
+      useAdvancedAnalysis
+    } = parseRequestData(requestData);
 
-    // Get correct property and room information from database if reportId is provided
-    let propertyRoomInfo = null;
-    if (reportId) {
-      try {
-        propertyRoomInfo = await getPropertyAndRoomInfo(reportId, roomId);
-        console.log(`🏠 Successfully retrieved property and room info:`, propertyRoomInfo);
-      } catch (error) {
-        console.error('❌ Failed to fetch property/room info from database:', error);
-        return new Response(
-          JSON.stringify({ 
-            error: "Failed to fetch property and room information", 
-            details: error.message 
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    // Process each image URL to organize into proper folder structure and convert to base64
-    const processedImages = [];
-    const organizedImageUrls = [];
-    
-    for (let i = 0; i < limitedImages.length; i++) {
-      const imageUrl = limitedImages[i];
-      try {
-        let finalImageUrl = imageUrl;
-        
-        // Organize image into proper folder structure if we have property/room info
-        if (propertyRoomInfo && imageUrl.includes('supabase.co/storage') && componentName) {
-          console.log(`📂 [Image ${i + 1}/${limitedImages.length}] Organizing into folder hierarchy: ${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}/${componentName}`);
-          
-          try {
-            const organizedUrl = await organizeImageIntoFolders(
-              imageUrl,
-              propertyRoomInfo,
-              componentName
-            );
-            
-            if (organizedUrl !== imageUrl) {
-              finalImageUrl = organizedUrl;
-              console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Successfully organized into hierarchy: ${propertyRoomInfo.userAccountName} → ${propertyRoomInfo.propertyName} → ${propertyRoomInfo.roomName} → ${componentName}`);
-            } else {
-              console.log(`⚠️ [Image ${i + 1}/${limitedImages.length}] Organization failed, using original URL`);
-            }
-          } catch (organizeError) {
-            console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Error organizing into hierarchy:`, organizeError);
-            // Continue with original URL if organization fails
-          }
-        }
-        
-        organizedImageUrls.push(finalImageUrl);
-        
-        // Convert to base64 for AI processing
-        if (finalImageUrl.startsWith("data:")) {
-          // Already base64 data URL
-          processedImages.push(finalImageUrl.split(",")[1]);
-        } else if (finalImageUrl.includes('supabase.co/storage')) {
-          // Fetch the image from Supabase storage and convert to base64
-          console.log(`📥 [Image ${i + 1}/${limitedImages.length}] Fetching image from organized storage: ${finalImageUrl}`);
-          const imageResponse = await fetch(finalImageUrl);
-          if (!imageResponse.ok) {
-            console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
-            continue;
-          }
-          const arrayBuffer = await imageResponse.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-          processedImages.push(base64);
-          console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Successfully converted organized image to base64`);
-        } else {
-          // Assume it's already base64
-          processedImages.push(finalImageUrl);
-        }
-      } catch (error) {
-        console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Error processing image ${imageUrl}:`, error);
-        // Skip this image and continue with others
-      }
-    }
-
-    if (processedImages.length === 0) {
-      console.error('❌ No valid images to process');
-      return new Response(
-        JSON.stringify({ error: "No valid images to process" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`📸 Successfully prepared ${processedImages.length} images for AI processing`);
-
-    // Determine if we should use advanced analysis
-    const shouldUseAdvancedAnalysis = useAdvancedAnalysis && 
-                                      Array.isArray(limitedImages) && 
-                                      limitedImages.length > 1;
-
-    // Generate prompt based on analysis mode, using correct room type if available
-    let promptText;
-    const actualRoomType = propertyRoomInfo?.roomType || roomType || 'room';
-    
-    if (shouldUseAdvancedAnalysis) {
-      promptText = createAdvancedMultiImagePrompt(
-        componentName || 'component',
-        actualRoomType,
-        limitedImages.length
-      );
-      console.log("Using advanced multi-image analysis protocol");
-    } else if (inventoryMode && componentName) {
-      promptText = createInventoryPrompt(componentName);
-    } else {
-      promptText = createPrompt(actualRoomType, componentName, images.length > 1);
-    }
-    
-    // Create and send request to Gemini API with all images
-    const geminiRequest = createGeminiRequest(promptText, processedImages, shouldUseAdvancedAnalysis);
-    
     try {
-      // Call Gemini API and get the text response
-      const textContent = await callGeminiApi(GEMINI_API_KEY, geminiRequest);
-      
-      let parsedData;
-      
-      if (shouldUseAdvancedAnalysis) {
-        try {
-          parsedData = parseAdvancedAnalysisResponse(textContent);
-          console.log("Successfully parsed advanced multi-image analysis response");
-        } catch (parseError) {
-          console.error("Failed to parse advanced analysis response:", parseError);
-          try {
-            parsedData = parseInventoryResponse(textContent);
-          } catch {
-            parsedData = extractJsonFromText(textContent);
-          }
-        }
-      } else if (inventoryMode && componentName) {
-        try {
-          parsedData = parseInventoryResponse(textContent);
-          console.log("Successfully parsed inventory response");
-        } catch (parseError) {
-          console.error("Failed to parse inventory response:", parseError);
-          parsedData = extractJsonFromText(textContent);
-        }
-      } else {
-        parsedData = extractJsonFromText(textContent);
-      }
-      
-      // Format the response based on analysis mode
-      const formattedResponse = shouldUseAdvancedAnalysis 
-        ? formatAdvancedResponse(parsedData, componentName)
-        : formatResponse(parsedData, componentName);
-
-      // Add property and room information to the response
-      if (propertyRoomInfo) {
-        formattedResponse.propertyInfo = {
-          propertyName: propertyRoomInfo.propertyName,
-          roomName: propertyRoomInfo.roomName,
-          roomType: propertyRoomInfo.roomType,
-          userAccountName: propertyRoomInfo.userAccountName
-        };
-        console.log(`✅ Enhanced response with organized folder info: ${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}`);
-      }
-
-      // Add organized image URLs to response
-      if (organizedImageUrls.length > 0) {
-        formattedResponse.organizedImageUrls = organizedImageUrls;
-        const organizedCount = organizedImageUrls.filter((url, index) => url !== limitedImages[index]).length;
-        if (organizedCount > 0) {
-          console.log(`📂 Successfully organized ${organizedCount}/${limitedImages.length} images into proper folder hierarchy`);
-          formattedResponse.folderOrganizationApplied = organizedCount;
-        }
-      }
-
-      console.log("✅ Successfully processed images with Gemini and organized into proper folder hierarchy");
-      
-      return new Response(
-        JSON.stringify(formattedResponse),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      // Process and organize images
+      const { processedImages, organizedImageUrls, propertyRoomInfo } = await processAndOrganizeImages(
+        images,
+        componentName,
+        reportId,
+        roomId
       );
+
+      // Process images with AI
+      const actualRoomType = propertyRoomInfo?.roomType || roomType || 'room';
+      const { parsedData, shouldUseAdvancedAnalysis } = await processImagesWithAI(
+        processedImages,
+        {
+          componentName,
+          roomType: actualRoomType,
+          inventoryMode,
+          useAdvancedAnalysis,
+          imageCount: images.length
+        },
+        GEMINI_API_KEY
+      );
+
+      // Create and return successful response
+      return createSuccessResponse(
+        parsedData,
+        componentName,
+        propertyRoomInfo,
+        organizedImageUrls,
+        images,
+        shouldUseAdvancedAnalysis
+      );
+
     } catch (error) {
       console.error("❌ Error processing with Gemini:", error);
-      console.log("Returning fallback response");
-      
-      // Return a fallback response if processing fails
-      const fallbackResponse = createFallbackResponse(componentName);
-      
-      return new Response(
-        JSON.stringify(fallbackResponse),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createFallbackErrorResponse(componentName);
     }
   } catch (error) {
-    console.error("❌ Server error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error", details: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return createErrorResponse(error);
   }
 });
