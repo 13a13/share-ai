@@ -135,41 +135,93 @@ function cleanNameForFolder(name: string): string {
 }
 
 /**
- * Extract folder structure from storage URL and replace with correct names
+ * Extract file path from URL and check if it needs correction
  */
-export async function getCorrectStoragePath(
+export function needsFolderCorrection(imageUrl: string): boolean {
+  try {
+    // Check if this is a Supabase storage URL
+    if (!imageUrl.includes('supabase.co/storage') && !imageUrl.includes('/storage/v1/object/public/')) {
+      return false;
+    }
+    
+    // Check if URL contains problematic folder names
+    const problematicPatterns = [
+      'unknown_property',
+      'unknown_room',
+      '/property_[a-f0-9]{8}/', // Matches property_5690e738 pattern
+      '/room_[a-f0-9]{8}/'       // Matches room_9836d4c8 pattern
+    ];
+    
+    return problematicPatterns.some(pattern => {
+      if (pattern.startsWith('/') && pattern.endsWith('/')) {
+        // Use regex for UUID patterns
+        const regex = new RegExp(pattern);
+        return regex.test(imageUrl);
+      } else {
+        // Simple string match for unknown_ patterns
+        return imageUrl.includes(pattern);
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error checking folder correction need:', error);
+    return false;
+  }
+}
+
+/**
+ * Build correct storage path with proper folder structure
+ */
+export async function buildCorrectStoragePath(
   originalUrl: string, 
   reportId: string, 
   roomId?: string
-): Promise<string> {
+): Promise<{ newPath: string; shouldMove: boolean }> {
   try {
-    console.log(`📂 Processing storage URL: ${originalUrl}`);
+    console.log(`📂 Building correct path for: ${originalUrl}`);
     
     // Get correct property and room info
     const propertyRoomInfo = await getPropertyAndRoomInfo(reportId, roomId);
     
-    // Extract the file path from the URL
+    // Extract the file name and user folder from the original URL
     const urlParts = originalUrl.split('/');
     const fileName = urlParts[urlParts.length - 1]; // Get the actual filename
     
-    // Find the user folder (should be the first folder after the bucket)
+    // Find the user folder - it should be after the bucket name in the path
     let userFolder = 'unknown_user';
-    const storagePathStart = originalUrl.indexOf('/storage/v1/object/public/');
-    if (storagePathStart !== -1) {
-      const pathAfterBucket = originalUrl.substring(storagePathStart).split('/').slice(6); // Skip '/storage/v1/object/public/bucket-name/'
-      if (pathAfterBucket.length > 0) {
-        userFolder = pathAfterBucket[0];
+    const pathAfterPublic = originalUrl.split('/storage/v1/object/public/')[1];
+    if (pathAfterPublic) {
+      const pathSegments = pathAfterPublic.split('/');
+      if (pathSegments.length > 1) {
+        // Skip the bucket name, get the user folder
+        userFolder = pathSegments[1];
       }
     }
     
-    // Construct the correct path
+    // Build the correct path
     const correctPath = `${userFolder}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}/general/${fileName}`;
-    console.log(`📂 Correct storage path: ${correctPath}`);
     
-    return correctPath;
+    // Check if the current path is different from the correct path
+    const currentPath = pathAfterPublic;
+    const shouldMove = currentPath !== correctPath && needsFolderCorrection(originalUrl);
+    
+    console.log(`📂 Path analysis:`, {
+      currentPath,
+      correctPath,
+      shouldMove,
+      propertyName: propertyRoomInfo.propertyName,
+      roomName: propertyRoomInfo.roomName
+    });
+    
+    return {
+      newPath: correctPath,
+      shouldMove
+    };
   } catch (error) {
-    console.error('❌ Error getting correct storage path:', error);
-    return originalUrl;
+    console.error('❌ Error building correct storage path:', error);
+    return {
+      newPath: originalUrl,
+      shouldMove: false
+    };
   }
 }
 
@@ -183,16 +235,43 @@ export async function moveFileToCorrectFolder(
   try {
     console.log(`📦 Moving file from ${originalUrl} to ${correctPath}`);
     
-    // Extract the original file path from the URL
-    const bucketName = 'report-images'; // Assuming this is the bucket name
-    const originalPath = originalUrl.split('/object/public/report-images/')[1];
+    // Extract the bucket name and original file path
+    const bucketName = 'report-images'; // Default bucket name
     
-    if (!originalPath) {
-      console.error('❌ Could not extract original path from URL');
+    // Extract original path from URL
+    const pathAfterPublic = originalUrl.split('/storage/v1/object/public/')[1];
+    if (!pathAfterPublic) {
+      console.error('❌ Could not extract path from URL');
       return originalUrl;
     }
     
-    // First, copy the file to the new location
+    const pathSegments = pathAfterPublic.split('/');
+    if (pathSegments.length < 2) {
+      console.error('❌ Invalid URL structure');
+      return originalUrl;
+    }
+    
+    // The original path is everything after the bucket name
+    const originalPath = pathSegments.slice(1).join('/');
+    
+    console.log(`📦 Storage operation:`, {
+      bucketName,
+      originalPath,
+      correctPath,
+      originalUrl
+    });
+    
+    // First, check if the source file exists
+    const { data: existsData, error: existsError } = await supabase.storage
+      .from(bucketName)
+      .list('', { search: originalPath });
+    
+    if (existsError) {
+      console.error('❌ Error checking file existence:', existsError);
+      return originalUrl;
+    }
+    
+    // Copy the file to the new location
     const { data: copyData, error: copyError } = await supabase.storage
       .from(bucketName)
       .copy(originalPath, correctPath);
@@ -204,18 +283,22 @@ export async function moveFileToCorrectFolder(
     
     console.log('✅ File copied successfully:', copyData);
     
-    // Delete the original file
+    // Delete the original file only if copy was successful
     const { error: deleteError } = await supabase.storage
       .from(bucketName)
       .remove([originalPath]);
     
     if (deleteError) {
-      console.warn('⚠️ Could not delete original file:', deleteError);
+      console.warn('⚠️ Could not delete original file (keeping both):', deleteError);
       // Don't fail the operation if we can't delete the original
+    } else {
+      console.log('✅ Original file deleted successfully');
     }
     
-    // Return the new URL
-    const newUrl = originalUrl.replace(originalPath, correctPath);
+    // Construct and return the new URL
+    const baseUrl = originalUrl.split('/storage/v1/object/public/')[0];
+    const newUrl = `${baseUrl}/storage/v1/object/public/${bucketName}/${correctPath}`;
+    
     console.log(`✅ File moved successfully. New URL: ${newUrl}`);
     
     return newUrl;

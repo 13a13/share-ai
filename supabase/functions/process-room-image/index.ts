@@ -22,8 +22,9 @@ import {
 } from "./advanced-analysis.ts";
 import { 
   getPropertyAndRoomInfo, 
-  getCorrectStoragePath, 
-  moveFileToCorrectFolder 
+  buildCorrectStoragePath, 
+  moveFileToCorrectFolder,
+  needsFolderCorrection
 } from "./database-utils.ts";
 
 // Use the provided API key directly
@@ -112,19 +113,29 @@ serve(async (req) => {
         
         // Fix folder structure if we have property/room info and this is a storage URL
         if (propertyRoomInfo && imageUrl.includes('supabase.co/storage') && reportId) {
-          console.log(`📂 Fixing folder structure for image: ${imageUrl}`);
+          console.log(`📂 Checking folder structure for image: ${imageUrl}`);
           
-          // Check if the URL contains 'unknown_property' or 'unknown_room'
-          if (imageUrl.includes('unknown_property') || imageUrl.includes('unknown_room')) {
+          // Check if this URL needs folder correction
+          if (needsFolderCorrection(imageUrl)) {
+            console.log(`📂 Image needs folder correction: ${imageUrl}`);
+            
             try {
-              const correctPath = await getCorrectStoragePath(imageUrl, reportId, roomId);
-              const newUrl = await moveFileToCorrectFolder(imageUrl, correctPath);
-              finalImageUrl = newUrl;
-              console.log(`✅ Folder structure corrected: ${imageUrl} → ${finalImageUrl}`);
+              const { newPath, shouldMove } = await buildCorrectStoragePath(imageUrl, reportId, roomId);
+              
+              if (shouldMove) {
+                console.log(`📦 Moving file to correct folder structure...`);
+                const newUrl = await moveFileToCorrectFolder(imageUrl, newPath);
+                finalImageUrl = newUrl;
+                console.log(`✅ Folder structure corrected: ${imageUrl} → ${finalImageUrl}`);
+              } else {
+                console.log(`✅ Folder structure is already correct for: ${imageUrl}`);
+              }
             } catch (moveError) {
               console.error('⚠️ Could not fix folder structure, using original URL:', moveError);
               // Continue with original URL if moving fails
             }
+          } else {
+            console.log(`✅ Image folder structure is correct: ${imageUrl}`);
           }
         }
         
@@ -239,7 +250,10 @@ serve(async (req) => {
       // Add corrected image URLs to response if any were changed
       if (correctedImageUrls.length > 0) {
         formattedResponse.correctedImageUrls = correctedImageUrls;
-        console.log(`📂 Folder structure corrections applied to ${correctedImageUrls.length} images`);
+        const correctedCount = correctedImageUrls.filter((url, index) => url !== limitedImages[index]).length;
+        if (correctedCount > 0) {
+          console.log(`📂 Folder structure corrections applied to ${correctedCount} images`);
+        }
       }
 
       console.log("✅ Successfully processed images with Gemini and corrected folder structure");
