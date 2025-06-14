@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
@@ -6,6 +5,7 @@ import { Room } from "@/types";
 import { compressImageFile } from "@/utils/imageCompression";
 import { uploadReportImage, checkStorageBucket } from "@/utils/supabaseStorage";
 import { supabase } from "@/integrations/supabase/client";
+import { resolvePropertyAndRoomNames } from "@/utils/storage/resolveNames";
 
 interface UseRoomImageUploadProps {
   reportId: string;
@@ -28,33 +28,27 @@ export const useRoomImageUpload = ({
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
 
-  // --- NEW: Fetch real property/room name if blank
   const [propertyName, setPropertyName] = useState(propName ?? "");
   const [roomName, setRoomName] = useState(rmName ?? "");
 
+  // Guarantee property/room names are always loaded for uploads
+  const refreshNames = async () => {
+    const { propertyName: resolvedProp, roomName: resolvedRoom } =
+      await resolvePropertyAndRoomNames(roomId, propertyName, roomName);
+    setPropertyName(resolvedProp);
+    setRoomName(resolvedRoom);
+    return { resolvedProp, resolvedRoom };
+  };
+
   useEffect(() => {
-    async function fetchNamesIfNeeded() {
-      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && supabase && roomId) {
-        try {
-          const { data, error } = await supabase
-            .from('rooms')
-            .select('id, name, property_id, properties(name)')
-            .eq('id', roomId)
-            .maybeSingle();
-          if (data && !error) {
-            setRoomName((data as any).name ?? "");
-            setPropertyName((data as any).properties?.name ?? "");
-          }
-        } catch (err) {}
-      }
-    }
-    fetchNamesIfNeeded();
-  }, [roomId, propertyName, roomName]);
+    // On mount or when IDs/names change, always fetch up-to-date values
+    refreshNames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, propName, rmName]);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
-    
-    // Check file type
+
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid file type",
@@ -63,14 +57,11 @@ export const useRoomImageUpload = ({
       });
       return;
     }
-    
+
     setIsUploading(true);
-    
+
     try {
-      // Compress the image first
       const compressedDataUrl = await compressImageFile(file);
-      
-      // Process the compressed image
       await processImage(compressedDataUrl);
     } catch (error) {
       console.error("Error compressing image:", error);
@@ -85,15 +76,14 @@ export const useRoomImageUpload = ({
 
   const handleCameraCapture = async (imageData: string) => {
     setIsUploading(true);
-    
+
     try {
-      // Compress the camera-captured image
       const fileName = `camera-${Date.now()}.jpg`;
       const blob = await (await fetch(imageData)).blob();
       const compressedDataUrl = await compressImageFile(
         new File([blob], fileName, { type: 'image/jpeg' })
       );
-      
+
       await processImage(compressedDataUrl);
     } catch (error) {
       console.error("Error processing camera image:", error);
@@ -105,28 +95,21 @@ export const useRoomImageUpload = ({
       setIsUploading(false);
     }
   };
-  
+
+  // This method guarantees correct names before upload
   const processImage = async (imageUrl: string) => {
     try {
-      // ------------- MAIN UPLOAD: make sure property/room names are NOT blank -------------
-      let propNameFinal = propertyName && propertyName.trim() !== "" ? propertyName : "unknown_property";
-      let roomNameFinal = roomName && roomName.trim() !== "" ? roomName : "unknown_room";
-      if ((!propertyName || propertyName.trim() === "") && propName && propName.trim() !== "") {
-        propNameFinal = propName;
-      }
-      if ((!roomName || roomName.trim() === "") && rmName && rmName.trim() !== "") {
-        roomNameFinal = rmName;
-      }
+      const { resolvedProp, resolvedRoom } = await refreshNames();
+      const propNameFinal = resolvedProp;
+      const roomNameFinal = resolvedRoom;
 
-      console.log("Processing and uploading image for room:", roomId, "in report:", reportId, "property:", propNameFinal, "roomName:", roomNameFinal);
-      
-      // Check if storage bucket is available
+      console.log("Processing and uploading image for room:", roomId, "report:", reportId, "property:", propNameFinal, "roomName:", roomNameFinal);
+
       const storageAvailable = await checkStorageBucket();
       let finalImageUrl = imageUrl;
-      
+
       if (storageAvailable) {
         try {
-          // Upload to Supabase Storage with user-organized folder structure (user/property/room/general for room photos)
           finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId, propNameFinal, roomNameFinal, 'general');
           console.log("✅ Image uploaded to user-organized folder successfully:", finalImageUrl);
         } catch (storageError) {
@@ -136,23 +119,22 @@ export const useRoomImageUpload = ({
       } else {
         console.warn("⚠️ Storage bucket not available, using original image URL");
       }
-      
-      // Add the image to the room using the final URL
+
       const image = await ReportsAPI.addImageToRoom(reportId, roomId, finalImageUrl);
-      
+
       if (image) {
         setUploadedImageId(image.id);
         setUploadedImage(finalImageUrl);
-        
-        const storageStatus = storageAvailable && finalImageUrl !== imageUrl ? 
+
+        const storageStatus = storageAvailable && finalImageUrl !== imageUrl ?
           `uploaded to user's account folder in Supabase Storage` : "saved locally";
-        
+
         toast({
           title: "Image uploaded",
           description: `Image has been added to the room and ${storageStatus}`,
         });
       }
-      
+
       setIsUploading(false);
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -164,7 +146,7 @@ export const useRoomImageUpload = ({
       setIsUploading(false);
     }
   };
-  
+
   const handleProcessWithAI = async () => {
     if (!uploadedImageId) return;
     

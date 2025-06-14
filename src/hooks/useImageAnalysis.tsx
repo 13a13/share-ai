@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
@@ -6,6 +5,7 @@ import { uploadMultipleReportImages, checkStorageBucket } from "@/utils/supabase
 import { useUltraFastBatchSaving } from "./useUltraFastBatchSaving";
 import { RoomImageAPI } from "@/lib/api/reports/roomImageApi";
 import { supabase } from "@/integrations/supabase/client";
+import { resolvePropertyAndRoomNames } from "@/utils/storage/resolveNames";
 
 interface UseImageAnalysisProps {
   componentId: string;
@@ -39,31 +39,33 @@ export function useImageAnalysis({
 
   useEffect(() => {
     async function fetchNamesIfNeeded() {
-      if ((!propertyName || propertyName === "unknown_property" || propertyName.trim() === "") && supabase) {
-        try {
-          const roomElement = document.querySelector('[data-room-id]');
-          const roomId = roomElement?.getAttribute('data-room-id');
-          if (roomId) {
-            const { data, error } = await supabase
-              .from('rooms')
-              .select('id, name, property_id, properties(name)')
-              .eq('id', roomId)
-              .maybeSingle();
-            if (data && !error) {
-              setRoomName((data as any).name ?? "");
-              setPropertyName((data as any).properties?.name ?? "");
-            }
-          }
-        } catch (err) {}
-      }
+      // Always ensure we have the true (non-blank) names for uploads
+      const roomElement = document.querySelector('[data-room-id]');
+      const roomId = roomElement?.getAttribute('data-room-id') || "";
+      const result = await resolvePropertyAndRoomNames(
+        roomId,
+        initialPropName,
+        initialRmName
+      );
+      setPropertyName(result.propertyName);
+      setRoomName(result.roomName);
       setNamesLoaded(true);
     }
     fetchNamesIfNeeded();
-  }, [initialPropName, initialRmName, propertyName, roomName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPropName, initialRmName]);
 
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
     if (!namesLoaded) return false;
+
+    // Use true (non-blank) names always for upload path
+    const truePropName = propertyName;
+    const trueRoomName = roomName;
+    const roomElement = document.querySelector('[data-room-id]');
+    const reportElement = document.querySelector('[data-report-id]');
+    const roomId = roomElement?.getAttribute('data-room-id');
+    const reportId = reportElement?.getAttribute('data-report-id');
 
     console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${propertyName}, room: ${roomName}`);
     
@@ -72,20 +74,9 @@ export function useImageAnalysis({
     
     try {
       // Get reportId and roomId from the DOM
-      const reportElement = document.querySelector('[data-report-id]');
-      const roomElement = document.querySelector('[data-room-id]');
-      
       if (!reportElement || !roomElement) {
         console.error("Could not find report-id or room-id in DOM");
         throw new Error("Report or room ID not found");
-      }
-      
-      const reportId = reportElement.getAttribute('data-report-id');
-      const roomId = roomElement.getAttribute('data-room-id');
-      
-      if (!reportId || !roomId) {
-        console.error("Invalid report-id or room-id in DOM");
-        throw new Error("Invalid report or room ID");
       }
       
       console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}, property: ${propertyName}, roomName: ${roomName}, componentName: ${componentName}`);
@@ -107,18 +98,25 @@ export function useImageAnalysis({
       }
       
       // Step 2: Upload images to storage with organized folder structure
-      console.log(`📤 Step 2: Uploading images to organized folders: ${propertyName}/${roomName}/${componentName}...`);
+      console.log(`📤 Step 2: Uploading images to organized folders: ${truePropName}/${trueRoomName}/${componentName}...`);
       let storedImageUrls = stagingImages;
       
       if (storageAvailable) {
         try {
-          storedImageUrls = await uploadMultipleReportImages(stagingImages, reportId, roomId, propertyName, roomName, componentName);
+          storedImageUrls = await uploadMultipleReportImages(
+            stagingImages,
+            reportId,
+            roomId,
+            truePropName,
+            trueRoomName,
+            componentName
+          );
           
           // Verify upload success
           const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
           const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
           
-          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${propertyName}/${roomName}/${componentName}`);
+          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${truePropName}/${trueRoomName}/${componentName}`);
           
           if (failedUploads > 0) {
             console.warn(`⚠️ ${failedUploads} images failed to upload, proceeding with local storage`);
@@ -172,12 +170,12 @@ export function useImageAnalysis({
       const pendingCount = getPendingCount();
       const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
       
-      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${propertyName}/${roomName}/${componentName}, ${pendingCount} updates queued`);
+      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${truePropName}/${trueRoomName}/${componentName}, ${pendingCount} updates queued`);
       
       // Show success message
       toast({
         title: "Images processed successfully",
-        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to ${propertyName}/${roomName}/${componentName}` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
+        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to ${truePropName}/${trueRoomName}/${componentName}` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
       });
       
       return true;
