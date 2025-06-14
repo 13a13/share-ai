@@ -31,12 +31,8 @@ const UnifiedRoomView = ({
 }: UnifiedRoomViewProps) => {
   console.log(`🏠 UnifiedRoomView rendering for room "${room.name}" in property "${propertyName}"`);
   
-  const handleNavigateRoom = (direction: 'prev' | 'next') => {
-    if (direction === 'prev' && roomIndex > 0) {
-      onNavigateRoom(roomIndex - 1);
-    } else if (direction === 'next' && roomIndex < totalRooms - 1) {
-      onNavigateRoom(roomIndex + 1);
-    }
+  const handleNavigateRoom = (index: number) => {
+    onNavigateRoom(index);
   };
   
   return (
