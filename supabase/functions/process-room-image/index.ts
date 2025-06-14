@@ -22,8 +22,7 @@ import {
 } from "./advanced-analysis.ts";
 import { 
   getPropertyAndRoomInfo, 
-  buildCorrectStoragePath, 
-  moveFileToCorrectFolder,
+  organizeImageIntoFolders,
   needsFolderCorrection
 } from "./database-utils.ts";
 
@@ -99,7 +98,6 @@ serve(async (req) => {
         console.log(`🏠 Successfully retrieved property and room info:`, propertyRoomInfo);
       } catch (error) {
         console.error('❌ Failed to fetch property/room info from database:', error);
-        // Return error instead of continuing with unknown names
         return new Response(
           JSON.stringify({ 
             error: "Failed to fetch property and room information", 
@@ -110,46 +108,39 @@ serve(async (req) => {
       }
     }
 
-    // Process each image URL to fix folder structure and convert to base64
+    // Process each image URL to organize into proper folder structure and convert to base64
     const processedImages = [];
-    const correctedImageUrls = [];
+    const organizedImageUrls = [];
     
     for (let i = 0; i < limitedImages.length; i++) {
       const imageUrl = limitedImages[i];
       try {
         let finalImageUrl = imageUrl;
         
-        // Fix folder structure if we have property/room info and this is a storage URL
-        if (propertyRoomInfo && imageUrl.includes('supabase.co/storage') && reportId) {
-          console.log(`📂 [Image ${i + 1}/${limitedImages.length}] Processing folder structure for: ${imageUrl}`);
+        // Organize image into proper folder structure if we have property/room info
+        if (propertyRoomInfo && imageUrl.includes('supabase.co/storage') && componentName) {
+          console.log(`📂 [Image ${i + 1}/${limitedImages.length}] Organizing into folder hierarchy: ${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}/${componentName}`);
           
           try {
-            const { newPath, shouldMove, propertyRoomInfo: info } = await buildCorrectStoragePath(
-              imageUrl, 
-              reportId, 
-              roomId, 
+            const organizedUrl = await organizeImageIntoFolders(
+              imageUrl,
+              propertyRoomInfo,
               componentName
             );
             
-            if (shouldMove) {
-              console.log(`📦 [Image ${i + 1}/${limitedImages.length}] Moving file to correct folder: ${info.propertyName}/${info.roomName}/${componentName || 'general'}`);
-              const newUrl = await moveFileToCorrectFolder(imageUrl, newPath);
-              if (newUrl !== imageUrl) {
-                finalImageUrl = newUrl;
-                console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Successfully moved to: ${info.propertyName}/${info.roomName}/${componentName || 'general'}`);
-              } else {
-                console.log(`⚠️ [Image ${i + 1}/${limitedImages.length}] Folder correction failed, using original URL`);
-              }
+            if (organizedUrl !== imageUrl) {
+              finalImageUrl = organizedUrl;
+              console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Successfully organized into hierarchy: ${propertyRoomInfo.userAccountName} → ${propertyRoomInfo.propertyName} → ${propertyRoomInfo.roomName} → ${componentName}`);
             } else {
-              console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Folder structure is already correct`);
+              console.log(`⚠️ [Image ${i + 1}/${limitedImages.length}] Organization failed, using original URL`);
             }
-          } catch (moveError) {
-            console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Error fixing folder structure:`, moveError);
-            // Continue with original URL if moving fails
+          } catch (organizeError) {
+            console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Error organizing into hierarchy:`, organizeError);
+            // Continue with original URL if organization fails
           }
         }
         
-        correctedImageUrls.push(finalImageUrl);
+        organizedImageUrls.push(finalImageUrl);
         
         // Convert to base64 for AI processing
         if (finalImageUrl.startsWith("data:")) {
@@ -157,7 +148,7 @@ serve(async (req) => {
           processedImages.push(finalImageUrl.split(",")[1]);
         } else if (finalImageUrl.includes('supabase.co/storage')) {
           // Fetch the image from Supabase storage and convert to base64
-          console.log(`📥 [Image ${i + 1}/${limitedImages.length}] Fetching image from storage: ${finalImageUrl}`);
+          console.log(`📥 [Image ${i + 1}/${limitedImages.length}] Fetching image from organized storage: ${finalImageUrl}`);
           const imageResponse = await fetch(finalImageUrl);
           if (!imageResponse.ok) {
             console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
@@ -166,7 +157,7 @@ serve(async (req) => {
           const arrayBuffer = await imageResponse.arrayBuffer();
           const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
           processedImages.push(base64);
-          console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Successfully converted storage image to base64`);
+          console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Successfully converted organized image to base64`);
         } else {
           // Assume it's already base64
           processedImages.push(finalImageUrl);
@@ -247,27 +238,28 @@ serve(async (req) => {
         ? formatAdvancedResponse(parsedData, componentName)
         : formatResponse(parsedData, componentName);
 
-      // Add property and room information to the response for logging
+      // Add property and room information to the response
       if (propertyRoomInfo) {
         formattedResponse.propertyInfo = {
           propertyName: propertyRoomInfo.propertyName,
           roomName: propertyRoomInfo.roomName,
-          roomType: propertyRoomInfo.roomType
+          roomType: propertyRoomInfo.roomType,
+          userAccountName: propertyRoomInfo.userAccountName
         };
-        console.log(`✅ Enhanced response with property info: ${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}`);
+        console.log(`✅ Enhanced response with organized folder info: ${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}`);
       }
 
-      // Add corrected image URLs to response
-      if (correctedImageUrls.length > 0) {
-        formattedResponse.correctedImageUrls = correctedImageUrls;
-        const correctedCount = correctedImageUrls.filter((url, index) => url !== limitedImages[index]).length;
-        if (correctedCount > 0) {
-          console.log(`📂 Successfully organized ${correctedCount}/${limitedImages.length} images into proper folder structure`);
-          formattedResponse.folderCorrectionsApplied = correctedCount;
+      // Add organized image URLs to response
+      if (organizedImageUrls.length > 0) {
+        formattedResponse.organizedImageUrls = organizedImageUrls;
+        const organizedCount = organizedImageUrls.filter((url, index) => url !== limitedImages[index]).length;
+        if (organizedCount > 0) {
+          console.log(`📂 Successfully organized ${organizedCount}/${limitedImages.length} images into proper folder hierarchy`);
+          formattedResponse.folderOrganizationApplied = organizedCount;
         }
       }
 
-      console.log("✅ Successfully processed images with Gemini and organized folder structure");
+      console.log("✅ Successfully processed images with Gemini and organized into proper folder hierarchy");
       
       return new Response(
         JSON.stringify(formattedResponse),

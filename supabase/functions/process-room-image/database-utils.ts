@@ -12,6 +12,50 @@ export interface PropertyRoomInfo {
   roomType: string;
   propertyId: string;
   roomId: string;
+  userAccountName: string;
+}
+
+/**
+ * Get user account name for folder structure
+ */
+async function getUserAccountName(): Promise<string> {
+  try {
+    // Get the current user from the auth context
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+      console.warn('⚠️ No authenticated user found, using fallback');
+      return 'unknown_user';
+    }
+
+    // Try to get user profile information
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.warn('⚠️ Could not fetch user profile, using email or fallback');
+      // Fallback to email or user ID
+      const emailName = user.email?.split('@')[0] || user.id.substring(0, 8);
+      return cleanNameForFolder(emailName);
+    }
+
+    // Combine first and last name
+    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+    
+    if (!fullName) {
+      console.warn('⚠️ No name found in profile, using email or fallback');
+      const emailName = user.email?.split('@')[0] || user.id.substring(0, 8);
+      return cleanNameForFolder(emailName);
+    }
+
+    return cleanNameForFolder(fullName);
+  } catch (error) {
+    console.error('❌ Error getting user account name:', error);
+    return 'unknown_user';
+  }
 }
 
 /**
@@ -43,7 +87,7 @@ export async function getPropertyAndRoomInfo(reportId: string, roomId?: string):
     // Use the roomId from the inspection
     const actualRoomId = inspection.room_id;
     
-    // Now get the room and property information with a more comprehensive query
+    // Now get the room and property information with a comprehensive query
     const { data: roomData, error: roomError } = await supabase
       .from('rooms')
       .select(`
@@ -70,6 +114,9 @@ export async function getPropertyAndRoomInfo(reportId: string, roomId?: string):
 
     console.log('✅ Room and property data retrieved:', roomData);
 
+    // Get user account name for folder structure
+    const userAccountName = await getUserAccountName();
+
     const propertyName = roomData.properties.name || 'Unknown Property';
     const roomType = roomData.type || 'unknown_room';
     
@@ -81,7 +128,8 @@ export async function getPropertyAndRoomInfo(reportId: string, roomId?: string):
       roomName: cleanNameForFolder(roomName),
       roomType: roomType,
       propertyId: roomData.property_id,
-      roomId: actualRoomId
+      roomId: actualRoomId,
+      userAccountName: userAccountName
     };
 
     console.log('🏠 Final property and room info:', result);
@@ -89,8 +137,6 @@ export async function getPropertyAndRoomInfo(reportId: string, roomId?: string):
 
   } catch (error) {
     console.error('❌ Error in getPropertyAndRoomInfo:', error);
-    
-    // Return meaningful fallback values that indicate the error
     throw new Error(`Could not fetch property/room info: ${error.message}`);
   }
 }
@@ -114,111 +160,28 @@ function cleanNameForFolder(name: string): string {
 }
 
 /**
- * Build correct storage path with proper folder structure
+ * Create proper folder hierarchy: account/property/room/component
  */
-export async function buildCorrectStoragePath(
-  originalUrl: string, 
-  reportId: string, 
-  roomId?: string,
-  componentName?: string
-): Promise<{ newPath: string; shouldMove: boolean; propertyRoomInfo: PropertyRoomInfo }> {
-  try {
-    console.log(`📂 Building correct path for: ${originalUrl}`);
-    
-    // Get correct property and room info - this is critical
-    const propertyRoomInfo = await getPropertyAndRoomInfo(reportId, roomId);
-    
-    // Extract the file name from the original URL
-    const urlParts = originalUrl.split('/');
-    const fileName = urlParts[urlParts.length - 1];
-    
-    // Find the user folder - it should be after the bucket name in the path
-    let userFolder = 'unknown_user';
-    const pathAfterPublic = originalUrl.split('/storage/v1/object/public/')[1];
-    if (pathAfterPublic) {
-      const pathSegments = pathAfterPublic.split('/');
-      if (pathSegments.length > 1) {
-        // Skip the bucket name, get the user folder
-        userFolder = pathSegments[1];
-      }
-    }
-    
-    // Clean component name or use 'general' as default
-    const cleanComponentName = componentName ? cleanNameForFolder(componentName) : 'general';
-    
-    // Build the correct path: user/property_name/room_name/component_name/filename
-    const correctPath = `${userFolder}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}/${cleanComponentName}/${fileName}`;
-    
-    // Check if the current path is different from the correct path
-    const currentPath = pathAfterPublic;
-    const shouldMove = currentPath !== correctPath;
-    
-    console.log(`📂 Path analysis:`, {
-      currentPath,
-      correctPath,
-      shouldMove,
-      propertyName: propertyRoomInfo.propertyName,
-      roomName: propertyRoomInfo.roomName,
-      componentName: cleanComponentName
-    });
-    
-    return {
-      newPath: correctPath,
-      shouldMove,
-      propertyRoomInfo
-    };
-  } catch (error) {
-    console.error('❌ Error building correct storage path:', error);
-    throw error; // Re-throw to handle upstream
-  }
-}
-
-/**
- * Move file in storage to correct folder structure and ensure directories exist
- */
-export async function moveFileToCorrectFolder(
-  originalUrl: string,
-  correctPath: string
+export async function createFolderHierarchy(
+  propertyRoomInfo: PropertyRoomInfo,
+  componentName: string,
+  bucketName: string = 'inspection-images'
 ): Promise<string> {
   try {
-    console.log(`📦 Moving file from ${originalUrl} to ${correctPath}`);
+    const cleanComponentName = cleanNameForFolder(componentName);
     
-    // Extract the bucket name
-    const possibleBuckets = ['inspection-images', 'report-images'];
-    let bucketName = 'inspection-images'; // Default
+    // Build the complete folder path: account/property/room/component
+    const folderPath = `${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}/${cleanComponentName}`;
     
-    // Determine which bucket is being used
-    for (const bucket of possibleBuckets) {
-      if (originalUrl.includes(`/storage/v1/object/public/${bucket}/`)) {
-        bucketName = bucket;
-        break;
-      }
-    }
+    console.log(`📂 Creating folder hierarchy: ${folderPath}`);
     
-    // Extract original path from URL
-    const bucketPattern = `/storage/v1/object/public/${bucketName}/`;
-    const pathAfterPublic = originalUrl.split(bucketPattern)[1];
-    
-    if (!pathAfterPublic) {
-      console.error('❌ Could not extract path from URL');
-      return originalUrl;
-    }
-    
-    console.log(`📦 Storage operation:`, {
-      bucketName,
-      originalPath: pathAfterPublic,
-      correctPath,
-      originalUrl
-    });
-    
-    // Create directory structure by uploading a temporary file in each directory level
-    const pathParts = correctPath.split('/');
+    // Create each directory level by uploading temporary files
+    const pathParts = folderPath.split('/');
     let currentPath = '';
     
-    // Create each directory level (excluding the filename)
-    for (let i = 0; i < pathParts.length - 1; i++) {
+    for (let i = 0; i < pathParts.length; i++) {
       currentPath += (i > 0 ? '/' : '') + pathParts[i];
-      const tempFilePath = `${currentPath}/.temp_${Date.now()}`;
+      const tempFilePath = `${currentPath}/.temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       try {
         // Create a tiny temporary file to ensure the directory exists
@@ -229,30 +192,77 @@ export async function moveFileToCorrectFolder(
         if (!tempError) {
           // Immediately delete the temp file
           await supabase.storage.from(bucketName).remove([tempFilePath]);
-          console.log(`✅ Created directory: ${currentPath}`);
+          console.log(`✅ Created directory level: ${currentPath}`);
+        } else {
+          console.warn(`⚠️ Could not create directory ${currentPath}:`, tempError);
         }
       } catch (dirError) {
         console.warn(`⚠️ Could not create directory ${currentPath}:`, dirError);
       }
     }
     
-    // Now copy the file to the correct location
-    console.log(`📋 Copying from "${pathAfterPublic}" to "${correctPath}"`);
-    const { data: copyData, error: copyError } = await supabase.storage
-      .from(bucketName)
-      .copy(pathAfterPublic, correctPath);
+    return folderPath;
+  } catch (error) {
+    console.error('❌ Error creating folder hierarchy:', error);
+    throw error;
+  }
+}
+
+/**
+ * Move and organize image into proper folder structure
+ */
+export async function organizeImageIntoFolders(
+  originalUrl: string,
+  propertyRoomInfo: PropertyRoomInfo,
+  componentName: string,
+  bucketName: string = 'inspection-images'
+): Promise<string> {
+  try {
+    console.log(`📦 Organizing image into proper folder structure: ${originalUrl}`);
     
-    if (copyError) {
-      console.error('❌ Error copying file:', copyError);
+    // Create the proper folder hierarchy
+    const folderPath = await createFolderHierarchy(propertyRoomInfo, componentName, bucketName);
+    
+    // Extract the original file name from the URL
+    const urlParts = originalUrl.split('/');
+    const originalFileName = urlParts[urlParts.length - 1];
+    
+    // Generate a unique filename to avoid conflicts
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substr(2, 9);
+    const fileExtension = originalFileName.split('.').pop() || 'jpg';
+    const newFileName = `${timestamp}_${randomId}.${fileExtension}`;
+    
+    // Build the complete new path
+    const newPath = `${folderPath}/${newFileName}`;
+    
+    // Extract original path from URL
+    const bucketPattern = `/storage/v1/object/public/${bucketName}/`;
+    const originalPath = originalUrl.split(bucketPattern)[1];
+    
+    if (!originalPath) {
+      console.error('❌ Could not extract original path from URL');
       return originalUrl;
     }
     
-    console.log('✅ File copied successfully:', copyData);
+    console.log(`📦 Moving from "${originalPath}" to "${newPath}"`);
+    
+    // Copy the file to the new organized location
+    const { data: copyData, error: copyError } = await supabase.storage
+      .from(bucketName)
+      .copy(originalPath, newPath);
+    
+    if (copyError) {
+      console.error('❌ Error copying file to organized location:', copyError);
+      return originalUrl;
+    }
+    
+    console.log('✅ File copied to organized location:', copyData);
     
     // Delete the original file
     const { error: deleteError } = await supabase.storage
       .from(bucketName)
-      .remove([pathAfterPublic]);
+      .remove([originalPath]);
     
     if (deleteError) {
       console.warn('⚠️ Could not delete original file:', deleteError);
@@ -262,19 +272,79 @@ export async function moveFileToCorrectFolder(
     
     // Construct and return the new URL
     const baseUrl = originalUrl.split(bucketPattern)[0];
-    const newUrl = `${baseUrl}${bucketPattern}${correctPath}`;
+    const newUrl = `${baseUrl}${bucketPattern}${newPath}`;
     
-    console.log(`✅ File moved successfully. New URL: ${newUrl}`);
+    console.log(`✅ Image organized successfully. New URL: ${newUrl}`);
+    console.log(`📂 Folder structure: ${propertyRoomInfo.userAccountName} → ${propertyRoomInfo.propertyName} → ${propertyRoomInfo.roomName} → ${cleanNameForFolder(componentName)}`);
     
     return newUrl;
   } catch (error) {
-    console.error('❌ Error moving file:', error);
+    console.error('❌ Error organizing image into folders:', error);
     return originalUrl;
   }
 }
 
 /**
- * Check if URL needs folder correction (always true now since we want to ensure correct structure)
+ * Build correct storage path with proper folder structure - DEPRECATED
+ * Keeping for backward compatibility but now using organizeImageIntoFolders
+ */
+export async function buildCorrectStoragePath(
+  originalUrl: string, 
+  reportId: string, 
+  roomId?: string,
+  componentName?: string
+): Promise<{ newPath: string; shouldMove: boolean; propertyRoomInfo: PropertyRoomInfo }> {
+  try {
+    console.log(`📂 Building correct path for: ${originalUrl}`);
+    
+    // Get correct property and room info
+    const propertyRoomInfo = await getPropertyAndRoomInfo(reportId, roomId);
+    
+    // Always organize into proper structure
+    const shouldMove = true; // Always organize
+    
+    // Clean component name or use 'general' as default
+    const cleanComponentName = componentName ? cleanNameForFolder(componentName) : 'general';
+    
+    // Build the correct path: account/property/room/component/filename
+    const urlParts = originalUrl.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+    const correctPath = `${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}/${cleanComponentName}/${fileName}`;
+    
+    console.log(`📂 Path analysis:`, {
+      correctPath,
+      shouldMove,
+      propertyName: propertyRoomInfo.propertyName,
+      roomName: propertyRoomInfo.roomName,
+      componentName: cleanComponentName,
+      userAccountName: propertyRoomInfo.userAccountName
+    });
+    
+    return {
+      newPath: correctPath,
+      shouldMove,
+      propertyRoomInfo
+    };
+  } catch (error) {
+    console.error('❌ Error building correct storage path:', error);
+    throw error;
+  }
+}
+
+/**
+ * Move file in storage to correct folder structure - DEPRECATED
+ * Now using organizeImageIntoFolders for better organization
+ */
+export async function moveFileToCorrectFolder(
+  originalUrl: string,
+  correctPath: string
+): Promise<string> {
+  console.log('⚠️ moveFileToCorrectFolder is deprecated, using organizeImageIntoFolders instead');
+  return originalUrl;
+}
+
+/**
+ * Check if URL needs folder correction (always true for proper organization)
  */
 export function needsFolderCorrection(imageUrl: string): boolean {
   return imageUrl.includes('supabase.co/storage') || imageUrl.includes('/storage/v1/object/public/');
