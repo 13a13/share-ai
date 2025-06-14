@@ -20,6 +20,7 @@ import {
   parseAdvancedAnalysisResponse,
   formatAdvancedResponse
 } from "./advanced-analysis.ts";
+import { getPropertyAndRoomInfo } from "./database-utils.ts";
 
 // Use the provided API key directly
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -32,6 +33,9 @@ serve(async (req) => {
 
   try {
     const requestData = await req.json();
+    
+    console.log("🚀 Room image processing function started");
+    console.log("📥 Request data received:", JSON.stringify(requestData, null, 2));
     
     // Handle test connection request
     if (requestData.test === true) {
@@ -52,8 +56,10 @@ serve(async (req) => {
       imageUrls, 
       componentName, 
       roomType, 
+      reportId,
+      roomId,
       inventoryMode = false, 
-      useAdvancedAnalysis = false, // New flag for opting into advanced analysis
+      useAdvancedAnalysis = false,
       multipleImages = false,
       maxImages = 20 
     } = requestData;
@@ -78,7 +84,19 @@ serve(async (req) => {
     // Enforce maximum number of images
     const limitedImages = images.slice(0, maxImages);
     
-    console.log(`Processing ${componentName || 'component'} with ${limitedImages.length} images for ${roomType || 'unknown room type'}`);
+    console.log(`📸 Processing ${componentName || 'component'} with ${limitedImages.length} images for ${roomType || 'unknown room type'}`);
+
+    // Get correct property and room information from database if reportId is provided
+    let propertyRoomInfo = null;
+    if (reportId) {
+      try {
+        propertyRoomInfo = await getPropertyAndRoomInfo(reportId, roomId);
+        console.log(`🏠 Retrieved property and room info:`, propertyRoomInfo);
+      } catch (error) {
+        console.error('⚠️ Failed to fetch property/room info from database:', error);
+        // Continue with processing even if database lookup fails
+      }
+    }
 
     // Extract base64 data from each image
     const imageDataArray = limitedImages.map(imageUrl => {
@@ -89,28 +107,25 @@ serve(async (req) => {
     });
 
     // Determine if we should use advanced analysis
-    // Only use for multiple images AND when explicitly requested
     const shouldUseAdvancedAnalysis = useAdvancedAnalysis && 
                                       Array.isArray(limitedImages) && 
                                       limitedImages.length > 1;
 
-    // Generate prompt based on analysis mode
+    // Generate prompt based on analysis mode, using correct room type if available
     let promptText;
+    const actualRoomType = propertyRoomInfo?.roomType || roomType || 'room';
     
     if (shouldUseAdvancedAnalysis) {
-      // Use the new advanced multi-image analysis prompt
       promptText = createAdvancedMultiImagePrompt(
         componentName || 'component',
-        roomType || 'room',
+        actualRoomType,
         limitedImages.length
       );
       console.log("Using advanced multi-image analysis protocol");
     } else if (inventoryMode && componentName) {
-      // Use the detailed inventory clerk prompt for component analysis
       promptText = createInventoryPrompt(componentName);
     } else {
-      // Use the standard component prompt
-      promptText = createPrompt(roomType, componentName, images.length > 1);
+      promptText = createPrompt(actualRoomType, componentName, images.length > 1);
     }
     
     // Create and send request to Gemini API with all images
@@ -123,32 +138,26 @@ serve(async (req) => {
       let parsedData;
       
       if (shouldUseAdvancedAnalysis) {
-        // Parse using the advanced response parser
         try {
           parsedData = parseAdvancedAnalysisResponse(textContent);
           console.log("Successfully parsed advanced multi-image analysis response");
         } catch (parseError) {
           console.error("Failed to parse advanced analysis response:", parseError);
-          // Try inventory parser as fallback
           try {
             parsedData = parseInventoryResponse(textContent);
           } catch {
-            // Last resort fallback to basic JSON extraction
             parsedData = extractJsonFromText(textContent);
           }
         }
       } else if (inventoryMode && componentName) {
-        // Parse the inventory clerk format response
         try {
           parsedData = parseInventoryResponse(textContent);
           console.log("Successfully parsed inventory response");
         } catch (parseError) {
           console.error("Failed to parse inventory response:", parseError);
-          // Extract JSON if available as fallback
           parsedData = extractJsonFromText(textContent);
         }
       } else {
-        // Extract JSON data from the text for standard component analysis
         parsedData = extractJsonFromText(textContent);
       }
       
@@ -156,6 +165,16 @@ serve(async (req) => {
       const formattedResponse = shouldUseAdvancedAnalysis 
         ? formatAdvancedResponse(parsedData, componentName)
         : formatResponse(parsedData, componentName);
+
+      // Add property and room information to the response for logging
+      if (propertyRoomInfo) {
+        formattedResponse.propertyInfo = {
+          propertyName: propertyRoomInfo.propertyName,
+          roomName: propertyRoomInfo.roomName,
+          roomType: propertyRoomInfo.roomType
+        };
+        console.log(`✅ Enhanced response with property info: ${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}`);
+      }
 
       console.log("Successfully processed images with Gemini");
       
