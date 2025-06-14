@@ -49,9 +49,12 @@ const ComponentItem = ({
       className="border rounded-lg p-4 bg-gray-50 transition-colors duration-300"
     >
       <ComponentHeader
-        component={component}
-        isExpanded={isExpanded}
-        onToggleExpand={() => onToggleExpand(component.id)}
+        name={component.name}
+        isOptional={component.isOptional}
+        condition={component.condition}
+        imagesCount={component.images.length}
+        isAnalyzed={!!component.conditionSummary}
+        isCustom={component.isCustom}
       />
 
       {isExpanded && (
@@ -59,7 +62,7 @@ const ComponentItem = ({
           {/* Analysis Summary */}
           {component.conditionSummary && (
             <ComponentAnalysisSummary
-              summary={component.conditionSummary}
+              conditionSummary={component.conditionSummary}
               conditionPoints={component.conditionPoints || []}
               condition={component.condition}
               cleanliness={component.cleanliness}
@@ -69,7 +72,6 @@ const ComponentItem = ({
           {/* Component Images */}
           <ComponentImages
             images={component.images}
-            componentName={component.name}
             onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
           />
 
@@ -95,14 +97,23 @@ const ComponentItem = ({
           {/* Edit Form */}
           {component.isEditing && (
             <ComponentEditForm
-              component={component}
+              componentId={component.id}
+              description={component.description}
+              conditionSummary={component.conditionSummary}
+              conditionPoints={component.conditionPoints || []}
+              condition={component.condition}
+              cleanliness={component.cleanliness}
+              notes={component.notes}
               onUpdateComponent={(updates) => onUpdateComponent(component.id, updates)}
             />
           )}
 
           {/* Component Actions */}
           <ComponentActions
-            component={component}
+            componentId={component.id}
+            isEditing={!!component.isEditing}
+            isOptional={component.isOptional}
+            isAnalyzed={!!component.conditionSummary}
             onToggleEditMode={() => onToggleEditMode(component.id)}
             onRemoveComponent={() => onRemoveComponent(component.id)}
           />

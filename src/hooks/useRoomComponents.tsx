@@ -39,7 +39,7 @@ export const useRoomComponents = ({
     selectedComponentType,
     availableComponents,
     setSelectedComponentType
-  } = useComponentSelection({ roomType });
+  } = useComponentSelection({ roomType, components });
 
   // Component addition logic
   const {
@@ -47,10 +47,10 @@ export const useRoomComponents = ({
     addCustomComponent
   } = useComponentAddition({
     selectedComponentType,
-    roomId,
     components,
     setComponents,
-    onChange
+    onChange,
+    availableComponents
   });
 
   // Component expansion logic

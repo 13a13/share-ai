@@ -12,7 +12,7 @@ interface ComponentListProps {
   isProcessing: Record<string, boolean>;
   expandedComponents: string[];
   selectedComponentType: string;
-  availableComponents: string[];
+  availableComponents: Array<{ name: string; type: string; isOptional: boolean }>;
   onSelectComponent: (type: string) => void;
   onAddComponent: () => void;
   onAddCustomComponent: (name: string) => void;
@@ -59,7 +59,7 @@ const ComponentList = ({
       />
 
       {/* Add Custom Component */}
-      <AddCustomComponent onAddCustomComponent={onAddCustomComponent} />
+      <AddCustomComponent onAddComponent={onAddCustomComponent} />
 
       {/* Component List */}
       <div className="space-y-4">

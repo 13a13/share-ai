@@ -10,10 +10,10 @@ interface UnifiedRoomViewProps {
   roomIndex: number;
   totalRooms: number;
   propertyName?: string;
-  onNavigateRoom: (direction: 'prev' | 'next') => void;
+  onNavigateRoom: (index: number) => void;
   onUpdateGeneralCondition: (roomId: string, condition: string, summary: string) => void;
   onUpdateComponents: (roomId: string, components: any[]) => void;
-  onDeleteRoom: (roomId: string) => void;
+  onDeleteRoom: () => void;
   isComplete: boolean;
 }
 
@@ -31,6 +31,14 @@ const UnifiedRoomView = ({
 }: UnifiedRoomViewProps) => {
   console.log(`🏠 UnifiedRoomView rendering for room "${room.name}" in property "${propertyName}"`);
   
+  const handleNavigateRoom = (direction: 'prev' | 'next') => {
+    if (direction === 'prev' && roomIndex > 0) {
+      onNavigateRoom(roomIndex - 1);
+    } else if (direction === 'next' && roomIndex < totalRooms - 1) {
+      onNavigateRoom(roomIndex + 1);
+    }
+  };
+  
   return (
     <div className="border rounded-lg p-4 bg-white shadow-sm" data-room-id={room.id}>
       <RoomHeader
@@ -38,7 +46,7 @@ const UnifiedRoomView = ({
         roomIndex={roomIndex}
         totalRooms={totalRooms}
         isComplete={isComplete}
-        onNavigateRoom={onNavigateRoom}
+        onNavigateRoom={handleNavigateRoom}
         onDeleteRoom={onDeleteRoom}
       />
       

@@ -30,6 +30,11 @@ const RoomContent = ({
     console.log("Room image processed:", updatedRoom);
   };
 
+  const handleGeneralConditionUpdate = async (roomId: string, condition: string) => {
+    // Call the original function with an empty summary since it expects 3 parameters
+    onUpdateGeneralCondition(roomId, condition, "");
+  };
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-3">
@@ -41,7 +46,7 @@ const RoomContent = ({
       <TabsContent value="general" className="mt-4">
         <RoomDetailsGeneralTab
           room={room}
-          onUpdateGeneralCondition={onUpdateGeneralCondition}
+          onUpdateGeneralCondition={handleGeneralConditionUpdate}
         />
       </TabsContent>
 
