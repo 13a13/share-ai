@@ -55,22 +55,6 @@ const RoomDetails = ({
 
   const pendingCount = getPendingCount();
 
-  // Convert the onSaveSection prop to match RoomDetailsContent's expected signature
-  const handleSaveSection = async (sectionType: string, data: any) => {
-    // Create a RoomSection object from the parameters
-    const updatedSection: RoomSection = {
-      id: `${room.id}_${sectionType}`,
-      type: sectionType,
-      title: sectionType,
-      description: data.description || '',
-      condition: data.condition || 'good',
-      notes: data.notes || '',
-      images: data.images || [],
-      ...data
-    };
-    await onSaveSection(updatedSection);
-  };
-
   return (
     <Card className="transition-none" data-report-id={reportId} data-room-id={room.id}>
       <CardHeader>
@@ -90,7 +74,7 @@ const RoomDetails = ({
           reportId={reportId}
           room={room}
           onUpdateGeneralCondition={onUpdateGeneralCondition}
-          onSaveSection={handleSaveSection}
+          onSaveSection={onSaveSection}
           onUpdateComponents={onUpdateComponents}
           onImageProcessed={onImageProcessed}
         />

@@ -3,20 +3,21 @@ import { useState } from "react";
 import { RoomType } from "@/types";
 import { getDefaultComponentsByRoomType } from "@/utils/roomComponentUtils";
 
-interface UseComponentSelectionReturn {
-  selectedComponentType: string;
-  availableComponents: { name: string; type: string; isOptional: boolean }[];
-  setSelectedComponentType: React.Dispatch<React.SetStateAction<string>>;
+interface UseComponentSelectionProps {
+  roomType: RoomType;
+  components: Array<{ type: string }>;
 }
 
-export function useComponentSelection(roomType: RoomType): UseComponentSelectionReturn {
+export function useComponentSelection({ roomType, components }: UseComponentSelectionProps) {
   const [selectedComponentType, setSelectedComponentType] = useState<string>("");
-  
-  const availableComponents = getDefaultComponentsByRoomType(roomType);
+
+  const availableComponents = getDefaultComponentsByRoomType(roomType).filter(
+    comp => !components.some(c => c.type === comp.type)
+  );
 
   return {
     selectedComponentType,
-    availableComponents,
-    setSelectedComponentType
+    setSelectedComponentType,
+    availableComponents
   };
 }
