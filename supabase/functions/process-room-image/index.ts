@@ -98,8 +98,15 @@ serve(async (req) => {
         propertyRoomInfo = await getPropertyAndRoomInfo(reportId, roomId);
         console.log(`🏠 Successfully retrieved property and room info:`, propertyRoomInfo);
       } catch (error) {
-        console.error('⚠️ Failed to fetch property/room info from database:', error);
-        // Continue with processing even if database lookup fails
+        console.error('❌ Failed to fetch property/room info from database:', error);
+        // Return error instead of continuing with unknown names
+        return new Response(
+          JSON.stringify({ 
+            error: "Failed to fetch property and room information", 
+            details: error.message 
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
@@ -114,33 +121,31 @@ serve(async (req) => {
         
         // Fix folder structure if we have property/room info and this is a storage URL
         if (propertyRoomInfo && imageUrl.includes('supabase.co/storage') && reportId) {
-          console.log(`📂 [Image ${i + 1}/${limitedImages.length}] Checking folder structure for: ${imageUrl}`);
+          console.log(`📂 [Image ${i + 1}/${limitedImages.length}] Processing folder structure for: ${imageUrl}`);
           
-          // Check if this URL needs folder correction
-          if (needsFolderCorrection(imageUrl)) {
-            console.log(`📂 [Image ${i + 1}/${limitedImages.length}] Image needs folder correction: ${imageUrl}`);
+          try {
+            const { newPath, shouldMove, propertyRoomInfo: info } = await buildCorrectStoragePath(
+              imageUrl, 
+              reportId, 
+              roomId, 
+              componentName
+            );
             
-            try {
-              const { newPath, shouldMove } = await buildCorrectStoragePath(imageUrl, reportId, roomId);
-              
-              if (shouldMove) {
-                console.log(`📦 [Image ${i + 1}/${limitedImages.length}] Moving file to correct folder structure...`);
-                const newUrl = await moveFileToCorrectFolder(imageUrl, newPath);
-                if (newUrl !== imageUrl) {
-                  finalImageUrl = newUrl;
-                  console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Folder structure corrected: ${imageUrl} → ${finalImageUrl}`);
-                } else {
-                  console.log(`⚠️ [Image ${i + 1}/${limitedImages.length}] Folder correction failed, using original URL`);
-                }
+            if (shouldMove) {
+              console.log(`📦 [Image ${i + 1}/${limitedImages.length}] Moving file to correct folder: ${info.propertyName}/${info.roomName}/${componentName || 'general'}`);
+              const newUrl = await moveFileToCorrectFolder(imageUrl, newPath);
+              if (newUrl !== imageUrl) {
+                finalImageUrl = newUrl;
+                console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Successfully moved to: ${info.propertyName}/${info.roomName}/${componentName || 'general'}`);
               } else {
-                console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Folder structure is already correct`);
+                console.log(`⚠️ [Image ${i + 1}/${limitedImages.length}] Folder correction failed, using original URL`);
               }
-            } catch (moveError) {
-              console.error(`⚠️ [Image ${i + 1}/${limitedImages.length}] Could not fix folder structure, using original URL:`, moveError);
-              // Continue with original URL if moving fails
+            } else {
+              console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Folder structure is already correct`);
             }
-          } else {
-            console.log(`✅ [Image ${i + 1}/${limitedImages.length}] Image folder structure is correct: ${imageUrl}`);
+          } catch (moveError) {
+            console.error(`❌ [Image ${i + 1}/${limitedImages.length}] Error fixing folder structure:`, moveError);
+            // Continue with original URL if moving fails
           }
         }
         
@@ -252,17 +257,17 @@ serve(async (req) => {
         console.log(`✅ Enhanced response with property info: ${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}`);
       }
 
-      // Add corrected image URLs to response if any were changed
+      // Add corrected image URLs to response
       if (correctedImageUrls.length > 0) {
         formattedResponse.correctedImageUrls = correctedImageUrls;
         const correctedCount = correctedImageUrls.filter((url, index) => url !== limitedImages[index]).length;
         if (correctedCount > 0) {
-          console.log(`📂 Folder structure corrections applied to ${correctedCount}/${limitedImages.length} images`);
+          console.log(`📂 Successfully organized ${correctedCount}/${limitedImages.length} images into proper folder structure`);
           formattedResponse.folderCorrectionsApplied = correctedCount;
         }
       }
 
-      console.log("✅ Successfully processed images with Gemini and corrected folder structure");
+      console.log("✅ Successfully processed images with Gemini and organized folder structure");
       
       return new Response(
         JSON.stringify(formattedResponse),
