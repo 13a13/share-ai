@@ -16,7 +16,7 @@ export const uploadReportImage = async (
   componentName?: string
 ): Promise<string> => {
   try {
-    console.log(`🔄 [UPLOAD v3] uploadReportImage called with:`, {
+    console.log(`🔄 [UPLOAD v4] uploadReportImage called with:`, {
       reportId,
       roomId,
       propertyName,
@@ -26,15 +26,15 @@ export const uploadReportImage = async (
     });
 
     // CRITICAL: Always resolve names first with comprehensive validation
-    console.log(`🔍 [UPLOAD v3] Resolving names before upload...`);
+    console.log(`🔍 [UPLOAD v4] Resolving names before upload...`);
     const resolved = await resolvePropertyAndRoomNames(roomId, propertyName, roomName);
     
-    console.log(`🔍 [UPLOAD v3] Resolved names:`, resolved);
+    console.log(`🔍 [UPLOAD v4] Resolved names:`, resolved);
 
     // Check for resolution failures
     if (resolved.propertyName.startsWith('error_') || resolved.roomName.startsWith('error_')) {
       const errorMsg = `Name resolution failed: Property="${resolved.propertyName}", Room="${resolved.roomName}"`;
-      console.error(`❌ [UPLOAD v3] ${errorMsg}`);
+      console.error(`❌ [UPLOAD v4] ${errorMsg}`);
       toast({
         title: "Upload Error: Name Resolution Failed",
         description: errorMsg,
@@ -46,7 +46,7 @@ export const uploadReportImage = async (
     // Check for generic fallbacks
     if (resolved.propertyName === "unknown_property" || resolved.roomName === "unknown_room") {
       const warningMsg = `Using generic folder names: Property="${resolved.propertyName}", Room="${resolved.roomName}". Check your data integrity.`;
-      console.error(`🚨 [UPLOAD v3] ${warningMsg}`);
+      console.error(`🚨 [UPLOAD v4] ${warningMsg}`);
       toast({
         title: "Upload Warning: Generic Folder Names",
         description: warningMsg,
@@ -70,16 +70,28 @@ export const uploadReportImage = async (
       fileExt
     );
     
-    console.log(`📤 [UPLOAD v3] Uploading to path:`, fileName);
+    console.log(`📤 [UPLOAD v4] Uploading to path:`, fileName);
+    console.log(`📤 [UPLOAD v4] Expected folder structure: ${resolved.propertyName}/${resolved.roomName}/${componentName || 'general'}`);
     
     // Upload to storage and return public URL
     const publicUrl = await uploadBlobToStorage(blob, fileName);
     
-    console.log(`✅ [UPLOAD v3] Upload successful:`, publicUrl);
+    console.log(`✅ [UPLOAD v4] Upload successful:`, publicUrl);
+    
+    // Verify the uploaded URL contains the correct folder structure
+    if (publicUrl.includes(resolved.propertyName) && publicUrl.includes(resolved.roomName)) {
+      console.log(`✅ [UPLOAD v4] Folder structure verified in URL!`);
+    } else {
+      console.error(`🚨 [UPLOAD v4] Folder structure NOT found in URL!`, {
+        uploadedUrl: publicUrl,
+        expectedProperty: resolved.propertyName,
+        expectedRoom: resolved.roomName
+      });
+    }
     
     return publicUrl;
   } catch (error) {
-    console.error(`❌ [UPLOAD v3] Critical error in uploadReportImage:`, error);
+    console.error(`❌ [UPLOAD v4] Critical error in uploadReportImage:`, error);
     throw error;
   }
 };
@@ -96,7 +108,7 @@ export const uploadMultipleReportImages = async (
   componentName?: string
 ): Promise<string[]> => {
   try {
-    console.log(`🚀 [UPLOAD v3] uploadMultipleReportImages called with:`, {
+    console.log(`🚀 [UPLOAD v4] uploadMultipleReportImages called with:`, {
       imageCount: imageUrls.length,
       reportId,
       roomId,
@@ -106,16 +118,16 @@ export const uploadMultipleReportImages = async (
     });
 
     // Always resolve names first with validation
-    console.log(`🔍 [UPLOAD v3] Resolving names for batch upload...`);
+    console.log(`🔍 [UPLOAD v4] Resolving names for batch upload...`);
     const resolved = await resolvePropertyAndRoomNames(roomId, propertyName, roomName);
     
-    console.log(`🔍 [UPLOAD v3] Resolved names for batch upload:`, resolved);
+    console.log(`🔍 [UPLOAD v4] Resolved names for batch upload:`, resolved);
 
     // Check for resolution failures or generic names
     if (resolved.propertyName.startsWith('error_') || resolved.roomName.startsWith('error_') ||
         resolved.propertyName === "unknown_property" || resolved.roomName === "unknown_room") {
       const errorMsg = `Batch upload using problematic folder names: Property="${resolved.propertyName}", Room="${resolved.roomName}"`;
-      console.error(`🚨 [UPLOAD v3] ${errorMsg}`);
+      console.error(`🚨 [UPLOAD v4] ${errorMsg}`);
       toast({
         title: "Batch Upload Warning",
         description: errorMsg,
@@ -127,7 +139,7 @@ export const uploadMultipleReportImages = async (
     const dataUrls = imageUrls.filter(url => url.startsWith('data:'));
     const existingUrls = imageUrls.filter(url => !url.startsWith('data:'));
     
-    console.log(`📊 [UPLOAD v3] Upload breakdown: ${dataUrls.length} new uploads, ${existingUrls.length} existing URLs`);
+    console.log(`📊 [UPLOAD v4] Upload breakdown: ${dataUrls.length} new uploads, ${existingUrls.length} existing URLs`);
     
     if (dataUrls.length === 0) {
       return imageUrls;
@@ -138,7 +150,7 @@ export const uploadMultipleReportImages = async (
 
     for (let i = 0; i < dataUrls.length; i++) {
       try {
-        console.log(`📤 [UPLOAD v3] Uploading image ${i + 1}/${dataUrls.length} to: ${resolved.propertyName}/${resolved.roomName}/${componentName}`);
+        console.log(`📤 [UPLOAD v4] Uploading image ${i + 1}/${dataUrls.length} to: ${resolved.propertyName}/${resolved.roomName}/${componentName}`);
         const uploadedUrl = await uploadReportImage(
           dataUrls[i], 
           reportId, 
@@ -148,20 +160,20 @@ export const uploadMultipleReportImages = async (
           componentName
         );
         uploadedUrls.push(uploadedUrl);
-        console.log(`✅ [UPLOAD v3] Image ${i + 1} uploaded successfully`);
+        console.log(`✅ [UPLOAD v4] Image ${i + 1} uploaded successfully`);
       } catch (error) {
-        console.error(`❌ [UPLOAD v3] Failed to upload image ${i + 1}:`, error);
+        console.error(`❌ [UPLOAD v4] Failed to upload image ${i + 1}:`, error);
         failedUploads.push(dataUrls[i]);
       }
     }
 
     const allUrls = [...existingUrls, ...uploadedUrls, ...failedUploads];
     
-    console.log(`📊 [UPLOAD v3] Batch upload complete: ${uploadedUrls.length}/${dataUrls.length} successful uploads`);
+    console.log(`📊 [UPLOAD v4] Batch upload complete: ${uploadedUrls.length}/${dataUrls.length} successful uploads`);
     
     return allUrls;
   } catch (error) {
-    console.error(`❌ [UPLOAD v3] Error in batch upload:`, error);
+    console.error(`❌ [UPLOAD v4] Error in batch upload:`, error);
     return imageUrls;
   }
 };
