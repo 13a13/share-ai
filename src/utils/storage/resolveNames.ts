@@ -2,121 +2,123 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Resolves property and room names given a roomId, with robust fallbacks and schema compatibility.
- * This version is designed to work with the actual database schema.
+ * Resolves property and room names given a roomId, with comprehensive debugging and validation.
+ * This version ensures we always get the correct names or fail with detailed error information.
  */
 export async function resolvePropertyAndRoomNames(
   roomId: string,
   propertyName?: string,
   roomName?: string
 ): Promise<{ propertyName: string; roomName: string }> {
-  console.log(`🔍 resolvePropertyAndRoomNames called with:`, {
+  console.log(`🔍 [RESOLVE v3] Starting resolution with:`, {
     roomId,
     providedPropertyName: propertyName,
     providedRoomName: roomName
   });
 
-  let resolvedProp = (propertyName && propertyName.trim()) ? propertyName : undefined;
-  let resolvedRoom = (roomName && roomName.trim()) ? roomName : undefined;
+  // If we already have both names provided and they're not generic, use them
+  if (propertyName && roomName && 
+      propertyName.trim() !== '' && roomName.trim() !== '' &&
+      propertyName !== 'unknown_property' && roomName !== 'unknown_room' &&
+      propertyName !== 'property' && roomName !== 'room') {
+    console.log(`✅ [RESOLVE v3] Using provided names:`, { propertyName, roomName });
+    return { propertyName: propertyName.trim(), roomName: roomName.trim() };
+  }
 
-  // Only fetch from database if we're missing either name
-  if ((!resolvedProp || !resolvedRoom) && roomId && supabase) {
-    try {
-      console.log(`🔍 Fetching room and property data from database for roomId: ${roomId}`);
-      
-      const { data, error } = await supabase
-        .from('rooms')
-        .select(`
-          id, 
-          name, 
-          type,
-          property_id,
-          properties (
-            id,
-            name,
-            location,
-            type
-          )
-        `)
-        .eq('id', roomId)
-        .maybeSingle();
+  // We need to fetch from database
+  if (!roomId || !roomId.trim()) {
+    console.error(`❌ [RESOLVE v3] Invalid roomId provided: "${roomId}"`);
+    return { propertyName: "error_no_room_id", roomName: "error_no_room_id" };
+  }
 
-      if (error) {
-        console.error('❌ Database error fetching room data:', error);
-      } else if (data) {
-        console.log('✅ Successfully fetched room data:', {
-          roomId: data.id,
-          roomName: data.name,
-          roomType: data.type,
-          propertyId: data.property_id,
-          propertyData: data.properties
-        });
+  if (!supabase) {
+    console.error(`❌ [RESOLVE v3] Supabase client not available`);
+    return { propertyName: "error_no_supabase", roomName: "error_no_supabase" };
+  }
 
-        // Resolve room name with multiple fallbacks
-        if (!resolvedRoom) {
-          if (data.name && data.name.trim() !== '') {
-            resolvedRoom = data.name;
-            console.log(`✅ Using room name from database: "${resolvedRoom}"`);
-          } else if (data.type && data.type.trim() !== '') {
-            resolvedRoom = data.type.replace('_', ' ');
-            console.log(`✅ Using room type as name: "${resolvedRoom}"`);
-          } else {
-            resolvedRoom = "room";
-            console.log(`⚠️ No room name or type found, using default: "${resolvedRoom}"`);
-          }
-        }
+  try {
+    console.log(`🔍 [RESOLVE v3] Fetching from database for roomId: ${roomId}`);
+    
+    // First, let's check if the room exists at all
+    const { data: roomCheck, error: roomCheckError } = await supabase
+      .from('rooms')
+      .select('id, name, type, property_id')
+      .eq('id', roomId)
+      .maybeSingle();
 
-        // Resolve property name with multiple fallbacks
-        if (!resolvedProp && data.properties) {
-          const propertyData = data.properties as any;
-          if (propertyData.name && propertyData.name.trim() !== '') {
-            resolvedProp = propertyData.name;
-            console.log(`✅ Using property name from database: "${resolvedProp}"`);
-          } else if (propertyData.location && propertyData.location.trim() !== '') {
-            resolvedProp = propertyData.location;
-            console.log(`✅ Using property location as name: "${resolvedProp}"`);
-          } else if (propertyData.type && propertyData.type.trim() !== '') {
-            resolvedProp = propertyData.type;
-            console.log(`✅ Using property type as name: "${resolvedProp}"`);
-          } else {
-            resolvedProp = "property";
-            console.log(`⚠️ No property name, location, or type found, using default: "${resolvedProp}"`);
-          }
-        }
-      } else {
-        console.warn(`⚠️ No room found with ID: ${roomId}`);
-      }
-    } catch (err) {
-      console.error('❌ Exception while fetching room/property data:', err);
+    if (roomCheckError) {
+      console.error(`❌ [RESOLVE v3] Room check query error:`, roomCheckError);
+      return { propertyName: "error_room_query", roomName: "error_room_query" };
     }
-  }
 
-  // Final fallback validation
-  if (!resolvedProp || resolvedProp.trim() === "") {
-    console.warn(`⚠️ Property name resolution failed for roomId=${roomId}. Using "property"`);
-    resolvedProp = "property";
-  }
-  if (!resolvedRoom || resolvedRoom.trim() === "") {
-    console.warn(`⚠️ Room name resolution failed for roomId=${roomId}. Using "room"`);
-    resolvedRoom = "room";
-  }
+    if (!roomCheck) {
+      console.error(`❌ [RESOLVE v3] Room not found with ID: ${roomId}`);
+      return { propertyName: "error_room_not_found", roomName: "error_room_not_found" };
+    }
 
-  const result = {
-    propertyName: resolvedProp,
-    roomName: resolvedRoom
-  };
+    console.log(`✅ [RESOLVE v3] Room found:`, roomCheck);
 
-  console.log(`✅ Final resolved names:`, result);
-  
-  // Log warning if we're still using generic names
-  if (resolvedProp === "property" || resolvedRoom === "room") {
-    console.error("🚨 RESOLUTION WARNING: Using generic fallback names!", {
-      roomId, 
-      originalPropertyName: propertyName, 
-      originalRoomName: roomName, 
-      finalResult: result
-    });
+    // Now fetch the property information
+    const { data: propertyData, error: propertyError } = await supabase
+      .from('properties')
+      .select('id, name, location, type')
+      .eq('id', roomCheck.property_id)
+      .maybeSingle();
+
+    if (propertyError) {
+      console.error(`❌ [RESOLVE v3] Property query error:`, propertyError);
+      return { propertyName: "error_property_query", roomName: roomCheck.name || roomCheck.type || "room" };
+    }
+
+    if (!propertyData) {
+      console.error(`❌ [RESOLVE v3] Property not found with ID: ${roomCheck.property_id}`);
+      return { propertyName: "error_property_not_found", roomName: roomCheck.name || roomCheck.type || "room" };
+    }
+
+    console.log(`✅ [RESOLVE v3] Property found:`, propertyData);
+
+    // Resolve property name with priority: name > location > type > fallback
+    let resolvedPropertyName = "unknown_property";
+    if (propertyData.name && propertyData.name.trim() !== '') {
+      resolvedPropertyName = propertyData.name.trim();
+      console.log(`✅ [RESOLVE v3] Using property name: "${resolvedPropertyName}"`);
+    } else if (propertyData.location && propertyData.location.trim() !== '') {
+      resolvedPropertyName = propertyData.location.trim();
+      console.log(`✅ [RESOLVE v3] Using property location as name: "${resolvedPropertyName}"`);
+    } else if (propertyData.type && propertyData.type.trim() !== '') {
+      resolvedPropertyName = propertyData.type.trim();
+      console.log(`✅ [RESOLVE v3] Using property type as name: "${resolvedPropertyName}"`);
+    } else {
+      console.error(`❌ [RESOLVE v3] Property has no name, location, or type!`, propertyData);
+      resolvedPropertyName = "property_no_name";
+    }
+
+    // Resolve room name with priority: name > type > fallback
+    let resolvedRoomName = "unknown_room";
+    if (roomCheck.name && roomCheck.name.trim() !== '') {
+      resolvedRoomName = roomCheck.name.trim();
+      console.log(`✅ [RESOLVE v3] Using room name: "${resolvedRoomName}"`);
+    } else if (roomCheck.type && roomCheck.type.trim() !== '') {
+      resolvedRoomName = roomCheck.type.trim().replace('_', ' ');
+      console.log(`✅ [RESOLVE v3] Using room type as name: "${resolvedRoomName}"`);
+    } else {
+      console.error(`❌ [RESOLVE v3] Room has no name or type!`, roomCheck);
+      resolvedRoomName = "room_no_name";
+    }
+
+    const result = {
+      propertyName: resolvedPropertyName,
+      roomName: resolvedRoomName
+    };
+
+    console.log(`✅ [RESOLVE v3] Final resolved names:`, result);
+    
+    // Log success metrics
+    console.log(`📊 [RESOLVE v3] Resolution success: Property="${resolvedPropertyName}" (${resolvedPropertyName === 'unknown_property' ? 'FAILED' : 'SUCCESS'}), Room="${resolvedRoomName}" (${resolvedRoomName === 'unknown_room' ? 'FAILED' : 'SUCCESS'})`);
+
+    return result;
+  } catch (error) {
+    console.error(`❌ [RESOLVE v3] Exception during resolution:`, error);
+    return { propertyName: "error_exception", roomName: "error_exception" };
   }
-
-  return result;
 }
