@@ -10,7 +10,7 @@ export async function resolvePropertyAndRoomNames(
   propertyName?: string,
   roomName?: string
 ): Promise<{ propertyName: string; roomName: string }> {
-  console.log(`🔍 [RESOLVE v4] Starting resolution with:`, {
+  console.log(`🔍 [RESOLVE v5] Starting resolution with:`, {
     roomId,
     providedPropertyName: propertyName,
     providedRoomName: roomName
@@ -22,98 +22,109 @@ export async function resolvePropertyAndRoomNames(
       propertyName !== 'unknown_property' && roomName !== 'unknown_room' &&
       propertyName !== 'property' && roomName !== 'room' &&
       !propertyName.includes('error_') && !roomName.includes('error_')) {
-    console.log(`✅ [RESOLVE v4] Using provided names:`, { propertyName, roomName });
+    console.log(`✅ [RESOLVE v5] Using provided names:`, { propertyName, roomName });
     return { propertyName: propertyName.trim(), roomName: roomName.trim() };
   }
 
   // We need to fetch from database
   if (!roomId || !roomId.trim()) {
-    console.error(`❌ [RESOLVE v4] Invalid roomId provided: "${roomId}"`);
+    console.error(`❌ [RESOLVE v5] Invalid roomId provided: "${roomId}"`);
     return { propertyName: "error_no_room_id", roomName: "error_no_room_id" };
   }
 
   if (!supabase) {
-    console.error(`❌ [RESOLVE v4] Supabase client not available`);
+    console.error(`❌ [RESOLVE v5] Supabase client not available`);
     return { propertyName: "error_no_supabase", roomName: "error_no_supabase" };
   }
 
   try {
-    console.log(`🔍 [RESOLVE v4] Fetching from database for roomId: ${roomId}`);
+    console.log(`🔍 [RESOLVE v5] Fetching from database for roomId: ${roomId}`);
     
-    // Enhanced query with join to get all data in one call
-    const { data: roomWithProperty, error: queryError } = await supabase
+    // Fixed query structure - separate the join to avoid type inference issues
+    const { data: roomData, error: roomError } = await supabase
       .from('rooms')
       .select(`
         id,
         name,
         type,
-        property_id,
-        properties!inner (
-          id,
-          name,
-          location,
-          type
-        )
+        property_id
       `)
       .eq('id', roomId)
       .maybeSingle();
 
-    if (queryError) {
-      console.error(`❌ [RESOLVE v4] Database query error:`, queryError);
-      return { propertyName: "error_query_failed", roomName: "error_query_failed" };
+    if (roomError) {
+      console.error(`❌ [RESOLVE v5] Room query error:`, roomError);
+      return { propertyName: "error_room_query", roomName: "error_room_query" };
     }
 
-    if (!roomWithProperty) {
-      console.error(`❌ [RESOLVE v4] Room not found with ID: ${roomId}`);
+    if (!roomData) {
+      console.error(`❌ [RESOLVE v5] Room not found with ID: ${roomId}`);
       return { propertyName: "error_room_not_found", roomName: "error_room_not_found" };
     }
 
-    console.log(`✅ [RESOLVE v4] Raw database result:`, JSON.stringify(roomWithProperty, null, 2));
+    console.log(`✅ [RESOLVE v5] Room data retrieved:`, roomData);
 
-    // Extract property data
-    const propertyData = roomWithProperty.properties;
-    if (!propertyData) {
-      console.error(`❌ [RESOLVE v4] Property data missing from room query`);
-      return { propertyName: "error_property_missing", roomName: roomWithProperty.name || "error_room_name" };
+    // Fetch property data separately to avoid join issues
+    const { data: propertyData, error: propertyError } = await supabase
+      .from('properties')
+      .select(`
+        id,
+        name,
+        location,
+        type
+      `)
+      .eq('id', roomData.property_id)
+      .maybeSingle();
+
+    if (propertyError) {
+      console.error(`❌ [RESOLVE v5] Property query error:`, propertyError);
+      return { propertyName: "error_property_query", roomName: roomData.name || "error_room_name" };
     }
+
+    if (!propertyData) {
+      console.error(`❌ [RESOLVE v5] Property not found with ID: ${roomData.property_id}`);
+      return { propertyName: "error_property_not_found", roomName: roomData.name || "error_room_name" };
+    }
+
+    console.log(`✅ [RESOLVE v5] Property data retrieved:`, propertyData);
 
     // Resolve property name with priority: name > location > type > fallback
     let resolvedPropertyName = "unknown_property";
     if (propertyData.name && propertyData.name.trim() !== '') {
       resolvedPropertyName = propertyData.name.trim();
-      console.log(`✅ [RESOLVE v4] Using property name: "${resolvedPropertyName}"`);
+      console.log(`✅ [RESOLVE v5] Using property name: "${resolvedPropertyName}"`);
     } else if (propertyData.location && propertyData.location.trim() !== '') {
       resolvedPropertyName = propertyData.location.trim();
-      console.log(`✅ [RESOLVE v4] Using property location as name: "${resolvedPropertyName}"`);
+      console.log(`✅ [RESOLVE v5] Using property location as name: "${resolvedPropertyName}"`);
     } else if (propertyData.type && propertyData.type.trim() !== '') {
       resolvedPropertyName = propertyData.type.trim();
-      console.log(`✅ [RESOLVE v4] Using property type as name: "${resolvedPropertyName}"`);
+      console.log(`✅ [RESOLVE v5] Using property type as name: "${resolvedPropertyName}"`);
     } else {
-      console.error(`❌ [RESOLVE v4] Property has no name, location, or type!`, propertyData);
+      console.error(`❌ [RESOLVE v5] Property has no name, location, or type!`, propertyData);
       resolvedPropertyName = "property_no_name";
     }
 
     // FIXED: Resolve room name with STRICT priority - name is primary, never fallback to type unless name is truly empty
     let resolvedRoomName = "unknown_room";
     
-    console.log(`🔍 [RESOLVE v4] Room name analysis:`, {
-      rawName: roomWithProperty.name,
-      nameExists: !!roomWithProperty.name,
-      nameNotEmpty: roomWithProperty.name && roomWithProperty.name.trim() !== '',
-      trimmedName: roomWithProperty.name ? roomWithProperty.name.trim() : null,
-      roomType: roomWithProperty.type
+    console.log(`🔍 [RESOLVE v5] Room name analysis:`, {
+      rawName: roomData.name,
+      nameExists: !!roomData.name,
+      nameNotEmpty: roomData.name && roomData.name.trim() !== '',
+      trimmedName: roomData.name ? roomData.name.trim() : null,
+      roomType: roomData.type
     });
 
-    if (roomWithProperty.name && roomWithProperty.name.trim() !== '') {
-      resolvedRoomName = roomWithProperty.name.trim();
-      console.log(`✅ [RESOLVE v4] Using room name: "${resolvedRoomName}"`);
+    if (roomData.name && roomData.name.trim() !== '') {
+      resolvedRoomName = roomData.name.trim();
+      console.log(`✅ [RESOLVE v5] Using room name: "${resolvedRoomName}"`);
     } else {
-      console.warn(`⚠️ [RESOLVE v4] Room name is missing or empty! Raw name: "${roomWithProperty.name}", using type as fallback`);
-      if (roomWithProperty.type && roomWithProperty.type.trim() !== '') {
-        resolvedRoomName = roomWithProperty.type.trim().replace('_', ' ');
-        console.log(`✅ [RESOLVE v4] Using room type as fallback name: "${resolvedRoomName}"`);
+      console.warn(`⚠️ [RESOLVE v5] Room name is missing or empty! Raw name: "${roomData.name}", using type as fallback`);
+      if (roomData.type && roomData.type.trim() !== '') {
+        resolvedRoomName = roomData.type.trim().replace('_', ' ');
+        console.log(`✅ [RESOLVE v5] Using room type as fallback name: "${resolvedRoomName}"`);
       } else {
-        console.error(`❌ [RESOLVE v4] Room has no name or type!`, roomWithProperty);
+        console.error(`❌ [RESOLVE v5] Room has no name or type!`, roomData);
         resolvedRoomName = "room_no_name";
       }
     }
@@ -123,13 +134,13 @@ export async function resolvePropertyAndRoomNames(
       roomName: resolvedRoomName
     };
 
-    console.log(`✅ [RESOLVE v4] Final resolved names:`, result);
+    console.log(`✅ [RESOLVE v5] Final resolved names:`, result);
     
     // Enhanced success metrics
     const propertySuccess = resolvedPropertyName !== 'unknown_property' && !resolvedPropertyName.includes('error_');
     const roomSuccess = resolvedRoomName !== 'unknown_room' && !resolvedRoomName.includes('error_');
     
-    console.log(`📊 [RESOLVE v4] Resolution analysis:`, {
+    console.log(`📊 [RESOLVE v5] Resolution analysis:`, {
       propertyName: resolvedPropertyName,
       propertySuccess,
       roomName: resolvedRoomName,
@@ -141,7 +152,7 @@ export async function resolvePropertyAndRoomNames(
 
     return result;
   } catch (error) {
-    console.error(`❌ [RESOLVE v4] Exception during resolution:`, error);
+    console.error(`❌ [RESOLVE v5] Exception during resolution:`, error);
     return { propertyName: "error_exception", roomName: "error_exception" };
   }
 }
