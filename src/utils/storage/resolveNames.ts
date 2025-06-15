@@ -28,6 +28,19 @@ export async function resolvePropertyAndRoomNames(
       // Fallback to defaults below
     }
   }
+  if (!prop || prop.trim() === "") {
+    console.warn(`⚠️ Could not resolve property name for roomId=${roomId}. Using "unknown_property"`);
+    prop = "unknown_property";
+  }
+  if (!room || room.trim() === "") {
+    console.warn(`⚠️ Could not resolve room name for roomId=${roomId}. Using "unknown_room"`);
+    room = "unknown_room";
+  }
+  if (prop === "unknown_property" || room === "unknown_room") {
+    console.error("🚨 FINAL WARNING from resolvePropertyAndRoomNames: Using dirty fallback values!", {
+      roomId, propertyName, roomName, prop, room
+    });
+  }
   return {
     propertyName: prop && prop.trim() !== "" ? prop : "unknown_property",
     roomName: room && room.trim() !== "" ? room : "unknown_room"

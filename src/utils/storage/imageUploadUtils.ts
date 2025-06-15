@@ -1,5 +1,7 @@
+
 import { generateFolderPath } from './folderUtils';
 import { dataUrlToBlob, getFileExtensionFromDataUrl, uploadBlobToStorage } from './storageUtils';
+import { toast } from "@/components/ui/use-toast";
 
 /**
  * Upload a base64 image to Supabase Storage with user/property/room/component-based folder structure
@@ -22,6 +24,22 @@ export const uploadReportImage = async (
       componentName,
       dataUrlLength: dataUrl.length
     });
+
+    // If we spot any dirty name, throw user a toast
+    if (
+      propertyName === "unknown_property" ||
+      roomName === "unknown_room"
+    ) {
+      toast({
+        title: "Image Upload: Missing Data",
+        description:
+          "Image could not be linked to a valid property or room. Please check the room and property details and try again. (Names missing, uploaded to fallback folder)",
+        variant: "destructive",
+      });
+      console.error("🚨 Could not resolve valid property/room names during upload!", {
+        reportId, roomId, propertyName, roomName
+      });
+    }
     
     // Convert data URL to blob
     const blob = await dataUrlToBlob(dataUrl);
@@ -61,6 +79,22 @@ export const uploadMultipleReportImages = async (
       roomName,
       componentName
     });
+
+    // If we spot any dirty name, throw user a toast
+    if (
+      propertyName === "unknown_property" ||
+      roomName === "unknown_room"
+    ) {
+      toast({
+        title: "Multi-Image Upload: Missing Data",
+        description:
+          "Some images are being uploaded to a fallback folder due to missing property/room names. Please review your property/rooms data.",
+        variant: "destructive",
+      });
+      console.error("🚨 Could not resolve valid property/room names during batch upload!", {
+        reportId, roomId, propertyName, roomName
+      });
+    }
     
     // Filter only data URLs that need uploading
     const dataUrls = imageUrls.filter(url => url.startsWith('data:'));
