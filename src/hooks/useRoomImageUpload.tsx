@@ -28,22 +28,20 @@ export const useRoomImageUpload = ({
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
 
-  const [propertyName, setPropertyName] = useState(propName ?? "");
-  const [roomName, setRoomName] = useState(rmName ?? "");
+  const [resolvedNames, setResolvedNames] = useState<{propertyName: string; roomName: string} | null>(null);
 
-  // Guarantee property/room names are always loaded for uploads
-  const refreshNames = async () => {
-    const { propertyName: resolvedProp, roomName: resolvedRoom } =
-      await resolvePropertyAndRoomNames(roomId, propertyName, roomName);
-    setPropertyName(resolvedProp);
-    setRoomName(resolvedRoom);
-    return { resolvedProp, resolvedRoom };
-  };
-
+  // Ensure names are always resolved on mount and when IDs change
   useEffect(() => {
-    // On mount or when IDs/names change, always fetch up-to-date values
-    refreshNames();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const resolveNames = async () => {
+      console.log("🔄 useRoomImageUpload: Resolving names for roomId:", roomId);
+      const resolved = await resolvePropertyAndRoomNames(roomId, propName, rmName);
+      setResolvedNames(resolved);
+      console.log("✅ useRoomImageUpload: Names resolved:", resolved);
+    };
+    
+    if (roomId) {
+      resolveNames();
+    }
   }, [roomId, propName, rmName]);
 
   const handleFileUpload = async (file: File) => {
@@ -96,22 +94,33 @@ export const useRoomImageUpload = ({
     }
   };
 
-  // This method guarantees correct names before upload
   const processImage = async (imageUrl: string) => {
     try {
-      const { resolvedProp, resolvedRoom } = await refreshNames();
-      const propNameFinal = resolvedProp;
-      const roomNameFinal = resolvedRoom;
+      // Ensure we have resolved names before uploading
+      if (!resolvedNames) {
+        console.log("🔄 processImage: Re-resolving names...");
+        const freshlyResolved = await resolvePropertyAndRoomNames(roomId, propName, rmName);
+        setResolvedNames(freshlyResolved);
+      }
 
-      console.log("Processing and uploading image for room:", roomId, "report:", reportId, "property:", propNameFinal, "roomName:", roomNameFinal);
+      const namesToUse = resolvedNames || { propertyName: "property", roomName: "room" };
+
+      console.log("Processing and uploading image for room:", roomId, "report:", reportId, "with names:", namesToUse);
 
       const storageAvailable = await checkStorageBucket();
       let finalImageUrl = imageUrl;
 
       if (storageAvailable) {
         try {
-          finalImageUrl = await uploadReportImage(imageUrl, reportId, roomId, propNameFinal, roomNameFinal, 'general');
-          console.log("✅ Image uploaded to user-organized folder successfully:", finalImageUrl);
+          finalImageUrl = await uploadReportImage(
+            imageUrl, 
+            reportId, 
+            roomId, 
+            namesToUse.propertyName, 
+            namesToUse.roomName, 
+            'general'
+          );
+          console.log("✅ Image uploaded successfully:", finalImageUrl);
         } catch (storageError) {
           console.warn("⚠️ Storage upload failed, using original URL:", storageError);
           finalImageUrl = imageUrl;
@@ -127,7 +136,7 @@ export const useRoomImageUpload = ({
         setUploadedImage(finalImageUrl);
 
         const storageStatus = storageAvailable && finalImageUrl !== imageUrl ?
-          `uploaded to user's account folder in Supabase Storage` : "saved locally";
+          `uploaded to organized folder: ${namesToUse.propertyName}/${namesToUse.roomName}` : "saved locally";
 
         toast({
           title: "Image uploaded",
@@ -153,7 +162,6 @@ export const useRoomImageUpload = ({
     setIsProcessing(true);
     
     try {
-      // Process the image with Gemini AI
       const updatedRoom = await GeminiAPI.processRoomImage(reportId, roomId, uploadedImageId);
       
       if (updatedRoom) {
@@ -162,11 +170,9 @@ export const useRoomImageUpload = ({
           description: "AI has analyzed the image and updated the room details",
         });
         
-        // Reset the uploader
         setUploadedImage(null);
         setUploadedImageId(null);
         
-        // Notify parent component
         onImageProcessed(updatedRoom);
       } else {
         toast({

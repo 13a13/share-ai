@@ -1,10 +1,11 @@
 
 import { generateFolderPath } from './folderUtils';
 import { dataUrlToBlob, getFileExtensionFromDataUrl, uploadBlobToStorage } from './storageUtils';
+import { resolvePropertyAndRoomNames } from './resolveNames';
 import { toast } from "@/components/ui/use-toast";
 
 /**
- * Upload a base64 image to Supabase Storage with user/property/room/component-based folder structure
+ * Upload a base64 image to Supabase Storage with proper name resolution
  */
 export const uploadReportImage = async (
   dataUrl: string,
@@ -15,7 +16,6 @@ export const uploadReportImage = async (
   componentName?: string
 ): Promise<string> => {
   try {
-    // Inputs must always be non-blank at this point (guaranteed by resolveNames)
     console.log("🔄 uploadReportImage called with parameters:", {
       reportId,
       roomId,
@@ -25,19 +25,20 @@ export const uploadReportImage = async (
       dataUrlLength: dataUrl.length
     });
 
-    // If we spot any dirty name, throw user a toast
-    if (
-      propertyName === "unknown_property" ||
-      roomName === "unknown_room"
-    ) {
+    // Always resolve names to ensure we have the correct values
+    const resolved = await resolvePropertyAndRoomNames(roomId, propertyName, roomName);
+    
+    console.log("🔍 Resolved names for upload:", resolved);
+
+    // Show warning if we're using generic fallbacks
+    if (resolved.propertyName === "property" || resolved.roomName === "room") {
       toast({
-        title: "Image Upload: Missing Data",
-        description:
-          "Image could not be linked to a valid property or room. Please check the room and property details and try again. (Names missing, uploaded to fallback folder)",
+        title: "Image Upload: Using Generic Names",
+        description: `Image uploaded to generic folder structure. Property: "${resolved.propertyName}", Room: "${resolved.roomName}". Check your property and room data.`,
         variant: "destructive",
       });
-      console.error("🚨 Could not resolve valid property/room names during upload!", {
-        reportId, roomId, propertyName, roomName
+      console.error("🚨 Using generic names during upload!", {
+        reportId, roomId, resolved
       });
     }
     
@@ -47,8 +48,17 @@ export const uploadReportImage = async (
     // Get file extension
     const fileExt = getFileExtensionFromDataUrl(dataUrl);
     
-    // Generate folder path
-    const fileName = await generateFolderPath(reportId, roomId, propertyName, roomName, componentName, fileExt);
+    // Generate folder path with resolved names
+    const fileName = await generateFolderPath(
+      reportId, 
+      roomId, 
+      resolved.propertyName, 
+      resolved.roomName, 
+      componentName, 
+      fileExt
+    );
+    
+    console.log("📤 Uploading to path:", fileName);
     
     // Upload to storage and return public URL
     return await uploadBlobToStorage(blob, fileName);
@@ -59,7 +69,7 @@ export const uploadReportImage = async (
 };
 
 /**
- * Upload multiple images to Supabase Storage with user/property/room/component-based organization
+ * Upload multiple images to Supabase Storage with proper name resolution
  */
 export const uploadMultipleReportImages = async (
   imageUrls: string[],
@@ -70,7 +80,6 @@ export const uploadMultipleReportImages = async (
   componentName?: string
 ): Promise<string[]> => {
   try {
-    // Inputs must always be non-blank at this point (guaranteed by resolveNames)
     console.log(`🚀 uploadMultipleReportImages called with:`, {
       imageCount: imageUrls.length,
       reportId,
@@ -80,19 +89,20 @@ export const uploadMultipleReportImages = async (
       componentName
     });
 
-    // If we spot any dirty name, throw user a toast
-    if (
-      propertyName === "unknown_property" ||
-      roomName === "unknown_room"
-    ) {
+    // Always resolve names first
+    const resolved = await resolvePropertyAndRoomNames(roomId, propertyName, roomName);
+    
+    console.log("🔍 Resolved names for batch upload:", resolved);
+
+    // Show warning if using generic names
+    if (resolved.propertyName === "property" || resolved.roomName === "room") {
       toast({
-        title: "Multi-Image Upload: Missing Data",
-        description:
-          "Some images are being uploaded to a fallback folder due to missing property/room names. Please review your property/rooms data.",
+        title: "Multi-Image Upload: Using Generic Names",
+        description: `Images uploaded to generic folder structure. Property: "${resolved.propertyName}", Room: "${resolved.roomName}". Check your property and room data.`,
         variant: "destructive",
       });
-      console.error("🚨 Could not resolve valid property/room names during batch upload!", {
-        reportId, roomId, propertyName, roomName
+      console.error("🚨 Using generic names during batch upload!", {
+        reportId, roomId, resolved
       });
     }
     
@@ -105,15 +115,23 @@ export const uploadMultipleReportImages = async (
     if (dataUrls.length === 0) {
       return imageUrls;
     }
+
     const uploadedUrls: string[] = [];
     const failedUploads: string[] = [];
 
     for (let i = 0; i < dataUrls.length; i++) {
       try {
-        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length} to organized folder: ${propertyName}/${roomName}/${componentName}`);
-        const uploadedUrl = await uploadReportImage(dataUrls[i], reportId, roomId, propertyName, roomName, componentName);
+        console.log(`📤 Uploading image ${i + 1}/${dataUrls.length} to: ${resolved.propertyName}/${resolved.roomName}/${componentName}`);
+        const uploadedUrl = await uploadReportImage(
+          dataUrls[i], 
+          reportId, 
+          roomId, 
+          resolved.propertyName, 
+          resolved.roomName, 
+          componentName
+        );
         uploadedUrls.push(uploadedUrl);
-        console.log(`✅ Image ${i + 1} uploaded successfully to organized folder`);
+        console.log(`✅ Image ${i + 1} uploaded successfully`);
       } catch (error) {
         console.error(`❌ Failed to upload image ${i + 1}:`, error);
         failedUploads.push(dataUrls[i]);
@@ -121,11 +139,9 @@ export const uploadMultipleReportImages = async (
     }
 
     const allUrls = [...existingUrls, ...uploadedUrls, ...failedUploads];
-
     return allUrls;
   } catch (error) {
     console.error("❌ Error in batch upload:", error);
-    // Return original URLs as fallback
     return imageUrls;
   }
 };

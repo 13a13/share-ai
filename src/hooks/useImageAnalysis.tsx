@@ -1,10 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
 import { uploadMultipleReportImages, checkStorageBucket } from "@/utils/supabaseStorage";
 import { useUltraFastBatchSaving } from "./useUltraFastBatchSaving";
 import { RoomImageAPI } from "@/lib/api/reports/roomImageApi";
-import { supabase } from "@/integrations/supabase/client";
 import { resolvePropertyAndRoomNames } from "@/utils/storage/resolveNames";
 
 interface UseImageAnalysisProps {
@@ -32,54 +32,47 @@ export function useImageAnalysis({
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
   const { queueComponentUpdate, isSaving, getPendingCount } = useUltraFastBatchSaving();
 
-  // Ensure actual property, room name available for upload
-  const [propertyName, setPropertyName] = useState(initialPropName ?? "");
-  const [roomName, setRoomName] = useState(initialRmName ?? "");
-  const [namesLoaded, setNamesLoaded] = useState(false);
+  const [resolvedNames, setResolvedNames] = useState<{propertyName: string; roomName: string} | null>(null);
 
   useEffect(() => {
-    async function fetchNamesIfNeeded() {
-      // Always ensure we have the true (non-blank) names for uploads
+    async function resolveNames() {
       const roomElement = document.querySelector('[data-room-id]');
       const roomId = roomElement?.getAttribute('data-room-id') || "";
-      const result = await resolvePropertyAndRoomNames(
-        roomId,
-        initialPropName,
-        initialRmName
-      );
-      setPropertyName(result.propertyName);
-      setRoomName(result.roomName);
-      setNamesLoaded(true);
+      
+      if (roomId) {
+        console.log("🔄 useImageAnalysis: Resolving names for roomId:", roomId);
+        const result = await resolvePropertyAndRoomNames(roomId, initialPropName, initialRmName);
+        setResolvedNames(result);
+        console.log("✅ useImageAnalysis: Names resolved:", result);
+      }
     }
-    fetchNamesIfNeeded();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    resolveNames();
   }, [initialPropName, initialRmName]);
 
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
-    if (!namesLoaded) return false;
+    if (!resolvedNames) {
+      console.error("❌ Cannot process images: names not resolved yet");
+      return false;
+    }
 
-    // Use true (non-blank) names always for upload path
-    const truePropName = propertyName;
-    const trueRoomName = roomName;
     const roomElement = document.querySelector('[data-room-id]');
     const reportElement = document.querySelector('[data-report-id]');
     const roomId = roomElement?.getAttribute('data-room-id');
     const reportId = reportElement?.getAttribute('data-report-id');
 
-    console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${propertyName}, room: ${roomName}`);
+    console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${resolvedNames.propertyName}, room: ${resolvedNames.roomName}`);
     
     onProcessingStateChange(componentId, true);
     setAnalysisInProgress(true);
     
     try {
-      // Get reportId and roomId from the DOM
       if (!reportElement || !roomElement) {
         console.error("Could not find report-id or room-id in DOM");
         throw new Error("Report or room ID not found");
       }
       
-      console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}, property: ${propertyName}, roomName: ${roomName}, componentName: ${componentName}`);
+      console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}, property: ${resolvedNames.propertyName}, roomName: ${resolvedNames.roomName}, componentName: ${componentName}`);
       
       // Step 1: Check storage availability 
       console.log("🔍 Step 1: Checking storage availability...");
@@ -92,13 +85,12 @@ export function useImageAnalysis({
           description: "Image storage is not available. Images will be processed locally.",
           variant: "destructive",
         });
-        // Continue with local processing
       } else {
         console.log("✅ Storage bucket confirmed available");
       }
       
       // Step 2: Upload images to storage with organized folder structure
-      console.log(`📤 Step 2: Uploading images to organized folders: ${truePropName}/${trueRoomName}/${componentName}...`);
+      console.log(`📤 Step 2: Uploading images to organized folders: ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}...`);
       let storedImageUrls = stagingImages;
       
       if (storageAvailable) {
@@ -107,16 +99,15 @@ export function useImageAnalysis({
             stagingImages,
             reportId,
             roomId,
-            truePropName,
-            trueRoomName,
+            resolvedNames.propertyName,
+            resolvedNames.roomName,
             componentName
           );
           
-          // Verify upload success
           const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
           const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
           
-          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${truePropName}/${trueRoomName}/${componentName}`);
+          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}`);
           
           if (failedUploads > 0) {
             console.warn(`⚠️ ${failedUploads} images failed to upload, proceeding with local storage`);
@@ -170,19 +161,18 @@ export function useImageAnalysis({
       const pendingCount = getPendingCount();
       const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
       
-      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${truePropName}/${trueRoomName}/${componentName}, ${pendingCount} updates queued`);
+      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}, ${pendingCount} updates queued`);
       
       // Show success message
       toast({
         title: "Images processed successfully",
-        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to ${truePropName}/${trueRoomName}/${componentName}` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
+        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
       });
       
       return true;
     } catch (error) {
       console.error("❌ Error in image processing pipeline:", error);
       
-      // Provide more specific error messages
       let errorMessage = "Unknown error occurred";
       if (error instanceof Error) {
         if (error.message.includes("Report or room ID")) {

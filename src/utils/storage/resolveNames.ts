@@ -2,47 +2,121 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Resolves property and room names given a roomId, with fallbacks and optional overrides.
- * Guarantees non-blank names for both property and room.
+ * Resolves property and room names given a roomId, with robust fallbacks and schema compatibility.
+ * This version is designed to work with the actual database schema.
  */
 export async function resolvePropertyAndRoomNames(
   roomId: string,
   propertyName?: string,
   roomName?: string
 ): Promise<{ propertyName: string; roomName: string }> {
-  let prop = (propertyName && propertyName.trim()) ? propertyName : undefined;
-  let room = (roomName && roomName.trim()) ? roomName : undefined;
+  console.log(`🔍 resolvePropertyAndRoomNames called with:`, {
+    roomId,
+    providedPropertyName: propertyName,
+    providedRoomName: roomName
+  });
 
-  if ((!prop || !room) && roomId && supabase) {
+  let resolvedProp = (propertyName && propertyName.trim()) ? propertyName : undefined;
+  let resolvedRoom = (roomName && roomName.trim()) ? roomName : undefined;
+
+  // Only fetch from database if we're missing either name
+  if ((!resolvedProp || !resolvedRoom) && roomId && supabase) {
     try {
+      console.log(`🔍 Fetching room and property data from database for roomId: ${roomId}`);
+      
       const { data, error } = await supabase
         .from('rooms')
-        .select('id, name, property_id, properties(name)')
+        .select(`
+          id, 
+          name, 
+          type,
+          property_id,
+          properties (
+            id,
+            name,
+            location,
+            type
+          )
+        `)
         .eq('id', roomId)
         .maybeSingle();
-      if (data && !error) {
-        if (!room) room = (data as any).name || (data as any).type || "room";
-        if (!prop && (data as any).properties) prop = (data as any).properties.name || "property";
+
+      if (error) {
+        console.error('❌ Database error fetching room data:', error);
+      } else if (data) {
+        console.log('✅ Successfully fetched room data:', {
+          roomId: data.id,
+          roomName: data.name,
+          roomType: data.type,
+          propertyId: data.property_id,
+          propertyData: data.properties
+        });
+
+        // Resolve room name with multiple fallbacks
+        if (!resolvedRoom) {
+          if (data.name && data.name.trim() !== '') {
+            resolvedRoom = data.name;
+            console.log(`✅ Using room name from database: "${resolvedRoom}"`);
+          } else if (data.type && data.type.trim() !== '') {
+            resolvedRoom = data.type.replace('_', ' ');
+            console.log(`✅ Using room type as name: "${resolvedRoom}"`);
+          } else {
+            resolvedRoom = "room";
+            console.log(`⚠️ No room name or type found, using default: "${resolvedRoom}"`);
+          }
+        }
+
+        // Resolve property name with multiple fallbacks
+        if (!resolvedProp && data.properties) {
+          const propertyData = data.properties as any;
+          if (propertyData.name && propertyData.name.trim() !== '') {
+            resolvedProp = propertyData.name;
+            console.log(`✅ Using property name from database: "${resolvedProp}"`);
+          } else if (propertyData.location && propertyData.location.trim() !== '') {
+            resolvedProp = propertyData.location;
+            console.log(`✅ Using property location as name: "${resolvedProp}"`);
+          } else if (propertyData.type && propertyData.type.trim() !== '') {
+            resolvedProp = propertyData.type;
+            console.log(`✅ Using property type as name: "${resolvedProp}"`);
+          } else {
+            resolvedProp = "property";
+            console.log(`⚠️ No property name, location, or type found, using default: "${resolvedProp}"`);
+          }
+        }
+      } else {
+        console.warn(`⚠️ No room found with ID: ${roomId}`);
       }
     } catch (err) {
-      // Fallback to defaults below
+      console.error('❌ Exception while fetching room/property data:', err);
     }
   }
-  if (!prop || prop.trim() === "") {
-    console.warn(`⚠️ Could not resolve property name for roomId=${roomId}. Using "unknown_property"`);
-    prop = "unknown_property";
+
+  // Final fallback validation
+  if (!resolvedProp || resolvedProp.trim() === "") {
+    console.warn(`⚠️ Property name resolution failed for roomId=${roomId}. Using "property"`);
+    resolvedProp = "property";
   }
-  if (!room || room.trim() === "") {
-    console.warn(`⚠️ Could not resolve room name for roomId=${roomId}. Using "unknown_room"`);
-    room = "unknown_room";
+  if (!resolvedRoom || resolvedRoom.trim() === "") {
+    console.warn(`⚠️ Room name resolution failed for roomId=${roomId}. Using "room"`);
+    resolvedRoom = "room";
   }
-  if (prop === "unknown_property" || room === "unknown_room") {
-    console.error("🚨 FINAL WARNING from resolvePropertyAndRoomNames: Using dirty fallback values!", {
-      roomId, propertyName, roomName, prop, room
+
+  const result = {
+    propertyName: resolvedProp,
+    roomName: resolvedRoom
+  };
+
+  console.log(`✅ Final resolved names:`, result);
+  
+  // Log warning if we're still using generic names
+  if (resolvedProp === "property" || resolvedRoom === "room") {
+    console.error("🚨 RESOLUTION WARNING: Using generic fallback names!", {
+      roomId, 
+      originalPropertyName: propertyName, 
+      originalRoomName: roomName, 
+      finalResult: result
     });
   }
-  return {
-    propertyName: prop && prop.trim() !== "" ? prop : "unknown_property",
-    roomName: room && room.trim() !== "" ? room : "unknown_room"
-  };
+
+  return result;
 }
