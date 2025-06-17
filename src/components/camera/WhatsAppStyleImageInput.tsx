@@ -45,6 +45,7 @@ const WhatsAppStyleImageInput = ({
 
   const remainingImages = maxImages - totalImages;
   const hasReachedLimit = remainingImages <= 0;
+  const cameraMaxPhotos = Math.min(remainingImages, 10); // Allow up to 10 photos at once
 
   return (
     <div>
@@ -64,7 +65,7 @@ const WhatsAppStyleImageInput = ({
         <WhatsAppCamera
           onClose={() => setIsCameraOpen(false)}
           onPhotosCapture={handlePhotosCaptured}
-          maxPhotos={remainingImages}
+          maxPhotos={cameraMaxPhotos} // Use calculated max photos
         />
       )}
 

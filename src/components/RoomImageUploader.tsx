@@ -69,7 +69,7 @@ const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImagePr
         <WhatsAppCamera 
           onClose={() => setCameraOpen(false)}
           onPhotosCapture={handleMultiplePhotosCapture}
-          maxPhotos={1} // For room photo, only allow 1 for now
+          maxPhotos={5} // Allow up to 5 room photos
         />
       )}
       

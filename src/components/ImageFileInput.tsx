@@ -46,6 +46,7 @@ const ImageFileInput = ({
   
   const remainingImages = maxImages - totalImages;
   const hasReachedLimit = remainingImages <= 0;
+  const cameraMaxPhotos = Math.min(remainingImages, multiple ? 10 : 5); // Allow more photos when multiple is true
   
   return (
     <div>
@@ -65,7 +66,7 @@ const ImageFileInput = ({
         <WhatsAppCamera
           onClose={() => setIsCameraOpen(false)}
           onPhotosCapture={handleWhatsAppCameraPhotos}
-          maxPhotos={1} // Limit to 1 for single image capture
+          maxPhotos={cameraMaxPhotos} // Use calculated max photos
         />
       )}
 
