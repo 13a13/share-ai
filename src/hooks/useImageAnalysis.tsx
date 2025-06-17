@@ -1,11 +1,13 @@
 
-import { useState, useEffect } from "react";
+/**
+ * Main image analysis hook - refactored into smaller focused modules
+ */
+
 import { useToast } from "@/hooks/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
-import { uploadMultipleReportImages, checkStorageBucket } from "@/utils/supabaseStorage";
-import { useUltraFastBatchSaving } from "./useUltraFastBatchSaving";
-import { RoomImageAPI } from "@/lib/api/reports/roomImageApi";
-import { resolvePropertyAndRoomNames } from "@/utils/storage/resolveNames";
+import { useImageProcessing } from "./imageAnalysis/useImageProcessing";
+import { useImageStorage } from "./imageAnalysis/useImageStorage";
+import { useImageAnalysisState } from "./imageAnalysis/useImageAnalysisState";
 
 interface UseImageAnalysisProps {
   componentId: string;
@@ -22,32 +24,33 @@ export function useImageAnalysis({
   componentId,
   componentName,
   roomType,
-  propertyName: initialPropName,
-  roomName: initialRmName,
+  propertyName,
+  roomName,
   onImagesProcessed,
   onProcessingStateChange,
   processComponentImage
 }: UseImageAnalysisProps) {
   const { toast } = useToast();
-  const [analysisInProgress, setAnalysisInProgress] = useState(false);
-  const { queueComponentUpdate, isSaving, getPendingCount } = useUltraFastBatchSaving();
+  
+  // Use focused hooks for specific functionality
+  const { processImagesWithAI } = useImageProcessing({
+    componentId,
+    componentName,
+    roomType,
+    processComponentImage
+  });
 
-  const [resolvedNames, setResolvedNames] = useState<{propertyName: string; roomName: string} | null>(null);
+  const { resolvedNames, uploadAndStoreImages } = useImageStorage({
+    propertyName,
+    roomName
+  });
 
-  useEffect(() => {
-    async function resolveNames() {
-      const roomElement = document.querySelector('[data-room-id]');
-      const roomId = roomElement?.getAttribute('data-room-id') || "";
-      
-      if (roomId) {
-        console.log("🔄 useImageAnalysis: Resolving names for roomId:", roomId);
-        const result = await resolvePropertyAndRoomNames(roomId, initialPropName, initialRmName);
-        setResolvedNames(result);
-        console.log("✅ useImageAnalysis: Names resolved:", result);
-      }
-    }
-    resolveNames();
-  }, [initialPropName, initialRmName]);
+  const { 
+    analysisInProgress, 
+    updateAnalysisState, 
+    queueUpdate, 
+    getPendingCount 
+  } = useImageAnalysisState();
 
   const processImages = async (stagingImages: string[]) => {
     if (!stagingImages || stagingImages.length === 0) return false;
@@ -56,97 +59,34 @@ export function useImageAnalysis({
       return false;
     }
 
-    const roomElement = document.querySelector('[data-room-id]');
     const reportElement = document.querySelector('[data-report-id]');
-    const roomId = roomElement?.getAttribute('data-room-id');
     const reportId = reportElement?.getAttribute('data-report-id');
 
     console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${resolvedNames.propertyName}, room: ${resolvedNames.roomName}`);
     
     onProcessingStateChange(componentId, true);
-    setAnalysisInProgress(true);
+    updateAnalysisState(componentId, true);
     
     try {
-      if (!reportElement || !roomElement) {
-        console.error("Could not find report-id or room-id in DOM");
-        throw new Error("Report or room ID not found");
+      if (!reportElement) {
+        throw new Error("Report ID not found");
       }
       
-      console.log(`📍 Processing images for report: ${reportId}, room: ${roomId}, component: ${componentId}, property: ${resolvedNames.propertyName}, roomName: ${resolvedNames.roomName}, componentName: ${componentName}`);
+      console.log(`📍 Processing images for report: ${reportId}, component: ${componentId}, property: ${resolvedNames.propertyName}, roomName: ${resolvedNames.roomName}, componentName: ${componentName}`);
       
-      // Step 1: Check storage availability 
-      console.log("🔍 Step 1: Checking storage availability...");
-      const storageAvailable = await checkStorageBucket();
+      // Upload and store images
+      const storedImageUrls = await uploadAndStoreImages(stagingImages, componentName);
       
-      if (!storageAvailable) {
-        console.error("❌ Storage bucket not available");
-        toast({
-          title: "Storage Error",
-          description: "Image storage is not available. Images will be processed locally.",
-          variant: "destructive",
-        });
-      } else {
-        console.log("✅ Storage bucket confirmed available");
+      // Process images with AI
+      const result = await processImagesWithAI(storedImageUrls);
+      
+      if (!result) {
+        throw new Error("AI processing failed");
       }
       
-      // Step 2: Upload images to storage with organized folder structure
-      console.log(`📤 Step 2: Uploading images to organized folders: ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}...`);
-      let storedImageUrls = stagingImages;
-      
-      if (storageAvailable) {
-        try {
-          storedImageUrls = await uploadMultipleReportImages(
-            stagingImages,
-            reportId,
-            roomId,
-            resolvedNames.propertyName,
-            resolvedNames.roomName,
-            componentName
-          );
-          
-          const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
-          const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
-          
-          console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}`);
-          
-          if (failedUploads > 0) {
-            console.warn(`⚠️ ${failedUploads} images failed to upload, proceeding with local storage`);
-          }
-        } catch (uploadError) {
-          console.error("❌ Upload failed, proceeding with local images:", uploadError);
-          storedImageUrls = stagingImages;
-        }
-      }
-      
-      // Step 3: Save image records to database (only for successfully uploaded images)
-      if (storageAvailable) {
-        console.log("💾 Step 3: Saving image records to database...");
-        const savedImages = [];
-        const storageUrls = storedImageUrls.filter(url => !url.startsWith('data:'));
-        
-        for (const imageUrl of storageUrls) {
-          try {
-            const savedImage = await RoomImageAPI.addImageToRoom(reportId, roomId, imageUrl);
-            if (savedImage) {
-              savedImages.push(savedImage);
-              console.log(`✅ Image saved to database with ID: ${savedImage.id}`);
-            }
-          } catch (dbError) {
-            console.error("❌ Failed to save image to database:", dbError);
-          }
-        }
-        
-        console.log(`📊 Database save results: ${savedImages.length}/${storageUrls.length} images saved`);
-      }
-      
-      // Step 4: Process images with AI
-      console.log("🤖 Step 4: Processing images with AI...");
-      const result = await processComponentImage(storedImageUrls, roomType, componentName, true);
-      console.log("✅ AI processing completed:", result);
-      
-      // Step 5: Queue the update for ultra-fast batch saving
+      // Queue the update for ultra-fast batch saving
       console.log("⚡ Step 5: Queueing component update...");
-      queueComponentUpdate(
+      queueUpdate(
         reportId,
         componentId,
         storedImageUrls,
@@ -155,7 +95,7 @@ export function useImageAnalysis({
         result
       );
       
-      // Step 6: Update UI immediately
+      // Update UI immediately
       onImagesProcessed(componentId, storedImageUrls, result);
       
       const pendingCount = getPendingCount();
@@ -166,7 +106,7 @@ export function useImageAnalysis({
       // Show success message
       toast({
         title: "Images processed successfully",
-        description: `AI analyzed ${stagingImages.length} image(s)${storageAvailable ? ` and uploaded ${successfulUploads} to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}` : ' (stored locally)'}. ${pendingCount} updates queued for saving.`,
+        description: `AI analyzed ${stagingImages.length} image(s) and uploaded ${successfulUploads} to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}. ${pendingCount} updates queued for saving.`,
       });
       
       return true;
@@ -191,12 +131,12 @@ export function useImageAnalysis({
       return false;
     } finally {
       onProcessingStateChange(componentId, false);
-      setAnalysisInProgress(false);
+      updateAnalysisState(componentId, false);
     }
   };
 
   return {
-    analysisInProgress: analysisInProgress || isSaving,
+    analysisInProgress,
     processImages,
     pendingUpdatesCount: getPendingCount()
   };
