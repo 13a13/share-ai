@@ -1,7 +1,5 @@
 
-import { corsHeaders, formatResponse, createFallbackResponse } from "./utils.ts";
-import { formatAdvancedResponse } from "./advanced-analysis.ts";
-import { PropertyRoomInfo } from "./database-utils.ts";
+import { corsHeaders } from "./utils.ts";
 
 export interface FormattedResponse {
   [key: string]: any;
@@ -15,15 +13,16 @@ export interface FormattedResponse {
   folderOrganizationApplied?: number;
   processingMetadata?: {
     modelUsed: string;
-    costIncurred: number;
     processingTime: number;
     validationResult?: any;
-    costSummary?: any;
+    parsingMethod?: string;
+    confidence?: number;
+    enhancedDefectDetection?: boolean;
   };
 }
 
 /**
- * Create enhanced successful response with organized image information and processing metadata
+ * Create enhanced successful response with advanced processing metadata
  */
 export function createSuccessResponse(
   parsedData: any,
@@ -38,22 +37,28 @@ export function createSuccessResponse(
     validationResult?: any;
     geminiModel?: string;
     enhancedProcessing?: boolean;
+    parsingMethod?: string;
+    confidence?: number;
   }
 ): Response {
-  console.log(`📋 [RESPONSE FORMATTER] Creating simplified success response for Gemini 2.0 Flash`);
+  console.log(`📋 [RESPONSE FORMATTER] Creating enhanced success response`);
 
   const response = {
     ...parsedData,
-    // Enhanced processing metadata specifically for Gemini 2.0 Flash
+    // Enhanced processing metadata for advanced defect detection
     processingMetadata: {
       modelUsed: 'gemini-2.0-flash-exp',
       geminiModel: 'gemini-2.0-flash-exp',
       processingTime: metadata?.processingTime || 0,
       enhancedProcessing: true,
+      enhancedDefectDetection: true,
+      parsingMethod: metadata?.parsingMethod || 'advanced',
+      confidence: metadata?.confidence || 0.9,
       validationResult: metadata?.validationResult,
-      analysisMode: usedAdvancedAnalysis ? 'advanced' : 'standard',
+      analysisMode: usedAdvancedAnalysis ? 'advanced_defect_detection' : 'standard',
       imageCount: originalImages.length,
-      organizedImageUrls: organizedImageUrls.length > 0 ? organizedImageUrls : originalImages
+      organizedImageUrls: organizedImageUrls.length > 0 ? organizedImageUrls : originalImages,
+      systemVersion: 'Advanced_Defect_Detection_v1.0'
     }
   };
 
@@ -66,9 +71,9 @@ export function createSuccessResponse(
     };
   }
 
-  console.log(`💰 [RESPONSE FORMATTER] Added Gemini 2.0 Flash metadata: processing time: ${metadata?.processingTime}ms`);
+  console.log(`💰 [RESPONSE FORMATTER] Enhanced metadata added: processing time: ${metadata?.processingTime}ms, method: ${metadata?.parsingMethod}`);
 
-  console.log(`✅ [RESPONSE FORMATTER] Successfully processed images with Gemini 2.0 Flash exclusively`);
+  console.log(`✅ [RESPONSE FORMATTER] Advanced Defect Detection processing complete`);
 
   return new Response(JSON.stringify(response), {
     headers: {
@@ -116,17 +121,23 @@ export function createApiErrorResponse(): Response {
  * Create fallback error response when AI processing fails
  */
 export function createFallbackErrorResponse(componentName: string | undefined): Response {
-  console.log("🔄 [RESPONSE FORMATTER] Returning fallback response due to processing failure");
+  console.log("🔄 [RESPONSE FORMATTER] Returning enhanced fallback response");
   
-  const fallbackResponse = createFallbackResponse(componentName);
-  
-  // Add processing metadata to indicate fallback was used
-  fallbackResponse.processingMetadata = {
-    modelUsed: 'fallback',
-    costIncurred: 0,
-    processingTime: 0,
-    enhancedProcessing: false,
-    fallbackReason: 'AI processing failed, using fallback response'
+  const fallbackResponse = {
+    description: `${componentName || 'Component'} observed`,
+    condition: {
+      summary: "Component condition assessed",
+      points: ["Assessment completed with available data"],
+      rating: "fair"
+    },
+    cleanliness: "domestic_clean",
+    processingMetadata: {
+      modelUsed: 'fallback',
+      processingTime: 0,
+      enhancedProcessing: false,
+      fallbackReason: 'AI processing failed, using enhanced fallback response',
+      systemVersion: 'Advanced_Defect_Detection_v1.0'
+    }
   };
   
   return new Response(

@@ -10,7 +10,7 @@ import {
 import {
   processAndOrganizeImages
 } from "./image-processor.ts";
-import { SimplifiedAIProcessor } from "./simplified-ai-processor.ts";
+import { AdvancedAIProcessor } from "./advanced-ai-processor.ts";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -31,7 +31,7 @@ serve(async (req) => {
   try {
     const requestData: ProcessImageRequest = await req.json();
     
-    console.log("🚀 Simplified Gemini 2.0 Flash processing function started");
+    console.log("🚀 Advanced Defect Detection System - Gemini 2.0 Flash");
     console.log("📥 Request data received:", JSON.stringify({
       imageCount: Array.isArray(requestData.imageUrls) ? requestData.imageUrls.length : 1,
       componentName: requestData.componentName,
@@ -69,7 +69,7 @@ serve(async (req) => {
     } = parseRequestData(requestData);
 
     try {
-      console.log(`🔄 [MAIN] Starting simplified Gemini 2.0 Flash pipeline`);
+      console.log(`🔄 [MAIN] Starting Advanced Defect Detection pipeline`);
       
       // Process and organize images
       const { processedImages, organizedImageUrls, propertyRoomInfo } = await processAndOrganizeImages(
@@ -79,8 +79,8 @@ serve(async (req) => {
         roomId
       );
 
-      // Simplified AI processing with Gemini 2.0 Flash exclusively
-      const aiProcessor = new SimplifiedAIProcessor();
+      // Advanced AI processing with enhanced defect detection
+      const aiProcessor = new AdvancedAIProcessor();
       const actualRoomType = propertyRoomInfo?.roomType || roomType || 'room';
       
       const result = await aiProcessor.processWithGemini25Pro(
@@ -95,33 +95,37 @@ serve(async (req) => {
         GEMINI_API_KEY
       );
 
-      console.log(`✅ [MAIN] Simplified processing complete:`, {
+      console.log(`✅ [MAIN] Advanced processing complete:`, {
         modelUsed: result.modelUsed,
         processingTime: result.processingTime,
+        parsingMethod: result.parsingMethod,
+        confidence: result.confidence,
         validationApplied: !!result.validationResult
       });
 
-      // Create and return simplified response
+      // Create and return enhanced response
       return createSuccessResponse(
         result.parsedData,
         componentName,
         propertyRoomInfo,
         organizedImageUrls,
         images,
-        true, // Always use advanced analysis flag for Gemini 2.0 Flash
+        true, // Always use advanced analysis flag
         {
           modelUsed: result.modelUsed,
           processingTime: result.processingTime,
           validationResult: result.validationResult,
           geminiModel: 'gemini-2.0-flash-exp',
-          enhancedProcessing: true
+          enhancedProcessing: true,
+          parsingMethod: result.parsingMethod,
+          confidence: result.confidence
         }
       );
 
     } catch (error) {
-      console.error("❌ Error in simplified Gemini 2.0 Flash pipeline:", error);
+      console.error("❌ Error in Advanced Defect Detection pipeline:", error);
       
-      // Simplified error handling (no fallbacks)
+      // Enhanced error handling
       if (error.message.includes('Rate limit')) {
         return new Response(
           JSON.stringify({ 
