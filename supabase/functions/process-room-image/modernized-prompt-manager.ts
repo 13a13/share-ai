@@ -30,7 +30,7 @@ export class ModernizedPromptManager {
     roomType?: string,
     imageCount?: number
   ): string {
-    console.log(`📝 [MODERNIZED PROMPT] Generating ${promptType} prompt for Gemini 2.0 Flash`);
+    console.log(`📝 [MODERNIZED PROMPT] Generating ${promptType} prompt for Gemini 2.0 Flash - Component: "${componentName}"`);
     
     switch (promptType) {
       case 'inventory':
@@ -46,10 +46,19 @@ export class ModernizedPromptManager {
   }
 
   private createProfessionalInventoryPrompt(componentName: string): string {
+    // Get component-specific analysis for enhanced inventory prompts
+    const componentAnalysis = this.defectAnalyzer.getComponentSpecificAnalysis(componentName);
+    
     return `You are conducting a professional property inspection of ${componentName.toUpperCase()}.
 
 INSPECTION PROTOCOL:
 Please provide a systematic assessment using forensic-level attention to detail. Your analysis should be objective, evidence-based, and thorough.
+
+COMPONENT-SPECIFIC CONSIDERATIONS:
+Focus Areas: ${componentAnalysis.criticalAreas.join(', ')}
+Key Assessment Points: ${componentAnalysis.specificDefects.join(', ')}
+Material Factors: ${componentAnalysis.materialConsiderations.join(', ')}
+Inspection Focus: ${componentAnalysis.inspectionFocus}
 
 ASSESSMENT FRAMEWORK:
 1. Visual Documentation: Comprehensive description of observed conditions
@@ -59,7 +68,7 @@ ASSESSMENT FRAMEWORK:
 
 STRUCTURED OUTPUT REQUIREMENTS:
 {
-  "description": "Professional component description with materials and key features",
+  "description": "Professional component description with materials and key features specific to ${componentName}",
   "condition": {
     "summary": "Objective condition assessment based on observable evidence", 
     "points": [
@@ -74,18 +83,31 @@ STRUCTURED OUTPUT REQUIREMENTS:
     "qualityGrade": "HIGH|MEDIUM|LOW",
     "estimatedAge": "Age assessment based on wear patterns"
   },
-  "maintenanceRecommendations": "Specific maintenance needs and timeline"
+  "maintenanceRecommendations": "Specific maintenance needs and timeline for ${componentName}",
+  "analysisMetadata": {
+    "componentSpecificAnalysis": true,
+    "customComponentName": "${componentName}",
+    "enhancedClassification": true
+  }
 }
 
-Please ensure your assessment is based solely on visible evidence and follows professional inspection standards.`;
+Please ensure your assessment is based solely on visible evidence and follows professional inspection standards with component-specific focus.`;
   }
 
   private createAdvancedAnalysisPrompt(componentName: string, roomType: string, imageCount: number): string {
+    const componentAnalysis = this.defectAnalyzer.getComponentSpecificAnalysis(componentName);
+    
     return `ADVANCED MULTI-PERSPECTIVE ANALYSIS - GEMINI 2.0 FLASH
 
 COMPONENT: ${componentName.toUpperCase()}
 ROOM TYPE: ${roomType.toUpperCase()}  
 IMAGES: ${imageCount} perspectives for comprehensive validation
+
+COMPONENT-SPECIFIC ANALYSIS PROTOCOL:
+Focus Areas: ${componentAnalysis.criticalAreas.join(', ')}
+Key Assessment Points: ${componentAnalysis.specificDefects.join(', ')}
+Material Considerations: ${componentAnalysis.materialConsiderations.join(', ')}
+Inspection Focus: ${componentAnalysis.inspectionFocus}
 
 You are conducting a sophisticated forensic inspection using multiple image perspectives to ensure accuracy and completeness.
 
@@ -103,7 +125,7 @@ ENHANCED ANALYSIS METHODOLOGY:
 
 REQUIRED JSON OUTPUT:
 {
-  "description": "Comprehensive component analysis from multiple perspectives",
+  "description": "Comprehensive ${componentName} analysis from multiple perspectives",
   "condition": {
     "summary": "Integrated assessment validated across viewing angles",
     "points": [
@@ -129,10 +151,16 @@ REQUIRED JSON OUTPUT:
     "imageQuality": "Overall assessment of image set"
   },
   "cleanliness": "Assessment validated across multiple perspectives",
-  "recommendations": "Areas identified for special attention or additional documentation"
+  "recommendations": "Areas identified for special attention or additional documentation",
+  "analysisMetadata": {
+    "componentSpecificAnalysis": true,
+    "customComponentName": "${componentName}",
+    "enhancedClassification": true,
+    "multiPerspectiveValidation": true
+  }
 }
 
-Conduct your analysis with scientific rigor, using all available perspectives to ensure accuracy.`;
+Conduct your analysis with scientific rigor, using all available perspectives to ensure accuracy and applying component-specific expertise.`;
   }
 
   getSupportedModels(): ModelName[] {
