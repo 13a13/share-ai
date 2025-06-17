@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ReportsAPI, GeminiAPI } from "@/lib/api";
@@ -180,17 +179,17 @@ export const useRoomImageUpload = ({
         throw new Error("No images were successfully processed");
       }
 
-      // Process with AI using the first image ID for the API call
-      console.log(`🤖 [HOOK v4] Processing ${processedImageUrls.length} images with AI...`);
-      const updatedRoom = await GeminiAPI.processRoomImage(reportId, roomId, imageIds[0]);
+      // Process with AI using ALL image IDs for multi-image analysis
+      console.log(`🤖 [HOOK v4] Processing ${processedImageUrls.length} images with AI using ALL image IDs:`, imageIds);
+      const updatedRoom = await GeminiAPI.processMultipleRoomImages(reportId, roomId, imageIds);
       
       if (updatedRoom) {
         const storageStatus = storageAvailable ? 
           `uploaded to organized folder: ${namesToUse.propertyName}/${namesToUse.roomName}` : "saved locally";
 
         toast({
-          title: "Multiple images processed",
-          description: `AI analyzed ${processedImageUrls.length} room photo${processedImageUrls.length !== 1 ? 's' : ''} and ${storageStatus}`,
+          title: "Multiple images processed together",
+          description: `AI analyzed ${processedImageUrls.length} room photo${processedImageUrls.length !== 1 ? 's' : ''} together and ${storageStatus}`,
         });
         
         onImageProcessed(updatedRoom);

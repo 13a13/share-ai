@@ -1,152 +1,185 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import {
-  handleCorsRequest,
-  handleTestRequest,
-  validateRequest,
-  parseRequestData,
-  ProcessImageRequest
-} from "./request-handler.ts";
-import {
-  processAndOrganizeImages
-} from "./image-processor.ts";
-import { AdvancedAIProcessor } from "./advanced-ai-processor.ts";
-import {
-  createSuccessResponse,
-  createErrorResponse,
-  createValidationErrorResponse,
-  createApiErrorResponse,
-  createFallbackErrorResponse
-} from "./response-formatter.ts";
+import { corsHeaders } from './cors.ts';
+import { processAndOrganizeImages } from './image-processor.ts';
+import { AIProcessor } from './ai-processor.ts';
+import type { AIProcessingOptions } from './ai-processing-options.ts';
 
-// Use the provided API key directly
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-serve(async (req) => {
-  // CORS preflight request
-  if (req.method === "OPTIONS") {
-    return handleCorsRequest();
+Deno.serve(async (req) => {
+  console.log('🚀 Advanced Defect Detection System - Gemini 2.0 Flash');
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  if (!GEMINI_API_KEY) {
+    console.error('❌ GEMINI_API_KEY not found');
+    return new Response(
+      JSON.stringify({ error: 'GEMINI_API_KEY not configured' }),
+      { status: 500, headers: corsHeaders }
+    );
   }
 
   try {
-    const requestData: ProcessImageRequest = await req.json();
-    
-    console.log("🚀 Advanced Defect Detection System - Gemini 2.0 Flash");
-    console.log("📥 Request data received:", JSON.stringify({
-      imageCount: Array.isArray(requestData.imageUrls) ? requestData.imageUrls.length : 1,
+    const requestData = await req.json();
+    console.log('📥 Request data received:', {
+      imageCount: requestData.images?.length || requestData.imageIds?.length || 0,
       componentName: requestData.componentName,
       roomType: requestData.roomType,
-      reportId: requestData.reportId,
-      roomId: requestData.roomId,
       inventoryMode: requestData.inventoryMode,
       useAdvancedAnalysis: requestData.useAdvancedAnalysis
-    }, null, 2));
-    
-    // Handle test connection request
-    if (requestData.test === true) {
-      return handleTestRequest(GEMINI_API_KEY);
-    }
-    
-    // Validate request
-    const validationError = validateRequest(requestData);
-    if (validationError) {
-      return createValidationErrorResponse(validationError);
-    }
+    });
 
-    if (!GEMINI_API_KEY) {
-      return createApiErrorResponse();
-    }
+    console.log('🔄 [MAIN] Starting Advanced Defect Detection pipeline');
 
-    // Parse and normalize request data
-    const {
-      images,
-      componentName,
-      roomType,
-      reportId,
-      roomId,
-      inventoryMode,
-      useAdvancedAnalysis
-    } = parseRequestData(requestData);
+    let imageUrls: string[] = [];
 
-    try {
-      console.log(`🔄 [MAIN] Starting Advanced Defect Detection pipeline`);
+    if (requestData.imageIds && requestData.imageIds.length > 0) {
+      // Handle room image processing with database lookup
+      console.log(`📸 Processing room images from database: ${requestData.imageIds.length} image IDs`);
       
-      // Process and organize images
-      const { processedImages, organizedImageUrls, propertyRoomInfo } = await processAndOrganizeImages(
-        images,
-        componentName,
-        reportId,
-        roomId
-      );
+      // Import Supabase client
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Advanced AI processing with enhanced defect detection
-      const aiProcessor = new AdvancedAIProcessor();
-      const actualRoomType = propertyRoomInfo?.roomType || roomType || 'room';
-      
-      const result = await aiProcessor.processWithGemini25Pro(
-        processedImages,
-        {
-          componentName,
-          roomType: actualRoomType,
-          inventoryMode,
-          useAdvancedAnalysis,
-          imageCount: images.length
-        },
-        GEMINI_API_KEY
-      );
+      // Fetch image URLs from database
+      const { data: images, error } = await supabase
+        .from('room_images')
+        .select('url')
+        .in('id', requestData.imageIds);
 
-      console.log(`✅ [MAIN] Advanced processing complete:`, {
-        modelUsed: result.modelUsed,
-        processingTime: result.processingTime,
-        parsingMethod: result.parsingMethod,
-        confidence: result.confidence,
-        validationApplied: !!result.validationResult
-      });
-
-      // Create and return enhanced response
-      return createSuccessResponse(
-        result.parsedData,
-        componentName,
-        propertyRoomInfo,
-        organizedImageUrls,
-        images,
-        true, // Always use advanced analysis flag
-        {
-          modelUsed: result.modelUsed,
-          processingTime: result.processingTime,
-          validationResult: result.validationResult,
-          geminiModel: 'gemini-2.0-flash-exp',
-          enhancedProcessing: true,
-          parsingMethod: result.parsingMethod,
-          confidence: result.confidence
-        }
-      );
-
-    } catch (error) {
-      console.error("❌ Error in Advanced Defect Detection pipeline:", error);
-      
-      // Enhanced error handling
-      if (error.message.includes('Rate limit')) {
-        return new Response(
-          JSON.stringify({ 
-            error: "Rate limit exceeded", 
-            details: error.message,
-            suggestion: "Please wait a moment and try again."
-          }),
-          { 
-            status: 429, 
-            headers: { 
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-            } 
-          }
-        );
+      if (error) {
+        console.error('❌ Failed to fetch images from database:', error);
+        throw new Error(`Failed to fetch images: ${error.message}`);
       }
-      
-      return createFallbackErrorResponse(componentName);
+
+      imageUrls = images?.map(img => img.url) || [];
+      console.log(`✅ Retrieved ${imageUrls.length} image URLs from database`);
+    } else if (requestData.images) {
+      // Handle direct image processing
+      imageUrls = requestData.images;
+      console.log(`📸 Processing direct images: ${imageUrls.length} URLs`);
+    } else {
+      throw new Error('No images or imageIds provided');
     }
+
+    if (imageUrls.length === 0) {
+      throw new Error('No image URLs found to process');
+    }
+
+    // Process and organize images
+    const { processedImages, organizedImageUrls, propertyRoomInfo } = await processAndOrganizeImages(
+      imageUrls,
+      requestData.componentName,
+      requestData.reportId,
+      requestData.roomId
+    );
+
+    // Setup AI processing options
+    const aiOptions: AIProcessingOptions = {
+      componentName: requestData.componentName || 'Room',
+      roomType: requestData.roomType || 'general',
+      inventoryMode: requestData.inventoryMode || false,
+      useAdvancedAnalysis: requestData.useAdvancedAnalysis || (imageUrls.length > 1),
+      imageCount: imageUrls.length,
+      originalImageCount: imageUrls.length
+    };
+
+    // Initialize AI processor
+    const aiProcessor = new AIProcessor();
+
+    console.log('🚀 [ADVANCED AI] Starting Gemini 2.0 Flash processing for', processedImages.length, 'images');
+
+    // Process with enhanced AI
+    const aiResult = await aiProcessor.processImagesWithEnhancedAI(
+      processedImages,
+      aiOptions,
+      GEMINI_API_KEY
+    );
+
+    console.log('✅ [MAIN] Advanced processing complete:', {
+      modelUsed: aiResult.modelUsed,
+      processingTime: aiResult.processingTime,
+      parsingMethod: 'enhanced_ai_processor',
+      confidence: 0.9,
+      validationApplied: !!aiResult.validationResult
+    });
+
+    // Format response for room processing
+    if (requestData.imageIds) {
+      console.log('📋 [RESPONSE FORMATTER] Creating enhanced room response');
+      
+      const response = {
+        room: {
+          id: requestData.roomId,
+          description: aiResult.parsedData.description || '',
+          condition: aiResult.parsedData.condition || { summary: '', points: [], rating: 'fair' },
+          cleanliness: aiResult.parsedData.cleanliness || 'domestic_clean',
+          analysis: {
+            modelUsed: aiResult.modelUsed,
+            processingTime: `${aiResult.processingTime}ms`,
+            imageCount: imageUrls.length,
+            multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis,
+            confidence: aiResult.validationResult?.confidence || 0.9
+          }
+        },
+        organizedImageUrls,
+        propertyRoomInfo,
+        costIncurred: aiResult.costIncurred,
+        processingMetadata: {
+          processingTime: aiResult.processingTime,
+          method: 'enhanced_ai_processor',
+          modelUsed: aiResult.modelUsed,
+          multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis
+        }
+      };
+
+      console.log('💰 [RESPONSE FORMATTER] Enhanced metadata added: processing time:', `${aiResult.processingTime}ms`, ', method: enhanced_ai_processor');
+      console.log('✅ [RESPONSE FORMATTER] Advanced Defect Detection processing complete');
+
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Format response for component processing
+    console.log('📋 [RESPONSE FORMATTER] Creating enhanced component response');
+    
+    const componentResponse = {
+      ...aiResult.parsedData,
+      organizedImageUrls,
+      propertyRoomInfo,
+      costIncurred: aiResult.costIncurred,
+      processingMetadata: {
+        processingTime: aiResult.processingTime,
+        method: 'enhanced_ai_processor',
+        modelUsed: aiResult.modelUsed,
+        multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis
+      }
+    };
+
+    console.log('✅ [RESPONSE FORMATTER] Enhanced component processing complete');
+
+    return new Response(JSON.stringify(componentResponse), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
   } catch (error) {
-    return createErrorResponse(error);
+    console.error('❌ [MAIN] Processing failed:', error);
+    
+    return new Response(
+      JSON.stringify({
+        error: error.message || 'Processing failed',
+        details: error.stack,
+        timestamp: new Date().toISOString()
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });
