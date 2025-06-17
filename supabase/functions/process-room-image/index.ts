@@ -31,7 +31,7 @@ serve(async (req) => {
   try {
     const requestData: ProcessImageRequest = await req.json();
     
-    console.log("🚀 Simplified Gemini 2.5 Pro processing function started");
+    console.log("🚀 Simplified Gemini 2.0 Flash processing function started");
     console.log("📥 Request data received:", JSON.stringify({
       imageCount: Array.isArray(requestData.imageUrls) ? requestData.imageUrls.length : 1,
       componentName: requestData.componentName,
@@ -69,7 +69,7 @@ serve(async (req) => {
     } = parseRequestData(requestData);
 
     try {
-      console.log(`🔄 [MAIN] Starting simplified Gemini 2.5 Pro pipeline`);
+      console.log(`🔄 [MAIN] Starting simplified Gemini 2.0 Flash pipeline`);
       
       // Process and organize images
       const { processedImages, organizedImageUrls, propertyRoomInfo } = await processAndOrganizeImages(
@@ -79,7 +79,7 @@ serve(async (req) => {
         roomId
       );
 
-      // Simplified AI processing with Gemini 2.5 Pro exclusively
+      // Simplified AI processing with Gemini 2.0 Flash exclusively
       const aiProcessor = new SimplifiedAIProcessor();
       const actualRoomType = propertyRoomInfo?.roomType || roomType || 'room';
       
@@ -108,18 +108,18 @@ serve(async (req) => {
         propertyRoomInfo,
         organizedImageUrls,
         images,
-        true, // Always use advanced analysis flag for Gemini 2.5 Pro
+        true, // Always use advanced analysis flag for Gemini 2.0 Flash
         {
           modelUsed: result.modelUsed,
           processingTime: result.processingTime,
           validationResult: result.validationResult,
-          geminiModel: 'gemini-2.5-pro-preview-0506',
+          geminiModel: 'gemini-2.0-flash-exp',
           enhancedProcessing: true
         }
       );
 
     } catch (error) {
-      console.error("❌ Error in simplified Gemini 2.5 Pro pipeline:", error);
+      console.error("❌ Error in simplified Gemini 2.0 Flash pipeline:", error);
       
       // Simplified error handling (no fallbacks)
       if (error.message.includes('Rate limit')) {

@@ -1,7 +1,7 @@
 
 /**
- * Simplified Model Manager - Exclusively uses Gemini 2.5 Pro
- * Removed all fallback mechanisms and model selection logic
+ * Simplified Model Manager - Exclusively uses Gemini 2.0 Flash
+ * Updated to use the currently available model
  */
 
 import { GeminiRequest } from "./gemini-api.ts";
@@ -12,7 +12,7 @@ export interface ModelCallOptions {
 }
 
 export class SimplifiedModelManager {
-  private readonly MODEL_NAME = 'gemini-2.5-pro-preview-0506';
+  private readonly MODEL_NAME = 'gemini-2.0-flash-exp';
   private readonly MAX_IMAGES = 20;
   private readonly MAX_TOKENS = 8192;
   private readonly RATE_LIMIT = 10; // requests per minute
@@ -21,7 +21,7 @@ export class SimplifiedModelManager {
   private lastResetTime = Date.now();
 
   /**
-   * Call Gemini 2.5 Pro with retry logic (no fallbacks)
+   * Call Gemini 2.0 Flash with retry logic (no fallbacks)
    */
   async callGemini25Pro(
     apiKey: string,
@@ -30,21 +30,21 @@ export class SimplifiedModelManager {
   ): Promise<any> {
     const { maxRetries = 3, timeout = 60000 } = options;
     
-    console.log(`🤖 [SIMPLIFIED MODEL] Calling Gemini 2.5 Pro exclusively`);
+    console.log(`🤖 [SIMPLIFIED MODEL] Calling Gemini 2.0 Flash exclusively`);
     
     // Check rate limits
     if (!this.checkRateLimit()) {
-      throw new Error('Rate limit exceeded for Gemini 2.5 Pro');
+      throw new Error('Rate limit exceeded for Gemini 2.0 Flash');
     }
     
-    // Adjust request for Gemini 2.5 Pro capabilities
+    // Adjust request for Gemini 2.0 Flash capabilities
     const adjustedRequest = this.adjustRequestForGemini25Pro(request);
     
     let lastError: Error | null = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`🚀 [SIMPLIFIED MODEL] Attempt ${attempt}/${maxRetries} with Gemini 2.5 Pro`);
+        console.log(`🚀 [SIMPLIFIED MODEL] Attempt ${attempt}/${maxRetries} with Gemini 2.0 Flash`);
         
         const result = await Promise.race([
           this.callGeminiAPI(apiKey, adjustedRequest),
@@ -56,7 +56,7 @@ export class SimplifiedModelManager {
         // Record successful usage
         this.recordUsage();
         
-        console.log(`✅ [SIMPLIFIED MODEL] Success with Gemini 2.5 Pro on attempt ${attempt}`);
+        console.log(`✅ [SIMPLIFIED MODEL] Success with Gemini 2.0 Flash on attempt ${attempt}`);
         return result;
         
       } catch (error) {
@@ -72,7 +72,7 @@ export class SimplifiedModelManager {
       }
     }
     
-    throw new Error(`Gemini 2.5 Pro failed after ${maxRetries} attempts. Last error: ${lastError?.message}`);
+    throw new Error(`Gemini 2.0 Flash failed after ${maxRetries} attempts. Last error: ${lastError?.message}`);
   }
 
   private checkRateLimit(): boolean {
@@ -93,12 +93,12 @@ export class SimplifiedModelManager {
   }
 
   private adjustRequestForGemini25Pro(request: GeminiRequest): GeminiRequest {
-    console.log(`🔧 [SIMPLIFIED MODEL] Optimizing request for Gemini 2.5 Pro`);
+    console.log(`🔧 [SIMPLIFIED MODEL] Optimizing request for Gemini 2.0 Flash`);
     
     // Clone the request
     const adjustedRequest = JSON.parse(JSON.stringify(request));
     
-    // Limit images to Gemini 2.5 Pro capability
+    // Limit images to Gemini 2.0 Flash capability
     const imageParts = adjustedRequest.contents[0].parts.filter((p: any) => p.inline_data);
     if (imageParts.length > this.MAX_IMAGES) {
       console.log(`✂️ [SIMPLIFIED MODEL] Trimming images from ${imageParts.length} to ${this.MAX_IMAGES}`);
@@ -107,11 +107,11 @@ export class SimplifiedModelManager {
       adjustedRequest.contents[0].parts = [...textParts, ...limitedImageParts];
     }
     
-    // Optimize for Gemini 2.5 Pro
+    // Optimize for Gemini 2.0 Flash
     adjustedRequest.generationConfig = {
       ...adjustedRequest.generationConfig,
       maxOutputTokens: Math.min(adjustedRequest.generationConfig.maxOutputTokens, this.MAX_TOKENS),
-      temperature: 0.2, // Optimal for Gemini 2.5 Pro
+      temperature: 0.2, // Optimal for Gemini 2.0 Flash
       topP: 0.95,
       topK: 40
     };
@@ -122,7 +122,7 @@ export class SimplifiedModelManager {
   private async callGeminiAPI(apiKey: string, request: GeminiRequest): Promise<any> {
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.MODEL_NAME}:generateContent`;
     
-    console.log(`📡 [SIMPLIFIED MODEL] Calling Gemini 2.5 Pro API`);
+    console.log(`📡 [SIMPLIFIED MODEL] Calling Gemini 2.0 Flash API`);
     
     const response = await fetch(`${apiUrl}?key=${apiKey}`, {
       method: "POST",
@@ -132,32 +132,32 @@ export class SimplifiedModelManager {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ [SIMPLIFIED MODEL] Gemini 2.5 Pro API error:`, {
+      console.error(`❌ [SIMPLIFIED MODEL] Gemini 2.0 Flash API error:`, {
         status: response.status,
         statusText: response.statusText,
         error: errorText
       });
-      throw new Error(`Gemini 2.5 Pro API error (${response.status}): ${errorText}`);
+      throw new Error(`Gemini 2.0 Flash API error (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
     
     // Enhanced response validation
     if (!data.candidates || data.candidates.length === 0) {
-      throw new Error(`No candidates returned from Gemini 2.5 Pro`);
+      throw new Error(`No candidates returned from Gemini 2.0 Flash`);
     }
     
     const candidate = data.candidates[0];
     if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-      throw new Error(`No content parts returned from Gemini 2.5 Pro`);
+      throw new Error(`No content parts returned from Gemini 2.0 Flash`);
     }
     
     const textContent = candidate.content.parts[0].text;
     if (!textContent) {
-      throw new Error(`No text content returned from Gemini 2.5 Pro`);
+      throw new Error(`No text content returned from Gemini 2.0 Flash`);
     }
     
-    console.log(`✅ [SIMPLIFIED MODEL] Gemini 2.5 Pro returned ${textContent.length} characters`);
+    console.log(`✅ [SIMPLIFIED MODEL] Gemini 2.0 Flash returned ${textContent.length} characters`);
     return textContent;
   }
 

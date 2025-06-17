@@ -1,7 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ConditionRating } from '@/types';
 
-// Enhanced interface with cross-analysis support and Gemini 2.5 Pro features
+// Enhanced interface with cross-analysis support and Gemini 2.0 Flash features
 export interface ProcessedImageResult {
   description: string;
   condition: {
@@ -61,7 +62,7 @@ export const conditionRatingToText = (condition: string): string => {
 
 /**
  * Processes an image using the enhanced Gemini API to analyze a component
- * Now uses Gemini 2.5 Pro Preview 05-06 for complex analysis
+ * Now uses Gemini 2.0 Flash for complex analysis
  * @param imageUrls URL or array of URLs of the image(s) to analyze
  * @param roomType Type of room the component is in
  * @param componentName Name of the component being analyzed
@@ -81,16 +82,16 @@ export const processComponentImage = async (
     const { multipleImages = false, useAdvancedAnalysis = false } = options;
     const imageArray = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
     
-    console.log(`🚀 [IMAGE PROCESSING v6] Processing ${imageArray.length} images for component: ${componentName} with enhanced AI`);
+    console.log(`🚀 [IMAGE PROCESSING v7] Processing ${imageArray.length} images for component: ${componentName} with Gemini 2.0 Flash`);
     
     // Enable advanced analysis for multiple images automatically
     const shouldUseAdvancedAnalysis = useAdvancedAnalysis || (Array.isArray(imageUrls) && imageUrls.length > 1);
     
-    console.log(`🤖 [IMAGE PROCESSING v6] Analysis configuration:`, {
+    console.log(`🤖 [IMAGE PROCESSING v7] Analysis configuration:`, {
       imageCount: imageArray.length,
       shouldUseAdvancedAnalysis,
       inventoryMode: !shouldUseAdvancedAnalysis,
-      expectedModel: shouldUseAdvancedAnalysis ? 'gemini-2.5-pro-preview-0506' : 'gemini-1.5-flash'
+      expectedModel: 'gemini-2.0-flash-exp'
     });
     
     const response = await supabase.functions.invoke('process-room-image', {
@@ -105,13 +106,13 @@ export const processComponentImage = async (
     });
 
     if (response.error) {
-      console.error('❌ [IMAGE PROCESSING v6] Error calling enhanced Gemini API:', response.error);
-      throw new Error('Failed to analyze image with enhanced AI');
+      console.error('❌ [IMAGE PROCESSING v7] Error calling Gemini 2.0 Flash API:', response.error);
+      throw new Error('Failed to analyze image with Gemini 2.0 Flash');
     }
 
     const result = response.data as ProcessedImageResult;
     
-    console.log(`✅ [IMAGE PROCESSING v6] Enhanced processing complete:`, {
+    console.log(`✅ [IMAGE PROCESSING v7] Processing complete:`, {
       modelUsed: result.processingMetadata?.modelUsed,
       geminiModel: result.processingMetadata?.geminiModel,
       costIncurred: result.processingMetadata?.costIncurred,
@@ -127,7 +128,7 @@ export const processComponentImage = async (
     
     return result;
   } catch (error) {
-    console.error('❌ [IMAGE PROCESSING v6] Error in enhanced processComponentImage:', error);
+    console.error('❌ [IMAGE PROCESSING v7] Error in processComponentImage:', error);
     throw error;
   }
 };

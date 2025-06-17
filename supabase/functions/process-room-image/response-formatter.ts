@@ -1,3 +1,4 @@
+
 import { corsHeaders, formatResponse, createFallbackResponse } from "./utils.ts";
 import { formatAdvancedResponse } from "./advanced-analysis.ts";
 import { PropertyRoomInfo } from "./database-utils.ts";
@@ -39,14 +40,14 @@ export function createSuccessResponse(
     enhancedProcessing?: boolean;
   }
 ): Response {
-  console.log(`📋 [RESPONSE FORMATTER] Creating simplified success response for Gemini 2.5 Pro`);
+  console.log(`📋 [RESPONSE FORMATTER] Creating simplified success response for Gemini 2.0 Flash`);
 
   const response = {
     ...parsedData,
-    // Enhanced processing metadata specifically for Gemini 2.5 Pro
+    // Enhanced processing metadata specifically for Gemini 2.0 Flash
     processingMetadata: {
-      modelUsed: 'gemini-2.5-pro-preview-0506',
-      geminiModel: 'gemini-2.5-pro-preview-0506',
+      modelUsed: 'gemini-2.0-flash-exp',
+      geminiModel: 'gemini-2.0-flash-exp',
       processingTime: metadata?.processingTime || 0,
       enhancedProcessing: true,
       validationResult: metadata?.validationResult,
@@ -65,9 +66,9 @@ export function createSuccessResponse(
     };
   }
 
-  console.log(`💰 [RESPONSE FORMATTER] Added Gemini 2.5 Pro metadata: processing time: ${metadata?.processingTime}ms`);
+  console.log(`💰 [RESPONSE FORMATTER] Added Gemini 2.0 Flash metadata: processing time: ${metadata?.processingTime}ms`);
 
-  console.log(`✅ [RESPONSE FORMATTER] Successfully processed images with Gemini 2.5 Pro exclusively`);
+  console.log(`✅ [RESPONSE FORMATTER] Successfully processed images with Gemini 2.0 Flash exclusively`);
 
   return new Response(JSON.stringify(response), {
     headers: {

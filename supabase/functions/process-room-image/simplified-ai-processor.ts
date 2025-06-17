@@ -1,7 +1,7 @@
 
 /**
- * Simplified AI Processor - Exclusively uses Gemini 2.5 Pro
- * Removed cost management, fallbacks, and model selection complexity
+ * Simplified AI Processor - Exclusively uses Gemini 2.0 Flash
+ * Updated to use the currently available model
  */
 
 import { processImagesWithAI } from "./process-images-with-ai.ts";
@@ -35,24 +35,24 @@ export class SimplifiedAIProcessor {
     apiKey: string
   ): Promise<SimplifiedAIResult> {
     const startTime = Date.now();
-    console.log(`🚀 [SIMPLIFIED AI] Starting Gemini 2.5 Pro processing for ${processedImages.length} images`);
+    console.log(`🚀 [SIMPLIFIED AI] Starting Gemini 2.0 Flash processing for ${processedImages.length} images`);
     
     const { componentName, roomType, inventoryMode, useAdvancedAnalysis, imageCount } = options;
     
-    // Always use advanced analysis for Gemini 2.5 Pro (it's powerful enough)
+    // Always use advanced analysis for Gemini 2.0 Flash (it's powerful enough)
     const shouldUseAdvancedAnalysis = imageCount > 1;
     
-    console.log(`📊 [SIMPLIFIED AI] Processing with Gemini 2.5 Pro:`, {
+    console.log(`📊 [SIMPLIFIED AI] Processing with Gemini 2.0 Flash:`, {
       shouldUseAdvancedAnalysis,
       inventoryMode,
       imageCount,
       componentName
     });
     
-    // Generate optimized prompt for Gemini 2.5 Pro
+    // Generate optimized prompt for Gemini 2.0 Flash
     const promptType = inventoryMode ? 'inventory' : (shouldUseAdvancedAnalysis ? 'advanced' : 'dust');
     const prompt = this.promptManager.getPrompt(
-      'gemini-2.5-pro-preview-0506' as any,
+      'gemini-2.0-flash-exp' as any,
       promptType,
       componentName || 'component',
       roomType,
@@ -62,7 +62,7 @@ export class SimplifiedAIProcessor {
     let parsedData: any;
     
     try {
-      // Process with Gemini 2.5 Pro exclusively
+      // Process with Gemini 2.0 Flash exclusively
       const result = await this.modelManager.callGemini25Pro(
         apiKey,
         this.createGeminiRequest(prompt, processedImages, shouldUseAdvancedAnalysis),
@@ -76,7 +76,7 @@ export class SimplifiedAIProcessor {
       parsedData = this.parseResult(result, shouldUseAdvancedAnalysis, inventoryMode, componentName);
       
     } catch (error) {
-      console.error(`❌ [SIMPLIFIED AI] Gemini 2.5 Pro processing failed:`, error);
+      console.error(`❌ [SIMPLIFIED AI] Gemini 2.0 Flash processing failed:`, error);
       throw error;
     }
     
@@ -113,7 +113,7 @@ export class SimplifiedAIProcessor {
     
     const processingTime = Date.now() - startTime;
     
-    console.log(`✅ [SIMPLIFIED AI] Gemini 2.5 Pro processing complete:`, {
+    console.log(`✅ [SIMPLIFIED AI] Gemini 2.0 Flash processing complete:`, {
       processingTime: `${processingTime}ms`,
       validationApplied: !!validationResult
     });
@@ -121,7 +121,7 @@ export class SimplifiedAIProcessor {
     return {
       parsedData,
       validationResult,
-      modelUsed: 'gemini-2.5-pro-preview-0506',
+      modelUsed: 'gemini-2.0-flash-exp',
       processingTime
     };
   }
@@ -140,7 +140,7 @@ export class SimplifiedAIProcessor {
     return {
       contents: [{ parts }],
       generationConfig: {
-        temperature: 0.2, // Optimal for Gemini 2.5 Pro
+        temperature: 0.2, // Optimal for Gemini 2.0 Flash
         topK: 40,
         topP: 0.95,
         maxOutputTokens: advanced ? 4096 : 2048,

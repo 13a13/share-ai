@@ -1,7 +1,7 @@
 
 /**
- * Simplified Gemini API - Exclusively uses Gemini 2.5 Pro Preview 05-06
- * Removed all fallback mechanisms and model selection logic
+ * Simplified Gemini API - Exclusively uses Gemini 2.0 Flash
+ * Updated to use the currently available model
  */
 
 export interface GeminiRequest {
@@ -23,7 +23,7 @@ export interface GeminiRequest {
 }
 
 /**
- * Creates a request optimized specifically for Gemini 2.5 Pro Preview 05-06
+ * Creates a request optimized specifically for Gemini 2.0 Flash
  */
 export function createGeminiRequest(
   promptText: string, 
@@ -32,14 +32,14 @@ export function createGeminiRequest(
   // Ensure imageData is an array
   const imageDataArray = Array.isArray(imageData) ? imageData : [imageData];
   
-  console.log(`📝 [GEMINI API] Creating Gemini 2.5 Pro request for ${imageDataArray.length} images`);
+  console.log(`📝 [GEMINI API] Creating Gemini 2.0 Flash request for ${imageDataArray.length} images`);
   
-  // Gemini 2.5 Pro can handle up to 20 images efficiently
+  // Gemini 2.0 Flash can handle up to 20 images efficiently
   const maxImages = 20;
   let optimizedImageArray = imageDataArray;
   
   if (imageDataArray.length > maxImages) {
-    console.log(`📸 [GEMINI API] Optimizing ${imageDataArray.length} images for Gemini 2.5 Pro`);
+    console.log(`📸 [GEMINI API] Optimizing ${imageDataArray.length} images for Gemini 2.0 Flash`);
     
     // Enhanced selection for comprehensive coverage
     const first = imageDataArray.slice(0, 6);
@@ -53,7 +53,7 @@ export function createGeminiRequest(
     optimizedImageArray = [...first, ...middle1, ...middle2, ...middle3, ...last];
     
     // Update prompt with advanced context
-    promptText = `${promptText}\n\n**GEMINI 2.5 PRO CONTEXT:**\nYou are analyzing a strategically selected subset of ${imageDataArray.length} total images (${optimizedImageArray.length} selected), chosen for comprehensive coverage. Provide thorough analysis leveraging your advanced capabilities.`;
+    promptText = `${promptText}\n\n**GEMINI 2.0 FLASH CONTEXT:**\nYou are analyzing a strategically selected subset of ${imageDataArray.length} total images (${optimizedImageArray.length} selected), chosen for comprehensive coverage. Provide thorough analysis leveraging your advanced capabilities.`;
   }
 
   // Create parts array with prompt text and selected images
@@ -67,15 +67,15 @@ export function createGeminiRequest(
     }))
   ];
 
-  // Optimized generation parameters for Gemini 2.5 Pro Preview 05-06
+  // Optimized generation parameters for Gemini 2.0 Flash
   const generationConfig = {
     temperature: 0.2,  // Optimal for consistency and accuracy
     topK: 40,
     topP: 0.95,
-    maxOutputTokens: 4096,  // Take advantage of Gemini 2.5 Pro's capabilities
+    maxOutputTokens: 4096,  // Take advantage of Gemini 2.0 Flash's capabilities
   };
 
-  console.log(`⚙️ [GEMINI API] Request configured for Gemini 2.5 Pro:`, {
+  console.log(`⚙️ [GEMINI API] Request configured for Gemini 2.0 Flash:`, {
     imageCount: optimizedImageArray.length,
     originalImageCount: imageDataArray.length,
     maxTokens: generationConfig.maxOutputTokens,
@@ -89,15 +89,15 @@ export function createGeminiRequest(
 }
 
 /**
- * Calls Gemini 2.5 Pro Preview 05-06 exclusively
+ * Calls Gemini 2.0 Flash exclusively
  */
 export async function callGeminiApi(
   apiKey: string, 
   request: GeminiRequest
 ): Promise<any> {
-  const MODEL_NAME = 'gemini-2.5-pro-preview-0506';
+  const MODEL_NAME = 'gemini-2.0-flash-exp';
   
-  console.log(`🚀 [GEMINI API] Calling Gemini 2.5 Pro exclusively`);
+  console.log(`🚀 [GEMINI API] Calling Gemini 2.0 Flash exclusively`);
   
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`;
   
@@ -111,19 +111,19 @@ export async function callGeminiApi(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`❌ [GEMINI API] Gemini 2.5 Pro error:`, {
+    console.error(`❌ [GEMINI API] Gemini 2.0 Flash error:`, {
       status: response.status,
       statusText: response.statusText,
       error: errorText
     });
-    throw new Error(`Gemini 2.5 Pro failed: ${response.status} ${errorText}`);
+    throw new Error(`Gemini 2.0 Flash failed: ${response.status} ${errorText}`);
   }
 
   const data = await response.json();
   
   // Enhanced response validation
   if (!data.candidates || data.candidates.length === 0) {
-    throw new Error(`No candidates returned from Gemini 2.5 Pro`);
+    throw new Error(`No candidates returned from Gemini 2.0 Flash`);
   }
   
   const candidate = data.candidates[0];
@@ -136,11 +136,11 @@ export async function callGeminiApi(
   
   if (!candidate.content?.parts?.[0]?.text) {
     console.error(`❌ [GEMINI API] Invalid response structure:`, candidate);
-    throw new Error(`No text content returned from Gemini 2.5 Pro`);
+    throw new Error(`No text content returned from Gemini 2.0 Flash`);
   }
   
   const textContent = candidate.content.parts[0].text;
-  console.log(`✅ [GEMINI API] Gemini 2.5 Pro returned ${textContent.length} characters`);
+  console.log(`✅ [GEMINI API] Gemini 2.0 Flash returned ${textContent.length} characters`);
   
   return textContent;
 }
