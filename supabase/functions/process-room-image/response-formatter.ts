@@ -1,4 +1,3 @@
-
 import { corsHeaders, formatResponse, createFallbackResponse } from "./utils.ts";
 import { formatAdvancedResponse } from "./advanced-analysis.ts";
 import { PropertyRoomInfo } from "./database-utils.ts";
@@ -28,73 +27,55 @@ export interface FormattedResponse {
 export function createSuccessResponse(
   parsedData: any,
   componentName: string | undefined,
-  propertyRoomInfo: PropertyRoomInfo | null,
+  propertyRoomInfo: any,
   organizedImageUrls: string[],
-  originalImageUrls: string[],
-  isAdvancedAnalysis: boolean,
-  processingMetadata?: {
-    modelUsed: string;
-    costIncurred: number;
-    processingTime: number;
+  originalImages: string[],
+  usedAdvancedAnalysis: boolean,
+  metadata?: {
+    modelUsed?: string;
+    processingTime?: number;
     validationResult?: any;
-    costSummary?: any;
+    geminiModel?: string;
+    enhancedProcessing?: boolean;
   }
 ): Response {
-  console.log(`📋 [RESPONSE FORMATTER] Creating enhanced success response`);
-  
-  // Format the response based on analysis mode
-  const formattedResponse: FormattedResponse = isAdvancedAnalysis 
-    ? formatAdvancedResponse(parsedData, componentName)
-    : formatResponse(parsedData, componentName);
+  console.log(`📋 [RESPONSE FORMATTER] Creating simplified success response for Gemini 2.5 Pro`);
 
-  // Add property and room information to the response
+  const response = {
+    ...parsedData,
+    // Enhanced processing metadata specifically for Gemini 2.5 Pro
+    processingMetadata: {
+      modelUsed: 'gemini-2.5-pro-preview-0506',
+      geminiModel: 'gemini-2.5-pro-preview-0506',
+      processingTime: metadata?.processingTime || 0,
+      enhancedProcessing: true,
+      validationResult: metadata?.validationResult,
+      analysisMode: usedAdvancedAnalysis ? 'advanced' : 'standard',
+      imageCount: originalImages.length,
+      organizedImageUrls: organizedImageUrls.length > 0 ? organizedImageUrls : originalImages
+    }
+  };
+
+  // Add property/room context if available
   if (propertyRoomInfo) {
-    formattedResponse.propertyInfo = {
+    response.processingMetadata.propertyContext = {
       propertyName: propertyRoomInfo.propertyName,
       roomName: propertyRoomInfo.roomName,
-      roomType: propertyRoomInfo.roomType,
-      userAccountName: propertyRoomInfo.userAccountName
+      roomType: propertyRoomInfo.roomType
     };
-    console.log(`✅ [RESPONSE FORMATTER] Enhanced response with organized folder info: ${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}`);
   }
 
-  // Add organized image URLs to response
-  if (organizedImageUrls.length > 0) {
-    formattedResponse.organizedImageUrls = organizedImageUrls;
-    const organizedCount = organizedImageUrls.filter((url, index) => url !== originalImageUrls[index]).length;
-    if (organizedCount > 0) {
-      console.log(`📂 [RESPONSE FORMATTER] Successfully organized ${organizedCount}/${originalImageUrls.length} images into proper folder hierarchy`);
-      formattedResponse.folderOrganizationApplied = organizedCount;
-    }
-  }
+  console.log(`💰 [RESPONSE FORMATTER] Added Gemini 2.5 Pro metadata: processing time: ${metadata?.processingTime}ms`);
 
-  // Add processing metadata
-  if (processingMetadata) {
-    formattedResponse.processingMetadata = {
-      modelUsed: processingMetadata.modelUsed,
-      costIncurred: processingMetadata.costIncurred,
-      processingTime: processingMetadata.processingTime,
-      geminiModel: processingMetadata.modelUsed, // Explicitly show Gemini model used
-      enhancedProcessing: true
-    };
-    
-    if (processingMetadata.validationResult) {
-      formattedResponse.processingMetadata.validationResult = processingMetadata.validationResult;
-    }
-    
-    if (processingMetadata.costSummary) {
-      formattedResponse.processingMetadata.costSummary = processingMetadata.costSummary;
-    }
-    
-    console.log(`💰 [RESPONSE FORMATTER] Added processing metadata: ${processingMetadata.modelUsed}, cost: $${processingMetadata.costIncurred.toFixed(4)}, time: ${processingMetadata.processingTime}ms`);
-  }
+  console.log(`✅ [RESPONSE FORMATTER] Successfully processed images with Gemini 2.5 Pro exclusively`);
 
-  console.log(`✅ [RESPONSE FORMATTER] Successfully processed images with enhanced AI pipeline and organized into proper folder hierarchy`);
-  
-  return new Response(
-    JSON.stringify(formattedResponse),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
+  return new Response(JSON.stringify(response), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+    }
+  });
 }
 
 /**

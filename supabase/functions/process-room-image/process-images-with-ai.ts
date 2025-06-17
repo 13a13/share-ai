@@ -18,7 +18,7 @@ import {
 import type { AIProcessingOptions } from './ai-processing-options.ts';
 
 /**
- * Process images with AI and return parsed results
+ * Simplified image processing with Gemini 2.5 Pro exclusively
  */
 export async function processImagesWithAI(
   processedImages: string[],
@@ -27,10 +27,12 @@ export async function processImagesWithAI(
 ): Promise<any> {
   const { componentName, roomType, inventoryMode, useAdvancedAnalysis, imageCount } = options;
 
-  // Determine if we should use advanced analysis
-  const shouldUseAdvancedAnalysis = useAdvancedAnalysis && imageCount > 1;
+  console.log(`🤖 [PROCESS AI] Using Gemini 2.5 Pro exclusively for ${imageCount} images`);
 
-  // Generate prompt based on analysis mode
+  // Always use advanced analysis for multiple images with Gemini 2.5 Pro
+  const shouldUseAdvancedAnalysis = useAdvancedAnalysis || imageCount > 1;
+
+  // Generate prompt optimized for Gemini 2.5 Pro
   let promptText: string;
 
   if (shouldUseAdvancedAnalysis) {
@@ -39,17 +41,19 @@ export async function processImagesWithAI(
       roomType,
       imageCount
     );
-    console.log("Using advanced multi-image analysis protocol");
+    console.log("🔬 [PROCESS AI] Using advanced multi-image analysis for Gemini 2.5 Pro");
   } else if (inventoryMode && componentName) {
     promptText = createInventoryPrompt(componentName);
+    console.log("📋 [PROCESS AI] Using inventory mode for Gemini 2.5 Pro");
   } else {
     promptText = createPrompt(roomType, componentName, imageCount > 1);
+    console.log("🏠 [PROCESS AI] Using standard analysis for Gemini 2.5 Pro");
   }
 
-  // Create and send request to Gemini API with all images
-  const geminiRequest = createGeminiRequest(promptText, processedImages, shouldUseAdvancedAnalysis);
+  // Create and send request to Gemini 2.5 Pro
+  const geminiRequest = createGeminiRequest(promptText, processedImages);
 
-  // Call Gemini API and get the text response
+  // Call Gemini 2.5 Pro and get the text response
   const textContent = await callGeminiApi(apiKey, geminiRequest);
 
   // Parse the response based on analysis mode
@@ -58,9 +62,9 @@ export async function processImagesWithAI(
   if (shouldUseAdvancedAnalysis) {
     try {
       parsedData = parseAdvancedAnalysisResponse(textContent);
-      console.log("Successfully parsed advanced multi-image analysis response");
+      console.log("✅ [PROCESS AI] Successfully parsed advanced analysis response");
     } catch (parseError) {
-      console.error("Failed to parse advanced analysis response:", parseError);
+      console.error("❌ [PROCESS AI] Failed to parse advanced analysis response:", parseError);
       try {
         parsedData = parseInventoryResponse(textContent);
       } catch {
@@ -70,9 +74,9 @@ export async function processImagesWithAI(
   } else if (inventoryMode && componentName) {
     try {
       parsedData = parseInventoryResponse(textContent);
-      console.log("Successfully parsed inventory response");
+      console.log("✅ [PROCESS AI] Successfully parsed inventory response");
     } catch (parseError) {
-      console.error("Failed to parse inventory response:", parseError);
+      console.error("❌ [PROCESS AI] Failed to parse inventory response:", parseError);
       parsedData = extractJsonFromText(textContent);
     }
   } else {
@@ -81,4 +85,3 @@ export async function processImagesWithAI(
 
   return { parsedData, shouldUseAdvancedAnalysis };
 }
-

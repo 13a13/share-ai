@@ -10,7 +10,7 @@ import {
 import {
   processAndOrganizeImages
 } from "./image-processor.ts";
-import { AIProcessor } from "./ai-processor.ts";
+import { SimplifiedAIProcessor } from "./simplified-ai-processor.ts";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -31,7 +31,7 @@ serve(async (req) => {
   try {
     const requestData: ProcessImageRequest = await req.json();
     
-    console.log("🚀 Enhanced room image processing function started");
+    console.log("🚀 Simplified Gemini 2.5 Pro processing function started");
     console.log("📥 Request data received:", JSON.stringify({
       imageCount: Array.isArray(requestData.imageUrls) ? requestData.imageUrls.length : 1,
       componentName: requestData.componentName,
@@ -69,7 +69,7 @@ serve(async (req) => {
     } = parseRequestData(requestData);
 
     try {
-      console.log(`🔄 [MAIN] Starting enhanced processing pipeline`);
+      console.log(`🔄 [MAIN] Starting simplified Gemini 2.5 Pro pipeline`);
       
       // Process and organize images
       const { processedImages, organizedImageUrls, propertyRoomInfo } = await processAndOrganizeImages(
@@ -79,11 +79,11 @@ serve(async (req) => {
         roomId
       );
 
-      // Enhanced AI processing with cost management and fallback
-      const aiProcessor = new AIProcessor();
+      // Simplified AI processing with Gemini 2.5 Pro exclusively
+      const aiProcessor = new SimplifiedAIProcessor();
       const actualRoomType = propertyRoomInfo?.roomType || roomType || 'room';
       
-      const enhancedResult = await aiProcessor.processImagesWithEnhancedAI(
+      const result = await aiProcessor.processWithGemini25Pro(
         processedImages,
         {
           componentName,
@@ -95,40 +95,39 @@ serve(async (req) => {
         GEMINI_API_KEY
       );
 
-      console.log(`✅ [MAIN] Enhanced processing complete:`, {
-        modelUsed: enhancedResult.modelUsed,
-        costIncurred: enhancedResult.costIncurred,
-        processingTime: enhancedResult.processingTime,
-        validationApplied: !!enhancedResult.validationResult
+      console.log(`✅ [MAIN] Simplified processing complete:`, {
+        modelUsed: result.modelUsed,
+        processingTime: result.processingTime,
+        validationApplied: !!result.validationResult
       });
 
-      // Create and return enhanced response
+      // Create and return simplified response
       return createSuccessResponse(
-        enhancedResult.parsedData,
+        result.parsedData,
         componentName,
         propertyRoomInfo,
         organizedImageUrls,
         images,
-        enhancedResult.shouldUseAdvancedAnalysis,
+        true, // Always use advanced analysis flag for Gemini 2.5 Pro
         {
-          modelUsed: enhancedResult.modelUsed,
-          costIncurred: enhancedResult.costIncurred,
-          processingTime: enhancedResult.processingTime,
-          validationResult: enhancedResult.validationResult,
-          costSummary: aiProcessor.getCostSummary()
+          modelUsed: result.modelUsed,
+          processingTime: result.processingTime,
+          validationResult: result.validationResult,
+          geminiModel: 'gemini-2.5-pro-preview-0506',
+          enhancedProcessing: true
         }
       );
 
     } catch (error) {
-      console.error("❌ Error in enhanced processing pipeline:", error);
+      console.error("❌ Error in simplified Gemini 2.5 Pro pipeline:", error);
       
-      // Provide detailed error information for debugging
-      if (error.message.includes('Budget limit reached')) {
+      // Simplified error handling (no fallbacks)
+      if (error.message.includes('Rate limit')) {
         return new Response(
           JSON.stringify({ 
-            error: "Budget limit reached", 
+            error: "Rate limit exceeded", 
             details: error.message,
-            suggestion: "Please try again later or contact support to increase your budget limit."
+            suggestion: "Please wait a moment and try again."
           }),
           { 
             status: 429, 
