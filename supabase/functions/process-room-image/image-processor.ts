@@ -94,7 +94,7 @@ export async function processAndOrganizeImages(
 }
 
 /**
- * Convert image URL to base64 for AI processing
+ * Convert image URL to base64 for AI processing with proper large image handling
  */
 async function convertImageToBase64(
   imageUrl: string, 
@@ -113,11 +113,30 @@ async function convertImageToBase64(
       return null;
     }
     const arrayBuffer = await imageResponse.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const base64 = arrayBufferToBase64(arrayBuffer);
     console.log(`✅ [Image ${imageIndex}/${totalImages}] Successfully converted organized image to base64`);
     return base64;
   } else {
     // Assume it's already base64
     return imageUrl;
   }
+}
+
+/**
+ * Safely convert ArrayBuffer to base64 using chunk-based processing
+ * This prevents stack overflow errors with large images
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 32768; // 32KB chunks to prevent stack overflow
+  let result = '';
+  
+  // Process in chunks to avoid stack overflow
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    const chunkArray = Array.from(chunk);
+    result += String.fromCharCode(...chunkArray);
+  }
+  
+  return btoa(result);
 }
