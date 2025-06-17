@@ -180,7 +180,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent
-        className="max-w-full sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[80vw] w-full h-[90vh] p-0 bg-black text-white"
+        className="fixed inset-0 max-w-none w-screen h-screen p-0 bg-black text-white border-0 rounded-none"
       >
         {renderCameraComponents()}
       </DialogContent>

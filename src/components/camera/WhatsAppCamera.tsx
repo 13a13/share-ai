@@ -30,7 +30,7 @@ interface WhatsAppCameraProps {
 const WhatsAppCamera: React.FC<WhatsAppCameraProps> = ({
   onClose,
   onPhotosCapture,
-  maxPhotos = 1,
+  maxPhotos = 20,
   title = "Camera"
 }) => {
   const [isOpen, setIsOpen] = useState(true);

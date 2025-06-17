@@ -6,6 +6,7 @@ import { Upload } from "lucide-react";
 import { useRoomImageUpload } from "@/hooks/useRoomImageUpload";
 import UploadPrompt from "./room-uploader/UploadPrompt";
 import ImagePreview from "./room-uploader/ImagePreview";
+import RoomImageStaging from "./room/RoomImageStaging";
 
 interface RoomImageUploaderProps {
   reportId: string;
@@ -18,6 +19,7 @@ interface RoomImageUploaderProps {
 const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImageProcessed }: RoomImageUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [stagingImages, setStagingImages] = useState<string[]>([]);
   
   const {
     isUploading,
@@ -26,6 +28,7 @@ const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImagePr
     handleFileUpload,
     handleCameraCapture,
     handleProcessWithAI,
+    handleMultipleImagesProcess,
     resetUpload
   } = useRoomImageUpload({
     reportId,
@@ -40,19 +43,67 @@ const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImagePr
   };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileUpload(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      if (files.length === 1) {
+        // Single file - use existing flow
+        handleFileUpload(files[0]);
+      } else {
+        // Multiple files - convert to data URLs and stage
+        const processFiles = async () => {
+          const imageDataUrls: string[] = [];
+          for (const file of files) {
+            if (file.type.startsWith('image/')) {
+              const reader = new FileReader();
+              const dataUrl = await new Promise<string>((resolve) => {
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.readAsDataURL(file);
+              });
+              imageDataUrls.push(dataUrl);
+            }
+          }
+          setStagingImages(imageDataUrls);
+        };
+        processFiles();
+      }
     }
   };
 
   // Handle multiple photos from WhatsApp camera
   const handleMultiplePhotosCapture = (imageData: string[]) => {
-    if (imageData.length > 0) {
-      // For now, just use the first photo
-      // In a future enhancement, we could allow multiple room photos
+    if (imageData.length === 0) return;
+    
+    if (imageData.length === 1) {
+      // Single photo - use existing flow
       handleCameraCapture(imageData[0]);
+    } else {
+      // Multiple photos - stage them for review
+      setStagingImages(imageData);
     }
+  };
+
+  const handleRemoveStagingImage = (index: number) => {
+    setStagingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleReorderStagingImage = (fromIndex: number, toIndex: number) => {
+    setStagingImages(prev => {
+      const newImages = [...prev];
+      const movedImage = newImages.splice(fromIndex, 1)[0];
+      newImages.splice(toIndex, 0, movedImage);
+      return newImages;
+    });
+  };
+
+  const handleProcessStagingImages = async () => {
+    if (stagingImages.length > 0) {
+      await handleMultipleImagesProcess(stagingImages);
+      setStagingImages([]);
+    }
+  };
+
+  const handleCancelStaging = () => {
+    setStagingImages([]);
   };
   
   return (
@@ -62,6 +113,7 @@ const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImagePr
         ref={fileInputRef}
         onChange={handleFileChange}
         accept="image/*"
+        multiple
         className="hidden"
       />
       
@@ -69,11 +121,21 @@ const RoomImageUploader = ({ reportId, roomId, propertyName, roomName, onImagePr
         <WhatsAppCamera 
           onClose={() => setCameraOpen(false)}
           onPhotosCapture={handleMultiplePhotosCapture}
-          maxPhotos={5} // Allow up to 5 room photos
+          maxPhotos={10} // Allow up to 10 room photos
         />
       )}
       
-      {!uploadedImage ? (
+      {/* Show staging area if we have multiple images */}
+      {stagingImages.length > 0 ? (
+        <RoomImageStaging
+          stagingImages={stagingImages}
+          isProcessing={isProcessing}
+          onRemoveImage={handleRemoveStagingImage}
+          onReorderImage={handleReorderStagingImage}
+          onProcessImages={handleProcessStagingImages}
+          onCancel={handleCancelStaging}
+        />
+      ) : !uploadedImage ? (
         <UploadPrompt
           isUploading={isUploading}
           onUploadClick={handleUploadClick}

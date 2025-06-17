@@ -12,7 +12,7 @@ export interface ProcessedImageResult {
 }
 
 /**
- * Process and organize images for AI analysis
+ * Process and organize images for AI analysis with enhanced multi-image support
  */
 export async function processAndOrganizeImages(
   images: string[],
@@ -20,14 +20,14 @@ export async function processAndOrganizeImages(
   reportId: string | undefined,
   roomId: string | undefined
 ): Promise<ProcessedImageResult> {
-  console.log(`📸 Processing ${componentName || 'component'} with ${images.length} images`);
+  console.log(`📸 Processing ${componentName || 'room'} with ${images.length} images for multi-photo analysis`);
 
   // Get correct property and room information from database if reportId is provided
   let propertyRoomInfo: PropertyRoomInfo | null = null;
   if (reportId) {
     try {
       propertyRoomInfo = await getPropertyAndRoomInfo(reportId, roomId);
-      console.log(`🏠 Successfully retrieved property and room info:`, propertyRoomInfo);
+      console.log(`🏠 Successfully retrieved property and room info for multi-image processing:`, propertyRoomInfo);
     } catch (error) {
       console.error('❌ Failed to fetch property/room info from database:', error);
       throw new Error(`Failed to fetch property and room information: ${error.message}`);
@@ -45,7 +45,7 @@ export async function processAndOrganizeImages(
       
       // Organize image into proper folder structure if we have property/room info
       if (propertyRoomInfo && imageUrl.includes('supabase.co/storage') && componentName) {
-        console.log(`📂 [Image ${i + 1}/${images.length}] Organizing into folder hierarchy: ${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}/${componentName}`);
+        console.log(`📂 [Multi-Image ${i + 1}/${images.length}] Organizing into folder hierarchy: ${propertyRoomInfo.userAccountName}/${propertyRoomInfo.propertyName}/${propertyRoomInfo.roomName}/${componentName}`);
         
         try {
           const organizedUrl = await organizeImageIntoFolders(
@@ -56,12 +56,12 @@ export async function processAndOrganizeImages(
           
           if (organizedUrl !== imageUrl) {
             finalImageUrl = organizedUrl;
-            console.log(`✅ [Image ${i + 1}/${images.length}] Successfully organized into hierarchy: ${propertyRoomInfo.userAccountName} → ${propertyRoomInfo.propertyName} → ${propertyRoomInfo.roomName} → ${componentName}`);
+            console.log(`✅ [Multi-Image ${i + 1}/${images.length}] Successfully organized into hierarchy: ${propertyRoomInfo.userAccountName} → ${propertyRoomInfo.propertyName} → ${propertyRoomInfo.roomName} → ${componentName}`);
           } else {
-            console.log(`⚠️ [Image ${i + 1}/${images.length}] Organization failed, using original URL`);
+            console.log(`⚠️ [Multi-Image ${i + 1}/${images.length}] Organization failed, using original URL`);
           }
         } catch (organizeError) {
-          console.error(`❌ [Image ${i + 1}/${images.length}] Error organizing into hierarchy:`, organizeError);
+          console.error(`❌ [Multi-Image ${i + 1}/${images.length}] Error organizing into hierarchy:`, organizeError);
           // Continue with original URL if organization fails
         }
       }
@@ -74,17 +74,17 @@ export async function processAndOrganizeImages(
         processedImages.push(base64Image);
       }
     } catch (error) {
-      console.error(`❌ [Image ${i + 1}/${images.length}] Error processing image ${imageUrl}:`, error);
+      console.error(`❌ [Multi-Image ${i + 1}/${images.length}] Error processing image ${imageUrl}:`, error);
       // Skip this image and continue with others
     }
   }
 
   if (processedImages.length === 0) {
-    console.error('❌ No valid images to process');
+    console.error('❌ No valid images to process in multi-image set');
     throw new Error("No valid images to process");
   }
 
-  console.log(`📸 Successfully prepared ${processedImages.length} images for AI processing`);
+  console.log(`📸 Successfully prepared ${processedImages.length}/${images.length} images for AI processing (multi-image support enabled)`);
 
   return {
     processedImages,
@@ -94,7 +94,7 @@ export async function processAndOrganizeImages(
 }
 
 /**
- * Convert image URL to base64 for AI processing with proper large image handling
+ * Convert image URL to base64 for AI processing with enhanced large image handling for multi-image sets
  */
 async function convertImageToBase64(
   imageUrl: string, 
@@ -106,15 +106,15 @@ async function convertImageToBase64(
     return imageUrl.split(",")[1];
   } else if (imageUrl.includes('supabase.co/storage')) {
     // Fetch the image from Supabase storage and convert to base64
-    console.log(`📥 [Image ${imageIndex}/${totalImages}] Fetching image from organized storage: ${imageUrl}`);
+    console.log(`📥 [Multi-Image ${imageIndex}/${totalImages}] Fetching image from organized storage: ${imageUrl}`);
     const imageResponse = await fetch(imageUrl);
     if (!imageResponse.ok) {
-      console.error(`❌ [Image ${imageIndex}/${totalImages}] Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
+      console.error(`❌ [Multi-Image ${imageIndex}/${totalImages}] Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
       return null;
     }
     const arrayBuffer = await imageResponse.arrayBuffer();
     const base64 = arrayBufferToBase64(arrayBuffer);
-    console.log(`✅ [Image ${imageIndex}/${totalImages}] Successfully converted organized image to base64`);
+    console.log(`✅ [Multi-Image ${imageIndex}/${totalImages}] Successfully converted organized image to base64 for AI processing`);
     return base64;
   } else {
     // Assume it's already base64
@@ -123,12 +123,12 @@ async function convertImageToBase64(
 }
 
 /**
- * Safely convert ArrayBuffer to base64 using chunk-based processing
- * This prevents stack overflow errors with large images
+ * Safely convert ArrayBuffer to base64 using chunk-based processing for multi-image sets
+ * This prevents stack overflow errors with large images in batch processing
  */
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  const chunkSize = 32768; // 32KB chunks to prevent stack overflow
+  const chunkSize = 32768; // 32KB chunks to prevent stack overflow in multi-image processing
   let result = '';
   
   // Process in chunks to avoid stack overflow
