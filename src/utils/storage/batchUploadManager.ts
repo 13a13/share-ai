@@ -1,6 +1,6 @@
 
 import { withRetry, BATCH_RETRY_CONFIG, RetryContext } from './retryUtils';
-import { uploadReportImage } from './storageUtils';
+import { uploadReportImage } from './imageUploadUtils';
 import { resolvePropertyAndRoomNames } from './resolveNames';
 import { toast } from "@/hooks/use-toast";
 
@@ -82,8 +82,8 @@ export class BatchUploadManager {
               dataUrl, 
               reportId, 
               roomId, 
-              resolved.propertyName, 
-              resolved.roomName, 
+              resolved.propertyName as string, 
+              resolved.roomName as string, 
               componentName
             ),
             BATCH_RETRY_CONFIG,
