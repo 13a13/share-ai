@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { withRetry, STORAGE_RETRY_CONFIG, RetryContext } from './retryUtils';
 
 /**
  * Convert data URL to blob
@@ -19,61 +20,101 @@ export const getFileExtensionFromDataUrl = (dataUrl: string): string => {
 };
 
 /**
- * Upload blob to Supabase Storage
+ * Upload blob to Supabase Storage with retry logic
  */
 export const uploadBlobToStorage = async (
   blob: Blob,
   fileName: string,
   bucketName: string = 'inspection-images'
 ): Promise<string> => {
-  console.log("🔄 Uploading blob to storage:", fileName);
+  console.log("🔄 Starting upload with retry logic:", fileName);
   
-  // Upload to Supabase Storage
-  const { data, error } = await supabase.storage
-    .from(bucketName)
-    .upload(fileName, blob, {
-      contentType: blob.type,
-      cacheControl: '3600',
-      upsert: false
-    });
-  
-  if (error) {
-    console.error("❌ Storage upload error:", error);
-    throw error;
-  }
-  
-  console.log("✅ File uploaded successfully to user-organized folder:", data.path);
-  
-  // Get the public URL
-  const { data: publicUrlData } = supabase.storage
-    .from(bucketName)
-    .getPublicUrl(data.path);
-  
-  console.log("🔗 Public URL generated:", publicUrlData.publicUrl);
-  
-  return publicUrlData.publicUrl;
+  return withRetry(
+    async () => {
+      console.log("📤 Attempting upload to storage:", fileName);
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .upload(fileName, blob, {
+          contentType: blob.type,
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error("❌ Storage upload error:", error);
+        // Enhance error message for better retry classification
+        const enhancedError = new Error(`Storage upload failed: ${error.message}`);
+        enhancedError.name = error.message.includes('rate limit') ? 'Storage rate limit exceeded' : 'StorageError';
+        throw enhancedError;
+      }
+      
+      console.log("✅ File uploaded successfully to user-organized folder:", data.path);
+      
+      // Get the public URL
+      const { data: publicUrlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(data.path);
+      
+      console.log("🔗 Public URL generated:", publicUrlData.publicUrl);
+      
+      return publicUrlData.publicUrl;
+    },
+    STORAGE_RETRY_CONFIG,
+    (context: RetryContext) => {
+      // Log retry progress
+      if (context.error) {
+        console.log(`🔄 [UPLOAD RETRY] Attempt ${context.attempt}/${context.totalAttempts} failed, retrying in ${context.delay}ms:`, {
+          error: context.error.message,
+          fileName,
+          isRetryable: context.isRetryable
+        });
+      }
+    }
+  );
 };
 
 /**
- * Delete file from Supabase Storage
+ * Delete file from Supabase Storage with retry logic
  */
 export const deleteFileFromStorage = async (
   fileName: string,
   bucketName: string = 'inspection-images'
 ): Promise<void> => {
-  console.log("🗑️ Deleting file from user-organized folder:", fileName);
+  console.log("🔄 Starting delete with retry logic:", fileName);
   
-  // Delete from storage
-  const { error } = await supabase.storage
-    .from(bucketName)
-    .remove([fileName]);
-  
-  if (error) {
-    console.error("❌ Error deleting image from storage:", error);
-    throw error;
-  } else {
-    console.log("✅ Image deleted successfully from storage:", fileName);
-  }
+  return withRetry(
+    async () => {
+      console.log("🗑️ Attempting to delete file from storage:", fileName);
+      
+      // Delete from storage
+      const { error } = await supabase.storage
+        .from(bucketName)
+        .remove([fileName]);
+      
+      if (error) {
+        console.error("❌ Error deleting image from storage:", error);
+        // Enhance error message for better retry classification
+        const enhancedError = new Error(`Storage delete failed: ${error.message}`);
+        enhancedError.name = error.message.includes('rate limit') ? 'Storage rate limit exceeded' : 'StorageError';
+        throw enhancedError;
+      }
+      
+      console.log("✅ Image deleted successfully from storage:", fileName);
+    },
+    STORAGE_RETRY_CONFIG,
+    (context: RetryContext) => {
+      // Log retry progress
+      if (context.error) {
+        console.log(`🔄 [DELETE RETRY] Attempt ${context.attempt}/${context.totalAttempts} failed, retrying in ${context.delay}ms:`, {
+          error: context.error.message,
+          fileName,
+          isRetryable: context.isRetryable
+        });
+      }
+    }
+  );
 };
 
 /**
