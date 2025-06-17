@@ -1,5 +1,5 @@
 
-// Main exports for storage utilities
+// Main exports for storage utilities with enhanced functionality
 export { getUserFullName } from './userUtils';
 export { generateFolderPath, cleanNameForFolder } from './folderUtils';
 export { 
@@ -23,3 +23,5 @@ export {
   type RetryContext,
   type ProgressCallback
 } from './retryUtils';
+// Export new enhanced functionality
+export { BatchUploadManager, type BatchUploadOptions, type BatchUploadResult } from './batchUploadManager';

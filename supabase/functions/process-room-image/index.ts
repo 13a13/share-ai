@@ -10,9 +10,7 @@ import {
 import {
   processAndOrganizeImages
 } from "./image-processor.ts";
-import {
-  processImagesWithAI
-} from "./ai-processor.ts";
+import { AIProcessor } from "./ai-processor.ts";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -33,8 +31,16 @@ serve(async (req) => {
   try {
     const requestData: ProcessImageRequest = await req.json();
     
-    console.log("🚀 Room image processing function started");
-    console.log("📥 Request data received:", JSON.stringify(requestData, null, 2));
+    console.log("🚀 Enhanced room image processing function started");
+    console.log("📥 Request data received:", JSON.stringify({
+      imageCount: Array.isArray(requestData.imageUrls) ? requestData.imageUrls.length : 1,
+      componentName: requestData.componentName,
+      roomType: requestData.roomType,
+      reportId: requestData.reportId,
+      roomId: requestData.roomId,
+      inventoryMode: requestData.inventoryMode,
+      useAdvancedAnalysis: requestData.useAdvancedAnalysis
+    }, null, 2));
     
     // Handle test connection request
     if (requestData.test === true) {
@@ -63,6 +69,8 @@ serve(async (req) => {
     } = parseRequestData(requestData);
 
     try {
+      console.log(`🔄 [MAIN] Starting enhanced processing pipeline`);
+      
       // Process and organize images
       const { processedImages, organizedImageUrls, propertyRoomInfo } = await processAndOrganizeImages(
         images,
@@ -71,9 +79,11 @@ serve(async (req) => {
         roomId
       );
 
-      // Process images with AI
+      // Enhanced AI processing with cost management and fallback
+      const aiProcessor = new AIProcessor();
       const actualRoomType = propertyRoomInfo?.roomType || roomType || 'room';
-      const { parsedData, shouldUseAdvancedAnalysis } = await processImagesWithAI(
+      
+      const enhancedResult = await aiProcessor.processImagesWithEnhancedAI(
         processedImages,
         {
           componentName,
@@ -85,18 +95,52 @@ serve(async (req) => {
         GEMINI_API_KEY
       );
 
-      // Create and return successful response
+      console.log(`✅ [MAIN] Enhanced processing complete:`, {
+        modelUsed: enhancedResult.modelUsed,
+        costIncurred: enhancedResult.costIncurred,
+        processingTime: enhancedResult.processingTime,
+        validationApplied: !!enhancedResult.validationResult
+      });
+
+      // Create and return enhanced response
       return createSuccessResponse(
-        parsedData,
+        enhancedResult.parsedData,
         componentName,
         propertyRoomInfo,
         organizedImageUrls,
         images,
-        shouldUseAdvancedAnalysis
+        enhancedResult.shouldUseAdvancedAnalysis,
+        {
+          modelUsed: enhancedResult.modelUsed,
+          costIncurred: enhancedResult.costIncurred,
+          processingTime: enhancedResult.processingTime,
+          validationResult: enhancedResult.validationResult,
+          costSummary: aiProcessor.getCostSummary()
+        }
       );
 
     } catch (error) {
-      console.error("❌ Error processing with Gemini:", error);
+      console.error("❌ Error in enhanced processing pipeline:", error);
+      
+      // Provide detailed error information for debugging
+      if (error.message.includes('Budget limit reached')) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Budget limit reached", 
+            details: error.message,
+            suggestion: "Please try again later or contact support to increase your budget limit."
+          }),
+          { 
+            status: 429, 
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+            } 
+          }
+        );
+      }
+      
       return createFallbackErrorResponse(componentName);
     }
   } catch (error) {

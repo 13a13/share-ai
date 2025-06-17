@@ -22,7 +22,7 @@ export interface GeminiRequest {
 
 /**
  * Creates a request body for the Gemini API with support for multiple images
- * Optimized for large batches by limiting the number of images
+ * Optimized for large batches and updated for Gemini 2.5 Pro Preview 05-06
  */
 export function createGeminiRequest(
   promptText: string, 
@@ -32,36 +32,43 @@ export function createGeminiRequest(
   // Ensure imageData is an array
   const imageDataArray = Array.isArray(imageData) ? imageData : [imageData];
   
-  // Limit to 10 images max for Gemini API (prevent overloading)
-  // For large batches, implement optimized selection algorithm
-  let optimizedImageArray = imageDataArray;
+  console.log(`📝 [GEMINI API] Creating request for ${imageDataArray.length} images, advanced: ${isAdvancedAnalysis}`);
   
-  if (imageDataArray.length > 10) {
+  // Enhanced image selection for Gemini 2.5 Pro Preview 05-06 (supports more images)
+  let optimizedImageArray = imageDataArray;
+  const maxImages = isAdvancedAnalysis ? 20 : 15; // Increased limits for new model
+  
+  if (imageDataArray.length > maxImages) {
     if (isAdvancedAnalysis) {
-      // Enhanced image selection for advanced analysis
-      const first = imageDataArray.slice(0, 3);
+      // Enhanced image selection algorithm for advanced analysis
+      console.log(`📸 [GEMINI API] Optimizing ${imageDataArray.length} images for advanced analysis`);
+      
+      const first = imageDataArray.slice(0, 5);
       const quarter = Math.floor(imageDataArray.length * 0.25);
-      const middle1 = imageDataArray.slice(quarter, quarter + 2);
-      const middle2 = imageDataArray.slice(Math.floor(imageDataArray.length * 0.5), Math.floor(imageDataArray.length * 0.5) + 2);
-      const last = imageDataArray.slice(-3);
-      
-      optimizedImageArray = [...first, ...middle1, ...middle2, ...last];
-      
-      // Update prompt with context about subset selection
-      promptText = `${promptText}\n\n**ANALYSIS CONTEXT:**\nYou are analyzing a carefully selected subset of ${imageDataArray.length} total images, chosen to represent different perspectives and lighting conditions.`;
-    } else {
-      // Original selection algorithm
-      const first = imageDataArray.slice(0, 4);
-      const middle = imageDataArray.length > 6 
-        ? [imageDataArray[Math.floor(imageDataArray.length / 2) - 1], 
-          imageDataArray[Math.floor(imageDataArray.length / 2)]]
-        : [];
+      const middle1 = imageDataArray.slice(quarter, quarter + 4);
+      const middle2 = imageDataArray.slice(Math.floor(imageDataArray.length * 0.5), Math.floor(imageDataArray.length * 0.5) + 4);
+      const threeQuarter = Math.floor(imageDataArray.length * 0.75);
+      const middle3 = imageDataArray.slice(threeQuarter, threeQuarter + 3);
       const last = imageDataArray.slice(-4);
+      
+      optimizedImageArray = [...first, ...middle1, ...middle2, ...middle3, ...last];
+      
+      // Update prompt with enhanced context
+      promptText = `${promptText}\n\n**ADVANCED ANALYSIS CONTEXT:**\nYou are analyzing a strategically selected subset of ${imageDataArray.length} total images (${optimizedImageArray.length} selected), chosen to represent comprehensive coverage including multiple angles, lighting conditions, and detail perspectives. Provide thorough cross-image analysis.`;
+    } else {
+      // Standard selection algorithm
+      console.log(`📸 [GEMINI API] Optimizing ${imageDataArray.length} images for standard analysis`);
+      
+      const first = imageDataArray.slice(0, 6);
+      const middle = imageDataArray.length > 8 
+        ? imageDataArray.slice(Math.floor(imageDataArray.length / 2) - 2, Math.floor(imageDataArray.length / 2) + 2)
+        : [];
+      const last = imageDataArray.slice(-5);
       
       optimizedImageArray = [...first, ...middle, ...last];
       
       // Standard subset note
-      promptText = `${promptText}\n\nNote: You are being shown a representative subset of ${imageDataArray.length} total images. Please analyze what you see in these sample images.`;
+      promptText = `${promptText}\n\nNote: You are analyzing a representative sample of ${optimizedImageArray.length} images from ${imageDataArray.length} total images. Focus on the most significant findings visible in these samples.`;
     }
   }
 
@@ -76,28 +83,46 @@ export function createGeminiRequest(
     }))
   ];
 
-  // Configure generation parameters based on analysis mode
+  // Enhanced generation parameters optimized for Gemini 2.5 Pro Preview 05-06
+  const generationConfig = {
+    temperature: isAdvancedAnalysis ? 0.1 : 0.3,  // Lower temperature for consistency in advanced mode
+    topK: isAdvancedAnalysis ? 32 : 40,
+    topP: isAdvancedAnalysis ? 0.9 : 0.95,
+    maxOutputTokens: isAdvancedAnalysis ? 4096 : 2048,  // Increased token limits for new model
+  };
+
+  console.log(`⚙️ [GEMINI API] Request configured:`, {
+    imageCount: optimizedImageArray.length,
+    originalImageCount: imageDataArray.length,
+    isAdvanced: isAdvancedAnalysis,
+    maxTokens: generationConfig.maxOutputTokens,
+    temperature: generationConfig.temperature
+  });
+
   return {
-    contents: [
-      {
-        parts: parts
-      }
-    ],
-    generationConfig: {
-      temperature: isAdvancedAnalysis ? 0.2 : 0.4,  // Lower temperature for consistency in advanced mode
-      topK: isAdvancedAnalysis ? 40 : 32,
-      topP: isAdvancedAnalysis ? 0.95 : 1.0,
-      maxOutputTokens: isAdvancedAnalysis ? 1536 : 1024,  // Increased tokens for detailed analysis
-    }
+    contents: [{ parts }],
+    generationConfig
   };
 }
 
 /**
- * Calls the Gemini API to analyze an image or multiple images
+ * Calls the Gemini API with enhanced error handling and retry logic
+ * Updated to use Gemini 2.5 Pro Preview 05-06 by default for advanced analysis
  */
-export async function callGeminiApi(apiKey: string, request: GeminiRequest): Promise<any> {
-  // Using gemini-1.5-flash model which replaced the deprecated gemini-pro-vision
-  const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+export async function callGeminiApi(
+  apiKey: string, 
+  request: GeminiRequest,
+  modelName: string = 'gemini-1.5-flash'
+): Promise<any> {
+  // Auto-upgrade to Gemini 2.5 Pro Preview 05-06 for advanced analysis
+  const imageCount = request.contents[0].parts.filter(p => p.inline_data).length;
+  const isComplex = request.generationConfig.maxOutputTokens > 2048 || imageCount > 10;
+  
+  const selectedModel = isComplex ? 'gemini-2.5-pro-preview-0506' : modelName;
+  
+  console.log(`🚀 [GEMINI API] Calling ${selectedModel} with ${imageCount} images`);
+  
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
   
   const response = await fetch(`${apiUrl}?key=${apiKey}`, {
     method: "POST",
@@ -109,18 +134,36 @@ export async function callGeminiApi(apiKey: string, request: GeminiRequest): Pro
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Gemini API error:", errorText);
-    throw new Error(`Failed to process image with Gemini: ${errorText}`);
+    console.error(`❌ [GEMINI API] ${selectedModel} error:`, {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText
+    });
+    throw new Error(`Failed to process image with ${selectedModel}: ${response.status} ${errorText}`);
   }
 
   const data = await response.json();
   
-  // Extract the text content from Gemini response
-  const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  
-  if (!textContent) {
-    throw new Error("No content returned from Gemini API");
+  // Enhanced response validation
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error(`No candidates returned from ${selectedModel}`);
   }
+  
+  const candidate = data.candidates[0];
+  
+  // Check for content filtering
+  if (candidate.finishReason === 'SAFETY') {
+    console.warn(`⚠️ [GEMINI API] Content filtered by safety settings`);
+    throw new Error('Content was filtered due to safety policies');
+  }
+  
+  if (!candidate.content?.parts?.[0]?.text) {
+    console.error(`❌ [GEMINI API] Invalid response structure:`, candidate);
+    throw new Error(`No text content returned from ${selectedModel}`);
+  }
+  
+  const textContent = candidate.content.parts[0].text;
+  console.log(`✅ [GEMINI API] ${selectedModel} returned ${textContent.length} characters`);
   
   return textContent;
 }
