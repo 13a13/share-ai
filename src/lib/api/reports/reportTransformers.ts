@@ -54,14 +54,17 @@ export const transformInspectionToReport = (
 };
 
 /**
- * Convert report info data from string to object
+ * Convert report info data from string to object - ENHANCED VERSION
  */
 export const parseReportInfo = (reportInfo: any) => {
+  console.log("📊 parseReportInfo called with:", typeof reportInfo, reportInfo ? Object.keys(reportInfo).length : 0);
+  
   if (!reportInfo || typeof reportInfo !== 'object') {
+    console.log("⚠️ Invalid reportInfo, returning defaults");
     return {
       roomName: '',
       generalCondition: '',
-      components: [],
+      components: [], // ✅ Always ensure array
       sections: [],
       additionalRooms: [],
       clerk: '',
@@ -73,10 +76,10 @@ export const parseReportInfo = (reportInfo: any) => {
     };
   }
   
-  return {
+  const parsed = {
     roomName: reportInfo.roomName || '',
     generalCondition: reportInfo.generalCondition || '',
-    components: Array.isArray(reportInfo.components) ? reportInfo.components : [],
+    components: Array.isArray(reportInfo.components) ? reportInfo.components : [], // ✅ ENHANCED: Always ensure array
     sections: Array.isArray(reportInfo.sections) ? reportInfo.sections : [],
     additionalRooms: Array.isArray(reportInfo.additionalRooms) ? reportInfo.additionalRooms : [],
     clerk: reportInfo.clerk || '',
@@ -86,6 +89,23 @@ export const parseReportInfo = (reportInfo: any) => {
     additionalInfo: reportInfo.additionalInfo || '',
     fileUrl: reportInfo.fileUrl || ''
   };
+  
+  // ✅ ENHANCED: Ensure all additionalRooms have component arrays
+  if (parsed.additionalRooms.length > 0) {
+    parsed.additionalRooms = parsed.additionalRooms.map((room: any) => ({
+      ...room,
+      components: Array.isArray(room.components) ? room.components : [],
+      sections: Array.isArray(room.sections) ? room.sections : []
+    }));
+  }
+  
+  console.log("✅ parseReportInfo result:", {
+    mainComponents: parsed.components.length,
+    additionalRooms: parsed.additionalRooms.length,
+    additionalRoomComponents: parsed.additionalRooms.map((room: any) => room.components?.length || 0)
+  });
+  
+  return parsed;
 };
 
 /**
