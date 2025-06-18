@@ -21,6 +21,7 @@ export interface ImageCaptureProps {
   onRemoveImage: (imageId: string) => void; 
   processComponentImage?: (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => Promise<any>;
   disabled?: boolean;
+  supportMultipleCapture?: boolean;
 }
 
 const ImageCapture = ({
@@ -35,7 +36,8 @@ const ImageCapture = ({
   onProcessingStateChange,
   onRemoveImage,
   processComponentImage,
-  disabled = false
+  disabled = false,
+  supportMultipleCapture = true
 }: ImageCaptureProps) => {
   // Lazy load imageProcessingService if not provided
   const processImage = async (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => {
@@ -114,6 +116,7 @@ const ImageCapture = ({
           totalImages={totalImages}
           maxImages={maxImages}
           compressionInProgress={compressionInProgress}
+          supportMultipleCapture={supportMultipleCapture}
         />
       )}
     </div>
