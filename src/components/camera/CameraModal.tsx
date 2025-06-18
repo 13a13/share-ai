@@ -10,36 +10,13 @@ import CameraContent from "./CameraContent";
 import CameraFooter from "./CameraFooter";
 
 interface CameraModalProps {
-  /**
-   * Whether the camera modal is open
-   */
   open: boolean;
-  
-  /**
-   * Function called when the camera modal is closed without capturing photos
-   */
   onClose: () => void;
-  
-  /**
-   * Function called when photos are captured and confirmed
-   * @param photos Array of data URLs of captured photos
-   */
   onPhotosCapture: (photos: string[]) => void;
-  
-  /**
-   * Maximum number of photos that can be taken (default: 20)
-   */
   maxPhotos?: number;
-  
-  /**
-   * Title to show in the camera header
-   */
   title?: string;
 }
 
-/**
- * A modal with camera functionality for capturing multiple photos
- */
 const CameraModal: React.FC<CameraModalProps> = ({
   open,
   onClose,
@@ -50,6 +27,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
+  const [isCapturingSequence, setIsCapturingSequence] = useState(false);
   
   const {
     videoRef,
@@ -69,10 +47,11 @@ const CameraModal: React.FC<CameraModalProps> = ({
     if (!open) {
       stopCamera();
       setCapturedPhotos([]);
+      setIsCapturingSequence(false);
     }
   }, [open, stopCamera]);
 
-  // Lock screen orientation on mobile
+  // Enhanced screen orientation handling
   useEffect(() => {
     if (isMobile && open && 'screen' in window && 'orientation' in screen) {
       try {
@@ -95,7 +74,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
     };
   }, [isMobile, open]);
 
-  // Handle taking a photo
+  // Enhanced photo capture with better feedback
   const handleCapture = useCallback(async () => {
     if (capturedPhotos.length >= maxPhotos) {
       toast({
@@ -107,8 +86,21 @@ const CameraModal: React.FC<CameraModalProps> = ({
     }
 
     try {
+      setIsCapturingSequence(true);
       const photoUrl = await takePhoto();
-      setCapturedPhotos(prev => [...prev, photoUrl]);
+      
+      setCapturedPhotos(prev => {
+        const newPhotos = [...prev, photoUrl];
+        
+        // Show success feedback
+        toast({
+          title: `Photo ${newPhotos.length} captured`,
+          description: `${maxPhotos - newPhotos.length} photos remaining`,
+          duration: 1500,
+        });
+        
+        return newPhotos;
+      });
     } catch (error) {
       console.error("Error capturing photo:", error);
       toast({
@@ -116,25 +108,81 @@ const CameraModal: React.FC<CameraModalProps> = ({
         description: "Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsCapturingSequence(false);
     }
   }, [capturedPhotos.length, maxPhotos, takePhoto, toast]);
 
-  // Handle deleting a photo
+  // Enhanced photo deletion with confirmation for last photo
   const handleDeletePhoto = useCallback((index: number) => {
-    setCapturedPhotos(prev => prev.filter((_, i) => i !== index));
-  }, []);
+    setCapturedPhotos(prev => {
+      const newPhotos = prev.filter((_, i) => i !== index);
+      
+      if (newPhotos.length === 0) {
+        toast({
+          title: "All photos deleted",
+          description: "You can start capturing photos again",
+          duration: 2000,
+        });
+      } else {
+        toast({
+          title: "Photo deleted",
+          description: `${newPhotos.length} photos remaining`,
+          duration: 1500,
+        });
+      }
+      
+      return newPhotos;
+    });
+  }, [toast]);
 
-  // Handle confirming the captured photos
+  // Enhanced confirmation with photo count validation
   const handleConfirm = useCallback(() => {
+    if (capturedPhotos.length === 0) {
+      toast({
+        title: "No photos to save",
+        description: "Please capture at least one photo before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Photos saved successfully",
+      description: `${capturedPhotos.length} photos are being processed`,
+      duration: 2000,
+    });
+    
     onPhotosCapture(capturedPhotos);
     onClose();
-  }, [capturedPhotos, onClose, onPhotosCapture]);
+  }, [capturedPhotos, onClose, onPhotosCapture, toast]);
 
-  // Render wrapper for camera components
+  // Enhanced keyboard shortcuts
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && isReady && capturedPhotos.length < maxPhotos) {
+        event.preventDefault();
+        handleCapture();
+      } else if (event.code === 'Enter' && capturedPhotos.length > 0) {
+        event.preventDefault();
+        handleConfirm();
+      } else if (event.code === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [open, isReady, capturedPhotos.length, maxPhotos, handleCapture, handleConfirm, onClose]);
+
+  // Enhanced camera components with better props
   const renderCameraComponents = () => (
     <>
       <CameraHeader 
-        title={title} 
+        title={`${title} (${capturedPhotos.length}/${maxPhotos})`}
         onClose={onClose} 
         onFlipCamera={flipCamera}
         isReady={isReady} 
@@ -143,7 +191,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
       <CameraContent
         videoRef={videoRef}
         isReady={isReady}
-        isProcessing={isProcessing}
+        isProcessing={isProcessing || isCapturingSequence}
         errorMessage={errorMessage}
         permissionState={permissionState}
         facingMode={facingMode}
@@ -156,7 +204,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
         capturedPhotos={capturedPhotos}
         maxPhotos={maxPhotos}
         isReady={isReady}
-        isCapturing={isCapturing}
+        isCapturing={isCapturing || isCapturingSequence}
         onCapture={handleCapture}
         onConfirm={handleConfirm}
       />
