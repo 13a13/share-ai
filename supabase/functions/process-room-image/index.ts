@@ -1,5 +1,5 @@
 
-import { serve } from 'std/server';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
 
 import { corsHeaders } from '../_shared/cors.ts';

@@ -36,11 +36,6 @@ const MultiImageComponentCapture = ({
 }: MultiImageComponentCaptureProps) => {
   console.log(`🖼️ MultiImageComponentCapture: propertyName="${propertyName}", roomName="${roomName}", componentName="${componentName}"`);
   
-  const enhancedOptions = {
-    propertyName,
-    roomName
-  };
-  
   return (
     <ImageCapture
       componentId={componentId}
@@ -58,7 +53,8 @@ const MultiImageComponentCapture = ({
       processComponentImage={(imageUrls, roomType, componentName, options) => 
         processComponentImage(imageUrls, roomType, componentName, { 
           ...options,
-          ...enhancedOptions
+          propertyName: propertyName || "unknown_property",
+          roomName: roomName || "unknown_room"
         })
       }
       // Enable multiple capture for this component
