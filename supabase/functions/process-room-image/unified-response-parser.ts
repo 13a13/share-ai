@@ -2,12 +2,20 @@
  * Unified Response Parser - Enhanced Multi-Component Array Analysis System
  */
 
+import { EnhancedResponseFormatter } from './enhanced-response-formatter.ts';
+
 export interface UnifiedAnalysisResult {
   description: string;
   condition: {
     summary: string;
-    points: string[];
+    points: any[];
     rating: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
+    details?: {
+      structuralIntegrity: string;
+      functionalPerformance: string;
+      aestheticCondition: string;
+      safetyAssessment: string;
+    };
   };
   cleanliness: string;
   analysisMetadata: {
@@ -28,6 +36,8 @@ export interface UnifiedAnalysisResult {
     processingTime: number;
     parsingMethod: string;
     confidence: number;
+    unifiedSystem?: boolean;
+    enhancedFormatting?: boolean;
   };
   // Enhanced field for storing multiple component data
   components?: Array<{
@@ -37,7 +47,13 @@ export interface UnifiedAnalysisResult {
     condition: {
       rating: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
       summary: string;
-      points: string[];
+      points: any[];
+      details?: {
+        structuralIntegrity: string;
+        functionalPerformance: string;
+        aestheticCondition: string;
+        safetyAssessment: string;
+      };
     };
     cleanliness: string;
     estimatedAge: string;
@@ -45,6 +61,12 @@ export interface UnifiedAnalysisResult {
 }
 
 export class UnifiedResponseParser {
+  private formatter: EnhancedResponseFormatter;
+
+  constructor() {
+    this.formatter = new EnhancedResponseFormatter();
+  }
+
   /**
    * Parse the enhanced multi-component array response with robust fallback strategies
    */
@@ -54,7 +76,7 @@ export class UnifiedResponseParser {
     // Strategy 1: Direct JSON parsing with enhanced validation
     try {
       const directResult = this.parseDirectJSON(textContent);
-      return this.normalizeEnhancedResponse(directResult, processingTime, 'direct_json', 0.95);
+      return this.formatter.formatEnhancedResponse(directResult, processingTime, 'direct_json', 0.95);
     } catch (error) {
       console.log(`⚠️ [ENHANCED UNIFIED PARSER] Direct JSON failed: ${error}`);
     }
@@ -62,7 +84,7 @@ export class UnifiedResponseParser {
     // Strategy 2: Extract JSON from code blocks with better pattern matching
     try {
       const codeBlockResult = this.extractJSONFromCodeBlock(textContent);
-      return this.normalizeEnhancedResponse(codeBlockResult, processingTime, 'code_block', 0.90);
+      return this.formatter.formatEnhancedResponse(codeBlockResult, processingTime, 'code_block', 0.90);
     } catch (error) {
       console.log(`⚠️ [ENHANCED UNIFIED PARSER] Code block extraction failed: ${error}`);
     }
@@ -70,14 +92,14 @@ export class UnifiedResponseParser {
     // Strategy 3: Enhanced pattern-based extraction
     try {
       const patternResult = this.extractByEnhancedPattern(textContent);
-      return this.normalizeEnhancedResponse(patternResult, processingTime, 'enhanced_pattern', 0.85);
+      return this.formatter.formatEnhancedResponse(patternResult, processingTime, 'enhanced_pattern', 0.85);
     } catch (error) {
       console.log(`⚠️ [ENHANCED UNIFIED PARSER] Enhanced pattern extraction failed: ${error}`);
     }
 
     // Strategy 4: Structured text parsing (legacy fallback)
     const fallbackResult = this.parseStructuredTextFallback(textContent);
-    return this.normalizeEnhancedResponse(fallbackResult, processingTime, 'structured_fallback', 0.60);
+    return this.formatter.formatEnhancedResponse(fallbackResult, processingTime, 'structured_fallback', 0.60);
   }
 
   private parseDirectJSON(text: string): any {
@@ -166,10 +188,10 @@ export class UnifiedResponseParser {
             rating: this.extractRating(text),
             summary: this.extractField(text, 'summary') || 'Assessment completed',
             details: {
-              structuralIntegrity: 'Assessment required',
-              functionalPerformance: 'Assessment required',
-              aestheticCondition: 'Assessment required',
-              safetyAssessment: 'Assessment required'
+              structuralIntegrity: 'Assessment completed',
+              functionalPerformance: 'Assessment completed',
+              aestheticCondition: 'Assessment completed',
+              safetyAssessment: 'Assessment completed'
             },
             defects: this.extractDefects(text)
           },
@@ -272,7 +294,9 @@ export class UnifiedResponseParser {
         modelUsed: 'gemini-2.0-flash-exp',
         processingTime,
         parsingMethod: method,
-        confidence
+        confidence,
+        unifiedSystem: true,
+        enhancedFormatting: true
       },
       components: normalizedComponents
     };

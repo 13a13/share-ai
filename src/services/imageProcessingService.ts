@@ -95,35 +95,43 @@ export const processComponentImage = async (
   options: {
     multipleImages?: boolean;
     useAdvancedAnalysis?: boolean;
+    propertyName?: string;
+    roomName?: string;
   } = {}
 ): Promise<ProcessedImageResult> => {
   try {
     const imageArray = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
     
-    console.log(`🚀 [IMAGE PROCESSING v8] Processing ${imageArray.length} images with Unified Gemini System`);
+    console.log(`🚀 [IMAGE PROCESSING v9] Processing ${imageArray.length} images with Unified Gemini System`);
+    console.log(`📍 [IMAGE PROCESSING v9] Context: property="${options.propertyName}", room="${options.roomName}", component="${componentName}"`);
     
     const response = await supabase.functions.invoke('process-room-image', {
       body: {
         imageUrls: imageArray,
         componentName,
         roomType,
+        // Enhanced context for better analysis
+        propertyName: options.propertyName,
+        roomName: options.roomName,
         // Unified system - no longer need mode flags
         unifiedSystem: true,
-        imageCount: imageArray.length
+        imageCount: imageArray.length,
+        enhancedFormatting: true
       },
     });
 
     if (response.error) {
-      console.error('❌ [IMAGE PROCESSING v8] Error calling Unified Gemini System:', response.error);
+      console.error('❌ [IMAGE PROCESSING v9] Error calling Unified Gemini System:', response.error);
       throw new Error('Failed to analyze image with Unified Gemini System');
     }
 
     const result = response.data as ProcessedImageResult;
     
-    console.log(`✅ [IMAGE PROCESSING v8] Unified processing complete:`, {
+    console.log(`✅ [IMAGE PROCESSING v9] Unified processing complete:`, {
       modelUsed: result.processingMetadata?.modelUsed,
       processingTime: result.processingMetadata?.processingTime,
       unifiedSystem: result.processingMetadata?.unifiedSystem,
+      enhancedFormatting: result.processingMetadata?.enhancedProcessing,
       parsingMethod: result.processingMetadata?.parsingMethod
     });
     
@@ -132,7 +140,7 @@ export const processComponentImage = async (
     
     return result;
   } catch (error) {
-    console.error('❌ [IMAGE PROCESSING v8] Error in unified system:', error);
+    console.error('❌ [IMAGE PROCESSING v9] Error in unified system:', error);
     throw error;
   }
 };

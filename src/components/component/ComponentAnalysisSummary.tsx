@@ -9,6 +9,8 @@ import {
   normalizeConditionPoints
 } from "@/services/imageProcessingService";
 import MultiPhotoAnalysisDisplay from "../analysis/MultiPhotoAnalysisDisplay";
+import DetailedConditionDisplay from "../analysis/DetailedConditionDisplay";
+import { EnhancedCondition } from "@/types/enhancedCondition";
 
 interface ComponentAnalysisSummaryProps {
   component: RoomComponent;
@@ -35,11 +37,23 @@ const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummar
     .sort((a, b) => 
       new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
     )[0]?.aiData;
-  
-  // Get standardized condition points
-  const conditionPoints = component.conditionPoints ? 
-    normalizeConditionPoints(component.conditionPoints) : 
-    [];
+
+  // Check if we have enhanced condition data
+  const hasEnhancedCondition = latestAnalysis?.condition && (
+    latestAnalysis.condition.details || 
+    (Array.isArray(latestAnalysis.condition.points) && 
+     latestAnalysis.condition.points.some((p: any) => typeof p === 'object' && p.label))
+  );
+
+  // Create enhanced condition object for display
+  const enhancedCondition: EnhancedCondition = {
+    summary: component.conditionSummary || latestAnalysis?.condition?.summary || 'Assessment completed',
+    points: hasEnhancedCondition 
+      ? latestAnalysis.condition.points 
+      : (component.conditionPoints ? normalizeConditionPoints(component.conditionPoints) : []),
+    rating: component.condition as any || 'fair',
+    details: latestAnalysis?.condition?.details
+  };
   
   return (
     <div className="bg-gray-50 p-4 rounded-lg border">
@@ -50,6 +64,14 @@ const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummar
           </span>
         </div>
       )}
+
+      {hasEnhancedCondition && latestAnalysis?.processingMetadata?.enhancedFormatting && (
+        <div className="mb-3 flex items-center">
+          <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            Enhanced Assessment Data
+          </span>
+        </div>
+      )}
       
       <div className="space-y-3">
         <div>
@@ -57,20 +79,12 @@ const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummar
           <p className="text-sm text-gray-700 mt-1">{component.description}</p>
         </div>
         
-        {component.conditionSummary && (
-          <div>
-            <h4 className="text-sm font-medium">Condition</h4>
-            <p className="text-sm text-gray-700 mt-1">{component.conditionSummary}</p>
-            
-            {conditionPoints.length > 0 && (
-              <ul className="list-disc list-inside text-sm text-gray-700 mt-2 pl-2 space-y-1">
-                {conditionPoints.map((point, idx) => (
-                  <li key={idx}>{point}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+        {/* Enhanced Condition Display */}
+        <DetailedConditionDisplay 
+          condition={enhancedCondition}
+          componentName={component.name}
+          showDetails={hasEnhancedCondition}
+        />
         
         {isAdvanced && latestAnalysis?.crossAnalysis && (
           <div className="bg-blue-50 p-3 rounded-md">

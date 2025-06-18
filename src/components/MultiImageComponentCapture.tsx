@@ -49,9 +49,13 @@ const MultiImageComponentCapture = ({
       onProcessingStateChange={onProcessingStateChange}
       onRemoveImage={onRemoveImage}
       disabled={disabled}
-      // Fix for type error: Convert function signature to match expected type
-      processComponentImage={(imageUrls, roomType, componentName, multipleImages) => 
-        processComponentImage(imageUrls, roomType, componentName, { multipleImages })
+      // Enhanced processing function with context
+      processComponentImage={(imageUrls, roomType, componentName, options) => 
+        processComponentImage(imageUrls, roomType, componentName, { 
+          ...options,
+          propertyName,
+          roomName
+        })
       }
       // Enable multiple capture for this component
       supportMultipleCapture={true}
