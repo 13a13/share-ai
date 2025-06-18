@@ -1,6 +1,6 @@
 
 /**
- * Unified Prompt Manager - Single Prompt System
+ * Unified Prompt Manager - Multi-Component Array Analysis System
  */
 
 export interface ComponentAnalysisContext {
@@ -14,7 +14,7 @@ export interface ComponentAnalysisContext {
 
 export class UnifiedPromptManager {
   /**
-   * Generate the single unified prompt for all scenarios
+   * Generate the new multi-component array analysis prompt
    */
   generateUnifiedPrompt(context: ComponentAnalysisContext): string {
     const {
@@ -41,92 +41,74 @@ MATERIAL_CONSIDERATIONS: ${materialConsiderations.join(', ') || 'Standard materi
 ---// END CONTEXT //---
 
 //--- CORE ASSESSMENT FRAMEWORK ---//
-1. Component Description (MFCS Protocol):
-Your first task is to create a detailed description following the Material, Form, Color, Size (MFCS) protocol. Synthesize information from all available images to build a complete profile.
-* Material: Identify primary and secondary materials, including the surface finish (e.g., matte, gloss, brushed).
-* Form: Describe the overall shape, style, and structural characteristics using precise, standard terminology.
-* Color: Specify the primary and secondary colors using standard, objective color names.
-* Size: Estimate dimensions (Height, Width, Depth) in centimeters. If a reference object is visible, use it for scale.
 
-2. Condition Assessment (5-Point Scale & Multi-Factor Analysis):
-Assess the component's condition by evaluating four distinct criteria. The final rating must be the lowest (worst) rating from any of the criteria.
-* Assessment Criteria:
-    * Structural Integrity: Analyze for cracks, warping, loose connections, material degradation, or signs of stress.
-    * Functional Performance: Evaluate for evidence of operational defects. Does it align properly? Are there signs of malfunction (e.g., water stains below a pipe, uneven gaps in a cabinet door)?
-    * Aesthetic Condition: Document surface-level flaws like scratches, stains, discoloration, chips, or finish wear.
-    * Safety Assessment: Identify any visible hazards, code compliance issues (if visually apparent), or risk factors (e.g., exposed wiring, sharp edges).
-* Condition Ratings:
-    * EXCELLENT: New or like-new. No visible defects across all four criteria.
-    * GOOD: Minor, superficial wear consistent with normal use. Fully functional and structurally sound.
-    * FAIR: Moderate wear or minor defects are evident. Function may be slightly impacted or aesthetics are noticeably diminished. Future maintenance is likely required.
-    * POOR: Significant damage, wear, or functional impairment. Requires repair or replacement in the near term.
-    * CRITICAL: Severe deterioration, complete loss of function, or presents an immediate safety hazard.
+1. Scene Identification & Itemization:
+Your FIRST task is to scan all images and identify the number of distinct items that match the ${componentName}.
 
-3. Cleanliness Evaluation (3-Tier Scale):
-Provide an objective rating for the component's cleanliness.
-* PROFESSIONAL_CLEAN: Hotel-room standard. No dust, grime, smudges, or residue of any kind.
-* DOMESTIC_CLEAN: Visually clean but may have minor dust in corners or slight smudges upon close inspection. The standard of a well-kept home.
-* NOT_CLEAN: Visible dust, dirt, grime, stains, or residue is present.
+If ${componentName} is singular (e.g., "Door") and there is one, analyze it as a single item.
+If ${componentName} is plural (e.g., "Chairs") or there are multiple distinct items visible, you MUST treat each one as a separate entity in your output array.
 
-4. Multi-Image Synthesis & Cross-Validation:
-When IMAGE_COUNT > 1, you must treat the images as a collective dataset.
-* Synthesize Evidence: Combine details from all angles to form a holistic view. A defect visible in one image is confirmed. Details from one angle supplement others.
-* Identify Contradictions: If images present conflicting evidence (e.g., damage is visible in one photo but not another of the same area), you must document this in conflictingFindings.
-* Calculate Consistency: Generate a consistencyScore from 0.0 to 1.0, where 1.0 indicates all images are perfectly aligned and mutually reinforcing, and < 0.8 suggests significant contradictions.
+2. Natural Language Description Generation:
+For each identified item, generate a single, flowing, descriptive sentence. Do NOT use the "Primary: Value, Secondary: Value" format. Instead, construct a sentence that integrates all key attributes naturally.
+
+GOOD EXAMPLE: "A round white plastic stool with four straight white metal legs."
+GOOD EXAMPLE: "A beige metal-framed armchair with a woven wicker back and seat."
+BAD EXAMPLE: "Primary: Plastic, Secondary: Metal..."
+
+3. Individual Condition & Cleanliness Assessment:
+Perform a full, independent Condition Assessment and Cleanliness Evaluation for EACH item you have identified. The rating for one item must not influence the rating for another.
+
+Condition Assessment: Use the 5-point scale (Excellent, Good, Fair, Poor, Critical) based on a multi-factor analysis of Structural Integrity, Functional Performance, Aesthetic Condition, and Safety Assessment.
+Cleanliness Evaluation: Use the 3-tier scale (Professional Clean, Domestic Clean, Not Clean).
+
+4. Final JSON Output Structure:
+Your final output MUST be a JSON object containing a components array. Each object within that array represents one distinct item you have analyzed, containing its own unique description, condition, and cleanliness assessment.
 
 //--- RESPONSE FORMATTING & LANGUAGE RULES ---//
-* Be Definitive: You are an expert. State your findings directly. Avoid all hedging language like "it appears to be," "looks like," "seems," or "might be."
-* Active Voice: Use direct, active voice.
-* Brevity and Precision: Use precise terminology. Full sentences are only permitted in summary fields. All other descriptive fields and array elements should be concise phrases or keywords.
-* Defect List: Items in the defects array must start with a capital letter and use no trailing punctuation.
+
+Be Definitive: You are an expert. State your findings directly. Avoid all hedging language like "it appears to be," "looks like," "seems," or "might be."
+Active Voice: Use direct, active voice.
+Brevity and Precision: Use precise terminology. Full sentences are only permitted in summary fields and the main description field. All other descriptive fields and array elements should be concise phrases or keywords.
+Defect List: Items in the defects array must start with a capital letter and use no trailing punctuation.
 
 //--- OUTPUT: STRICTLY VALID JSON ONLY ---//
+
 {
-  "component": {
-    "name": "${componentName}",
-    "room": "${roomType}",
-    "description": {
-      "material": "Primary: [Primary Material], Secondary: [Secondary Material], Finish: [Finish Type]",
-      "form": "[Detailed description of shape, style, and construction]",
-      "color": "Primary: [Color], Secondary: [Color]",
-      "size_cm": {
-        "height": 0,
-        "width": 0,
-        "depth": 0
+  "sceneSummary": {
+    "componentQuery": "${componentName}",
+    "identifiedItemCount": 0,
+    "imageCount": ${imageCount},
+    "overallImpression": "[A brief, one-sentence summary of the entire scene or collection of items.]"
+  },
+  "components": [
+    {
+      "componentId": "item_1",
+      "inferredType": "[The specific type of this item, e.g., Stool, Armchair, Door Handle]",
+      "description": "[A single, flowing, descriptive sentence for this item.]",
+      "assessment": {
+        "condition": {
+          "rating": "EXCELLENT|GOOD|FAIR|POOR|CRITICAL",
+          "summary": "[A single, concise sentence summarizing the condition of THIS specific item.]",
+          "details": {
+            "structuralIntegrity": "[Finding for this item's criterion]",
+            "functionalPerformance": "[Finding for this item's criterion]",
+            "aestheticCondition": "[Finding for this item's criterion]",
+            "safetyAssessment": "[Finding for this item's criterion]"
+          },
+          "defects": [
+            "Identified defect for this item"
+          ]
+        },
+        "cleanliness": {
+          "rating": "PROFESSIONAL_CLEAN|DOMESTIC_CLEAN|NOT_CLEAN",
+          "details": "[Brief justification for the cleanliness rating of THIS item.]"
+        }
+      },
+      "metadata": {
+        "estimatedAge": "New|Modern (<10 years)|Intermediate (10-25 years)|Old (>25 years)|Antique"
       }
     }
-  },
-  "assessment": {
-    "condition": {
-      "rating": "EXCELLENT|GOOD|FAIR|POOR|CRITICAL",
-      "summary": "[A single, concise sentence summarizing the overall condition.]",
-      "details": {
-        "structuralIntegrity": "[Finding for this criterion]",
-        "functionalPerformance": "[Finding for this criterion]",
-        "aestheticCondition": "[Finding for this criterion]",
-        "safetyAssessment": "[Finding for this criterion]"
-      },
-      "defects": [
-        "Identified defect 1",
-        "Identified defect 2"
-      ]
-    },
-    "cleanliness": {
-      "rating": "PROFESSIONAL_CLEAN|DOMESTIC_CLEAN|NOT_CLEAN",
-      "details": "[Brief justification for the cleanliness rating.]"
-    }
-  },
-  "analysisMetadata": {
-    "imageCount": ${imageCount},
-    "multiImageAnalysis": {
-      "isConsistent": true,
-      "consistencyScore": 1.0,
-      "conflictingFindings": [
-        "If any contradictions exist, describe them here"
-      ]
-    },
-    "estimatedAge": "New|Modern (<10 years)|Intermediate (10-25 years)|Old (>25 years)|Antique"
-  }
+  ]
 }
 //--- END OF PROMPT ---//`;
   }

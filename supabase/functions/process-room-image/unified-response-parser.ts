@@ -1,6 +1,6 @@
 
 /**
- * Unified Response Parser - Single parsing system for the unified prompt
+ * Unified Response Parser - Multi-Component Array Analysis System
  */
 
 export interface UnifiedAnalysisResult {
@@ -19,6 +19,10 @@ export interface UnifiedAnalysisResult {
       conflictingFindings: string[];
     };
     estimatedAge: string;
+    // New fields for multi-component support
+    itemCount?: number;
+    sceneSummary?: string;
+    multipleItems?: boolean;
   };
   processingMetadata: {
     modelUsed: string;
@@ -26,19 +30,32 @@ export interface UnifiedAnalysisResult {
     parsingMethod: string;
     confidence: number;
   };
+  // New field for storing multiple component data
+  components?: Array<{
+    componentId: string;
+    inferredType: string;
+    description: string;
+    condition: {
+      rating: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
+      summary: string;
+      points: string[];
+    };
+    cleanliness: string;
+    estimatedAge: string;
+  }>;
 }
 
 export class UnifiedResponseParser {
   /**
-   * Parse the unified prompt response with robust fallback strategies
+   * Parse the new multi-component array response with robust fallback strategies
    */
   parseUnifiedResponse(textContent: string, processingTime: number): UnifiedAnalysisResult {
-    console.log(`🔍 [UNIFIED PARSER] Starting unified response parsing`);
+    console.log(`🔍 [UNIFIED PARSER] Starting multi-component response parsing`);
     
     // Strategy 1: Direct JSON parsing
     try {
       const directResult = this.parseDirectJSON(textContent);
-      return this.normalizeResponse(directResult, processingTime, 'direct_json', 0.95);
+      return this.normalizeMultiComponentResponse(directResult, processingTime, 'direct_json', 0.95);
     } catch (error) {
       console.log(`⚠️ [UNIFIED PARSER] Direct JSON failed: ${error}`);
     }
@@ -46,7 +63,7 @@ export class UnifiedResponseParser {
     // Strategy 2: Extract JSON from code blocks
     try {
       const codeBlockResult = this.extractJSONFromCodeBlock(textContent);
-      return this.normalizeResponse(codeBlockResult, processingTime, 'code_block', 0.90);
+      return this.normalizeMultiComponentResponse(codeBlockResult, processingTime, 'code_block', 0.90);
     } catch (error) {
       console.log(`⚠️ [UNIFIED PARSER] Code block extraction failed: ${error}`);
     }
@@ -54,14 +71,14 @@ export class UnifiedResponseParser {
     // Strategy 3: Pattern-based extraction
     try {
       const patternResult = this.extractByPattern(textContent);
-      return this.normalizeResponse(patternResult, processingTime, 'pattern_extraction', 0.80);
+      return this.normalizeMultiComponentResponse(patternResult, processingTime, 'pattern_extraction', 0.80);
     } catch (error) {
       console.log(`⚠️ [UNIFIED PARSER] Pattern extraction failed: ${error}`);
     }
 
-    // Strategy 4: Structured text parsing
-    const fallbackResult = this.parseStructuredText(textContent);
-    return this.normalizeResponse(fallbackResult, processingTime, 'structured_fallback', 0.60);
+    // Strategy 4: Structured text parsing (legacy fallback)
+    const fallbackResult = this.parseStructuredTextFallback(textContent);
+    return this.normalizeMultiComponentResponse(fallbackResult, processingTime, 'structured_fallback', 0.60);
   }
 
   private parseDirectJSON(text: string): any {
@@ -94,7 +111,16 @@ export class UnifiedResponseParser {
   }
 
   private extractByPattern(text: string): any {
-    // Extract structured data using patterns
+    // Try to extract the new multi-component structure
+    const sceneSummaryMatch = text.match(/"sceneSummary":\s*\{[\s\S]*?\}/);
+    const componentsMatch = text.match(/"components":\s*\[[\s\S]*?\]/);
+    
+    if (sceneSummaryMatch && componentsMatch) {
+      const reconstructed = `{${sceneSummaryMatch[0]},${componentsMatch[0]}}`;
+      return JSON.parse(reconstructed);
+    }
+    
+    // Fallback to legacy structure extraction
     const componentMatch = text.match(/"component":\s*\{[\s\S]*?\}/);
     const assessmentMatch = text.match(/"assessment":\s*\{[\s\S]*?\}/);
     
@@ -102,51 +128,136 @@ export class UnifiedResponseParser {
       const reconstructed = `{${componentMatch[0]},${assessmentMatch[0]}}`;
       return JSON.parse(reconstructed);
     }
+    
     throw new Error('Pattern extraction failed');
   }
 
-  private parseStructuredText(text: string): any {
-    // Fallback structured text parsing
+  private parseStructuredTextFallback(text: string): any {
+    // Create legacy single-component fallback structure
     return {
-      component: {
-        name: this.extractField(text, 'component') || 'Component',
-        description: {
-          material: this.extractField(text, 'material') || 'Material not specified',
-          form: this.extractField(text, 'form') || 'Form not specified',
-          color: this.extractField(text, 'color') || 'Color not specified'
-        }
-      },
-      assessment: {
-        condition: {
-          rating: this.extractRating(text),
-          summary: this.extractField(text, 'summary') || 'Assessment completed',
-          details: {
-            structuralIntegrity: 'Assessment required',
-            functionalPerformance: 'Assessment required',
-            aestheticCondition: 'Assessment required',
-            safetyAssessment: 'Assessment required'
-          },
-          defects: this.extractDefects(text)
-        },
-        cleanliness: {
-          rating: this.extractCleanliness(text),
-          details: 'Assessment based on visual inspection'
-        }
-      },
-      analysisMetadata: {
+      sceneSummary: {
+        componentQuery: 'Component',
+        identifiedItemCount: 1,
         imageCount: 1,
-        multiImageAnalysis: {
-          isConsistent: true,
-          consistencyScore: 0.8,
-          conflictingFindings: []
+        overallImpression: 'Assessment completed from text analysis'
+      },
+      components: [{
+        componentId: 'item_1',
+        inferredType: this.extractField(text, 'component') || 'Component',
+        description: this.extractField(text, 'description') || 'Component analyzed from visual inspection',
+        assessment: {
+          condition: {
+            rating: this.extractRating(text),
+            summary: this.extractField(text, 'summary') || 'Assessment completed',
+            details: {
+              structuralIntegrity: 'Assessment required',
+              functionalPerformance: 'Assessment required',
+              aestheticCondition: 'Assessment required',
+              safetyAssessment: 'Assessment required'
+            },
+            defects: this.extractDefects(text)
+          },
+          cleanliness: {
+            rating: this.extractCleanliness(text),
+            details: 'Assessment based on visual inspection'
+          }
         },
-        estimatedAge: 'Unknown'
-      }
+        metadata: {
+          estimatedAge: 'Unknown'
+        }
+      }]
     };
   }
 
-  private normalizeResponse(rawData: any, processingTime: number, method: string, confidence: number): UnifiedAnalysisResult {
-    // Normalize the response to match the expected interface
+  private normalizeMultiComponentResponse(rawData: any, processingTime: number, method: string, confidence: number): UnifiedAnalysisResult {
+    console.log(`🔄 [UNIFIED PARSER] Normalizing multi-component response`);
+    
+    // Check if this is the new multi-component format
+    if (rawData.sceneSummary && rawData.components && Array.isArray(rawData.components)) {
+      return this.normalizeNewFormat(rawData, processingTime, method, confidence);
+    }
+    
+    // Check if this is legacy single component format
+    if (rawData.component || rawData.assessment) {
+      return this.normalizeLegacyFormat(rawData, processingTime, method, confidence);
+    }
+    
+    // If neither format is detected, create a minimal fallback
+    return this.createFallbackResponse(rawData, processingTime, method, confidence);
+  }
+
+  private normalizeNewFormat(rawData: any, processingTime: number, method: string, confidence: number): UnifiedAnalysisResult {
+    const sceneSummary = rawData.sceneSummary || {};
+    const components = rawData.components || [];
+    
+    // Use the first component as the primary result for backward compatibility
+    const primaryComponent = components[0] || {};
+    const primaryAssessment = primaryComponent.assessment || {};
+    const primaryCondition = primaryAssessment.condition || {};
+    const primaryCleanliness = primaryAssessment.cleanliness || {};
+    
+    // Create the main description from the first component
+    const description = primaryComponent.description || sceneSummary.overallImpression || 'Component analyzed';
+    
+    // Normalize condition points from the first component
+    const points = this.normalizeConditionPoints(primaryCondition);
+    
+    // Normalize ratings
+    const rating = this.normalizeRating(primaryCondition.rating);
+    const cleanlinessRating = this.normalizeCleanliness(primaryCleanliness.rating);
+    
+    // Create normalized components array
+    const normalizedComponents = components.map((comp: any, index: number) => {
+      const assessment = comp.assessment || {};
+      const condition = assessment.condition || {};
+      const cleanliness = assessment.cleanliness || {};
+      
+      return {
+        componentId: comp.componentId || `item_${index + 1}`,
+        inferredType: comp.inferredType || 'Component',
+        description: comp.description || 'Component analyzed',
+        condition: {
+          rating: this.normalizeRating(condition.rating),
+          summary: condition.summary || 'Assessment completed',
+          points: this.normalizeConditionPoints(condition)
+        },
+        cleanliness: this.normalizeCleanliness(cleanliness.rating),
+        estimatedAge: comp.metadata?.estimatedAge || 'Unknown'
+      };
+    });
+
+    return {
+      description,
+      condition: {
+        summary: primaryCondition.summary || 'Assessment completed',
+        points,
+        rating
+      },
+      cleanliness: cleanlinessRating,
+      analysisMetadata: {
+        imageCount: sceneSummary.imageCount || 1,
+        multiImageAnalysis: {
+          isConsistent: true,
+          consistencyScore: confidence,
+          conflictingFindings: []
+        },
+        estimatedAge: primaryComponent.metadata?.estimatedAge || 'Unknown',
+        itemCount: sceneSummary.identifiedItemCount || components.length,
+        sceneSummary: sceneSummary.overallImpression || 'Multi-component analysis completed',
+        multipleItems: components.length > 1
+      },
+      processingMetadata: {
+        modelUsed: 'gemini-2.0-flash-exp',
+        processingTime,
+        parsingMethod: method,
+        confidence
+      },
+      components: normalizedComponents
+    };
+  }
+
+  private normalizeLegacyFormat(rawData: any, processingTime: number, method: string, confidence: number): UnifiedAnalysisResult {
+    // Handle legacy format for backward compatibility
     const component = rawData.component || {};
     const assessment = rawData.assessment || {};
     const condition = assessment.condition || {};
@@ -154,15 +265,13 @@ export class UnifiedResponseParser {
     const metadata = rawData.analysisMetadata || {};
 
     // Create comprehensive description
-    const description = this.buildDescription(component);
+    const description = this.buildLegacyDescription(component);
 
     // Normalize condition points
     const points = this.normalizeConditionPoints(condition);
 
-    // Normalize rating
+    // Normalize ratings
     const rating = this.normalizeRating(condition.rating);
-
-    // Normalize cleanliness
     const cleanlinessRating = this.normalizeCleanliness(cleanliness.rating);
 
     return {
@@ -180,7 +289,9 @@ export class UnifiedResponseParser {
           consistencyScore: metadata.multiImageAnalysis?.consistencyScore ?? 1.0,
           conflictingFindings: metadata.multiImageAnalysis?.conflictingFindings || []
         },
-        estimatedAge: metadata.estimatedAge || 'Unknown'
+        estimatedAge: metadata.estimatedAge || 'Unknown',
+        itemCount: 1,
+        multipleItems: false
       },
       processingMetadata: {
         modelUsed: 'gemini-2.0-flash-exp',
@@ -191,7 +302,36 @@ export class UnifiedResponseParser {
     };
   }
 
-  private buildDescription(component: any): string {
+  private createFallbackResponse(rawData: any, processingTime: number, method: string, confidence: number): UnifiedAnalysisResult {
+    return {
+      description: 'Component analyzed from visual inspection',
+      condition: {
+        summary: 'Assessment completed',
+        points: ['Visual assessment completed'],
+        rating: 'fair' as const
+      },
+      cleanliness: 'domestic_clean',
+      analysisMetadata: {
+        imageCount: 1,
+        multiImageAnalysis: {
+          isConsistent: true,
+          consistencyScore: 0.5,
+          conflictingFindings: []
+        },
+        estimatedAge: 'Unknown',
+        itemCount: 1,
+        multipleItems: false
+      },
+      processingMetadata: {
+        modelUsed: 'gemini-2.0-flash-exp',
+        processingTime,
+        parsingMethod: method,
+        confidence
+      }
+    };
+  }
+
+  private buildLegacyDescription(component: any): string {
     if (component.description) {
       const desc = component.description;
       const parts = [
