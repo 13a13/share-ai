@@ -1,6 +1,7 @@
+
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { ReportsAPI, GeminiAPI } from "@/lib/api";
+import { RoomImageAPI, GeminiAPI } from "@/lib/api";
 import { Room } from "@/types";
 import { compressImageFile } from "@/utils/imageCompression";
 import { uploadReportImage, checkStorageBucket } from "@/utils/supabaseStorage";
@@ -33,21 +34,21 @@ export const useRoomImageUpload = ({
   // Resolve names immediately on mount and when IDs change
   useEffect(() => {
     const resolveNames = async () => {
-      console.log(`🔄 [HOOK v4] useRoomImageUpload: Resolving names for roomId: ${roomId}`);
+      console.log(`🔄 [HOOK v5] useRoomImageUpload: Resolving names for roomId: ${roomId}`);
       try {
         const resolved = await resolvePropertyAndRoomNames(roomId, propName, rmName);
         setResolvedNames(resolved);
-        console.log(`✅ [HOOK v4] useRoomImageUpload: Names resolved:`, resolved);
+        console.log(`✅ [HOOK v5] useRoomImageUpload: Names resolved:`, resolved);
         
         // Check for problematic resolutions
         if (resolved.propertyName.startsWith('error_') || resolved.roomName.startsWith('error_') ||
             resolved.propertyName === 'unknown_property' || resolved.roomName === 'unknown_room') {
-          console.error(`🚨 [HOOK v4] Problematic name resolution in hook:`, {
+          console.error(`🚨 [HOOK v5] Problematic name resolution in hook:`, {
             roomId, propName, rmName, resolved
           });
         }
       } catch (error) {
-        console.error(`❌ [HOOK v4] Error resolving names:`, error);
+        console.error(`❌ [HOOK v5] Error resolving names:`, error);
         setResolvedNames({ propertyName: "error_hook", roomName: "error_hook" });
       }
     };
@@ -115,15 +116,15 @@ export const useRoomImageUpload = ({
     try {
       // Ensure we have resolved names before uploading
       if (!resolvedNames) {
-        console.log(`🔄 [HOOK v4] handleMultipleImagesProcess: Re-resolving names...`);
+        console.log(`🔄 [HOOK v5] handleMultipleImagesProcess: Re-resolving names...`);
         const freshlyResolved = await resolvePropertyAndRoomNames(roomId, propName, rmName);
         setResolvedNames(freshlyResolved);
-        console.log(`✅ [HOOK v4] handleMultipleImagesProcess: Fresh resolution:`, freshlyResolved);
+        console.log(`✅ [HOOK v5] handleMultipleImagesProcess: Fresh resolution:`, freshlyResolved);
       }
 
       const namesToUse = resolvedNames || { propertyName: "fallback_property", roomName: "fallback_room" };
 
-      console.log(`🔄 [HOOK v4] Processing ${imageDataUrls.length} images for room: ${roomId}, report: ${reportId}, with names:`, namesToUse);
+      console.log(`🔄 [HOOK v5] Processing ${imageDataUrls.length} images for room: ${roomId}, report: ${reportId}, with names:`, namesToUse);
 
       const storageAvailable = await checkStorageBucket();
       const processedImageUrls: string[] = [];
@@ -132,7 +133,7 @@ export const useRoomImageUpload = ({
       // Process each image
       for (let i = 0; i < imageDataUrls.length; i++) {
         const imageUrl = imageDataUrls[i];
-        console.log(`📸 [HOOK v4] Processing image ${i + 1}/${imageDataUrls.length}`);
+        console.log(`📸 [HOOK v5] Processing image ${i + 1}/${imageDataUrls.length}`);
 
         try {
           // Compress the image first
@@ -147,7 +148,7 @@ export const useRoomImageUpload = ({
           // Upload to storage if available
           if (storageAvailable) {
             try {
-              console.log(`📤 [HOOK v4] Uploading image ${i + 1} with resolved names:`, namesToUse);
+              console.log(`📤 [HOOK v5] Uploading image ${i + 1} with resolved names:`, namesToUse);
               finalImageUrl = await uploadReportImage(
                 compressedDataUrl, 
                 reportId, 
@@ -156,21 +157,21 @@ export const useRoomImageUpload = ({
                 namesToUse.roomName, 
                 'general'
               );
-              console.log(`✅ [HOOK v4] Image ${i + 1} uploaded successfully:`, finalImageUrl);
+              console.log(`✅ [HOOK v5] Image ${i + 1} uploaded successfully:`, finalImageUrl);
             } catch (storageError) {
-              console.warn(`⚠️ [HOOK v4] Storage upload failed for image ${i + 1}, using compressed URL:`, storageError);
+              console.warn(`⚠️ [HOOK v5] Storage upload failed for image ${i + 1}, using compressed URL:`, storageError);
               finalImageUrl = compressedDataUrl;
             }
           }
 
-          // Add to database
-          const image = await ReportsAPI.addImageToRoom(reportId, roomId, finalImageUrl);
+          // Add to database using updated API
+          const image = await RoomImageAPI.addImageToRoom(reportId, roomId, finalImageUrl);
           if (image) {
             processedImageUrls.push(finalImageUrl);
             imageIds.push(image.id);
           }
         } catch (error) {
-          console.error(`❌ [HOOK v4] Error processing image ${i + 1}:`, error);
+          console.error(`❌ [HOOK v5] Error processing image ${i + 1}:`, error);
           // Continue processing remaining images
         }
       }
@@ -180,7 +181,7 @@ export const useRoomImageUpload = ({
       }
 
       // Process with AI using ALL image IDs for multi-image analysis
-      console.log(`🤖 [HOOK v4] Processing ${processedImageUrls.length} images with AI using ALL image IDs:`, imageIds);
+      console.log(`🤖 [HOOK v5] Processing ${processedImageUrls.length} images with AI using ALL image IDs:`, imageIds);
       const updatedRoom = await GeminiAPI.processMultipleRoomImages(reportId, roomId, imageIds);
       
       if (updatedRoom) {
@@ -201,7 +202,7 @@ export const useRoomImageUpload = ({
         });
       }
     } catch (error) {
-      console.error(`❌ [HOOK v4] Error in multiple images processing:`, error);
+      console.error(`❌ [HOOK v5] Error in multiple images processing:`, error);
       toast({
         title: "Processing failed",
         description: "There was a problem processing your images. Please try again.",
@@ -216,22 +217,22 @@ export const useRoomImageUpload = ({
     try {
       // Ensure we have resolved names before uploading
       if (!resolvedNames) {
-        console.log(`🔄 [HOOK v4] processImage: Re-resolving names...`);
+        console.log(`🔄 [HOOK v5] processImage: Re-resolving names...`);
         const freshlyResolved = await resolvePropertyAndRoomNames(roomId, propName, rmName);
         setResolvedNames(freshlyResolved);
-        console.log(`✅ [HOOK v4] processImage: Fresh resolution:`, freshlyResolved);
+        console.log(`✅ [HOOK v5] processImage: Fresh resolution:`, freshlyResolved);
       }
 
       const namesToUse = resolvedNames || { propertyName: "fallback_property", roomName: "fallback_room" };
 
-      console.log(`🔄 [HOOK v4] Processing and uploading image for room: ${roomId}, report: ${reportId}, with names:`, namesToUse);
+      console.log(`🔄 [HOOK v5] Processing and uploading image for room: ${roomId}, report: ${reportId}, with names:`, namesToUse);
 
       const storageAvailable = await checkStorageBucket();
       let finalImageUrl = imageUrl;
 
       if (storageAvailable) {
         try {
-          console.log(`📤 [HOOK v4] Uploading with resolved names:`, namesToUse);
+          console.log(`📤 [HOOK v5] Uploading with resolved names:`, namesToUse);
           finalImageUrl = await uploadReportImage(
             imageUrl, 
             reportId, 
@@ -240,11 +241,11 @@ export const useRoomImageUpload = ({
             namesToUse.roomName, 
             'general'
           );
-          console.log(`✅ [HOOK v4] Image uploaded successfully:`, finalImageUrl);
+          console.log(`✅ [HOOK v5] Image uploaded successfully:`, finalImageUrl);
           
           // Validate the uploaded URL contains the correct folder structure
           if (finalImageUrl.includes('unknown_property') || finalImageUrl.includes('unknown_room')) {
-            console.error(`🚨 [HOOK v4] UPLOADED IMAGE STILL HAS GENERIC FOLDER NAMES!`, {
+            console.error(`🚨 [HOOK v5] UPLOADED IMAGE STILL HAS GENERIC FOLDER NAMES!`, {
               uploadedUrl: finalImageUrl,
               expectedProperty: namesToUse.propertyName,
               expectedRoom: namesToUse.roomName
@@ -256,14 +257,15 @@ export const useRoomImageUpload = ({
             });
           }
         } catch (storageError) {
-          console.warn(`⚠️ [HOOK v4] Storage upload failed, using original URL:`, storageError);
+          console.warn(`⚠️ [HOOK v5] Storage upload failed, using original URL:`, storageError);
           finalImageUrl = imageUrl;
         }
       } else {
-        console.warn(`⚠️ [HOOK v4] Storage bucket not available, using original image URL`);
+        console.warn(`⚠️ [HOOK v5] Storage bucket not available, using original image URL`);
       }
 
-      const image = await ReportsAPI.addImageToRoom(reportId, roomId, finalImageUrl);
+      // Use updated API method
+      const image = await RoomImageAPI.addImageToRoom(reportId, roomId, finalImageUrl);
 
       if (image) {
         setUploadedImageId(image.id);
@@ -280,7 +282,7 @@ export const useRoomImageUpload = ({
 
       setIsUploading(false);
     } catch (error) {
-      console.error(`❌ [HOOK v4] Error uploading image:`, error);
+      console.error(`❌ [HOOK v5] Error uploading image:`, error);
       toast({
         title: "Upload failed",
         description: "There was a problem processing your image",

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * API functions for room image operations with guaranteed storage persistence
+ * Updated to use the new room_images table as the primary source of truth
  */
 export const RoomImageAPI = {
   /**
@@ -25,13 +26,14 @@ export const RoomImageAPI = {
       const imageId = crypto.randomUUID();
       console.log("🆔 Generated image ID:", imageId);
       
-      // Save the storage URL to the database (inspection_images table)
+      // Save the storage URL to the database (room_images table)
       const { data, error } = await supabase
-        .from('inspection_images')
+        .from('room_images')
         .insert({
           id: imageId,
+          room_id: roomId,
           inspection_id: reportId,
-          image_url: imageUrl
+          url: imageUrl
         })
         .select()
         .single();
@@ -43,16 +45,17 @@ export const RoomImageAPI = {
       
       console.log("✅ Image record saved to database:", {
         id: data.id,
+        room_id: data.room_id,
         inspection_id: data.inspection_id,
-        image_url: data.image_url.substring(0, 80) + '...',
+        url: data.url.substring(0, 80) + '...',
         created_at: data.created_at
       });
       
       return {
         id: data.id,
-        url: data.image_url,
+        url: data.url,
         timestamp: new Date(data.created_at),
-        aiProcessed: false
+        aiProcessed: !!data.analysis
       };
     } catch (error) {
       console.error("❌ Error adding image to room:", error);
@@ -61,28 +64,29 @@ export const RoomImageAPI = {
   },
 
   /**
-   * Get images for a room/inspection
+   * Get images for a room using room_id and inspection_id
    */
-  getImagesForRoom: async (reportId: string): Promise<RoomImage[]> => {
+  getImagesForRoom: async (reportId: string, roomId: string): Promise<RoomImage[]> => {
     try {
-      console.log("📖 Fetching images for inspection:", reportId);
+      console.log("📖 Fetching images for room:", roomId, "in inspection:", reportId);
       
       const { data, error } = await supabase
-        .from('inspection_images')
+        .from('room_images')
         .select('*')
         .eq('inspection_id', reportId)
+        .eq('room_id', roomId)
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('❌ Error fetching inspection images:', error);
+        console.error('❌ Error fetching room images:', error);
         throw error;
       }
 
-      console.log(`✅ Found ${data?.length || 0} images for inspection ${reportId}`);
+      console.log(`✅ Found ${data?.length || 0} images for room ${roomId} in inspection ${reportId}`);
       
       return (data || []).map(image => ({
         id: image.id,
-        url: image.image_url,
+        url: image.url,
         timestamp: new Date(image.created_at),
         aiProcessed: !!image.analysis
       }));
@@ -101,8 +105,8 @@ export const RoomImageAPI = {
       
       // First get the image to delete from storage
       const { data: imageData, error: fetchError } = await supabase
-        .from('inspection_images')
-        .select('image_url')
+        .from('room_images')
+        .select('url')
         .eq('id', imageId)
         .single();
 
@@ -112,10 +116,10 @@ export const RoomImageAPI = {
       }
 
       // Delete from storage if it's a Supabase storage URL
-      if (imageData?.image_url && !imageData.image_url.startsWith('data:')) {
+      if (imageData?.url && !imageData.url.startsWith('data:')) {
         try {
           const { deleteReportImage } = await import('@/utils/supabaseStorage');
-          await deleteReportImage(imageData.image_url);
+          await deleteReportImage(imageData.url);
           console.log("✅ Image deleted from storage");
         } catch (storageError) {
           console.warn("⚠️ Failed to delete from storage:", storageError);
@@ -125,7 +129,7 @@ export const RoomImageAPI = {
 
       // Delete from database
       const { error } = await supabase
-        .from('inspection_images')
+        .from('room_images')
         .delete()
         .eq('id', imageId);
 

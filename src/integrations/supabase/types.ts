@@ -259,6 +259,51 @@ export type Database = {
         }
         Relationships: []
       }
+      room_images: {
+        Row: {
+          analysis: Json | null
+          created_at: string
+          id: string
+          inspection_id: string
+          room_id: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          analysis?: Json | null
+          created_at?: string
+          id?: string
+          inspection_id: string
+          room_id: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          analysis?: Json | null
+          created_at?: string
+          id?: string
+          inspection_id?: string
+          room_id?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_images_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_images_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           created_at: string
