@@ -1,6 +1,9 @@
+
 // This file is maintained for backward compatibility
 // All APIs are now modularized in the /api directory
 export * from './api/index';
+
+import { supabase } from '@/integrations/supabase/client';
 
 export const GeminiAPI = {
   async processRoomImage(reportId: string, roomId: string, imageId: string) {
