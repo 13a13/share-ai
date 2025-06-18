@@ -100,27 +100,35 @@ When analyzing ${imageCount} images:
 - If images show different components of the same type, analyze each separately
 - Identify any inconsistencies between images and note them in your analysis
 
-3. Natural Language Description Generation:
-For each identified item, generate a single, flowing, descriptive sentence that integrates all key attributes naturally.
+3. Physical Description Generation:
+For each identified item, generate a single, flowing, descriptive sentence that focuses EXCLUSIVELY on physical characteristics. This description must contain ONLY observable physical attributes and NO condition assessments.
 
-EXCELLENT EXAMPLES:
-"A round white plastic stool with four straight white metal legs showing minor scuff marks on the base."
-"A beige metal-framed armchair with woven wicker back and seat displaying slight discoloration on the right armrest."
-"A solid wood interior door with brass handle and hinges, painted white with minor paint chips near the bottom edge."
+DESCRIPTION FIELD RULES:
+- ONLY physical characteristics: material, color, size, shape, design features
+- NO condition words: good, bad, worn, damaged, pristine, excellent, etc.
+- NO assessment language: appears to be, looks like, seems, condition indicates
+- NO defect mentions: scratches, chips, stains, wear, damage
 
-AVOID STRUCTURED FORMATS:
-- Do NOT use "Primary: Value, Secondary: Value" format
-- Do NOT use bullet points or lists within descriptions
-- Do NOT use technical specifications unless directly observable
+EXCELLENT DESCRIPTION EXAMPLES:
+✅ "A round white plastic stool with four straight metal legs"
+✅ "A beige metal-framed armchair with woven wicker back and seat"
+✅ "A solid wood interior door with brass handle and hinges, painted white"
+✅ "A rectangular ceramic floor tile with glossy finish in cream color"
 
-4. Individual Condition & Cleanliness Assessment:
-Perform a full, independent assessment for EACH item you have identified. The rating for one item must not influence the rating for another.
+AVOID THESE IN DESCRIPTIONS:
+❌ "A round white plastic stool with minor scuff marks" (condition assessment)
+❌ "A beige armchair showing slight discoloration" (condition assessment)
+❌ "A door in good condition with white paint" (condition assessment)
+❌ "A ceramic tile that appears worn" (condition assessment)
+
+4. Condition Assessment (Separate from Description):
+Perform a full, independent assessment for EACH item identified. All condition-related observations go here, NOT in the description.
 
 Condition Assessment: Use the 5-point scale (EXCELLENT, GOOD, FAIR, POOR, CRITICAL) based on the rigorous standards defined above.
 Cleanliness Evaluation: Use the 3-tier scale (PROFESSIONAL_CLEAN, DOMESTIC_CLEAN, NOT_CLEAN).
 
 5. Defect Documentation:
-For each component, document specific defects observed:
+For each component, document specific defects observed in the condition section:
 - Use precise, actionable language
 - Start each defect with a capital letter
 - No trailing punctuation
@@ -132,6 +140,7 @@ Be Definitive: You are an expert. State your findings directly. Avoid all hedgin
 Active Voice: Use direct, active voice throughout your analysis.
 Brevity and Precision: Use precise terminology. Full sentences are only permitted in summary fields and the main description field.
 Consistency: Apply the same standards across all components being analyzed.
+Clear Separation: Keep physical descriptions and condition assessments completely separate.
 
 //--- OUTPUT: STRICTLY VALID JSON ONLY ---//
 
@@ -146,7 +155,7 @@ Consistency: Apply the same standards across all components being analyzed.
     {
       "componentId": "item_1",
       "inferredType": "[The specific type of this item, e.g., Stool, Armchair, Door Handle]",
-      "description": "[A single, flowing, descriptive sentence for this item following the examples above.]",
+      "description": "[PHYSICAL CHARACTERISTICS ONLY - A single flowing sentence describing ONLY the physical attributes: material, color, size, shape, design features. NO condition assessments, defects, or wear patterns.]",
       "assessment": {
         "condition": {
           "rating": "EXCELLENT|GOOD|FAIR|POOR|CRITICAL",
@@ -154,7 +163,7 @@ Consistency: Apply the same standards across all components being analyzed.
           "details": {
             "structuralIntegrity": "[Assessment of structural soundness]",
             "functionalPerformance": "[Assessment of operational capability]",
-            "aestheticCondition": "[Assessment of visual appearance]",
+            "aestheticCondition": "[Assessment of visual appearance including all defects, wear, damage]",
             "safetyAssessment": "[Assessment of safety considerations]"
           },
           "defects": [
@@ -174,7 +183,7 @@ Consistency: Apply the same standards across all components being analyzed.
   ]
 }
 
-**FINAL REMINDER:** Your response must be ONLY the JSON object above, with no additional text, formatting, or explanation. Ensure the JSON is valid and complete.`;
+**FINAL REMINDER:** Your response must be ONLY the JSON object above, with no additional text, formatting, or explanation. Ensure the JSON is valid and complete. Remember: descriptions contain ONLY physical characteristics, assessments contain ALL condition information.`;
   }
 
   /**
