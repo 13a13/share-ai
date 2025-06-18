@@ -4,7 +4,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Report, Property, RoomComponent, RoomSection } from "@/types";
 import { ReportsAPI, PropertiesAPI } from "@/lib/api";
 import { useReportInfo, ReportInfoFormValues } from "./useReportInfo";
-import { useRoomOperations } from "./useRoomOperations";
+import { useRoomCreation } from "./useRoomCreation";
+import { useRoomUpdates } from "./useRoomUpdates";
 import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
 import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
 
@@ -36,9 +37,12 @@ export const useReportEditor = (reportId: string | undefined) => {
   const {
     isSubmittingRoom,
     handleAddRoom,
-    handleDeleteRoom,
+  } = useRoomCreation(report, setReport);
+
+  const {
     handleUpdateGeneralCondition,
-  } = useRoomOperations(report, setReport);
+    handleUpdateComponents,
+  } = useRoomUpdates(report, setReport);
 
   // Combined progress from all saving operations
   const saveProgress = completionProgress || batchProgress || reportInfoProgress;
@@ -86,24 +90,26 @@ export const useReportEditor = (reportId: string | undefined) => {
     console.log("Saving section:", updatedSection);
   };
 
-  const handleUpdateComponents = async (roomId: string, updatedComponents: RoomComponent[]) => {
+  const handleDeleteRoom = async (roomId: string) => {
     if (!report) return;
     
-    const updatedRooms = report.rooms.map(room => 
-      room.id === roomId ? { ...room, components: updatedComponents } : room
-    );
-    
-    const updatedReport = { ...report, rooms: updatedRooms };
-    setReport(updatedReport);
-    
-    // Auto-save with batch processing
     try {
-      const success = await saveBatch(updatedReport);
-      if (!success) {
-        console.error("Batch save failed");
-      }
+      // Remove room from local state
+      const updatedRooms = report.rooms.filter(room => room.id !== roomId);
+      const updatedReport = { ...report, rooms: updatedRooms };
+      setReport(updatedReport);
+      
+      toast({
+        title: "Room Deleted",
+        description: "Room has been removed from the report.",
+      });
     } catch (error) {
-      console.error("Error saving components:", error);
+      console.error("Error deleting room:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete room. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
