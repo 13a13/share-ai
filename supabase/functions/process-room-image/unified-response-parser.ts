@@ -270,21 +270,19 @@ export class UnifiedResponseParser {
 
     for (const pattern of patterns) {
       const match = text.match(pattern);
-      if (match?.[1]) return match[1].trim();
+      if (match && match[1]) return match[1].trim();
     }
     return null;
   }
 
   private extractRating(text: string): string {
-    const ratingMatch = text.match(/"rating":\s*"([^"]*)"/)?.1 ||
-                        text.match(/rating:\s*([^\n,}]+)/i)?.[1];
-    return ratingMatch?.trim() || 'fair';
+    const ratingMatch = text.match(/"rating":\s*"([^"]*)"/) || text.match(/rating:\s*([^\n,}]+)/i);
+    return ratingMatch && ratingMatch[1] ? ratingMatch[1].trim() : 'fair';
   }
 
   private extractCleanliness(text: string): string {
-    const cleanMatch = text.match(/"rating":\s*"([^"]*)".*cleanliness/i)?.[1] ||
-                       text.match(/cleanliness.*"rating":\s*"([^"]*)"/)?.1;
-    return cleanMatch?.trim() || 'domestic_clean';
+    const cleanMatch = text.match(/"rating":\s*"([^"]*)".*cleanliness/i) || text.match(/cleanliness.*"rating":\s*"([^"]*)"/) || null;
+    return cleanMatch && cleanMatch[1] ? cleanMatch[1].trim() : 'domestic_clean';
   }
 
   private extractDefects(text: string): string[] {
@@ -295,7 +293,7 @@ export class UnifiedResponseParser {
 
     for (const pattern of defectPatterns) {
       const match = text.match(pattern);
-      if (match?.[1]) {
+      if (match && match[1]) {
         try {
           return JSON.parse(`[${match[1]}]`).filter(Boolean);
         } catch (e) {

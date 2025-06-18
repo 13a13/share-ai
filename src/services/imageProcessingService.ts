@@ -147,5 +147,5 @@ export const isUnifiedAnalysis = (result: ProcessedImageResult): boolean => {
  * Check if analysis result uses the advanced format (legacy)
  */
 export const isAdvancedAnalysis = (result: ProcessedImageResult): boolean => {
-  return Boolean(result.analysisMode === 'advanced' || result.crossAnalysis);
+  return Boolean(result.analysisMode === 'advanced');
 };
