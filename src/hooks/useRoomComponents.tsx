@@ -5,7 +5,7 @@ import { useComponentState } from "./useComponentState";
 import { useComponentOperations } from "./useComponentOperations";
 import { useComponentImageHandling } from "./useComponentImageHandling";
 import { useComponentStagingManager } from "./useComponentStagingManager";
-import { useBatchAnalysisManager } from "./useBatchAnalysisManager";
+import { useEnhancedBatchAnalysis } from "./useEnhancedBatchAnalysis";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -140,7 +140,7 @@ export function useRoomComponents({
   // Add staging manager
   const {
     componentStaging,
-    globalProcessing,
+    globalProcessing: stagingGlobalProcessing,
     setGlobalProcessing,
     addStagedImages,
     removeStagedImage,
@@ -150,19 +150,24 @@ export function useRoomComponents({
     getComponentsWithStagedImages
   } = useComponentStagingManager();
 
-  // Add batch analysis manager
+  // Add enhanced batch analysis manager
   const {
     analysisProgress,
+    globalProcessing: batchGlobalProcessing,
     processComponentBatch,
     processBatchParallel,
     resetProgress
-  } = useBatchAnalysisManager({
-    reportId: roomId, // Assuming reportId is available
+  } = useEnhancedBatchAnalysis({
+    reportId: roomId, // This needs to be the actual reportId
     roomId,
     roomType,
     propertyName,
-    roomName
+    roomName,
+    enableCrossValidation: true
   });
+
+  // Update globalProcessing state
+  const globalProcessing = batchGlobalProcessing || stagingGlobalProcessing;
 
   // Add batch analysis functions
   const handleAnalyzeAll = useCallback(async () => {
@@ -188,7 +193,7 @@ export function useRoomComponents({
 
     setComponentProcessing(componentId, true);
     try {
-      await processComponentBatch(componentId, stagingData.componentName, stagingData.stagedImages);
+      await processComponentBatch(stagingData);
       clearComponentStaging(componentId);
     } catch (error) {
       console.error(`❌ Component analysis failed for ${componentId}:`, error);

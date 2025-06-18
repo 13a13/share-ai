@@ -110,3 +110,42 @@ export interface DisclaimerConfig {
   text: string;
   default: boolean;
 }
+
+export interface MultiPhotoAnalysisResult {
+  description: string;
+  condition: {
+    summary: string;
+    points: string[];
+    rating: ConditionRating;
+    crossImageValidation?: boolean;
+  };
+  cleanliness: string;
+  notes?: string;
+  multiImageAnalysis?: {
+    imageCount: number;
+    consistencyScore: number;
+    conflictingFindings: string[];
+    consolidatedFindings: string[];
+  };
+  analysisMetadata?: {
+    processingMode: 'single' | 'multi';
+    aiModel: string;
+    processingTime: number;
+  };
+}
+
+export interface ComponentStagingData {
+  componentId: string;
+  componentName: string;
+  stagedImages: string[];
+  isProcessing: boolean;
+  timestamp: Date;
+}
+
+export interface BatchAnalysisProgress {
+  status: 'pending' | 'uploading' | 'analyzing' | 'complete' | 'error';
+  progress: number;
+  error?: string;
+  imageCount?: number;
+  processedImages?: number;
+}

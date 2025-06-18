@@ -8,6 +8,7 @@ import {
   isAdvancedAnalysis,
   normalizeConditionPoints
 } from "@/services/imageProcessingService";
+import MultiPhotoAnalysisDisplay from "../analysis/MultiPhotoAnalysisDisplay";
 
 interface ComponentAnalysisSummaryProps {
   component: RoomComponent;
@@ -120,6 +121,14 @@ const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummar
               </div>
             )}
           </div>
+        )}
+        
+        {/* Multi-Photo Analysis Results */}
+        {component.images.length > 0 && component.images[0].aiData && (
+          <MultiPhotoAnalysisDisplay 
+            result={component.images[0].aiData}
+            componentName={component.name}
+          />
         )}
         
         <div className="flex flex-wrap gap-2 items-center mt-3">
