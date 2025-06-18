@@ -1,5 +1,6 @@
+
 import { serve } from 'std/server';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
 
 import { corsHeaders } from '../_shared/cors.ts';
 import { UnifiedResponseParser } from './unified-response-parser.ts';
