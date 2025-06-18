@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { RoomCrudAPI, RoomUpdateAPI } from "@/lib/api/reports";
@@ -53,34 +54,50 @@ export const useRoomCreation = (
         const defaultComponents = getDefaultComponentsByRoomType(values.type as RoomType)
           .map(comp => createDefaultComponent(comp.name, comp.type, comp.isOptional));
         
-        // Add components to the room object and ensure name is set correctly
-        const updatedRoom = {
-          ...newRoom,
-          name: values.name, // Ensure name is set explicitly
-          type: values.type as RoomType, // Ensure type is set explicitly
+        console.log("Default components for room type", values.type, ":", defaultComponents);
+        
+        // Create the room update object with all necessary properties
+        const roomUpdateData: Partial<Room> = {
+          name: values.name,
+          type: values.type as RoomType,
+          generalCondition: '',
           components: defaultComponents,
+          sections: [],
+          order: report.rooms.length + 1
         };
         
-        console.log("Updating room with:", updatedRoom);
+        console.log("Updating room with data:", roomUpdateData);
         
         // Save the updated room with components to the API
-        const savedRoom = await RoomUpdateAPI.updateRoom(report.id, newRoom.id, updatedRoom);
+        const savedRoom = await RoomUpdateAPI.updateRoom(report.id, newRoom.id, roomUpdateData);
         
-        // Update the report state with the new room including components
-        setReport(prev => {
-          if (!prev) return prev;
+        if (savedRoom) {
+          console.log("Room successfully saved with components:", savedRoom);
           
-          // Make sure to preserve existing rooms while adding the new one
-          return {
-            ...prev,
-            rooms: [...prev.rooms, savedRoom || updatedRoom],
-          };
-        });
-        
-        toast({
-          title: "Room Added",
-          description: `${updatedRoom.name} has been added to the report with ${defaultComponents.length} default components.`,
-        });
+          // Update the report state with the new room including components
+          setReport(prev => {
+            if (!prev) return prev;
+            
+            return {
+              ...prev,
+              rooms: [...prev.rooms, savedRoom],
+            };
+          });
+          
+          toast({
+            title: "Room Added",
+            description: `${savedRoom.name} has been added to the report with ${defaultComponents.length} default components.`,
+          });
+        } else {
+          console.error("Failed to save room with components");
+          toast({
+            title: "Warning",
+            description: `Room ${values.name} was created but default components may not have been added properly.`,
+            variant: "destructive",
+          });
+        }
+      } else {
+        throw new Error("Failed to create room");
       }
     } catch (error) {
       console.error("Error adding room:", error);

@@ -56,14 +56,16 @@ async function updateMainRoom(inspection: any, roomId: string, reportId: string,
   // Update the room data in report_info
   const reportInfo = parseReportInfo(inspection.report_info);
   
-  // Update the relevant fields
+  // Update the relevant fields - ensure components are always properly set
   const updatedReportInfo = {
     ...reportInfo,
     roomName: updates.name || reportInfo.roomName,
     generalCondition: updates.generalCondition !== undefined ? updates.generalCondition : reportInfo.generalCondition,
-    components: updates.components || reportInfo.components || [],
-    sections: updates.sections || reportInfo.sections || []
+    components: updates.components !== undefined ? updates.components : reportInfo.components || [],
+    sections: updates.sections !== undefined ? updates.sections : reportInfo.sections || []
   };
+  
+  console.log("Updating main room report_info with components:", updatedReportInfo.components);
   
   await supabase
     .from('inspections')
@@ -121,21 +123,51 @@ async function updateAdditionalRoom(inspection: any, roomId: string, reportId: s
     : [];
   
   // Find the room in the additional rooms array
-  const roomIndex = additionalRooms.findIndex((room: any) => room.id === roomId);
+  let roomIndex = additionalRooms.findIndex((room: any) => room.id === roomId);
   
+  // If room not found in additional rooms, create a new entry
   if (roomIndex === -1) {
-    console.error("Room not found in additional rooms:", roomId);
-    return null;
+    console.log("Room not found in additional rooms, creating new entry for room:", roomId);
+    
+    // Get the room type from the rooms table
+    const { data: roomData } = await supabase
+      .from('rooms')
+      .select('type, name')
+      .eq('id', roomId)
+      .single();
+    
+    if (!roomData) {
+      console.error("Room not found in rooms table:", roomId);
+      return null;
+    }
+    
+    // Create new room entry
+    const newRoomEntry = {
+      id: roomId,
+      name: updates.name || roomData.name || formatRoomType(roomData.type),
+      type: updates.type || roomData.type,
+      generalCondition: updates.generalCondition || '',
+      components: updates.components || [],
+      sections: updates.sections || [],
+      order: additionalRooms.length + 2 // Main room is order 1, so start from 2
+    };
+    
+    additionalRooms.push(newRoomEntry);
+    roomIndex = additionalRooms.length - 1;
+  } else {
+    // Update existing room data - use the pattern to ensure components are always properly set
+    additionalRooms[roomIndex] = {
+      ...additionalRooms[roomIndex],
+      name: updates.name !== undefined ? updates.name : additionalRooms[roomIndex].name,
+      type: updates.type !== undefined ? updates.type : additionalRooms[roomIndex].type,
+      generalCondition: updates.generalCondition !== undefined ? updates.generalCondition : additionalRooms[roomIndex].generalCondition,
+      components: updates.components !== undefined ? updates.components : additionalRooms[roomIndex].components || [],
+      sections: updates.sections !== undefined ? updates.sections : additionalRooms[roomIndex].sections || [],
+      order: updates.order !== undefined ? updates.order : additionalRooms[roomIndex].order || roomIndex + 2
+    };
   }
   
-  // Update the room data
-  additionalRooms[roomIndex] = {
-    ...additionalRooms[roomIndex],
-    name: updates.name || additionalRooms[roomIndex].name,
-    type: updates.type || additionalRooms[roomIndex].type,
-    generalCondition: updates.generalCondition !== undefined ? updates.generalCondition : additionalRooms[roomIndex].generalCondition,
-    components: updates.components || additionalRooms[roomIndex].components || []
-  };
+  console.log("Updating additional room with components:", additionalRooms[roomIndex].components);
   
   // Update the room type in the rooms table if needed
   if (updates.type) {
@@ -145,14 +177,24 @@ async function updateAdditionalRoom(inspection: any, roomId: string, reportId: s
       .eq('id', roomId);
   }
   
+  // Update the room name in the rooms table if needed
+  if (updates.name) {
+    await supabase
+      .from('rooms')
+      .update({ name: updates.name })
+      .eq('id', roomId);
+  }
+  
   // Update the inspection with the updated additional rooms
+  const updatedReportInfo = {
+    ...reportInfo,
+    additionalRooms: additionalRooms
+  };
+  
   await supabase
     .from('inspections')
     .update({
-      report_info: {
-        ...reportInfo,
-        additionalRooms: additionalRooms
-      }
+      report_info: updatedReportInfo
     })
     .eq('id', reportId);
   
@@ -164,8 +206,8 @@ async function updateAdditionalRoom(inspection: any, roomId: string, reportId: s
     
   const roomImages = (imageData || []).filter(img => 
     img.image_url.includes(`/${roomId}/`) || 
-    (updates.components && updates.components.some(comp => 
-      comp.images.some(image => image.url === img.image_url)
+    (additionalRooms[roomIndex].components && additionalRooms[roomIndex].components.some((comp: any) => 
+      comp.images && comp.images.some((image: any) => image.url === img.image_url)
     ))
   ).map(img => ({
     id: img.id,
@@ -181,7 +223,7 @@ async function updateAdditionalRoom(inspection: any, roomId: string, reportId: s
     id: roomId,
     name: roomName,
     type: additionalRooms[roomIndex].type as RoomType,
-    order: updates.order || additionalRooms[roomIndex].order || roomIndex + 1,
+    order: additionalRooms[roomIndex].order || roomIndex + 2,
     generalCondition: additionalRooms[roomIndex].generalCondition || '',
     sections: additionalRooms[roomIndex].sections || [],
     components: additionalRooms[roomIndex].components || [],

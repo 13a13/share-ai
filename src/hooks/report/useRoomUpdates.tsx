@@ -1,3 +1,4 @@
+
 import { useToast } from "@/components/ui/use-toast";
 import { RoomUpdateAPI } from "@/lib/api/reports";
 import { Report, Room, RoomComponent } from "@/types";
@@ -53,6 +54,8 @@ export const useRoomUpdates = (
     if (!currentRoom) return;
     
     try {
+      console.log("Updating components for room:", roomId, "with components:", updatedComponents);
+      
       const updatedRoom = {
         ...currentRoom,
         components: updatedComponents,
@@ -61,6 +64,8 @@ export const useRoomUpdates = (
       const savedRoom = await RoomUpdateAPI.updateRoom(report.id, roomId, updatedRoom);
       
       if (savedRoom) {
+        console.log("Components successfully updated for room:", roomId);
+        
         setReport(prev => {
           if (!prev) return prev;
           return {
@@ -70,6 +75,8 @@ export const useRoomUpdates = (
             ),
           };
         });
+      } else {
+        console.error("Failed to save room components - no saved room returned");
       }
     } catch (error) {
       console.error("Error updating components:", error);

@@ -1,4 +1,3 @@
-
 import { Report } from '@/types';
 
 /**
@@ -57,19 +56,36 @@ export const transformInspectionToReport = (
 /**
  * Convert report info data from string to object
  */
-export const parseReportInfo = (reportInfo: any): Record<string, any> => {
-  if (!reportInfo) return {};
-  
-  if (typeof reportInfo === 'string') {
-    try {
-      return JSON.parse(reportInfo);
-    } catch (e) {
-      console.error("Error parsing report info:", e);
-      return {};
-    }
+export const parseReportInfo = (reportInfo: any) => {
+  if (!reportInfo || typeof reportInfo !== 'object') {
+    return {
+      roomName: '',
+      generalCondition: '',
+      components: [],
+      sections: [],
+      additionalRooms: [],
+      clerk: '',
+      inventoryType: '',
+      tenantPresent: false,
+      tenantName: '',
+      additionalInfo: '',
+      fileUrl: ''
+    };
   }
   
-  return reportInfo as Record<string, any>;
+  return {
+    roomName: reportInfo.roomName || '',
+    generalCondition: reportInfo.generalCondition || '',
+    components: Array.isArray(reportInfo.components) ? reportInfo.components : [],
+    sections: Array.isArray(reportInfo.sections) ? reportInfo.sections : [],
+    additionalRooms: Array.isArray(reportInfo.additionalRooms) ? reportInfo.additionalRooms : [],
+    clerk: reportInfo.clerk || '',
+    inventoryType: reportInfo.inventoryType || '',
+    tenantPresent: Boolean(reportInfo.tenantPresent),
+    tenantName: reportInfo.tenantName || '',
+    additionalInfo: reportInfo.additionalInfo || '',
+    fileUrl: reportInfo.fileUrl || ''
+  };
 };
 
 /**
