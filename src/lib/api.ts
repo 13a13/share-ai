@@ -5,6 +5,7 @@ export * from './api/index';
 
 import { supabase } from '@/integrations/supabase/client';
 import { RoomImageAPI } from './api/reports/roomImageApi';
+import { ReportsAPI as FullReportsAPI } from './api/reports/index';
 
 export const GeminiAPI = {
   async processRoomImage(reportId: string, roomId: string, imageId: string) {
@@ -103,13 +104,5 @@ export const GeminiAPI = {
 // Re-export the RoomImageAPI for backward compatibility
 export { RoomImageAPI };
 
-// Re-export the updated ReportsAPI that includes room image operations
-export const ReportsAPI = {
-  // Re-export room image methods from the updated API
-  addImageToRoom: RoomImageAPI.addImageToRoom,
-  getImagesForRoom: RoomImageAPI.getImagesForRoom,
-  deleteImageFromRoom: RoomImageAPI.deleteImageFromRoom,
-  
-  // Note: Other ReportsAPI methods are exported from the main API index
-  // This provides backward compatibility while using the new room_images table
-};
+// Re-export the full ReportsAPI with all methods for backward compatibility
+export const ReportsAPI = FullReportsAPI;
