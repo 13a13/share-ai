@@ -26,6 +26,10 @@ export interface ProcessedImageResult {
       conflictingFindings: string[];
     };
     estimatedAge: string;
+    // New fields for multi-component support
+    itemCount?: number;
+    sceneSummary?: string;
+    multipleItems?: boolean;
   };
   analysisMode?: 'unified' | 'standard' | 'inventory' | 'advanced';
   // Enhanced processing metadata
@@ -40,6 +44,19 @@ export interface ProcessedImageResult {
     parsingMethod?: string;
     confidence?: number;
   };
+  // New field for storing multiple component data
+  components?: Array<{
+    componentId: string;
+    inferredType: string;
+    description: string;
+    condition: {
+      rating: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
+      summary: string;
+      points: string[];
+    };
+    cleanliness: string;
+    estimatedAge: string;
+  }>;
 }
 
 export const cleanlinessOptions = [
@@ -50,11 +67,13 @@ export const cleanlinessOptions = [
   { value: 'not_clean', label: 'Not Clean' }
 ];
 
+// Updated condition rating options to match the enhanced prompt standards
 export const conditionRatingOptions = [
   { value: 'excellent', label: 'Good Order', color: 'bg-green-500' },
   { value: 'good', label: 'Used Order', color: 'bg-blue-500' },
   { value: 'fair', label: 'Fair Order', color: 'bg-yellow-500' },
-  { value: 'poor', label: 'Damaged', color: 'bg-red-500' }
+  { value: 'poor', label: 'Damaged', color: 'bg-red-500' },
+  { value: 'critical', label: 'Critical', color: 'bg-red-700' }
 ];
 
 /**
