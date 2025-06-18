@@ -67,16 +67,19 @@ const DetailedConditionDisplay = ({
 
   return (
     <div className="space-y-4">
-      {/* Condition Summary */}
-      <div className="bg-gray-50 p-3 rounded-lg">
-        <h4 className="text-sm font-medium text-gray-900 mb-2">Condition Summary</h4>
-        <p className="text-sm text-gray-700">{condition.summary}</p>
+      {/* Assessment Detail - Primary Display */}
+      <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-l-blue-500">
+        <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          Assessment Detail
+        </h4>
+        <p className="text-sm text-blue-800 leading-relaxed">{condition.summary}</p>
       </div>
 
       {/* Condition Points by Category */}
       {Object.keys(pointsByCategory).length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-900">Assessment Details</h4>
+          <h4 className="text-sm font-medium text-gray-900">Detailed Findings</h4>
           {Object.entries(pointsByCategory).map(([category, points]) => (
             <Card key={category} className="border-l-4 border-l-gray-300">
               <CardHeader className="pb-2">
@@ -113,7 +116,7 @@ const DetailedConditionDisplay = ({
       {/* Enhanced Details */}
       {showDetails && condition.details && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-900">Detailed Assessment</h4>
+          <h4 className="text-sm font-medium text-gray-900">Technical Assessment</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {Object.entries(condition.details).map(([key, value]) => {
               if (value === 'Assessment completed' || value === 'Assessment required') return null;
