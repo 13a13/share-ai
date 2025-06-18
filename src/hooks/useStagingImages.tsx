@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { compressDataURLImage } from "@/utils/imageCompression";
+import { validateAndNormalizeImageInput } from "@/utils/imageInputValidation";
+import { debugImageFlow } from "@/utils/debugImageFlow";
 
 interface UseStagingImagesProps {
   maxImages: number;
@@ -87,7 +89,34 @@ export function useStagingImages({ maxImages, currentImagesCount }: UseStagingIm
     }
   };
 
-  const handleCameraCapture = async (imageData: string[]) => {
+  // ENHANCED: Handle both single string and array inputs with normalization
+  const handleCameraCapture = async (imageData: string | string[]) => {
+    debugImageFlow.logCapture('useStagingImages.handleCameraCapture', imageData, {
+      currentStaging: stagingImages.length,
+      totalImages,
+      maxImages
+    });
+
+    // CRITICAL: Validate and normalize input first
+    const validation = validateAndNormalizeImageInput(imageData, 'useStagingImages.handleCameraCapture');
+    
+    if (!validation.isValid) {
+      console.error('❌ useStagingImages: Invalid image input:', validation.errors);
+      toast({
+        title: "Invalid image data",
+        description: validation.errors.join(', '),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('⚠️ useStagingImages: Input warnings:', validation.warnings);
+    }
+
+    const normalizedImages = validation.normalizedImages;
+    console.log(`📸 useStagingImages: Processing ${normalizedImages.length} validated image(s)`);
+    
     if (totalImages >= maxImages) {
       toast({
         title: "Maximum images reached",
@@ -98,11 +127,13 @@ export function useStagingImages({ maxImages, currentImagesCount }: UseStagingIm
     }
     
     const availableSlots = maxImages - totalImages;
-    const imagesToAdd = imageData.slice(0, availableSlots);
+    const imagesToAdd = normalizedImages.slice(0, availableSlots);
     
     setCompressionInProgress(true);
     
     try {
+      debugImageFlow.logProcessing('compression', imagesToAdd.length, { availableSlots });
+
       // Compress each camera-captured image
       const compressedImages = await Promise.all(
         imagesToAdd.map(async (img, index) => {
@@ -113,13 +144,16 @@ export function useStagingImages({ maxImages, currentImagesCount }: UseStagingIm
       
       setStagingImages([...stagingImages, ...compressedImages]);
       
-      if (imageData.length > availableSlots) {
+      if (normalizedImages.length > availableSlots) {
         toast({
           title: "Not all images added",
-          description: `Only ${availableSlots} of ${imageData.length} images were added due to the limit.`,
+          description: `Only ${availableSlots} of ${normalizedImages.length} images were added due to the limit.`,
         });
       }
+
+      console.log(`✅ useStagingImages: Successfully added ${compressedImages.length} images to staging`);
     } catch (error) {
+      debugImageFlow.logError('useStagingImages.handleCameraCapture', error, { imagesToAdd: imagesToAdd.length });
       console.error("Error processing camera images:", error);
       toast({
         title: "Error processing images",
@@ -154,7 +188,7 @@ export function useStagingImages({ maxImages, currentImagesCount }: UseStagingIm
     totalImages,
     canAddMore,
     handleImageCapture,
-    handleCameraCapture,
+    handleCameraCapture, // Now supports both string and string[]
     handleRemoveStagingImage,
     moveImage,
     clearStagingImages

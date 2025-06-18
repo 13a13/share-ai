@@ -4,17 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Camera, Upload, ImagePlus } from "lucide-react";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import WhatsAppCamera from "./camera/WhatsAppCamera";
+import { debugImageFlow } from "@/utils/debugImageFlow";
 
 interface ImageFileInputProps {
   id: string;
   isProcessing: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onImageCapture: (imageData: string) => void;
+  // UPDATED: Support both signatures with overload
+  onImageCapture: ((imageData: string) => void) | ((imageData: string[]) => void);
   multiple?: boolean;
   disabled?: boolean;
   totalImages?: number;
   maxImages?: number;
   compressionInProgress?: boolean;
+  // NEW: Explicit flag to control behavior
+  supportMultipleCapture?: boolean;
 }
 
 const ImageFileInput = ({ 
@@ -26,7 +30,8 @@ const ImageFileInput = ({
   disabled = false,
   totalImages = 0,
   maxImages = 20,
-  compressionInProgress = false
+  compressionInProgress = false,
+  supportMultipleCapture = false  // NEW: Default to false for backward compatibility
 }: ImageFileInputProps) => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,17 +41,35 @@ const ImageFileInput = ({
     fileInputRef.current?.click();
   };
   
-  // Handle photos from WhatsApp camera
+  // ENHANCED: Handle photos from WhatsApp camera with normalization
   const handleWhatsAppCameraPhotos = (photos: string[]) => {
-    if (photos.length > 0) {
-      // For backward compatibility, just use the first photo when onImageCapture expects a single image
-      onImageCapture(photos[0]);
+    debugImageFlow.logCapture('ImageFileInput.handleWhatsAppCameraPhotos', photos, {
+      supportMultipleCapture,
+      photosLength: photos.length
+    });
+
+    if (photos.length === 0) return;
+    
+    // ENHANCED: Check function signature and multiple support
+    if (supportMultipleCapture) {
+      // Pass all photos when multiple capture is supported
+      (onImageCapture as (data: string[]) => void)(photos);
+    } else {
+      // Backward compatibility: pass only first photo
+      (onImageCapture as (data: string) => void)(photos[0]);
+      
+      // Warn about lost images in development
+      if (photos.length > 1 && process.env.NODE_ENV === 'development') {
+        console.warn(`⚠️ ImageFileInput: ${photos.length - 1} additional photos were discarded. Enable supportMultipleCapture=true to handle multiple photos.`);
+      }
     }
   };
   
   const remainingImages = maxImages - totalImages;
   const hasReachedLimit = remainingImages <= 0;
-  const cameraMaxPhotos = Math.min(remainingImages, multiple ? 10 : 5); // Allow more photos when multiple is true
+  const cameraMaxPhotos = supportMultipleCapture 
+    ? Math.min(remainingImages, 10) 
+    : 1; // Only allow 1 photo if multiple capture not supported
   
   return (
     <div>

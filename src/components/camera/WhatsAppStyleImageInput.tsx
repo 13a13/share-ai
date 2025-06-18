@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, Upload, ImagePlus } from "lucide-react";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import WhatsAppCamera from "./WhatsAppCamera";
+import { debugImageFlow } from "@/utils/debugImageFlow";
 
 interface WhatsAppStyleImageInputProps {
   id: string;
@@ -15,6 +16,7 @@ interface WhatsAppStyleImageInputProps {
   totalImages?: number;
   maxImages?: number;
   compressionInProgress?: boolean;
+  supportMultipleCapture?: boolean;
 }
 
 const WhatsAppStyleImageInput = ({
@@ -26,7 +28,8 @@ const WhatsAppStyleImageInput = ({
   disabled = false,
   totalImages = 0,
   maxImages = 20,
-  compressionInProgress = false
+  compressionInProgress = false,
+  supportMultipleCapture = true // Default to true for WhatsApp-style
 }: WhatsAppStyleImageInputProps) => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,6 +41,11 @@ const WhatsAppStyleImageInput = ({
 
   // Handle photos captured from WhatsApp-style camera
   const handlePhotosCaptured = (photos: string[]) => {
+    debugImageFlow.logCapture('WhatsAppStyleImageInput.handlePhotosCaptured', photos, {
+      supportMultipleCapture,
+      photosLength: photos.length
+    });
+
     // Pass all captured photos to parent
     onImageCapture(photos);
     setIsCameraOpen(false);
@@ -45,7 +53,9 @@ const WhatsAppStyleImageInput = ({
 
   const remainingImages = maxImages - totalImages;
   const hasReachedLimit = remainingImages <= 0;
-  const cameraMaxPhotos = Math.min(remainingImages, 10); // Allow up to 10 photos at once
+  const cameraMaxPhotos = supportMultipleCapture 
+    ? Math.min(remainingImages, 10) 
+    : 1; // Only allow 1 photo if multiple capture not supported
 
   return (
     <div>

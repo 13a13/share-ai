@@ -53,6 +53,8 @@ const MultiImageComponentCapture = ({
       processComponentImage={(imageUrls, roomType, componentName, multipleImages) => 
         processComponentImage(imageUrls, roomType, componentName, { multipleImages })
       }
+      // Enable multiple capture for this component
+      supportMultipleCapture={true}
     />
   );
 };

@@ -100,14 +100,14 @@ const MultiImageComponentCapture = ({
         />
       )}
 
-      {/* Upload controls */}
+      {/* Upload controls - FIXED: Remove array wrapping since handleCameraCapture now handles normalization */}
       <ImageUploadControls
         componentId={componentId}
         canAddMore={canAddMore}
         isProcessing={isAnyProcessing}
         compressionInProgress={compressionInProgress}
         handleImageCapture={handleImageCapture}
-        handleCameraCapture={(imageData: string) => handleCameraCapture([imageData])}
+        handleCameraCapture={handleCameraCapture} // No more array wrapping needed
         disabled={disabled || false}
         totalImages={totalImages}
         maxImages={maxImages}

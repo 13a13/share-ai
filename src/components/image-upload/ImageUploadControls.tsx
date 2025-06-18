@@ -6,14 +6,14 @@ interface ImageUploadControlsProps {
   isProcessing: boolean;
   compressionInProgress: boolean;
   handleImageCapture: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  handleCameraCapture: (imageData: string) => void;
+  handleCameraCapture: (imageData: string | string[]) => void; // Updated to handle both types
   canAddMore: boolean;
   disabled: boolean;
   totalImages: number;
   maxImages: number;
   hasStagingImages?: boolean;
   onImageCapture?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onCameraCapture?: (imageData: string) => void;
+  onCameraCapture?: (imageData: string | string[]) => void; // Updated to handle both types
   onProcessImages?: () => void;
   onCancelStaging?: () => void;
 }
@@ -46,6 +46,7 @@ const ImageUploadControls = ({
         onChange={imageHandler}
         onImageCapture={cameraHandler}
         multiple={true}
+        supportMultipleCapture={true}  // NEW: Enable multiple capture
         disabled={!canAddMore || disabled}
         totalImages={totalImages}
         maxImages={maxImages}

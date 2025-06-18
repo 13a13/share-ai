@@ -38,7 +38,7 @@ export function useImageUploadAndProcess({
     totalImages,
     canAddMore,
     handleImageCapture,
-    handleCameraCapture,
+    handleCameraCapture, // Now supports both string and string[]
     handleRemoveStagingImage,
     moveImage,
     clearStagingImages
@@ -83,7 +83,7 @@ export function useImageUploadAndProcess({
     maxImages: MAX_IMAGES,
     canAddMore,
     handleImageCapture,
-    handleCameraCapture,
+    handleCameraCapture, // Now supports both string and string[]
     handleRemoveStagingImage,
     moveImage,
     processImages: handleProcessImages,
