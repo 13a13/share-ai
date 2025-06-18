@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { RoomComponent, RoomComponentImage } from "@/types";
 import { v4 as uuidv4 } from "uuid";
@@ -45,7 +44,7 @@ export function useComponentImageProcessing({
         const combinedImages = [...currentImages, ...newImages];
         const finalImages = combinedImages.slice(0, 20);
         
-        // Create updated component with all the analysis data
+        // Create updated component with all the analysis data - DO NOT auto-enable edit mode
         const updatedComponent = {
           ...comp,
           images: finalImages,
@@ -55,7 +54,7 @@ export function useComponentImageProcessing({
           condition: result.condition?.rating || comp.condition,
           cleanliness: result.cleanliness || comp.cleanliness,
           notes: result.notes || comp.notes,
-          isEditing: true // Automatically open edit mode after analysis
+          // REMOVED: isEditing: true - Keep component in view mode to show analysis immediately
         };
         
         // Try to save the component analysis to database as well
@@ -96,12 +95,12 @@ export function useComponentImageProcessing({
       setExpandedComponents([...expandedComponents, componentId]);
     }
     
-    // Scroll to the component element
+    // Scroll to the component element and add highlight effect
     setTimeout(() => {
       const element = document.getElementById(`component-${componentId}`);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Add a brief highlight effect
+        // Add a brief highlight effect to draw attention
         element.classList.add('highlight-component');
         setTimeout(() => {
           element.classList.remove('highlight-component');
@@ -111,7 +110,7 @@ export function useComponentImageProcessing({
     
     toast({
       title: "AI Analysis Complete",
-      description: "The component has been analyzed and details are now available for editing.",
+      description: "Detailed findings are now visible in the component assessment.",
     });
   };
   
