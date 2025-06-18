@@ -39,7 +39,7 @@ export function useEnhancedBatchAnalysis(config: EnhancedBatchConfig) {
       
       // Update progress: uploading
       setAnalysisProgress(prev => new Map(prev).set(componentId, {
-        status: 'uploading',
+        status: 'uploading' as const,
         progress: 0,
         imageCount: stagedImages.length,
         processedImages: 0
@@ -58,7 +58,7 @@ export function useEnhancedBatchAnalysis(config: EnhancedBatchConfig) {
         
         // Update progress for each upload
         setAnalysisProgress(prev => {
-          const current = prev.get(componentId) || { status: 'uploading', progress: 0 };
+          const current = prev.get(componentId) || { status: 'uploading' as const, progress: 0 };
           return new Map(prev).set(componentId, {
             ...current,
             progress: Math.round((index + 1) / stagedImages.length * 40), // 40% for upload phase
@@ -77,7 +77,7 @@ export function useEnhancedBatchAnalysis(config: EnhancedBatchConfig) {
 
       // Update progress: analyzing
       setAnalysisProgress(prev => new Map(prev).set(componentId, {
-        status: 'analyzing',
+        status: 'analyzing' as const,
         progress: 50,
         imageCount: stagedImages.length,
         processedImages: stagedImages.length
@@ -107,7 +107,7 @@ export function useEnhancedBatchAnalysis(config: EnhancedBatchConfig) {
 
       // Update progress: complete
       setAnalysisProgress(prev => new Map(prev).set(componentId, {
-        status: 'complete',
+        status: 'complete' as const,
         progress: 100,
         imageCount: stagedImages.length,
         processedImages: stagedImages.length
@@ -127,7 +127,7 @@ export function useEnhancedBatchAnalysis(config: EnhancedBatchConfig) {
       console.error(`❌ Enhanced batch processing failed for ${componentName}:`, error);
       
       setAnalysisProgress(prev => new Map(prev).set(componentId, {
-        status: 'error',
+        status: 'error' as const,
         progress: 0,
         error: error instanceof Error ? error.message : 'Unknown error',
         imageCount: stagedImages.length
