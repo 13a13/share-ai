@@ -4,7 +4,9 @@ import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 import { useComponentState } from "./useComponentState";
 import { useComponentOperations } from "./useComponentOperations";
 import { useComponentImageHandling } from "./useComponentImageHandling";
-import { useState, useEffect } from "react";
+import { useComponentStagingManager } from "./useComponentStagingManager";
+import { useBatchAnalysisManager } from "./useBatchAnalysisManager";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UseRoomComponentsProps {
@@ -40,6 +42,19 @@ interface UseRoomComponentsReturn {
   handleImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   handleComponentProcessingState: (componentId: string, isProcessing: boolean) => void;
   toggleExpandComponent: (componentId: string) => void;
+  
+  // New staging and batch analysis returns
+  componentStaging: Map<string, { componentId: string; componentName: string; stagedImages: string[]; isProcessing: boolean; }>;
+  analysisProgress: Map<string, { status: string; progress: number; error?: string; }>;
+  globalProcessing: boolean;
+  addStagedImages: (componentId: string, componentName: string, images: string[]) => void;
+  removeStagedImage: (componentId: string, imageIndex: number) => void;
+  clearComponentStaging: (componentId: string) => void;
+  handleAnalyzeAll: () => Promise<void>;
+  handleProcessStagedComponent: (componentId: string) => Promise<void>;
+  handleClearAllStaging: () => void;
+  getTotalStagedImages: () => number;
+  getComponentsWithStagedImages: () => Array<{ componentId: string; componentName: string; stagedImages: string[]; isProcessing: boolean; }>;
 }
 
 export function useRoomComponents({
@@ -122,6 +137,71 @@ export function useRoomComponents({
     roomId
   });
 
+  // Add staging manager
+  const {
+    componentStaging,
+    globalProcessing,
+    setGlobalProcessing,
+    addStagedImages,
+    removeStagedImage,
+    clearComponentStaging,
+    setComponentProcessing,
+    getTotalStagedImages,
+    getComponentsWithStagedImages
+  } = useComponentStagingManager();
+
+  // Add batch analysis manager
+  const {
+    analysisProgress,
+    processComponentBatch,
+    processBatchParallel,
+    resetProgress
+  } = useBatchAnalysisManager({
+    reportId: roomId, // Assuming reportId is available
+    roomId,
+    roomType,
+    propertyName,
+    roomName
+  });
+
+  // Add batch analysis functions
+  const handleAnalyzeAll = useCallback(async () => {
+    const componentsToAnalyze = getComponentsWithStagedImages();
+    if (componentsToAnalyze.length === 0) return;
+
+    setGlobalProcessing(true);
+    try {
+      await processBatchParallel(componentsToAnalyze);
+      
+      // Clear staging after successful analysis
+      componentsToAnalyze.forEach(comp => clearComponentStaging(comp.componentId));
+    } catch (error) {
+      console.error("❌ Batch analysis failed:", error);
+    } finally {
+      setGlobalProcessing(false);
+    }
+  }, [getComponentsWithStagedImages, processBatchParallel, setGlobalProcessing, clearComponentStaging]);
+
+  const handleProcessStagedComponent = useCallback(async (componentId: string) => {
+    const stagingData = componentStaging.get(componentId);
+    if (!stagingData || stagingData.stagedImages.length === 0) return;
+
+    setComponentProcessing(componentId, true);
+    try {
+      await processComponentBatch(componentId, stagingData.componentName, stagingData.stagedImages);
+      clearComponentStaging(componentId);
+    } catch (error) {
+      console.error(`❌ Component analysis failed for ${componentId}:`, error);
+    } finally {
+      setComponentProcessing(componentId, false);
+    }
+  }, [componentStaging, processComponentBatch, clearComponentStaging, setComponentProcessing]);
+
+  const handleClearAllStaging = useCallback(() => {
+    componentStaging.forEach((_, componentId) => clearComponentStaging(componentId));
+    resetProgress();
+  }, [componentStaging, clearComponentStaging, resetProgress]);
+
   return {
     components,
     isProcessing,
@@ -139,6 +219,19 @@ export function useRoomComponents({
     handleRemoveImage,
     handleImagesProcessed,
     handleComponentProcessingState,
-    toggleExpandComponent
+    toggleExpandComponent,
+    
+    // New staging and batch analysis returns
+    componentStaging,
+    analysisProgress,
+    globalProcessing,
+    addStagedImages,
+    removeStagedImage,
+    clearComponentStaging,
+    handleAnalyzeAll,
+    handleProcessStagedComponent,
+    handleClearAllStaging,
+    getTotalStagedImages,
+    getComponentsWithStagedImages
   };
 }

@@ -14,6 +14,7 @@ import { OptimizedDashboardAPI } from './optimizedDashboardApi';
 import { ReportCreationAPI } from './reportCreation';
 import { ReportUpdateAPI } from './reportUpdateApi';
 import { ReportStatusUpdater } from './reportStatusUpdater';
+import { ComponentAnalysisAPI } from './componentAnalysisApi';
 
 // Export specific room-related APIs directly
 export { RoomCrudAPI } from './roomCrudApi';
@@ -30,6 +31,7 @@ export { OptimizedDashboardAPI } from './optimizedDashboardApi';
 export { ReportCreationAPI } from './reportCreation';
 export { ReportUpdateAPI } from './reportUpdateApi';
 export { ReportStatusUpdater } from './reportStatusUpdater';
+export { ComponentAnalysisAPI } from './componentAnalysisApi';
 
 // Export transformers and utilities
 export * from './reportTransformers';
@@ -55,8 +57,12 @@ export const ReportsAPI = {
   deleteRoom: RoomCrudAPI.deleteRoom,
   updateRoom: RoomUpdateAPI.updateRoom,
   addImageToRoom: RoomImageAPI.addImageToRoom,
+  addMultipleImagesToRoom: RoomImageAPI.addMultipleImagesToRoom,
   getImagesForRoom: RoomImageAPI.getImagesForRoom,
   deleteImageFromRoom: RoomImageAPI.deleteImageFromRoom,
+  
+  // Component analysis operations
+  updateComponentWithAnalysis: ComponentAnalysisAPI.updateComponentWithAnalysis,
   
   // Report status and updates
   updateReportStatus: ReportStatusUpdater.updateReportStatus,

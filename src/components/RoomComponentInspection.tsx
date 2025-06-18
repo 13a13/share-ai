@@ -40,7 +40,18 @@ const RoomComponentInspection = ({
     handleRemoveImage,
     handleImagesProcessed,
     handleComponentProcessingState,
-    toggleExpandComponent
+    toggleExpandComponent,
+    componentStaging,
+    analysisProgress,
+    globalProcessing,
+    addStagedImages,
+    removeStagedImage,
+    clearComponentStaging,
+    handleAnalyzeAll,
+    handleProcessStagedComponent,
+    handleClearAllStaging,
+    getTotalStagedImages,
+    getComponentsWithStagedImages
   } = useRoomComponents({
     roomId,
     roomType,
@@ -68,6 +79,15 @@ const RoomComponentInspection = ({
       onRemoveImage={handleRemoveImage}
       onImageProcessed={handleImagesProcessed}
       onProcessingStateChange={handleComponentProcessingState}
+      componentStaging={componentStaging}
+      analysisProgress={analysisProgress}
+      globalProcessing={globalProcessing}
+      onAnalyzeAll={handleAnalyzeAll}
+      onClearAllStaging={handleClearAllStaging}
+      onAddStagedImages={addStagedImages}
+      onRemoveStagedImage={removeStagedImage}
+      onProcessStagedComponent={handleProcessStagedComponent}
+      onClearComponentStaging={clearComponentStaging}
     />
   );
 };

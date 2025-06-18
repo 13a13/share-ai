@@ -3,6 +3,7 @@ import { RoomComponent } from "@/types";
 import ComponentItem from "./ComponentItem";
 import ComponentSelector from "./ComponentSelector";
 import AddCustomComponent from "./AddCustomComponent";
+import GlobalAnalysisControls from "./GlobalAnalysisControls";
 import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 
 interface ComponentListProps {
@@ -22,6 +23,17 @@ interface ComponentListProps {
   onRemoveImage: (componentId: string, imageId: string) => void;
   onImageProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
+  
+  // New batch analysis props
+  componentStaging: Map<string, { componentId: string; componentName: string; stagedImages: string[]; isProcessing: boolean; }>;
+  analysisProgress: Map<string, { status: string; progress: number; error?: string; }>;
+  globalProcessing: boolean;
+  onAnalyzeAll: () => Promise<void>;
+  onClearAllStaging: () => void;
+  onAddStagedImages: (componentId: string, images: string[]) => void;
+  onRemoveStagedImage: (componentId: string, imageIndex: number) => void;
+  onProcessStagedComponent: (componentId: string) => Promise<void>;
+  onClearComponentStaging: (componentId: string) => void;
 }
 
 const ComponentList = ({
@@ -40,7 +52,16 @@ const ComponentList = ({
   onUpdateComponent,
   onRemoveImage,
   onImageProcessed,
-  onProcessingStateChange
+  onProcessingStateChange,
+  componentStaging,
+  analysisProgress,
+  globalProcessing,
+  onAnalyzeAll,
+  onClearAllStaging,
+  onAddStagedImages,
+  onRemoveStagedImage,
+  onProcessStagedComponent,
+  onClearComponentStaging
 }: ComponentListProps) => {
   
   // Get property name and room name from the DOM
@@ -57,8 +78,24 @@ const ComponentList = ({
     comp => !addedComponentNames.includes(comp.name)
   );
 
+  const totalStagedImages = Array.from(componentStaging.values())
+    .reduce((total, comp) => total + comp.stagedImages.length, 0);
+
+  const componentsWithStaging = Array.from(componentStaging.values())
+    .filter(comp => comp.stagedImages.length > 0);
+
   return (
     <div className="space-y-4">
+      {/* Global Analysis Controls */}
+      <GlobalAnalysisControls
+        totalStagedImages={totalStagedImages}
+        componentsWithStaging={componentsWithStaging}
+        analysisProgress={analysisProgress}
+        globalProcessing={globalProcessing}
+        onAnalyzeAll={onAnalyzeAll}
+        onClearAll={onClearAllStaging}
+      />
+      
       <div className="space-y-2">
         <h3 className="text-sm font-medium">Components</h3>
         
@@ -80,6 +117,12 @@ const ComponentList = ({
               onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
               onImageProcessed={(imageUrls, result) => onImageProcessed(component.id, imageUrls, result)}
               onProcessingStateChange={(isProcessing) => onProcessingStateChange(component.id, isProcessing)}
+              stagedImages={componentStaging.get(component.id)?.stagedImages || []}
+              onAddStagedImages={onAddStagedImages}
+              onRemoveStagedImage={onRemoveStagedImage}
+              onProcessStagedComponent={onProcessStagedComponent}
+              onClearComponentStaging={onClearComponentStaging}
+              stagingProcessing={componentStaging.get(component.id)?.isProcessing || false}
             />
           ))}
         </div>

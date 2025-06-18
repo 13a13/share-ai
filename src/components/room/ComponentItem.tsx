@@ -9,6 +9,7 @@ import ComponentAnalysisSummary from "../component/ComponentAnalysisSummary";
 import ComponentImages from "../component/ComponentImages";
 import ComponentActions from "../component/ComponentActions";
 import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
+import ComponentStagingArea from "../component/ComponentStagingArea";
 
 interface ComponentItemProps {
   component: RoomComponent;
@@ -24,6 +25,14 @@ interface ComponentItemProps {
   onRemoveImage: (imageId: string) => void;
   onImageProcessed: (imageUrls: string[], result: any) => void;
   onProcessingStateChange: (isProcessing: boolean) => void;
+  
+  // New staging props
+  stagedImages?: string[];
+  onAddStagedImages?: (componentId: string, images: string[]) => void;
+  onRemoveStagedImage?: (componentId: string, imageIndex: number) => void;
+  onProcessStagedComponent?: (componentId: string) => Promise<void>;
+  onClearComponentStaging?: (componentId: string) => void;
+  stagingProcessing?: boolean;
 }
 
 const ComponentItem = ({
@@ -39,7 +48,13 @@ const ComponentItem = ({
   onUpdate,
   onRemoveImage,
   onImageProcessed,
-  onProcessingStateChange
+  onProcessingStateChange,
+  stagedImages,
+  onAddStagedImages,
+  onRemoveStagedImage,
+  onProcessStagedComponent,
+  onClearComponentStaging,
+  stagingProcessing
 }: ComponentItemProps) => {
   // If component is being edited, automatically expand it
   const shouldBeExpanded = isExpanded || component.isEditing;
@@ -138,6 +153,20 @@ const ComponentItem = ({
                 onProcessingStateChange={(componentId, isProcessing) => onProcessingStateChange(isProcessing)}
                 onRemoveImage={onRemoveImage}
               />
+              
+              {/* Component Staging Area */}
+              {stagedImages && stagedImages.length > 0 && (
+                <ComponentStagingArea
+                  componentId={component.id}
+                  componentName={component.name}
+                  stagedImages={stagedImages}
+                  isProcessing={stagingProcessing || false}
+                  onRemoveStagedImage={onRemoveStagedImage || (() => {})}
+                  onProcessComponent={onProcessStagedComponent || (() => Promise.resolve())}
+                  onClearStaging={onClearComponentStaging || (() => {})}
+                  disabled={isProcessing}
+                />
+              )}
               
               {/* Actions */}
               <ComponentActions

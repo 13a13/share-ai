@@ -64,6 +64,55 @@ export const RoomImageAPI = {
   },
 
   /**
+   * Add multiple images to a room in a single transaction
+   */
+  addMultipleImagesToRoom: async (reportId: string, roomId: string, imageUrls: string[]): Promise<RoomImage[]> => {
+    try {
+      console.log(`💾 Adding ${imageUrls.length} images to room:`, roomId, "in report:", reportId);
+      
+      // Validate that we're not storing data URLs in the database
+      const invalidUrls = imageUrls.filter(url => url.startsWith('data:'));
+      if (invalidUrls.length > 0) {
+        console.error("❌ Cannot save data URLs to database - images must be uploaded to storage first");
+        throw new Error("Images must be uploaded to storage before saving to database");
+      }
+      
+      // Prepare batch insert data
+      const insertData = imageUrls.map(url => ({
+        id: crypto.randomUUID(),
+        room_id: roomId,
+        inspection_id: reportId,
+        url: url
+      }));
+      
+      console.log(`🔗 Batch inserting ${insertData.length} storage URLs`);
+      
+      // Single transaction for all images
+      const { data, error } = await supabase
+        .from('room_images')
+        .insert(insertData)
+        .select();
+      
+      if (error) {
+        console.error('❌ Error batch saving images to database:', error);
+        throw error;
+      }
+      
+      console.log(`✅ Batch inserted ${data.length} image records to database`);
+      
+      return data.map(image => ({
+        id: image.id,
+        url: image.url,
+        timestamp: new Date(image.created_at),
+        aiProcessed: !!image.analysis
+      }));
+    } catch (error) {
+      console.error("❌ Error batch adding images to room:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Get images for a room using room_id and inspection_id
    */
   getImagesForRoom: async (reportId: string, roomId: string): Promise<RoomImage[]> => {
