@@ -1,13 +1,13 @@
 
 import { corsHeaders } from './cors.ts';
 import { processAndOrganizeImages } from './image-processor.ts';
-import { AIProcessor } from './ai-processor.ts';
+import { UnifiedAIProcessor } from './unified-ai-processor.ts';
 import type { AIProcessingOptions } from './ai-processing-options.ts';
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 Deno.serve(async (req) => {
-  console.log('🚀 Advanced Defect Detection System - Gemini 2.0 Flash');
+  console.log('🚀 Unified Gemini System - Single Prompt Processing');
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,11 +27,10 @@ Deno.serve(async (req) => {
       imageCount: requestData.images?.length || requestData.imageIds?.length || 0,
       componentName: requestData.componentName,
       roomType: requestData.roomType,
-      inventoryMode: requestData.inventoryMode,
-      useAdvancedAnalysis: requestData.useAdvancedAnalysis
+      unifiedSystem: requestData.unifiedSystem
     });
 
-    console.log('🔄 [MAIN] Starting Advanced Defect Detection pipeline');
+    console.log('🔄 [MAIN] Starting Unified Gemini processing pipeline');
 
     let imageUrls: string[] = [];
 
@@ -62,8 +61,12 @@ Deno.serve(async (req) => {
       // Handle direct image processing
       imageUrls = requestData.images;
       console.log(`📸 Processing direct images: ${imageUrls.length} URLs`);
+    } else if (requestData.imageUrls) {
+      // Handle imageUrls field for compatibility
+      imageUrls = requestData.imageUrls;
+      console.log(`📸 Processing imageUrls: ${imageUrls.length} URLs`);
     } else {
-      throw new Error('No images or imageIds provided');
+      throw new Error('No images, imageUrls, or imageIds provided');
     }
 
     if (imageUrls.length === 0) {
@@ -78,67 +81,73 @@ Deno.serve(async (req) => {
       requestData.roomId
     );
 
-    // Setup AI processing options
-    const aiOptions: AIProcessingOptions = {
-      componentName: requestData.componentName || 'Room',
-      roomType: requestData.roomType || 'general',
-      inventoryMode: requestData.inventoryMode || false,
-      useAdvancedAnalysis: requestData.useAdvancedAnalysis || (imageUrls.length > 1),
-      imageCount: imageUrls.length,
-      originalImageCount: imageUrls.length
-    };
+    // Initialize unified AI processor
+    const unifiedAIProcessor = new UnifiedAIProcessor();
 
-    // Initialize AI processor
-    const aiProcessor = new AIProcessor();
+    console.log('🚀 [UNIFIED SYSTEM] Starting unified Gemini processing for', processedImages.length, 'images');
 
-    console.log('🚀 [ADVANCED AI] Starting Gemini 2.0 Flash processing for', processedImages.length, 'images');
-
-    // Process with enhanced AI
-    const aiResult = await aiProcessor.processImagesWithEnhancedAI(
+    // Process with unified system
+    const unifiedResult = await unifiedAIProcessor.processWithUnifiedSystem(
       processedImages,
-      aiOptions,
+      requestData.componentName || 'Component',
+      requestData.roomType || 'room',
       GEMINI_API_KEY
     );
 
-    console.log('✅ [MAIN] Advanced processing complete:', {
-      modelUsed: aiResult.modelUsed,
-      processingTime: aiResult.processingTime,
-      parsingMethod: 'enhanced_ai_processor',
-      confidence: 0.9,
-      validationApplied: !!aiResult.validationResult
+    console.log('✅ [UNIFIED SYSTEM] Processing complete:', {
+      modelUsed: unifiedResult.processingMetadata.modelUsed,
+      processingTime: unifiedResult.processingMetadata.processingTime,
+      parsingMethod: unifiedResult.processingMetadata.parsingMethod,
+      confidence: unifiedResult.processingMetadata.confidence
     });
+
+    // Format response for frontend compatibility
+    const compatibleResponse = {
+      description: unifiedResult.description,
+      condition: unifiedResult.condition,
+      cleanliness: unifiedResult.cleanliness,
+      processingMetadata: {
+        ...unifiedResult.processingMetadata,
+        enhancedProcessing: true,
+        unifiedSystem: true
+      },
+      analysisMetadata: unifiedResult.analysisMetadata,
+      organizedImageUrls,
+      propertyRoomInfo,
+      costIncurred: 0.1 // Estimated cost for Gemini 2.0 Flash
+    };
 
     // Format response for room processing
     if (requestData.imageIds) {
-      console.log('📋 [RESPONSE FORMATTER] Creating enhanced room response');
+      console.log('📋 [RESPONSE FORMATTER] Creating unified room response');
       
       const response = {
         room: {
           id: requestData.roomId,
-          description: aiResult.parsedData.description || '',
-          condition: aiResult.parsedData.condition || { summary: '', points: [], rating: 'fair' },
-          cleanliness: aiResult.parsedData.cleanliness || 'domestic_clean',
+          description: unifiedResult.description || '',
+          condition: unifiedResult.condition || { summary: '', points: [], rating: 'fair' },
+          cleanliness: unifiedResult.cleanliness || 'domestic_clean',
           analysis: {
-            modelUsed: aiResult.modelUsed,
-            processingTime: `${aiResult.processingTime}ms`,
+            modelUsed: unifiedResult.processingMetadata.modelUsed,
+            processingTime: `${unifiedResult.processingMetadata.processingTime}ms`,
             imageCount: imageUrls.length,
-            multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis,
-            confidence: aiResult.validationResult?.confidence || 0.9
+            unifiedSystem: true,
+            confidence: unifiedResult.processingMetadata.confidence
           }
         },
         organizedImageUrls,
         propertyRoomInfo,
-        costIncurred: aiResult.costIncurred,
+        costIncurred: compatibleResponse.costIncurred,
         processingMetadata: {
-          processingTime: aiResult.processingTime,
-          method: 'enhanced_ai_processor',
-          modelUsed: aiResult.modelUsed,
-          multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis
+          processingTime: unifiedResult.processingMetadata.processingTime,
+          method: 'unified_system',
+          modelUsed: unifiedResult.processingMetadata.modelUsed,
+          unifiedSystem: true
         }
       };
 
-      console.log('💰 [RESPONSE FORMATTER] Enhanced metadata added: processing time:', `${aiResult.processingTime}ms`, ', method: enhanced_ai_processor');
-      console.log('✅ [RESPONSE FORMATTER] Advanced Defect Detection processing complete');
+      console.log('💰 [RESPONSE FORMATTER] Unified metadata added: processing time:', `${unifiedResult.processingMetadata.processingTime}ms`, ', method: unified_system');
+      console.log('✅ [RESPONSE FORMATTER] Unified processing complete');
 
       return new Response(JSON.stringify(response), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -146,33 +155,20 @@ Deno.serve(async (req) => {
     }
 
     // Format response for component processing
-    console.log('📋 [RESPONSE FORMATTER] Creating enhanced component response');
-    
-    const componentResponse = {
-      ...aiResult.parsedData,
-      organizedImageUrls,
-      propertyRoomInfo,
-      costIncurred: aiResult.costIncurred,
-      processingMetadata: {
-        processingTime: aiResult.processingTime,
-        method: 'enhanced_ai_processor',
-        modelUsed: aiResult.modelUsed,
-        multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis
-      }
-    };
+    console.log('📋 [RESPONSE FORMATTER] Creating unified component response');
 
-    console.log('✅ [RESPONSE FORMATTER] Enhanced component processing complete');
+    console.log('✅ [RESPONSE FORMATTER] Unified component processing complete');
 
-    return new Response(JSON.stringify(componentResponse), {
+    return new Response(JSON.stringify(compatibleResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('❌ [MAIN] Processing failed:', error);
+    console.error('❌ [MAIN] Unified processing failed:', error);
     
     return new Response(
       JSON.stringify({
-        error: error.message || 'Processing failed',
+        error: error.message || 'Unified processing failed',
         details: error.stack,
         timestamp: new Date().toISOString()
       }),

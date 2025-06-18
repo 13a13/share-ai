@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ConditionRating } from '@/types';
 
-// Enhanced interface with cross-analysis support and Gemini 2.0 Flash features
+// Enhanced interface with unified system support
 export interface ProcessedImageResult {
   description: string;
   condition: {
@@ -17,13 +17,17 @@ export interface ProcessedImageResult {
   cleanliness: string;
   rating?: string; // The original rating from Gemini
   notes?: string;
-  // Advanced analysis fields
-  crossAnalysis?: {
-    materialConsistency: boolean | null;
-    defectConfidence: 'low' | 'medium' | 'high';
-    multiAngleValidation: Array<[string, number]>;
+  // Analysis metadata from unified system
+  analysisMetadata?: {
+    imageCount: number;
+    multiImageAnalysis: {
+      isConsistent: boolean;
+      consistencyScore: number;
+      conflictingFindings: string[];
+    };
+    estimatedAge: string;
   };
-  analysisMode?: 'standard' | 'inventory' | 'advanced';
+  analysisMode?: 'unified' | 'standard' | 'inventory' | 'advanced';
   // Enhanced processing metadata
   processingMetadata?: {
     modelUsed: string;
@@ -32,6 +36,9 @@ export interface ProcessedImageResult {
     validationResult?: any;
     geminiModel?: string;
     enhancedProcessing?: boolean;
+    unifiedSystem?: boolean;
+    parsingMethod?: string;
+    confidence?: number;
   };
 }
 
@@ -52,8 +59,6 @@ export const conditionRatingOptions = [
 
 /**
  * Convert condition rating to human-readable text
- * @param condition Condition rating from the enum
- * @returns Formatted text representation
  */
 export const conditionRatingToText = (condition: string): string => {
   const option = conditionRatingOptions.find(opt => opt.value === condition);
@@ -61,13 +66,8 @@ export const conditionRatingToText = (condition: string): string => {
 };
 
 /**
- * Processes an image using the enhanced Gemini API to analyze a component
- * Now uses Gemini 2.0 Flash for complex analysis
- * @param imageUrls URL or array of URLs of the image(s) to analyze
- * @param roomType Type of room the component is in
- * @param componentName Name of the component being analyzed
- * @param options Additional options for processing
- * @returns Processed image result with description, condition, cleanliness and enhanced metadata
+ * Processes an image using the Unified Gemini System
+ * Single prompt system that handles all scenarios with equal image weighting
  */
 export const processComponentImage = async (
   imageUrls: string | string[],
@@ -79,56 +79,41 @@ export const processComponentImage = async (
   } = {}
 ): Promise<ProcessedImageResult> => {
   try {
-    const { multipleImages = false, useAdvancedAnalysis = false } = options;
     const imageArray = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
     
-    console.log(`🚀 [IMAGE PROCESSING v7] Processing ${imageArray.length} images for component: ${componentName} with Gemini 2.0 Flash`);
-    
-    // Enable advanced analysis for multiple images automatically
-    const shouldUseAdvancedAnalysis = useAdvancedAnalysis || (Array.isArray(imageUrls) && imageUrls.length > 1);
-    
-    console.log(`🤖 [IMAGE PROCESSING v7] Analysis configuration:`, {
-      imageCount: imageArray.length,
-      shouldUseAdvancedAnalysis,
-      inventoryMode: !shouldUseAdvancedAnalysis,
-      expectedModel: 'gemini-2.0-flash-exp'
-    });
+    console.log(`🚀 [IMAGE PROCESSING v8] Processing ${imageArray.length} images with Unified Gemini System`);
     
     const response = await supabase.functions.invoke('process-room-image', {
       body: {
         imageUrls: imageArray,
         componentName,
         roomType,
-        inventoryMode: !shouldUseAdvancedAnalysis, // Use inventory mode when not using advanced
-        useAdvancedAnalysis: shouldUseAdvancedAnalysis,
-        multipleImages
+        // Unified system - no longer need mode flags
+        unifiedSystem: true,
+        imageCount: imageArray.length
       },
     });
 
     if (response.error) {
-      console.error('❌ [IMAGE PROCESSING v7] Error calling Gemini 2.0 Flash API:', response.error);
-      throw new Error('Failed to analyze image with Gemini 2.0 Flash');
+      console.error('❌ [IMAGE PROCESSING v8] Error calling Unified Gemini System:', response.error);
+      throw new Error('Failed to analyze image with Unified Gemini System');
     }
 
     const result = response.data as ProcessedImageResult;
     
-    console.log(`✅ [IMAGE PROCESSING v7] Processing complete:`, {
+    console.log(`✅ [IMAGE PROCESSING v8] Unified processing complete:`, {
       modelUsed: result.processingMetadata?.modelUsed,
-      geminiModel: result.processingMetadata?.geminiModel,
-      costIncurred: result.processingMetadata?.costIncurred,
       processingTime: result.processingMetadata?.processingTime,
-      enhancedProcessing: result.processingMetadata?.enhancedProcessing,
-      validationApplied: !!result.processingMetadata?.validationResult
+      unifiedSystem: result.processingMetadata?.unifiedSystem,
+      parsingMethod: result.processingMetadata?.parsingMethod
     });
     
-    // Add analysis mode for frontend rendering decisions if not already set
-    if (!result.analysisMode) {
-      result.analysisMode = shouldUseAdvancedAnalysis ? 'advanced' : 'inventory';
-    }
+    // Add unified system metadata
+    result.analysisMode = 'unified';
     
     return result;
   } catch (error) {
-    console.error('❌ [IMAGE PROCESSING v7] Error in processComponentImage:', error);
+    console.error('❌ [IMAGE PROCESSING v8] Error in unified system:', error);
     throw error;
   }
 };
@@ -152,7 +137,14 @@ export const normalizeConditionPoints = (points: any[]): string[] => {
 };
 
 /**
- * Check if analysis result uses the advanced format
+ * Check if analysis result uses the unified format
+ */
+export const isUnifiedAnalysis = (result: ProcessedImageResult): boolean => {
+  return Boolean(result.analysisMode === 'unified' || result.processingMetadata?.unifiedSystem);
+};
+
+/**
+ * Check if analysis result uses the advanced format (legacy)
  */
 export const isAdvancedAnalysis = (result: ProcessedImageResult): boolean => {
   return Boolean(result.analysisMode === 'advanced' || result.crossAnalysis);
