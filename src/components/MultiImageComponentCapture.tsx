@@ -49,10 +49,10 @@ const MultiImageComponentCapture = ({
       onProcessingStateChange={onProcessingStateChange}
       onRemoveImage={onRemoveImage}
       disabled={disabled}
-      // Enhanced processing function with context
-      processComponentImage={(imageUrls, roomType, componentName, options = {}) => 
+      // Enhanced processing function with context - fix the type signature
+      processComponentImage={(imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => 
         processComponentImage(imageUrls, roomType, componentName, { 
-          ...options,
+          multipleImages,
           propertyName: propertyName || "unknown_property",
           roomName: roomName || "unknown_room"
         })
