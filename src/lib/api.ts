@@ -100,6 +100,9 @@ export const GeminiAPI = {
   }
 };
 
+// Re-export the RoomImageAPI for backward compatibility
+export { RoomImageAPI };
+
 // Re-export the updated ReportsAPI that includes room image operations
 export const ReportsAPI = {
   // Re-export room image methods from the updated API

@@ -1,6 +1,4 @@
 
-
-
 // Import specific room-related APIs directly
 import { RoomCrudAPI } from './roomCrudApi';
 import { RoomUpdateAPI } from './roomUpdateApi';
@@ -57,9 +55,10 @@ export const ReportsAPI = {
   deleteRoom: RoomCrudAPI.deleteRoom,
   updateRoom: RoomUpdateAPI.updateRoom,
   addImageToRoom: RoomImageAPI.addImageToRoom,
+  getImagesForRoom: RoomImageAPI.getImagesForRoom,
+  deleteImageFromRoom: RoomImageAPI.deleteImageFromRoom,
   
   // Report status and updates
   updateReportStatus: ReportStatusUpdater.updateReportStatus,
   completeReport: ReportStatusUpdater.completeReport
 };
-
