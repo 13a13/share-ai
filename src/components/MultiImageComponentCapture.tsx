@@ -50,7 +50,7 @@ const MultiImageComponentCapture = ({
       onRemoveImage={onRemoveImage}
       disabled={disabled}
       // Enhanced processing function with context
-      processComponentImage={(imageUrls, roomType, componentName, options) => 
+      processComponentImage={(imageUrls, roomType, componentName, options = {}) => 
         processComponentImage(imageUrls, roomType, componentName, { 
           ...options,
           propertyName: propertyName || "unknown_property",
