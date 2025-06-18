@@ -61,6 +61,13 @@ const RoomComponentInspection = ({
     onChange
   });
 
+  // Wrapper function to match expected signature
+  const handleAddStagedImages = (componentId: string, images: string[]) => {
+    const component = roomComponents.find(c => c.id === componentId);
+    const componentName = component?.name || 'Unknown Component';
+    addStagedImages(componentId, componentName, images);
+  };
+
   return (
     <ComponentList
       roomType={roomType}
@@ -84,7 +91,7 @@ const RoomComponentInspection = ({
       globalProcessing={globalProcessing}
       onAnalyzeAll={handleAnalyzeAll}
       onClearAllStaging={handleClearAllStaging}
-      onAddStagedImages={addStagedImages}
+      onAddStagedImages={handleAddStagedImages}
       onRemoveStagedImage={removeStagedImage}
       onProcessStagedComponent={handleProcessStagedComponent}
       onClearComponentStaging={clearComponentStaging}

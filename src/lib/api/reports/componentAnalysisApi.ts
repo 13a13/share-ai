@@ -16,24 +16,8 @@ export const ComponentAnalysisAPI = {
     try {
       console.log(`🔄 Updating component ${componentId} with analysis results`);
       
-      // Start transaction - update room component data
-      const { error: updateError } = await supabase
-        .from('rooms')
-        .update({
-          components: supabase.rpc('update_component_analysis', {
-            room_id: roomId,
-            component_id: componentId,
-            analysis_data: analysisResult
-          })
-        })
-        .eq('id', roomId);
-
-      if (updateError) {
-        console.error('❌ Error updating component analysis:', updateError);
-        throw updateError;
-      }
-
-      // Update image records with analysis flag
+      // For now, we'll just update the image records with analysis data
+      // The component updates will be handled by the frontend state management
       if (imageIds.length > 0) {
         const { error: imageError } = await supabase
           .from('room_images')
@@ -41,12 +25,12 @@ export const ComponentAnalysisAPI = {
           .in('id', imageIds);
 
         if (imageError) {
-          console.warn('⚠️ Error updating image analysis flags:', imageError);
-          // Don't throw - component update succeeded
+          console.error('❌ Error updating image analysis flags:', imageError);
+          throw imageError;
         }
       }
 
-      console.log(`✅ Component ${componentId} updated successfully`);
+      console.log(`✅ Component ${componentId} analysis data saved to images`);
       return true;
     } catch (error) {
       console.error('❌ Error in component analysis update:', error);

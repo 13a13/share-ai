@@ -15,10 +15,12 @@ interface BatchAnalysisConfig {
   maxConcurrency?: number;
 }
 
+type AnalysisStatus = 'pending' | 'uploading' | 'analyzing' | 'complete' | 'error';
+
 export function useBatchAnalysisManager(config: BatchAnalysisConfig) {
   const { toast } = useToast();
   const [analysisProgress, setAnalysisProgress] = useState<Map<string, {
-    status: 'pending' | 'uploading' | 'analyzing' | 'complete' | 'error';
+    status: AnalysisStatus;
     progress: number;
     error?: string;
   }>>(new Map());
@@ -33,7 +35,7 @@ export function useBatchAnalysisManager(config: BatchAnalysisConfig) {
     try {
       // Update progress: uploading
       setAnalysisProgress(prev => new Map(prev).set(componentId, {
-        status: 'uploading',
+        status: 'uploading' as AnalysisStatus,
         progress: 0
       }));
 
@@ -53,7 +55,7 @@ export function useBatchAnalysisManager(config: BatchAnalysisConfig) {
         
         // Update upload progress
         setAnalysisProgress(prev => new Map(prev).set(componentId, {
-          status: 'uploading',
+          status: 'uploading' as AnalysisStatus,
           progress: Math.round((i + 1) / stagedImages.length * 50) // 50% for upload phase
         }));
       }
@@ -64,7 +66,7 @@ export function useBatchAnalysisManager(config: BatchAnalysisConfig) {
 
       // Update progress: analyzing
       setAnalysisProgress(prev => new Map(prev).set(componentId, {
-        status: 'analyzing',
+        status: 'analyzing' as AnalysisStatus,
         progress: 50
       }));
 
@@ -90,7 +92,7 @@ export function useBatchAnalysisManager(config: BatchAnalysisConfig) {
 
       // Update progress: complete
       setAnalysisProgress(prev => new Map(prev).set(componentId, {
-        status: 'complete',
+        status: 'complete' as AnalysisStatus,
         progress: 100
       }));
 
@@ -105,7 +107,7 @@ export function useBatchAnalysisManager(config: BatchAnalysisConfig) {
       console.error(`❌ Error processing component ${componentName}:`, error);
       
       setAnalysisProgress(prev => new Map(prev).set(componentId, {
-        status: 'error',
+        status: 'error' as AnalysisStatus,
         progress: 0,
         error: error instanceof Error ? error.message : 'Unknown error'
       }));

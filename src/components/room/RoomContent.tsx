@@ -35,7 +35,18 @@ const RoomContent = ({
     handleRemoveImage,
     handleImagesProcessed,
     handleComponentProcessingState,
-    toggleExpandComponent
+    toggleExpandComponent,
+    componentStaging,
+    analysisProgress,
+    globalProcessing,
+    addStagedImages,
+    removeStagedImage,
+    clearComponentStaging,
+    handleAnalyzeAll,
+    handleProcessStagedComponent,
+    handleClearAllStaging,
+    getTotalStagedImages,
+    getComponentsWithStagedImages
   } = useRoomComponents({
     roomId: room.id,
     roomType: room.type,
@@ -44,6 +55,13 @@ const RoomContent = ({
     initialComponents: room.components || [],
     onChange: (updatedComponents) => onUpdateComponents(room.id, updatedComponents)
   });
+
+  // Wrapper function to match expected signature
+  const handleAddStagedImages = (componentId: string, images: string[]) => {
+    const component = components.find(c => c.id === componentId);
+    const componentName = component?.name || 'Unknown Component';
+    addStagedImages(componentId, componentName, images);
+  };
 
   return (
     <div 
@@ -78,6 +96,15 @@ const RoomContent = ({
         onRemoveImage={handleRemoveImage}
         onImageProcessed={handleImagesProcessed}
         onProcessingStateChange={handleComponentProcessingState}
+        componentStaging={componentStaging}
+        analysisProgress={analysisProgress}
+        globalProcessing={globalProcessing}
+        onAnalyzeAll={handleAnalyzeAll}
+        onClearAllStaging={handleClearAllStaging}
+        onAddStagedImages={handleAddStagedImages}
+        onRemoveStagedImage={removeStagedImage}
+        onProcessStagedComponent={handleProcessStagedComponent}
+        onClearComponentStaging={clearComponentStaging}
       />
     </div>
   );

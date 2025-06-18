@@ -50,10 +50,10 @@ const ComponentStagingArea = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <StagingImagesGrid
-          stagingImages={stagedImages}
-          compressionInProgress={false}
+          images={stagedImages}
           onRemoveImage={(index) => onRemoveStagedImage(componentId, index)}
           onMoveImage={() => {}} // Component staging doesn't need reordering
+          compressionInProgress={false}
         />
         
         <Button
