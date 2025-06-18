@@ -4,20 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Zap, Camera, CheckCircle, AlertCircle } from "lucide-react";
+import { ComponentStagingData, BatchAnalysisProgress } from "@/types";
 
 interface GlobalAnalysisControlsProps {
   totalStagedImages: number;
-  componentsWithStaging: Array<{
-    componentId: string;
-    componentName: string;
-    stagedImages: string[];
-    isProcessing: boolean;
-  }>;
-  analysisProgress: Map<string, {
-    status: 'pending' | 'uploading' | 'analyzing' | 'complete' | 'error';
-    progress: number;
-    error?: string;
-  }>;
+  componentsWithStaging: ComponentStagingData[];
+  analysisProgress: Map<string, BatchAnalysisProgress>;
   globalProcessing: boolean;
   onAnalyzeAll: () => Promise<void>;
   onClearAll: () => void;

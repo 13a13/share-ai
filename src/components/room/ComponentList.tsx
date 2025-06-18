@@ -5,6 +5,7 @@ import ComponentSelector from "./ComponentSelector";
 import AddCustomComponent from "./AddCustomComponent";
 import GlobalAnalysisControls from "./GlobalAnalysisControls";
 import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
+import { BatchAnalysisProgress, ComponentStagingData } from "@/types";
 
 interface ComponentListProps {
   roomType: string;
@@ -24,9 +25,9 @@ interface ComponentListProps {
   onImageProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
   
-  // New batch analysis props
-  componentStaging: Map<string, { componentId: string; componentName: string; stagedImages: string[]; isProcessing: boolean; }>;
-  analysisProgress: Map<string, { status: string; progress: number; error?: string; }>;
+  // New batch analysis props with proper types
+  componentStaging: Map<string, ComponentStagingData>;
+  analysisProgress: Map<string, BatchAnalysisProgress>;
   globalProcessing: boolean;
   onAnalyzeAll: () => Promise<void>;
   onClearAllStaging: () => void;

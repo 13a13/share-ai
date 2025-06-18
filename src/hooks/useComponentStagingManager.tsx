@@ -1,26 +1,27 @@
 
 import { useState, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
-
-interface ComponentStagingState {
-  componentId: string;
-  componentName: string;
-  stagedImages: string[];
-  isProcessing: boolean;
-}
+import { ComponentStagingData } from "@/types";
 
 export function useComponentStagingManager() {
   const { toast } = useToast();
-  const [componentStaging, setComponentStaging] = useState<Map<string, ComponentStagingState>>(new Map());
+  const [componentStaging, setComponentStaging] = useState<Map<string, ComponentStagingData>>(new Map());
   const [globalProcessing, setGlobalProcessing] = useState(false);
 
   const addStagedImages = useCallback((componentId: string, componentName: string, images: string[]) => {
     setComponentStaging(prev => {
       const newMap = new Map(prev);
-      const existing = newMap.get(componentId) || { componentId, componentName, stagedImages: [], isProcessing: false };
+      const existing = newMap.get(componentId) || { 
+        componentId, 
+        componentName, 
+        stagedImages: [], 
+        isProcessing: false,
+        timestamp: new Date()
+      };
       newMap.set(componentId, {
         ...existing,
-        stagedImages: [...existing.stagedImages, ...images]
+        stagedImages: [...existing.stagedImages, ...images],
+        timestamp: new Date()
       });
       return newMap;
     });
@@ -33,7 +34,8 @@ export function useComponentStagingManager() {
       if (existing) {
         newMap.set(componentId, {
           ...existing,
-          stagedImages: existing.stagedImages.filter((_, i) => i !== imageIndex)
+          stagedImages: existing.stagedImages.filter((_, i) => i !== imageIndex),
+          timestamp: new Date()
         });
       }
       return newMap;
@@ -53,7 +55,11 @@ export function useComponentStagingManager() {
       const newMap = new Map(prev);
       const existing = newMap.get(componentId);
       if (existing) {
-        newMap.set(componentId, { ...existing, isProcessing });
+        newMap.set(componentId, { 
+          ...existing, 
+          isProcessing,
+          timestamp: new Date()
+        });
       }
       return newMap;
     });

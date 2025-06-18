@@ -1,5 +1,5 @@
 
-import { RoomComponent } from "@/types";
+import { RoomComponent, ComponentStagingData, BatchAnalysisProgress } from "@/types";
 import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 import { useComponentState } from "./useComponentState";
 import { useComponentOperations } from "./useComponentOperations";
@@ -44,8 +44,8 @@ interface UseRoomComponentsReturn {
   toggleExpandComponent: (componentId: string) => void;
   
   // New staging and batch analysis returns
-  componentStaging: Map<string, { componentId: string; componentName: string; stagedImages: string[]; isProcessing: boolean; }>;
-  analysisProgress: Map<string, { status: string; progress: number; error?: string; }>;
+  componentStaging: Map<string, ComponentStagingData>;
+  analysisProgress: Map<string, BatchAnalysisProgress>;
   globalProcessing: boolean;
   addStagedImages: (componentId: string, componentName: string, images: string[]) => void;
   removeStagedImage: (componentId: string, imageIndex: number) => void;
@@ -54,7 +54,7 @@ interface UseRoomComponentsReturn {
   handleProcessStagedComponent: (componentId: string) => Promise<void>;
   handleClearAllStaging: () => void;
   getTotalStagedImages: () => number;
-  getComponentsWithStagedImages: () => Array<{ componentId: string; componentName: string; stagedImages: string[]; isProcessing: boolean; }>;
+  getComponentsWithStagedImages: () => ComponentStagingData[];
 }
 
 export function useRoomComponents({
