@@ -2,16 +2,10 @@
 import { useState, useCallback } from "react";
 import { compressDataURLImage } from "@/utils/imageCompression";
 
-/**
- * Hook to manage photo capture from a video stream
- */
 export const useCameraCapture = (videoRef: React.RefObject<HTMLVideoElement>, isReady: boolean) => {
   const [isCapturing, setIsCapturing] = useState(false);
 
-  /**
-   * Captures a photo from the current video stream
-   * @returns Promise resolving to a base64 data URL of the captured image
-   */
+  // Captures a photo from the current video stream
   const takePhoto = useCallback(async (): Promise<string> => {
     if (!videoRef.current || !isReady) {
       throw new Error("Camera not ready");

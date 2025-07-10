@@ -6,9 +6,6 @@ interface UseCameraStreamOptions {
   timeoutMs?: number;
 }
 
-/**
- * Hook to manage camera stream initialization and cleanup
- */
 export const useCameraStream = (options: UseCameraStreamOptions) => {
   const { facingMode, timeoutMs = 3000 } = options;
   
@@ -22,9 +19,7 @@ export const useCameraStream = (options: UseCameraStreamOptions) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  /**
-   * Stops all tracks in the current stream and cleans up resources
-   */
+  // Stops all tracks in the current stream and cleans up resources
   const stopStream = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -43,9 +38,7 @@ export const useCameraStream = (options: UseCameraStreamOptions) => {
     setIsReady(false);
   }, []);
 
-  /**
-   * Starts the camera with the specified facing mode
-   */
+  // Starts the camera with the specified facing mode
   const startStream = useCallback(async (permissionGranted: boolean = true) => {
     // Clean up any existing stream first
     stopStream();
