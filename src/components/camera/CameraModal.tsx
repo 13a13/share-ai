@@ -180,7 +180,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
 
   // Enhanced camera components with better props
   const renderCameraComponents = () => (
-    <>
+    <div className={`flex flex-col h-full ${!isMobile ? 'sm:h-screen md:h-screen lg:h-screen xl:h-screen' : ''}`}>
       <CameraHeader 
         title={`${title} (${capturedPhotos.length}/${maxPhotos})`}
         onClose={onClose} 
@@ -208,7 +208,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
         onCapture={handleCapture}
         onConfirm={handleConfirm}
       />
-    </>
+    </div>
   );
 
   // Use Sheet for mobile and Dialog for desktop
@@ -228,7 +228,14 @@ const CameraModal: React.FC<CameraModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent
-        className="fixed inset-0 max-w-none w-screen h-screen p-0 bg-black text-white border-0 rounded-none"
+        className="
+          fixed inset-0 max-w-none w-screen h-screen p-0 bg-black text-white border-0 rounded-none z-50
+          sm:fixed sm:inset-0 sm:max-w-none sm:w-screen sm:h-screen sm:p-0 sm:bg-black sm:text-white sm:border-0 sm:rounded-none sm:z-50
+          md:fixed md:inset-0 md:max-w-none md:w-screen md:h-screen md:p-0 md:bg-black md:text-white md:border-0 md:rounded-none md:z-50
+          lg:fixed lg:inset-0 lg:max-w-none lg:w-screen lg:h-screen lg:p-0 lg:bg-black lg:text-white lg:border-0 lg:rounded-none lg:z-50
+          xl:fixed xl:inset-0 xl:max-w-none xl:w-screen xl:h-screen xl:p-0 xl:bg-black xl:text-white xl:border-0 xl:rounded-none xl:z-50
+        "
+        data-desktop="true"
       >
         {renderCameraComponents()}
       </DialogContent>
