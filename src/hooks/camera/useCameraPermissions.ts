@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 
 export const useCameraPermissions = () => {
@@ -10,8 +11,8 @@ export const useCameraPermissions = () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.warn("🚨 Camera API not available - falling back to older API or failing gracefully");
         
-        // Try legacy getUserMedia
-        const legacyGetUserMedia = navigator.getUserMedia || 
+        // Try legacy getUserMedia with proper typing
+        const legacyGetUserMedia = (navigator as any).getUserMedia || 
           (navigator as any).webkitGetUserMedia || 
           (navigator as any).mozGetUserMedia;
           
