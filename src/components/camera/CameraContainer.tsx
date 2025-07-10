@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useCamera } from "@/hooks/useCamera";
 import CameraHeader from "./CameraHeader";
@@ -22,6 +22,7 @@ const CameraContainer: React.FC<CameraContainerProps> = ({
   const { toast } = useToast();
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   const [isCapturingSequence, setIsCapturingSequence] = useState(false);
+  const hasStartedRef = useRef(false);
   
   const {
     videoRef,
@@ -35,18 +36,22 @@ const CameraContainer: React.FC<CameraContainerProps> = ({
     takePhoto,
     stopCamera,
     startCamera
-  } = useCamera({ initialFacingMode: 'environment', timeoutMs: 3000 });
+  } = useCamera({ initialFacingMode: 'environment', timeoutMs: 5000 });
 
-  // Auto-start camera when component mounts
+  // Auto-start camera when component mounts (only once)
   useEffect(() => {
-    console.log("🎥 CameraContainer: Starting camera automatically");
-    startCamera();
+    if (!hasStartedRef.current) {
+      console.log("🎥 CameraContainer: Starting camera for the first time");
+      hasStartedRef.current = true;
+      startCamera();
+    }
   }, [startCamera]);
 
   // Clean up when the container unmounts
   useEffect(() => {
     return () => {
       console.log("🎥 CameraContainer: Cleaning up camera");
+      hasStartedRef.current = false;
       stopCamera();
       setCapturedPhotos([]);
       setIsCapturingSequence(false);
