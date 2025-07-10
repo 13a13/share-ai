@@ -33,12 +33,20 @@ const CameraContainer: React.FC<CameraContainerProps> = ({
     facingMode,
     flipCamera,
     takePhoto,
-    stopCamera
+    stopCamera,
+    startCamera
   } = useCamera({ initialFacingMode: 'environment', timeoutMs: 3000 });
+
+  // Auto-start camera when component mounts
+  useEffect(() => {
+    console.log("🎥 CameraContainer: Starting camera automatically");
+    startCamera();
+  }, [startCamera]);
 
   // Clean up when the container unmounts
   useEffect(() => {
     return () => {
+      console.log("🎥 CameraContainer: Cleaning up camera");
       stopCamera();
       setCapturedPhotos([]);
       setIsCapturingSequence(false);
@@ -58,7 +66,9 @@ const CameraContainer: React.FC<CameraContainerProps> = ({
 
     try {
       setIsCapturingSequence(true);
+      console.log("📸 CameraContainer: Taking photo...");
       const photoUrl = await takePhoto();
+      console.log("✅ CameraContainer: Photo captured successfully");
       
       setCapturedPhotos(prev => {
         const newPhotos = [...prev, photoUrl];
@@ -73,7 +83,7 @@ const CameraContainer: React.FC<CameraContainerProps> = ({
         return newPhotos;
       });
     } catch (error) {
-      console.error("Error capturing photo:", error);
+      console.error("❌ CameraContainer: Error capturing photo:", error);
       toast({
         title: "Failed to take photo",
         description: "Please try again.",
@@ -118,6 +128,8 @@ const CameraContainer: React.FC<CameraContainerProps> = ({
       return;
     }
 
+    console.log(`✅ CameraContainer: Confirming ${capturedPhotos.length} photos`);
+    
     toast({
       title: "Photos saved successfully",
       description: `${capturedPhotos.length} photos are being processed`,

@@ -10,6 +10,7 @@ interface UseCameraOptions {
 export const useCamera = (options: UseCameraOptions = {}) => {
   const {
     initialFacingMode = 'environment',
+    timeoutMs = 3000
   } = options;
 
   // Use the refactored useCameraControl hook
@@ -26,6 +27,15 @@ export const useCamera = (options: UseCameraOptions = {}) => {
     takePhoto,
     isCapturing,
   } = useCameraControl({ maxPhotos: 20 });
+
+  console.log("📱 useCamera hook initialized with:", {
+    initialFacingMode,
+    timeoutMs,
+    permissionState,
+    isReady,
+    isProcessing,
+    errorMessage
+  });
 
   return {
     // Refs
