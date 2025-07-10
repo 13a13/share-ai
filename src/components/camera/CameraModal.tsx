@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCamera } from "@/hooks/useCamera";
+import FullscreenDialog from "@/components/ui/fullscreen-dialog";
 import CameraHeader from "./CameraHeader";
 import CameraContent from "./CameraContent";
 import CameraFooter from "./CameraFooter";
@@ -211,7 +211,7 @@ const CameraModal: React.FC<CameraModalProps> = ({
     </div>
   );
 
-  // Use Sheet for mobile and Dialog for desktop
+  // Use Sheet for mobile and FullscreenDialog for desktop
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={open => !open && onClose()}>
@@ -226,14 +226,9 @@ const CameraModal: React.FC<CameraModalProps> = ({
   }
 
   return (
-    <Dialog open={open} onOpenChange={open => !open && onClose()}>
-      <DialogContent
-        className="fixed inset-0 max-w-none w-screen h-screen p-0 bg-black text-white border-0 rounded-none z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-        data-desktop="true"
-      >
-        {renderCameraComponents()}
-      </DialogContent>
-    </Dialog>
+    <FullscreenDialog open={open} onOpenChange={open => !open && onClose()}>
+      {renderCameraComponents()}
+    </FullscreenDialog>
   );
 };
 
