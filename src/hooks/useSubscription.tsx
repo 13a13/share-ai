@@ -70,11 +70,15 @@ export const useSubscription = () => {
   };
 
   const hasActiveSubscription = () => {
-    return profile?.subscription_status === 'active';
+    return profile?.subscription_status === 'active' || profile?.subscription_status === 'unlimited';
+  };
+
+  const isUnlimitedAccount = () => {
+    return profile?.subscription_status === 'unlimited';
   };
 
   const canCreateProperties = () => {
-    return isTrialActive() || hasActiveSubscription();
+    return isTrialActive() || hasActiveSubscription() || isUnlimitedAccount();
   };
 
   return {
@@ -85,6 +89,7 @@ export const useSubscription = () => {
     isTrialExpired,
     isTrialActive,
     hasActiveSubscription,
+    isUnlimitedAccount,
     canCreateProperties,
     refetch: fetchProfile
   };

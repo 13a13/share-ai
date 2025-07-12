@@ -6,7 +6,7 @@ import { Clock, Crown, AlertTriangle } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 
 const TrialStatusCard = () => {
-  const { profile, getDaysLeft, isTrialExpired, isTrialActive, hasActiveSubscription } = useSubscription();
+  const { profile, getDaysLeft, isTrialExpired, isTrialActive, hasActiveSubscription, isUnlimitedAccount } = useSubscription();
 
   if (!profile) return null;
 
@@ -14,8 +14,12 @@ const TrialStatusCard = () => {
   const expired = isTrialExpired();
   const trialActive = isTrialActive();
   const hasSubscription = hasActiveSubscription();
+  const isUnlimited = isUnlimitedAccount();
 
   const getStatusBadge = () => {
+    if (isUnlimited) {
+      return <Badge className="bg-purple-500 text-white"><Crown className="h-3 w-3 mr-1" />Unlimited Access</Badge>;
+    }
     if (hasSubscription) {
       return <Badge className="bg-green-500 text-white"><Crown className="h-3 w-3 mr-1" />Active Subscription</Badge>;
     }
@@ -29,6 +33,9 @@ const TrialStatusCard = () => {
   };
 
   const getDescription = () => {
+    if (isUnlimited) {
+      return `You have unlimited access to all features with no restrictions.`;
+    }
     if (hasSubscription) {
       return `You have access to ${profile.property_limit} properties with your active subscription.`;
     }

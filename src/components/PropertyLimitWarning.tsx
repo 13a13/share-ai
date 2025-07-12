@@ -6,9 +6,14 @@ import { useSubscription } from "@/hooks/useSubscription";
 
 const PropertyLimitWarning = () => {
   const { getPropertyLimitStatus } = usePropertyLimits();
-  const { isTrialExpired, canCreateProperties } = useSubscription();
+  const { isTrialExpired, canCreateProperties, isUnlimitedAccount } = useSubscription();
   
   const { current, limit, percentage } = getPropertyLimitStatus();
+
+  // Don't show warnings for unlimited accounts
+  if (isUnlimitedAccount && isUnlimitedAccount()) {
+    return null;
+  }
 
   if (!canCreateProperties()) {
     return (
