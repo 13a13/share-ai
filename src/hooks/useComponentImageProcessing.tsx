@@ -88,7 +88,7 @@ export function useComponentImageProcessing({
           ...comp,
           images: finalImages,
           description: result.description || comp.description,
-          conditionSummary: detailedSummary, // Use the detailed findings as the summary
+          conditionSummary: detailedSummary, // AI analysis goes into conditionSummary field
           conditionPoints: result.condition?.points || comp.conditionPoints || [],
           condition: result.condition?.rating || comp.condition,
           cleanliness: result.cleanliness || comp.cleanliness,
