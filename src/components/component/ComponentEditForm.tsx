@@ -52,6 +52,7 @@ const ComponentEditForm = ({
   }, [conditionPoints]);
   
   const handleSave = () => {
+    console.log("🎯 ComponentEditForm: Save button clicked", { componentId });
     onSave();
   };
   
@@ -62,7 +63,10 @@ const ComponentEditForm = ({
         <Textarea
           id={`${componentId}-description`}
           value={description}
-          onChange={(e) => onUpdateField("description", e.target.value)}
+          onChange={(e) => {
+            console.log("📝 Updating description:", e.target.value);
+            onUpdateField("description", e.target.value);
+          }}
           placeholder="Describe the component..."
           className="min-h-[80px]"
         />
@@ -73,7 +77,10 @@ const ComponentEditForm = ({
         <Textarea
           id={`${componentId}-condition-summary`}
           value={conditionSummary}
-          onChange={(e) => onUpdateField("conditionSummary", e.target.value)}
+          onChange={(e) => {
+            console.log("📝 Updating condition summary:", e.target.value);
+            onUpdateField("conditionSummary", e.target.value);
+          }}
           placeholder="Summarize the condition..."
           className="min-h-[60px]"
         />
@@ -86,7 +93,10 @@ const ComponentEditForm = ({
           <Label htmlFor={`${componentId}-condition`}>Condition Rating</Label>
           <Select 
             value={condition}
-            onValueChange={(value) => onUpdateField("condition", value)}
+            onValueChange={(value) => {
+              console.log("📝 Updating condition:", value);
+              onUpdateField("condition", value);
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select condition" />
@@ -110,7 +120,10 @@ const ComponentEditForm = ({
           <Label htmlFor={`${componentId}-cleanliness`}>Cleanliness</Label>
           <Select 
             value={cleanliness}
-            onValueChange={(value) => onUpdateField("cleanliness", value)}
+            onValueChange={(value) => {
+              console.log("📝 Updating cleanliness:", value);
+              onUpdateField("cleanliness", value);
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select cleanliness" />
@@ -131,7 +144,10 @@ const ComponentEditForm = ({
         <Textarea
           id={`${componentId}-notes`}
           value={notes}
-          onChange={(e) => onUpdateField("notes", e.target.value)}
+          onChange={(e) => {
+            console.log("📝 Updating notes:", e.target.value);
+            onUpdateField("notes", e.target.value);
+          }}
           placeholder="Any additional notes or observations..."
           className="min-h-[60px]"
         />

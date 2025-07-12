@@ -64,17 +64,20 @@ const ComponentItem = ({
   const hasDescription = Boolean(component.description);
   const hasCondition = Boolean(component.condition && component.condition !== "fair");
 
-  // Helper function to handle component field updates
+  // Helper function to handle component field updates with immediate persistence
   const handleUpdateField = (field: string, value: string | string[]) => {
+    console.log("🔄 Field update:", { componentId: component.id, field, value });
     onUpdate({ [field]: value });
   };
 
   // Handle save and cancel for edit form
   const handleSave = () => {
+    console.log("💾 Saving component:", component.id);
     onToggleEditMode();
   };
 
   const handleCancel = () => {
+    console.log("❌ Canceling edit:", component.id);
     onToggleEditMode();
   };
 
