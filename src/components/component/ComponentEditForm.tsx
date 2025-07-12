@@ -23,8 +23,9 @@ interface ComponentEditFormProps {
   cleanlinessOptions: { value: string; label: string }[];
   conditionRatingOptions: { value: string; label: string; color: string }[];
   notes?: string;
-  onUpdateComponent: (componentId: string, field: string, value: string | string[]) => void;
-  onToggleEditMode: (componentId: string) => void;
+  onUpdateField: (field: string, value: string | string[]) => void;
+  onSave: () => void;
+  onCancel: () => void;
 }
 
 const ComponentEditForm = ({
@@ -37,8 +38,9 @@ const ComponentEditForm = ({
   cleanlinessOptions,
   conditionRatingOptions,
   notes = "",
-  onUpdateComponent,
-  onToggleEditMode
+  onUpdateField,
+  onSave,
+  onCancel
 }: ComponentEditFormProps) => {
   // Convert points for editing - handle both string[] and object[]
   const normalizedPoints = normalizeConditionPoints(conditionPoints);
@@ -50,9 +52,7 @@ const ComponentEditForm = ({
   }, [conditionPoints]);
   
   const handleSave = () => {
-    // Keep conditionPoints as they were, but don't expose them in the UI
-    // This ensures backward compatibility while removing the field from the form
-    onToggleEditMode(componentId);
+    onSave();
   };
   
   return (
@@ -62,7 +62,7 @@ const ComponentEditForm = ({
         <Textarea
           id={`${componentId}-description`}
           value={description}
-          onChange={(e) => onUpdateComponent(componentId, "description", e.target.value)}
+          onChange={(e) => onUpdateField("description", e.target.value)}
           placeholder="Describe the component..."
           className="min-h-[80px]"
         />
@@ -73,7 +73,7 @@ const ComponentEditForm = ({
         <Textarea
           id={`${componentId}-condition-summary`}
           value={conditionSummary}
-          onChange={(e) => onUpdateComponent(componentId, "conditionSummary", e.target.value)}
+          onChange={(e) => onUpdateField("conditionSummary", e.target.value)}
           placeholder="Summarize the condition..."
           className="min-h-[60px]"
         />
@@ -86,7 +86,7 @@ const ComponentEditForm = ({
           <Label htmlFor={`${componentId}-condition`}>Condition Rating</Label>
           <Select 
             value={condition}
-            onValueChange={(value) => onUpdateComponent(componentId, "condition", value)}
+            onValueChange={(value) => onUpdateField("condition", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select condition" />
@@ -110,7 +110,7 @@ const ComponentEditForm = ({
           <Label htmlFor={`${componentId}-cleanliness`}>Cleanliness</Label>
           <Select 
             value={cleanliness}
-            onValueChange={(value) => onUpdateComponent(componentId, "cleanliness", value)}
+            onValueChange={(value) => onUpdateField("cleanliness", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select cleanliness" />
@@ -131,7 +131,7 @@ const ComponentEditForm = ({
         <Textarea
           id={`${componentId}-notes`}
           value={notes}
-          onChange={(e) => onUpdateComponent(componentId, "notes", e.target.value)}
+          onChange={(e) => onUpdateField("notes", e.target.value)}
           placeholder="Any additional notes or observations..."
           className="min-h-[60px]"
         />
@@ -140,7 +140,7 @@ const ComponentEditForm = ({
       <div className="flex justify-end space-x-2">
         <Button 
           variant="outline" 
-          onClick={() => onToggleEditMode(componentId)}
+          onClick={onCancel}
           className="gap-1"
         >
           <X className="h-4 w-4" />

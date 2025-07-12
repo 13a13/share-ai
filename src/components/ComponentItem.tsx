@@ -21,7 +21,7 @@ interface ComponentItemProps {
   onToggleExpand: (componentId: string) => void;
   onRemoveComponent: (componentId: string) => void;
   onToggleEditMode: (componentId: string) => void;
-  onUpdateComponent: (componentId: string, field: string, value: string) => void;
+  onUpdateComponent: (componentId: string, field: string, value: string | string[]) => void;
   onRemoveImage: (componentId: string, imageId: string) => void;
   onImageProcessed: (
     componentId: string, 
@@ -147,8 +147,9 @@ const ComponentItem = ({
                 cleanlinessOptions={cleanlinessOptions}
                 conditionRatingOptions={conditionRatingOptions}
                 notes={component.notes}
-                onUpdateComponent={onUpdateComponent}
-                onToggleEditMode={onToggleEditMode}
+                onUpdateField={(field, value) => onUpdateComponent(component.id, field, value)}
+                onSave={() => onToggleEditMode(component.id)}
+                onCancel={() => onToggleEditMode(component.id)}
               />
             </CollapsibleContent>
           </Collapsible>

@@ -10,6 +10,7 @@ import ComponentImages from "../component/ComponentImages";
 import ComponentActions from "../component/ComponentActions";
 import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
 import ComponentStagingArea from "../component/ComponentStagingArea";
+import { cleanlinessOptions, conditionRatingOptions } from "@/services/imageProcessingService";
 
 interface ComponentItemProps {
   component: RoomComponent;
@@ -68,6 +69,15 @@ const ComponentItem = ({
     onUpdate({ [field]: value });
   };
 
+  // Handle save and cancel for edit form
+  const handleSave = () => {
+    onToggleEditMode();
+  };
+
+  const handleCancel = () => {
+    onToggleEditMode();
+  };
+
   return (
     <Card 
       id={`component-${component.id}`}
@@ -105,22 +115,12 @@ const ComponentItem = ({
                   conditionPoints={component.conditionPoints || []}
                   condition={component.condition}
                   cleanliness={component.cleanliness}
-                  cleanlinessOptions={[
-                    { value: "poor", label: "Poor" },
-                    { value: "fair", label: "Fair" },
-                    { value: "good", label: "Good" },
-                    { value: "excellent", label: "Excellent" }
-                  ]}
-                  conditionRatingOptions={[
-                    { value: "excellent", label: "Excellent", color: "bg-green-500" },
-                    { value: "good", label: "Good", color: "bg-blue-500" },
-                    { value: "fair", label: "Fair", color: "bg-yellow-500" },
-                    { value: "poor", label: "Poor", color: "bg-orange-500" },
-                    { value: "needs_replacement", label: "Needs Replacement", color: "bg-red-500" }
-                  ]}
+                  cleanlinessOptions={cleanlinessOptions}
+                  conditionRatingOptions={conditionRatingOptions}
                   notes={component.notes}
-                  onUpdateComponent={handleUpdateField}
-                  onToggleEditMode={onToggleEditMode}
+                  onUpdateField={handleUpdateField}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
                 />
               )}
               

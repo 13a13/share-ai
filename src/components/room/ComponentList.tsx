@@ -6,6 +6,7 @@ import AddCustomComponent from "./AddCustomComponent";
 import GlobalAnalysisControls from "./GlobalAnalysisControls";
 import { ROOM_COMPONENT_CONFIGS } from "@/utils/roomComponentUtils";
 import { BatchAnalysisProgress, ComponentStagingData } from "@/types";
+import { useComponentEditor } from "@/hooks/useComponentEditor";
 
 interface ComponentListProps {
   roomType: string;
@@ -65,6 +66,9 @@ const ComponentList = ({
   onClearComponentStaging
 }: ComponentListProps) => {
   
+  // Use the component editor hook for enhanced editing functionality
+  const componentEditor = useComponentEditor(components, onUpdateComponent);
+  
   // Get property name and room name from the DOM
   const reportElement = document.querySelector('[data-report-id]');
   const roomElement = document.querySelector('[data-room-id]');
@@ -102,30 +106,35 @@ const ComponentList = ({
         
         {/* Component list */}
         <div className="space-y-3">
-          {components.map((component) => (
-            <ComponentItem
-              key={component.id}
-              component={component}
-              roomType={roomType}
-              propertyName={propertyName}
-              roomName={roomName}
-              isExpanded={expandedComponents.includes(component.id)}
-              isProcessing={isProcessing[component.id] || false}
-              onToggleExpand={() => onToggleExpand(component.id)}
-              onRemove={() => onRemoveComponent(component.id)}
-              onToggleEditMode={() => onToggleEditMode(component.id)}
-              onUpdate={(updates) => onUpdateComponent(component.id, updates)}
-              onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
-              onImageProcessed={(imageUrls, result) => onImageProcessed(component.id, imageUrls, result)}
-              onProcessingStateChange={(isProcessing) => onProcessingStateChange(component.id, isProcessing)}
-              stagedImages={componentStaging.get(component.id)?.stagedImages || []}
-              onAddStagedImages={onAddStagedImages}
-              onRemoveStagedImage={onRemoveStagedImage}
-              onProcessStagedComponent={onProcessStagedComponent}
-              onClearComponentStaging={onClearComponentStaging}
-              stagingProcessing={componentStaging.get(component.id)?.isProcessing || false}
-            />
-          ))}
+          {components.map((component) => {
+            // Get the component state with any pending edits applied
+            const componentWithEdits = componentEditor.getComponentState(component.id);
+            
+            return (
+              <ComponentItem
+                key={component.id}
+                component={componentWithEdits}
+                roomType={roomType}
+                propertyName={propertyName}
+                roomName={roomName}
+                isExpanded={expandedComponents.includes(component.id)}
+                isProcessing={isProcessing[component.id] || false}
+                onToggleExpand={() => onToggleExpand(component.id)}
+                onRemove={() => onRemoveComponent(component.id)}
+                onToggleEditMode={() => componentEditor.toggleEditMode(component.id)}
+                onUpdate={(updates) => onUpdateComponent(component.id, updates)}
+                onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
+                onImageProcessed={(imageUrls, result) => onImageProcessed(component.id, imageUrls, result)}
+                onProcessingStateChange={(isProcessing) => onProcessingStateChange(component.id, isProcessing)}
+                stagedImages={componentStaging.get(component.id)?.stagedImages || []}
+                onAddStagedImages={onAddStagedImages}
+                onRemoveStagedImage={onRemoveStagedImage}
+                onProcessStagedComponent={onProcessStagedComponent}
+                onClearComponentStaging={onClearComponentStaging}
+                stagingProcessing={componentStaging.get(component.id)?.isProcessing || false}
+              />
+            );
+          })}
         </div>
         
         {/* Add new components */}
