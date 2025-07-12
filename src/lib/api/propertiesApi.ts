@@ -70,47 +70,10 @@ export const PropertiesAPI = {
   },
   
   create: async (property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>): Promise<Property> => {
-    // Check property limits before creating
+    // Check authentication only
     const user = await supabase.auth.getUser();
     if (!user.data.user) {
       throw new Error('User not authenticated. Please sign in to create properties.');
-    }
-
-    // Get user profile to check limits
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('property_limit, subscription_status, trial_end')
-      .eq('id', user.data.user.id)
-      .single();
-
-    if (profileError) {
-      console.error('Error fetching user profile:', profileError);
-      throw new Error('Unable to verify account status. Please try again.');
-    }
-
-    // Check if trial is expired
-    if (profile.subscription_status === 'trial' && new Date() > new Date(profile.trial_end)) {
-      throw new Error('Your free trial has expired. Please upgrade your subscription to create properties.');
-    }
-
-    // Check if user can create properties (trial active or subscription active)
-    if (profile.subscription_status !== 'trial' && profile.subscription_status !== 'active') {
-      throw new Error('Please activate your subscription to create properties.');
-    }
-
-    // Check property count limit
-    const { data: existingProperties, error: countError } = await supabase
-      .from('properties')
-      .select('id')
-      .eq('user_id', user.data.user.id);
-
-    if (countError) {
-      console.error('Error checking property count:', countError);
-      throw new Error('Unable to verify property limit. Please try again.');
-    }
-
-    if (existingProperties && existingProperties.length >= profile.property_limit) {
-      throw new Error(`You've reached your property limit of ${profile.property_limit}. Upgrade your subscription to create more properties.`);
     }
 
     // Format the description to store bedrooms and bathrooms

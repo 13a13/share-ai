@@ -61,24 +61,23 @@ export const useSubscription = () => {
   };
 
   const isTrialExpired = () => {
-    if (!profile?.trial_end) return false;
-    return new Date() > new Date(profile.trial_end);
+    return false; // No trials, unlimited access
   };
 
   const isTrialActive = () => {
-    return profile?.subscription_status === 'trial' && !isTrialExpired();
+    return false; // No trials, unlimited access
   };
 
   const hasActiveSubscription = () => {
-    return profile?.subscription_status === 'active' || profile?.subscription_status === 'unlimited';
+    return true; // Everyone has unlimited access
   };
 
   const isUnlimitedAccount = () => {
-    return profile?.subscription_status === 'unlimited';
+    return true; // Everyone has unlimited access
   };
 
   const canCreateProperties = () => {
-    return isTrialActive() || hasActiveSubscription() || isUnlimitedAccount();
+    return true; // Everyone can create properties
   };
 
   return {
