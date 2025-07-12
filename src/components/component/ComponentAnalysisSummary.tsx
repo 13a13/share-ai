@@ -45,10 +45,11 @@ const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummar
      latestAnalysis.condition.points.some((p: any) => typeof p === 'object' && p.label))
   );
 
-  // Create enhanced condition object for display - prioritize AI's assessment detail
+  // Create enhanced condition object for display - prioritize manual edits over AI
   const enhancedCondition: EnhancedCondition = {
-    // Use the AI's condition summary as the primary assessment detail
-    summary: latestAnalysis?.condition?.summary || component.conditionSummary || 'Assessment completed',
+    // FIXED: Prioritize manually edited conditionSummary over AI analysis
+    // If user has manually edited conditionSummary, use that instead of AI summary
+    summary: component.conditionSummary || latestAnalysis?.condition?.summary || 'Assessment completed',
     points: hasEnhancedCondition 
       ? latestAnalysis.condition.points 
       : (component.conditionPoints ? normalizeConditionPoints(component.conditionPoints) : []),
