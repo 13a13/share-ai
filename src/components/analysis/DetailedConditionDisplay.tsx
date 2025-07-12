@@ -67,11 +67,11 @@ const DetailedConditionDisplay = ({
 
   return (
     <div className="space-y-4">
-      {/* Assessment Detail - Primary Display */}
+      {/* Detailed Findings - Primary Display */}
       <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-l-blue-500">
         <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center">
           <AlertCircle className="h-4 w-4 mr-2" />
-          Assessment Detail
+          Detailed Findings
         </h4>
         <p className="text-sm text-blue-800 leading-relaxed">{condition.summary}</p>
       </div>
@@ -79,7 +79,7 @@ const DetailedConditionDisplay = ({
       {/* Condition Points by Category */}
       {Object.keys(pointsByCategory).length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-900">Detailed Findings</h4>
+          <h4 className="text-sm font-medium text-gray-900">Specific Observations</h4>
           {Object.entries(pointsByCategory).map(([category, points]) => (
             <Card key={category} className="border-l-4 border-l-gray-300">
               <CardHeader className="pb-2">
