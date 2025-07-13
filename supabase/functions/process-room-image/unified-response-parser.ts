@@ -109,10 +109,6 @@ export class UnifiedResponseParser {
       // Validate the enhanced schema structure
       if (parsed.sceneSummary && parsed.components && Array.isArray(parsed.components)) {
         console.log(`✅ [ENHANCED PARSER] Valid enhanced schema detected with ${parsed.components.length} components`);
-        // Handle the new spatial prompt format
-        if (parsed.components[0]?.spatialContext) {
-          console.log(`🆕 [ENHANCED PARSER] New spatial format detected`);
-        }
         return parsed;
       }
     }
@@ -451,12 +447,7 @@ export class UnifiedResponseParser {
   private normalizeConditionPoints(condition: any): string[] {
     const points: string[] = [];
     
-    // NEW: Extract from locationSpecificFindings array (new prompt format)
-    if (Array.isArray(condition.locationSpecificFindings)) {
-      points.push(...condition.locationSpecificFindings.filter(Boolean));
-    }
-    
-    // Extract from defects array (legacy format)
+    // Extract from defects array
     if (Array.isArray(condition.defects)) {
       points.push(...condition.defects.filter(Boolean));
     }

@@ -23,20 +23,14 @@ export class EnhancedResponseFormatter {
    * Format enhanced response preserving all assessment details
    */
   formatEnhancedResponse(rawData: any, processingTime: number, method: string, confidence: number) {
-    console.log(`📋 [ENHANCED FORMATTER] Starting response formatting with method: ${method}`);
-    console.log(`📋 [ENHANCED FORMATTER] Raw data structure:`, Object.keys(rawData || {}));
+    console.log(`📋 [ENHANCED FORMATTER] Formatting response with rich assessment structure`);
     
-    try {
-      if (rawData.sceneSummary && rawData.components && Array.isArray(rawData.components)) {
-        return this.formatMultiComponentResponse(rawData, processingTime, method, confidence);
-      }
-      
-      // Handle legacy single component format
-      return this.formatLegacyResponse(rawData, processingTime, method, confidence);
-    } catch (error) {
-      console.error(`❌ [ENHANCED FORMATTER] Error in formatting:`, error);
-      throw error;
+    if (rawData.sceneSummary && rawData.components && Array.isArray(rawData.components)) {
+      return this.formatMultiComponentResponse(rawData, processingTime, method, confidence);
     }
+    
+    // Handle legacy single component format
+    return this.formatLegacyResponse(rawData, processingTime, method, confidence);
   }
 
   private formatMultiComponentResponse(rawData: any, processingTime: number, method: string, confidence: number) {
@@ -51,10 +45,10 @@ export class EnhancedResponseFormatter {
     const primaryCondition = primaryAssessment.condition || {};
     const primaryCleanliness = primaryAssessment.cleanliness || {};
     
-    // Enhanced description handling - prioritize inferredType for component identification
+    // Enhanced description handling
     const description = components.length > 1 
-      ? `${components.length} items identified: ${components.map(c => c.inferredType || c.description || 'Component').join('; ')}`
-      : (primaryComponent.inferredType || primaryComponent.description || sceneSummary.overallImpression || 'Component analyzed');
+      ? `${components.length} items identified: ${components.map(c => c.description || c.inferredType).join('; ')}`
+      : (primaryComponent.description || sceneSummary.overallImpression || 'Component analyzed');
     
     // Create enhanced condition points with rich structure
     const enhancedPoints = this.createEnhancedConditionPoints(components);
@@ -83,7 +77,7 @@ export class EnhancedResponseFormatter {
           details: this.extractConditionDetails(condition)
         },
         cleanliness: this.normalizeCleanliness(cleanliness.rating),
-        estimatedAge: comp.metadata?.estimatedAge || comp.spatialContext?.estimatedAge || 'Unknown'
+        estimatedAge: comp.metadata?.estimatedAge || 'Unknown'
       };
     });
 
@@ -105,7 +99,7 @@ export class EnhancedResponseFormatter {
           consistencyScore: confidence,
           conflictingFindings: []
         },
-        estimatedAge: primaryComponent.metadata?.estimatedAge || primaryComponent.spatialContext?.estimatedAge || 'Unknown',
+        estimatedAge: primaryComponent.metadata?.estimatedAge || 'Unknown',
         itemCount: sceneSummary.identifiedItemCount || components.length,
         sceneSummary: sceneSummary.overallImpression || 'Enhanced multi-component analysis completed',
         multipleItems: components.length > 1
@@ -171,12 +165,7 @@ export class EnhancedResponseFormatter {
   private createComponentConditionPoints(condition: any): (string | EnhancedConditionPoint)[] {
     const points: (string | EnhancedConditionPoint)[] = [];
     
-    // NEW: Extract from locationSpecificFindings array (new prompt format)
-    if (Array.isArray(condition.locationSpecificFindings)) {
-      points.push(...condition.locationSpecificFindings.filter(Boolean));
-    }
-    
-    // Extract from defects array (legacy format)
+    // Extract from defects array
     if (Array.isArray(condition.defects)) {
       points.push(...condition.defects.filter(Boolean));
     }
