@@ -23,14 +23,20 @@ export class EnhancedResponseFormatter {
    * Format enhanced response preserving all assessment details
    */
   formatEnhancedResponse(rawData: any, processingTime: number, method: string, confidence: number) {
-    console.log(`📋 [ENHANCED FORMATTER] Formatting response with rich assessment structure`);
+    console.log(`📋 [ENHANCED FORMATTER] Starting response formatting with method: ${method}`);
+    console.log(`📋 [ENHANCED FORMATTER] Raw data structure:`, Object.keys(rawData || {}));
     
-    if (rawData.sceneSummary && rawData.components && Array.isArray(rawData.components)) {
-      return this.formatMultiComponentResponse(rawData, processingTime, method, confidence);
+    try {
+      if (rawData.sceneSummary && rawData.components && Array.isArray(rawData.components)) {
+        return this.formatMultiComponentResponse(rawData, processingTime, method, confidence);
+      }
+      
+      // Handle legacy single component format
+      return this.formatLegacyResponse(rawData, processingTime, method, confidence);
+    } catch (error) {
+      console.error(`❌ [ENHANCED FORMATTER] Error in formatting:`, error);
+      throw error;
     }
-    
-    // Handle legacy single component format
-    return this.formatLegacyResponse(rawData, processingTime, method, confidence);
   }
 
   private formatMultiComponentResponse(rawData: any, processingTime: number, method: string, confidence: number) {
