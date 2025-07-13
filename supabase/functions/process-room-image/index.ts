@@ -67,12 +67,33 @@ serve(async (req) => {
     const base64Images = [];
     for (let i = 0; i < imageUrls.length; i++) {
       const imageUrl = imageUrls[i];
-      console.log(`📥 [Multi-Image ${i + 1}/${imageUrls.length}] Fetching image from organized storage: ${imageUrl}`);
+      console.log(`📥 [Multi-Image ${i + 1}/${imageUrls.length}] Processing image: ${imageUrl.substring(0, 100)}...`);
       
       try {
+        // Check if this is already a data URL (base64)
+        if (imageUrl.startsWith('data:image/')) {
+          console.log(`📋 [Multi-Image ${i + 1}/${imageUrls.length}] Image is already base64 data URL`);
+          const [header, base64Data] = imageUrl.split(',');
+          const mimeMatch = header.match(/data:([^;]+)/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+          
+          base64Images.push({
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType
+            }
+          });
+          console.log(`✅ [Multi-Image ${i + 1}/${imageUrls.length}] Successfully used base64 data URL`);
+          continue;
+        }
+        
+        // Otherwise, fetch from URL
+        console.log(`📥 [Multi-Image ${i + 1}/${imageUrls.length}] Fetching from URL: ${imageUrl}`);
         const response = await fetch(imageUrl);
+        
         if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.statusText}`);
+          console.error(`❌ [Multi-Image ${i + 1}/${imageUrls.length}] HTTP ${response.status}: ${response.statusText}`);
+          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
         }
         
         const imageBuffer = await response.arrayBuffer();
@@ -84,9 +105,14 @@ serve(async (req) => {
           }
         });
         
-        console.log(`✅ [Multi-Image ${i + 1}/${imageUrls.length}] Successfully converted organized image to base64 for AI processing`);
+        console.log(`✅ [Multi-Image ${i + 1}/${imageUrls.length}] Successfully fetched and converted to base64`);
       } catch (error) {
         console.error(`❌ [Multi-Image ${i + 1}/${imageUrls.length}] Error processing image:`, error);
+        console.error(`❌ [Multi-Image ${i + 1}/${imageUrls.length}] Error details:`, {
+          message: error.message,
+          stack: error.stack,
+          imageUrl: imageUrl.substring(0, 200)
+        });
         continue;
       }
     }
