@@ -19,8 +19,19 @@ serve(async (req) => {
 
   try {
     console.log('🔄 [MAIN] Starting Unified Gemini processing pipeline');
+    console.log('🔄 [MAIN] Request method:', req.method);
+    console.log('🔄 [MAIN] Request headers:', Object.fromEntries(req.headers.entries()));
 
-    const { imageUrls, componentName, roomType, unifiedSystem, imageCount } = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log('📥 [MAIN] Successfully parsed request JSON');
+    } catch (jsonError) {
+      console.error('❌ [MAIN] Failed to parse request JSON:', jsonError);
+      throw new Error(`Invalid JSON in request: ${jsonError.message}`);
+    }
+
+    const { imageUrls, componentName, roomType, unifiedSystem, imageCount } = requestData;
     
     console.log('📥 Request data received:', {
       imageCount: imageUrls?.length || 0,
@@ -171,11 +182,15 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ [UNIFIED SYSTEM] Error in unified processing:', error);
+    console.error('❌ [UNIFIED SYSTEM] Error stack:', error?.stack);
+    console.error('❌ [UNIFIED SYSTEM] Error name:', error?.name);
+    console.error('❌ [UNIFIED SYSTEM] Error message:', error?.message);
     
     return new Response(
       JSON.stringify({
         error: 'Analysis failed',
         details: error.message,
+        errorType: error.name || 'UnknownError',
         fallback: {
           description: 'Analysis could not be completed',
           condition: { summary: 'Manual assessment required', points: [], rating: 'fair' },
