@@ -8,9 +8,35 @@ import { UnifiedPromptManager } from './unified-prompt-manager.ts';
 
 console.log('🚀 Unified Gemini System - Single Prompt Processing');
 
+// Verify dependencies on startup
+console.log('🔍 [STARTUP] Verifying dependencies...');
+console.log('✅ [STARTUP] CORS headers imported successfully');
+console.log('✅ [STARTUP] UnifiedResponseParser imported successfully');  
+console.log('✅ [STARTUP] UnifiedPromptManager imported successfully');
+console.log('🔑 [STARTUP] GEMINI_API_KEY available:', !!Deno.env.get('GEMINI_API_KEY'));
+
 serve(async (req) => {
+  console.log(`📡 [REQUEST] ${req.method} ${req.url} - ${new Date().toISOString()}`);
+  
   if (req.method === 'OPTIONS') {
+    console.log('✅ [CORS] Handling preflight request');
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method === 'GET') {
+    console.log('🏥 [HEALTH CHECK] Function health check requested');
+    return new Response(JSON.stringify({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      dependencies: {
+        corsHeaders: 'available',
+        unifiedPromptManager: 'available',
+        unifiedResponseParser: 'available',
+        geminiApiKey: !!Deno.env.get('GEMINI_API_KEY')
+      }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 
   try {
@@ -167,15 +193,36 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ [UNIFIED SYSTEM] Error in unified processing:', error);
+    console.error('❌ [ERROR DETAILS] Stack trace:', error.stack);
+    console.error('❌ [ERROR TYPE]:', error.name);
+    console.error('❌ [ERROR MESSAGE]:', error.message);
+    
+    // Log additional context for debugging
+    console.log('🔍 [DEBUG] Request data during error:', {
+      hasImageUrls: !!(req.body),
+      timestamp: new Date().toISOString(),
+      errorOccurredAt: Date.now()
+    });
     
     return new Response(
       JSON.stringify({
         error: 'Analysis failed',
         details: error.message,
+        errorType: error.name,
+        timestamp: new Date().toISOString(),
         fallback: {
-          description: 'Analysis could not be completed',
-          condition: { summary: 'Manual assessment required', points: [], rating: 'fair' },
-          cleanliness: 'domestic_clean'
+          description: 'Analysis could not be completed due to technical issue',
+          condition: { 
+            summary: 'Manual assessment required - Technical analysis failed', 
+            points: ['Unable to process images automatically', 'Manual inspection recommended'], 
+            rating: 'fair' 
+          },
+          cleanliness: 'domestic_clean',
+          analysisMetadata: {
+            processingComplete: false,
+            errorOccurred: true,
+            errorMessage: error.message
+          }
         }
       }),
       {

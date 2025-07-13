@@ -55,8 +55,8 @@ export function useImageUploadAndProcess({
     componentId,
     componentName,
     roomType,
-    propertyName: propertyName || "unknown_property",
-    roomName: roomName || "unknown_room",
+    propertyName: propertyName || "Property",
+    roomName: roomName || "Room",
     onImagesProcessed,
     onProcessingStateChange,
     processComponentImage
