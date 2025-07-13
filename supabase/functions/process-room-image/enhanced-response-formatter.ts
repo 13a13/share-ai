@@ -77,7 +77,7 @@ export class EnhancedResponseFormatter {
           details: this.extractConditionDetails(condition)
         },
         cleanliness: this.normalizeCleanliness(cleanliness.rating),
-        estimatedAge: comp.metadata?.estimatedAge || 'Unknown'
+        estimatedAge: comp.metadata?.estimatedAge || comp.spatialContext?.estimatedAge || 'Unknown'
       };
     });
 
@@ -99,7 +99,7 @@ export class EnhancedResponseFormatter {
           consistencyScore: confidence,
           conflictingFindings: []
         },
-        estimatedAge: primaryComponent.metadata?.estimatedAge || 'Unknown',
+        estimatedAge: primaryComponent.metadata?.estimatedAge || primaryComponent.spatialContext?.estimatedAge || 'Unknown',
         itemCount: sceneSummary.identifiedItemCount || components.length,
         sceneSummary: sceneSummary.overallImpression || 'Enhanced multi-component analysis completed',
         multipleItems: components.length > 1
@@ -165,7 +165,12 @@ export class EnhancedResponseFormatter {
   private createComponentConditionPoints(condition: any): (string | EnhancedConditionPoint)[] {
     const points: (string | EnhancedConditionPoint)[] = [];
     
-    // Extract from defects array
+    // NEW: Extract from locationSpecificFindings array (new prompt format)
+    if (Array.isArray(condition.locationSpecificFindings)) {
+      points.push(...condition.locationSpecificFindings.filter(Boolean));
+    }
+    
+    // Extract from defects array (legacy format)
     if (Array.isArray(condition.defects)) {
       points.push(...condition.defects.filter(Boolean));
     }
