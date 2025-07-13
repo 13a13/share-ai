@@ -2,7 +2,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
 
-import { corsHeaders } from '../_shared/cors.ts';
+// CORS headers for web app integration
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 import { UnifiedResponseParser } from './unified-response-parser.ts';
 import { UnifiedPromptManager } from './unified-prompt-manager.ts';
 
