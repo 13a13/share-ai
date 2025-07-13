@@ -122,7 +122,8 @@ export const processComponentImage = async (
 
     if (response.error) {
       console.error('❌ [IMAGE PROCESSING v9] Error calling Unified Gemini System:', response.error);
-      throw new Error('Failed to analyze image with Unified Gemini System');
+      console.error('❌ [IMAGE PROCESSING v9] Full response:', response);
+      throw new Error(`Failed to analyze image with Unified Gemini System: ${JSON.stringify(response.error)}`);
     }
 
     const result = response.data as ProcessedImageResult;

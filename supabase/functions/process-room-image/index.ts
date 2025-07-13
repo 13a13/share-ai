@@ -144,7 +144,15 @@ serve(async (req) => {
     console.log('📝 [UNIFIED AI] Generated unified prompt (', unifiedPrompt.length, 'chars)');
 
     // Call Gemini API
-    const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY')!);
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      console.error('❌ [GEMINI API] GEMINI_API_KEY environment variable not found');
+      throw new Error('GEMINI_API_KEY environment variable not configured');
+    }
+    
+    console.log('🔑 [GEMINI API] API key found, length:', geminiApiKey.length);
+    
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
     
     console.log('📝 [GEMINI API] Creating Gemini 2.0 Flash request for', base64Images.length, 'images');
     
@@ -165,10 +173,21 @@ serve(async (req) => {
 
     console.log('🚀 [GEMINI API] Calling Gemini 2.0 Flash exclusively');
     
-    const result = await model.generateContent([
-      unifiedPrompt,
-      ...base64Images
-    ]);
+    let result;
+    try {
+      result = await model.generateContent([
+        unifiedPrompt,
+        ...base64Images
+      ]);
+    } catch (geminiError) {
+      console.error('❌ [GEMINI API] Gemini API call failed:', geminiError);
+      console.error('❌ [GEMINI API] Error details:', {
+        name: geminiError.name,
+        message: geminiError.message,
+        stack: geminiError.stack
+      });
+      throw new Error(`Gemini API error: ${geminiError.message}`);
+    }
 
     const response = result.response;
     const textContent = response.text();
