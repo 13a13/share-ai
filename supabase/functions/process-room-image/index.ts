@@ -13,8 +13,19 @@ import { UnifiedPromptManager } from './unified-prompt-manager.ts';
 console.log('🚀 Unified Gemini System - Single Prompt Processing');
 
 serve(async (req) => {
+  console.log('🚀 [MAIN] Edge function called - basic check');
+  
   if (req.method === 'OPTIONS') {
+    console.log('🚀 [MAIN] Handling OPTIONS request');
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Add a simple health check endpoint
+  if (req.url.includes('health')) {
+    console.log('🚀 [MAIN] Health check requested');
+    return new Response(JSON.stringify({ status: 'healthy', timestamp: new Date().toISOString() }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
