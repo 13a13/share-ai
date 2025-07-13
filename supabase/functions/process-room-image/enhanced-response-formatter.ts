@@ -45,10 +45,10 @@ export class EnhancedResponseFormatter {
     const primaryCondition = primaryAssessment.condition || {};
     const primaryCleanliness = primaryAssessment.cleanliness || {};
     
-    // Enhanced description handling
+    // Enhanced description handling - prioritize inferredType for component identification
     const description = components.length > 1 
-      ? `${components.length} items identified: ${components.map(c => c.description || c.inferredType).join('; ')}`
-      : (primaryComponent.description || sceneSummary.overallImpression || 'Component analyzed');
+      ? `${components.length} items identified: ${components.map(c => c.inferredType || c.description || 'Component').join('; ')}`
+      : (primaryComponent.inferredType || primaryComponent.description || sceneSummary.overallImpression || 'Component analyzed');
     
     // Create enhanced condition points with rich structure
     const enhancedPoints = this.createEnhancedConditionPoints(components);
