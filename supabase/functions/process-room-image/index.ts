@@ -63,63 +63,47 @@ serve(async (req) => {
     // Process multi-photo analysis
     console.log(`📸 Processing ${componentName} with ${imageUrls.length} images for multi-photo analysis`);
 
-    // Convert images to base64 for AI processing
-    const base64Images = [];
+    // Prepare images for Gemini (direct URLs for efficiency)
+    const imageParts = [];
     for (let i = 0; i < imageUrls.length; i++) {
       const imageUrl = imageUrls[i];
-      console.log(`📥 [Multi-Image ${i + 1}/${imageUrls.length}] Processing image: ${imageUrl.substring(0, 100)}...`);
+      console.log(`🖼️ [Image ${i + 1}/${imageUrls.length}] Adding image: ${imageUrl.substring(0, 100)}...`);
       
       try {
-        // Check if this is already a data URL (base64)
+        // Check if this is a base64 data URL
         if (imageUrl.startsWith('data:image/')) {
-          console.log(`📋 [Multi-Image ${i + 1}/${imageUrls.length}] Image is already base64 data URL`);
+          console.log(`📋 [Image ${i + 1}/${imageUrls.length}] Processing base64 data URL`);
           const [header, base64Data] = imageUrl.split(',');
           const mimeMatch = header.match(/data:([^;]+)/);
           const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
           
-          base64Images.push({
+          imageParts.push({
             inlineData: {
               data: base64Data,
               mimeType: mimeType
             }
           });
-          console.log(`✅ [Multi-Image ${i + 1}/${imageUrls.length}] Successfully used base64 data URL`);
-          continue;
+          console.log(`✅ [Image ${i + 1}/${imageUrls.length}] Successfully processed base64 data URL`);
+        } else {
+          console.log(`🔗 [Image ${i + 1}/${imageUrls.length}] Using direct URL (no fetching needed)`);
+          // Use direct URL - Gemini will handle the fetch
+          imageParts.push({
+            fileData: {
+              fileUri: imageUrl,
+              mimeType: 'image/jpeg'
+            }
+          });
+          console.log(`✅ [Image ${i + 1}/${imageUrls.length}] Successfully added direct URL`);
         }
-        
-        // Otherwise, fetch from URL
-        console.log(`📥 [Multi-Image ${i + 1}/${imageUrls.length}] Fetching from URL: ${imageUrl}`);
-        const response = await fetch(imageUrl);
-        
-        if (!response.ok) {
-          console.error(`❌ [Multi-Image ${i + 1}/${imageUrls.length}] HTTP ${response.status}: ${response.statusText}`);
-          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-        }
-        
-        const imageBuffer = await response.arrayBuffer();
-        const base64String = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-        base64Images.push({
-          inlineData: {
-            data: base64String,
-            mimeType: response.headers.get('content-type') || 'image/jpeg'
-          }
-        });
-        
-        console.log(`✅ [Multi-Image ${i + 1}/${imageUrls.length}] Successfully fetched and converted to base64`);
       } catch (error) {
-        console.error(`❌ [Multi-Image ${i + 1}/${imageUrls.length}] Error processing image:`, error);
-        console.error(`❌ [Multi-Image ${i + 1}/${imageUrls.length}] Error details:`, {
-          message: error.message,
-          stack: error.stack,
-          imageUrl: imageUrl.substring(0, 200)
-        });
+        console.error(`❌ [Image ${i + 1}/${imageUrls.length}] Error processing image:`, error);
         continue;
       }
     }
 
-    console.log(`📸 Successfully prepared ${base64Images.length}/${imageUrls.length} images for AI processing (multi-image support enabled)`);
+    console.log(`🖼️ Successfully prepared ${imageParts.length}/${imageUrls.length} images for Gemini (direct URL support)`);
 
-    if (base64Images.length === 0) {
+    if (imageParts.length === 0) {
       throw new Error('No images could be processed for AI analysis');
     }
 
@@ -127,19 +111,19 @@ serve(async (req) => {
     const promptManager = new UnifiedPromptManager();
     const responseParser = new UnifiedResponseParser();
 
-    console.log('🚀 [UNIFIED SYSTEM] Starting unified Gemini processing for', base64Images.length, 'images');
+    console.log('🚀 [UNIFIED SYSTEM] Starting unified Gemini processing for', imageParts.length, 'images');
 
     // Generate unified prompt
     const context = {
       componentName,
       roomType,
-      imageCount: base64Images.length,
+      imageCount: imageParts.length,
       ...promptManager.getComponentContext(componentName)
     };
 
     const unifiedPrompt = promptManager.generateUnifiedPrompt(context);
     
-    console.log('🚀 [UNIFIED AI] Starting unified processing for', base64Images.length, 'images');
+    console.log('🚀 [UNIFIED AI] Starting unified processing for', imageParts.length, 'images');
     console.log('📊 [UNIFIED AI] Component:', componentName, 'Room:', roomType);
     console.log('📝 [UNIFIED AI] Generated unified prompt (', unifiedPrompt.length, 'chars)');
 
@@ -154,7 +138,7 @@ serve(async (req) => {
     
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     
-    console.log('📝 [GEMINI API] Creating Gemini 2.0 Flash request for', base64Images.length, 'images');
+    console.log('📝 [GEMINI API] Creating Gemini 2.0 Flash request for', imageParts.length, 'images');
     
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash-exp',
@@ -165,7 +149,7 @@ serve(async (req) => {
     });
 
     console.log('⚙️ [GEMINI API] Request configured for Gemini 2.0 Flash:', {
-      imageCount: base64Images.length,
+      imageCount: imageParts.length,
       originalImageCount: imageUrls.length,
       maxTokens: 4096,
       temperature: 0.2
@@ -177,7 +161,7 @@ serve(async (req) => {
     try {
       result = await model.generateContent([
         unifiedPrompt,
-        ...base64Images
+        ...imageParts
       ]);
     } catch (geminiError) {
       console.error('❌ [GEMINI API] Gemini API call failed:', geminiError);
