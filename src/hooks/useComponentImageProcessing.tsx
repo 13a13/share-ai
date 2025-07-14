@@ -25,6 +25,23 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
   
   const { toast } = useToast();
 
+  // Helper function to extract values from nested object structures
+  const extractValue = (obj: any, paths: string[], defaultValue: any = null): any => {
+    for (const path of paths) {
+      try {
+        const value = path.split('.').reduce((current, key) => current?.[key], obj);
+        if (value !== undefined && value !== null && value !== '') {
+          console.log(`🎯 [COMPONENT PROCESSING] Found value for path ${path}:`, value);
+          return value;
+        }
+      } catch (error) {
+        // Continue to next path
+      }
+    }
+    console.log(`⚠️ [COMPONENT PROCESSING] No value found for paths ${paths.join(', ')}, using default:`, defaultValue);
+    return defaultValue;
+  };
+
   const handleImagesProcessed = async (
     componentId: string, 
     imageUrls: string[], 
@@ -61,31 +78,55 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
         });
       }
 
-      // Extract meaningful data from result, handling both formats
-      const description = result.description || 
-                         result.parsedData?.description || 
-                         'Analysis completed';
+      // Enhanced data extraction with comprehensive fallback mapping
+      console.log(`🔍 [COMPONENT PROCESSING] Processing result structure:`, result);
       
-      const condition = result.condition?.rating || 
-                       result.parsedData?.condition?.rating || 
-                       'fair';
+      const description = extractValue(result, [
+        'description',
+        'parsedData.description', 
+        'data.description',
+        'analysis.description'
+      ], 'Analysis completed');
       
-      const cleanliness = result.cleanliness || 
-                         result.parsedData?.cleanliness || 
-                         'domestic_clean';
+      const conditionRating = extractValue(result, [
+        'condition.rating',
+        'parsedData.condition.rating',
+        'data.condition.rating',
+        'rating',
+        'condition_rating'
+      ], 'fair');
       
-      const notes = result.condition?.summary || 
-                   result.parsedData?.condition?.summary || 
-                   'Analysis completed';
+      const cleanliness = extractValue(result, [
+        'cleanliness',
+        'parsedData.cleanliness',
+        'data.cleanliness',
+        'cleaning_status'
+      ], 'domestic_clean');
+      
+      const conditionSummary = extractValue(result, [
+        'condition.summary',
+        'parsedData.condition.summary',
+        'data.condition.summary',
+        'summary',
+        'condition_summary',
+        'notes'
+      ], '');
+      
+      const conditionPoints = extractValue(result, [
+        'condition.points',
+        'parsedData.condition.points',
+        'data.condition.points',
+        'points',
+        'condition_points'
+      ], []);
 
-      // Extract condition summary and points for proper UI display
-      const conditionSummary = result.condition?.summary || 
-                              result.parsedData?.condition?.summary || 
-                              '';
-      
-      const conditionPoints = result.condition?.points || 
-                             result.parsedData?.condition?.points || 
-                             [];
+      console.log(`✅ [COMPONENT PROCESSING] Extracted data:`, {
+        description,
+        conditionRating,
+        cleanliness,
+        conditionSummary,
+        conditionPoints
+      });
 
       // Update the component with AI analysis data
       const updatedComponents = components.map(comp => {
@@ -101,11 +142,11 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
               aiData: analysisData
             })),
             description: description,
-            condition: condition,
+            condition: conditionRating,
             cleanliness: cleanliness,
-            notes: notes,
+            notes: conditionSummary,
             conditionSummary: conditionSummary,
-            conditionPoints: conditionPoints
+            conditionPoints: Array.isArray(conditionPoints) ? conditionPoints : []
           };
         }
         return comp;

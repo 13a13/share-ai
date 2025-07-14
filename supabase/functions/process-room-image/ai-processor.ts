@@ -5,6 +5,7 @@ import { PromptManager } from "./prompt-manager.ts";
 import { CrossImageValidator } from "./cross-validation.ts";
 import { validateDustDetection } from "./dust-detection.ts";
 import { createGeminiRequest, callGeminiApi } from "./gemini-api.ts";
+import { parseInventoryResponse } from "./inventory-parser.ts";
 import type { AIProcessingOptions } from './ai-processing-options.ts';
 
 export interface EnhancedAIResult {
@@ -183,53 +184,108 @@ export class AIProcessor {
   }
 
   private parseResult(textContent: string, advanced: boolean, inventoryMode: boolean, componentName?: string): any {
+    console.log(`🔍 [AI PROCESSOR] Parsing result for ${componentName || 'unknown component'}`);
+    console.log(`📝 [AI PROCESSOR] Raw response:`, textContent.substring(0, 500) + '...');
+    
     try {
       // Try JSON parsing first
-      return JSON.parse(textContent);
+      const jsonResult = JSON.parse(textContent);
+      console.log(`✅ [AI PROCESSOR] JSON parsed successfully:`, jsonResult);
+      return jsonResult;
     } catch {
-      // Fallback to text parsing
-      console.log(`📝 [AI PROCESSOR] JSON parsing failed, using text extraction`);
-      return this.extractFromText(textContent);
+      console.log(`📝 [AI PROCESSOR] JSON parsing failed, using inventory parser and text extraction`);
+      
+      // Use inventory parser for structured responses
+      if (inventoryMode || componentName) {
+        try {
+          const inventoryResult = parseInventoryResponse(textContent);
+          console.log(`✅ [AI PROCESSOR] Inventory parser result:`, inventoryResult);
+          if (inventoryResult && (inventoryResult.description || inventoryResult.condition)) {
+            return inventoryResult;
+          }
+        } catch (parseError) {
+          console.warn(`⚠️ [AI PROCESSOR] Inventory parser failed:`, parseError);
+        }
+      }
+      
+      // Fallback to enhanced text extraction
+      const extractedResult = this.extractFromText(textContent);
+      console.log(`✅ [AI PROCESSOR] Text extraction result:`, extractedResult);
+      return extractedResult;
     }
   }
 
   private extractFromText(text: string): any {
+    console.log(`🔍 [AI PROCESSOR] Enhanced text extraction from: ${text.substring(0, 200)}...`);
+    
     const description = this.extractField(text, 'DESCRIPTION') || 
                        this.extractField(text, 'description') || 
+                       this.extractField(text, 'Description') ||
                        'Analysis completed';
     
     const conditionSummary = this.extractField(text, 'CONDITION') || 
+                            this.extractField(text, 'condition') ||
+                            this.extractField(text, 'Condition') ||
+                            this.extractField(text, 'SUMMARY') ||
                             this.extractField(text, 'summary') || '';
     
     const rating = this.extractField(text, 'RATING') || 
-                   this.extractField(text, 'rating') || 'fair';
+                   this.extractField(text, 'rating') ||
+                   this.extractField(text, 'Rating') ||
+                   this.extractField(text, 'ORDER') ||
+                   'fair';
     
     const cleanliness = this.extractField(text, 'CLEANLINESS') || 
-                       this.extractField(text, 'cleanliness') || 'domestic_clean';
+                       this.extractField(text, 'cleanliness') ||
+                       this.extractField(text, 'Cleanliness') ||
+                       this.extractField(text, 'CLEANING') ||
+                       'domestic_clean';
     
-    return {
-      description,
+    const points = this.extractListItems(text);
+    
+    const result = {
+      description: description.trim(),
       condition: {
-        summary: conditionSummary,
-        points: this.extractListItems(text) || [],
-        rating: rating.toLowerCase()
+        summary: conditionSummary.trim(),
+        points: points || [],
+        rating: this.normalizeRating(rating)
       },
-      cleanliness: cleanliness.toLowerCase()
+      cleanliness: this.normalizeCleanliness(cleanliness)
     };
+    
+    console.log(`✅ [AI PROCESSOR] Enhanced extraction result:`, result);
+    return result;
   }
 
   private extractField(text: string, fieldName: string): string | null {
     const patterns = [
-      new RegExp(`${fieldName}:?\\s*([^\\n]+)`, 'i'),
+      // Match "FIELD: content" or "FIELD:content"
+      new RegExp(`${fieldName}\\s*:?\\s*([^\\n\\r]+)`, 'i'),
+      // Match JSON-like "field": "content"
       new RegExp(`"${fieldName}"\\s*:\\s*"([^"]+)"`, 'i'),
-      new RegExp(`${fieldName}\\s*=\\s*([^\\n]+)`, 'i')
+      // Match "field = content"
+      new RegExp(`${fieldName}\\s*=\\s*([^\\n\\r]+)`, 'i'),
+      // Match markdown-style **FIELD**: content
+      new RegExp(`\\*\\*${fieldName}\\*\\*\\s*:?\\s*([^\\n\\r]+)`, 'i'),
+      // Match section headers ### FIELD
+      new RegExp(`#{1,3}\\s*${fieldName}\\s*\\n([^#\\n]+)`, 'i'),
+      // Match bracket notation [FIELD]: content
+      new RegExp(`\\[${fieldName}\\]\\s*:?\\s*([^\\n\\r]+)`, 'i')
     ];
     
     for (const pattern of patterns) {
       const match = text.match(pattern);
-      if (match) return match[1].trim();
+      if (match && match[1]) {
+        const extracted = match[1].trim();
+        // Filter out obvious false matches
+        if (extracted.length > 0 && !extracted.match(/^[\{\[\:]+$/)) {
+          console.log(`🎯 [AI PROCESSOR] Extracted ${fieldName}: ${extracted}`);
+          return extracted;
+        }
+      }
     }
     
+    console.log(`❌ [AI PROCESSOR] Could not extract ${fieldName} from text`);
     return null;
   }
 
@@ -248,6 +304,29 @@ export class AIProcessor {
     }
     
     return [];
+  }
+
+  private normalizeRating(rating: string): string {
+    const normalizedRating = rating.toLowerCase().trim();
+    
+    // Map various rating formats to standard values
+    if (normalizedRating.includes('good') || normalizedRating.includes('excellent')) return 'good';
+    if (normalizedRating.includes('fair') || normalizedRating.includes('acceptable')) return 'fair';
+    if (normalizedRating.includes('poor') || normalizedRating.includes('bad') || normalizedRating.includes('damaged')) return 'poor';
+    if (normalizedRating.includes('used')) return 'used';
+    
+    return 'fair'; // Default fallback
+  }
+
+  private normalizeCleanliness(cleanliness: string): string {
+    const normalizedCleanliness = cleanliness.toLowerCase().trim();
+    
+    // Map various cleanliness formats to standard values
+    if (normalizedCleanliness.includes('domestic') || normalizedCleanliness.includes('clean')) return 'domestic_clean';
+    if (normalizedCleanliness.includes('professional') || normalizedCleanliness.includes('deep')) return 'professional_clean';
+    if (normalizedCleanliness.includes('dirty') || normalizedCleanliness.includes('requires')) return 'requires_cleaning';
+    
+    return 'domestic_clean'; // Default fallback
   }
 
   getCostSummary() {
