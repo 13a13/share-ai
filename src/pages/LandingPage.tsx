@@ -121,7 +121,9 @@ const LandingPage = () => {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold text-brand-blue-900">AI Analysis</h3>
-                  <p className="text-gray-500">Our AI analyses photos to identify items and their condition</p>
+                  <p className="text-gray-500">
+                    Our AI analyzes photos to identify items and their condition
+                  </p>
                 </div>
               </div>
               <div className="flex flex-col items-center space-y-4 text-center card-hover p-6 rounded-lg bg-white shadow-md">

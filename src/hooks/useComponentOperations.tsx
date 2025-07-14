@@ -143,7 +143,6 @@ export function useComponentOperations({
   };
 
   const handleUpdateComponent = (componentId: string, updates: Partial<RoomComponent>) => {
-    console.log("🔄 Component update:", { componentId, updates });
     const updatedComponents = components.map(comp =>
       comp.id === componentId ? { ...comp, ...updates } : comp
     );

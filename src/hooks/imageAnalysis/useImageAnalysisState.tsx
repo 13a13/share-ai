@@ -11,7 +11,6 @@ export function useImageAnalysisState() {
   const { queueComponentUpdate, isSaving, getPendingCount } = useUltraFastBatchSaving();
 
   const updateAnalysisState = (componentId: string, isProcessing: boolean) => {
-    console.log(`🔄 [IMAGE ANALYSIS STATE] Component ${componentId} processing state: ${isProcessing}`);
     setAnalysisInProgress(isProcessing);
   };
 

@@ -24,7 +24,11 @@ const CameraFooter: React.FC<CameraFooterProps> = ({
   const isAtLimit = capturedPhotos.length >= maxPhotos;
   
   return (
-    <footer className="bg-black flex items-center justify-between px-6 py-4 flex-shrink-0 w-full">
+    <footer className="
+      fixed bottom-0 left-0 w-full
+      bg-black flex items-center justify-between
+      px-6 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]
+    ">
       {/* Enhanced photo counter with status indicator */}
       <div className="flex flex-col items-start">
         <div className="flex items-center gap-2">
@@ -65,7 +69,12 @@ const CameraFooter: React.FC<CameraFooterProps> = ({
           aria-label="Finish capturing photos"
           onClick={onConfirm}
           disabled={!capturedPhotos.length}
-          className="text-white text-base font-medium px-4 py-2 rounded-md transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none enabled:hover:bg-white/10 enabled:active:bg-white/20"
+          className="
+            text-white text-base font-medium px-4 py-2 rounded-md
+            transition-all duration-200
+            disabled:opacity-40 disabled:pointer-events-none
+            enabled:hover:bg-white/10 enabled:active:bg-white/20
+          "
         >
           Done
         </button>

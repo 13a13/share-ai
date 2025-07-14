@@ -17,7 +17,7 @@ interface UseImageAnalysisProps {
   roomName?: string;
   onImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
   onProcessingStateChange: (componentId: string, isProcessing: boolean) => void;
-  processComponentImage: (imageUrls: string[], roomType: string, componentName: string, options: any) => Promise<ProcessedImageResult>;
+  processComponentImage: (imageUrls: string[], roomType: string, componentName: string, multipleImages: boolean) => Promise<ProcessedImageResult>;
 }
 
 export function useImageAnalysis({
@@ -37,8 +37,6 @@ export function useImageAnalysis({
     componentId,
     componentName,
     roomType,
-    propertyName,
-    roomName,
     processComponentImage
   });
 
@@ -79,7 +77,7 @@ export function useImageAnalysis({
       // Upload and store images
       const storedImageUrls = await uploadAndStoreImages(stagingImages, componentName);
       
-      // Process images with AI (now includes property and room context)
+      // Process images with AI
       const result = await processImagesWithAI(storedImageUrls);
       
       if (!result) {

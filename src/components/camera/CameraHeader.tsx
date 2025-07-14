@@ -17,7 +17,7 @@ const CameraHeader: React.FC<CameraHeaderProps> = ({
   isReady
 }) => {
   return (
-    <div className="flex items-center justify-between bg-black text-white p-4 flex-shrink-0 w-full">
+    <div className="flex items-center justify-between bg-black text-white p-4">
       <Button 
         variant="ghost" 
         size="icon"

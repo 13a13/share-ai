@@ -65,7 +65,6 @@ const ComponentList = ({
   onClearComponentStaging
 }: ComponentListProps) => {
   
-  
   // Get property name and room name from the DOM
   const reportElement = document.querySelector('[data-report-id]');
   const roomElement = document.querySelector('[data-room-id]');
@@ -115,10 +114,7 @@ const ComponentList = ({
               onToggleExpand={() => onToggleExpand(component.id)}
               onRemove={() => onRemoveComponent(component.id)}
               onToggleEditMode={() => onToggleEditMode(component.id)}
-              onUpdate={(updates) => {
-                console.log("📝 Updating component:", { componentId: component.id, updates });
-                onUpdateComponent(component.id, updates);
-              }}
+              onUpdate={(updates) => onUpdateComponent(component.id, updates)}
               onRemoveImage={(imageId) => onRemoveImage(component.id, imageId)}
               onImageProcessed={(imageUrls, result) => onImageProcessed(component.id, imageUrls, result)}
               onProcessingStateChange={(isProcessing) => onProcessingStateChange(component.id, isProcessing)}

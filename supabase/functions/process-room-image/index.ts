@@ -1,233 +1,184 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
+import { corsHeaders } from './cors.ts';
+import { processAndOrganizeImages } from './image-processor.ts';
+import { AIProcessor } from './ai-processor.ts';
+import type { AIProcessingOptions } from './ai-processing-options.ts';
 
-import { corsHeaders } from '../_shared/cors.ts';
-import { UnifiedResponseParser } from './unified-response-parser.ts';
-import { UnifiedPromptManager } from './unified-prompt-manager.ts';
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-console.log('🚀 Unified Gemini System - Single Prompt Processing');
+Deno.serve(async (req) => {
+  console.log('🚀 Advanced Defect Detection System - Gemini 2.0 Flash');
 
-// Verify dependencies on startup
-console.log('🔍 [STARTUP] Verifying dependencies...');
-console.log('✅ [STARTUP] CORS headers imported successfully');
-console.log('✅ [STARTUP] UnifiedResponseParser imported successfully');  
-console.log('✅ [STARTUP] UnifiedPromptManager imported successfully');
-console.log('🔑 [STARTUP] GEMINI_API_KEY available:', !!Deno.env.get('GEMINI_API_KEY'));
-
-serve(async (req) => {
-  console.log(`📡 [REQUEST] ${req.method} ${req.url} - ${new Date().toISOString()}`);
-  
   if (req.method === 'OPTIONS') {
-    console.log('✅ [CORS] Handling preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method === 'GET') {
-    console.log('🏥 [HEALTH CHECK] Function health check requested');
-    return new Response(JSON.stringify({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      dependencies: {
-        corsHeaders: 'available',
-        unifiedPromptManager: 'available',
-        unifiedResponseParser: 'available',
-        geminiApiKey: !!Deno.env.get('GEMINI_API_KEY')
-      }
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+  if (!GEMINI_API_KEY) {
+    console.error('❌ GEMINI_API_KEY not found');
+    return new Response(
+      JSON.stringify({ error: 'GEMINI_API_KEY not configured' }),
+      { status: 500, headers: corsHeaders }
+    );
   }
 
   try {
-    console.log('🔄 [MAIN] Starting Unified Gemini processing pipeline');
-
-    const { imageUrls, componentName, roomType, unifiedSystem, imageCount } = await req.json();
-    
+    const requestData = await req.json();
     console.log('📥 Request data received:', {
-      imageCount: imageUrls?.length || 0,
-      componentName,
-      roomType,
-      unifiedSystem
+      imageCount: requestData.images?.length || requestData.imageIds?.length || 0,
+      componentName: requestData.componentName,
+      roomType: requestData.roomType,
+      inventoryMode: requestData.inventoryMode,
+      useAdvancedAnalysis: requestData.useAdvancedAnalysis
     });
 
-    if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-      throw new Error('No image URLs provided');
-    }
+    console.log('🔄 [MAIN] Starting Advanced Defect Detection pipeline');
 
-    console.log('📸 Processing imageUrls:', imageUrls.length, 'URLs');
+    let imageUrls: string[] = [];
 
-    // Process images through unified system
-    const startTime = Date.now();
-    
-    // Process multi-photo analysis
-    console.log(`📸 Processing ${componentName} with ${imageUrls.length} images for multi-photo analysis`);
-
-    // Convert images to base64 for AI processing
-    const base64Images = [];
-    for (let i = 0; i < imageUrls.length; i++) {
-      const imageUrl = imageUrls[i];
-      console.log(`📥 [Multi-Image ${i + 1}/${imageUrls.length}] Fetching image from organized storage: ${imageUrl}`);
+    if (requestData.imageIds && requestData.imageIds.length > 0) {
+      // Handle room image processing with database lookup
+      console.log(`📸 Processing room images from database: ${requestData.imageIds.length} image IDs`);
       
-      try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.statusText}`);
-        }
-        
-        const imageBuffer = await response.arrayBuffer();
-        const base64String = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-        base64Images.push({
-          inlineData: {
-            data: base64String,
-            mimeType: response.headers.get('content-type') || 'image/jpeg'
-          }
-        });
-        
-        console.log(`✅ [Multi-Image ${i + 1}/${imageUrls.length}] Successfully converted organized image to base64 for AI processing`);
-      } catch (error) {
-        console.error(`❌ [Multi-Image ${i + 1}/${imageUrls.length}] Error processing image:`, error);
-        continue;
+      // Import Supabase client
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Fetch image URLs from database
+      const { data: images, error } = await supabase
+        .from('room_images')
+        .select('url')
+        .in('id', requestData.imageIds);
+
+      if (error) {
+        console.error('❌ Failed to fetch images from database:', error);
+        throw new Error(`Failed to fetch images: ${error.message}`);
       }
+
+      imageUrls = images?.map(img => img.url) || [];
+      console.log(`✅ Retrieved ${imageUrls.length} image URLs from database`);
+    } else if (requestData.images) {
+      // Handle direct image processing
+      imageUrls = requestData.images;
+      console.log(`📸 Processing direct images: ${imageUrls.length} URLs`);
+    } else {
+      throw new Error('No images or imageIds provided');
     }
 
-    console.log(`📸 Successfully prepared ${base64Images.length}/${imageUrls.length} images for AI processing (multi-image support enabled)`);
-
-    if (base64Images.length === 0) {
-      throw new Error('No images could be processed for AI analysis');
+    if (imageUrls.length === 0) {
+      throw new Error('No image URLs found to process');
     }
 
-    // Initialize unified processing components
-    const promptManager = new UnifiedPromptManager();
-    const responseParser = new UnifiedResponseParser();
+    // Process and organize images
+    const { processedImages, organizedImageUrls, propertyRoomInfo } = await processAndOrganizeImages(
+      imageUrls,
+      requestData.componentName,
+      requestData.reportId,
+      requestData.roomId
+    );
 
-    console.log('🚀 [UNIFIED SYSTEM] Starting unified Gemini processing for', base64Images.length, 'images');
-
-    // Generate unified prompt
-    const context = {
-      componentName,
-      roomType,
-      imageCount: base64Images.length,
-      ...promptManager.getComponentContext(componentName)
+    // Setup AI processing options
+    const aiOptions: AIProcessingOptions = {
+      componentName: requestData.componentName || 'Room',
+      roomType: requestData.roomType || 'general',
+      inventoryMode: requestData.inventoryMode || false,
+      useAdvancedAnalysis: requestData.useAdvancedAnalysis || (imageUrls.length > 1),
+      imageCount: imageUrls.length,
+      originalImageCount: imageUrls.length
     };
 
-    const unifiedPrompt = promptManager.generateUnifiedPrompt(context);
-    
-    console.log('🚀 [UNIFIED AI] Starting unified processing for', base64Images.length, 'images');
-    console.log('📊 [UNIFIED AI] Component:', componentName, 'Room:', roomType);
-    console.log('📝 [UNIFIED AI] Generated unified prompt (', unifiedPrompt.length, 'chars)');
+    // Initialize AI processor
+    const aiProcessor = new AIProcessor();
 
-    // Call Gemini API
-    const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY')!);
-    
-    console.log('📝 [GEMINI API] Creating Gemini 2.0 Flash request for', base64Images.length, 'images');
-    
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-      generationConfig: {
-        maxOutputTokens: 4096,
-        temperature: 0.2,
-      },
+    console.log('🚀 [ADVANCED AI] Starting Gemini 2.0 Flash processing for', processedImages.length, 'images');
+
+    // Process with enhanced AI
+    const aiResult = await aiProcessor.processImagesWithEnhancedAI(
+      processedImages,
+      aiOptions,
+      GEMINI_API_KEY
+    );
+
+    console.log('✅ [MAIN] Advanced processing complete:', {
+      modelUsed: aiResult.modelUsed,
+      processingTime: aiResult.processingTime,
+      parsingMethod: 'enhanced_ai_processor',
+      confidence: 0.9,
+      validationApplied: !!aiResult.validationResult
     });
 
-    console.log('⚙️ [GEMINI API] Request configured for Gemini 2.0 Flash:', {
-      imageCount: base64Images.length,
-      originalImageCount: imageUrls.length,
-      maxTokens: 4096,
-      temperature: 0.2
-    });
+    // Format response for room processing
+    if (requestData.imageIds) {
+      console.log('📋 [RESPONSE FORMATTER] Creating enhanced room response');
+      
+      const response = {
+        room: {
+          id: requestData.roomId,
+          description: aiResult.parsedData.description || '',
+          condition: aiResult.parsedData.condition || { summary: '', points: [], rating: 'fair' },
+          cleanliness: aiResult.parsedData.cleanliness || 'domestic_clean',
+          analysis: {
+            modelUsed: aiResult.modelUsed,
+            processingTime: `${aiResult.processingTime}ms`,
+            imageCount: imageUrls.length,
+            multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis,
+            confidence: aiResult.validationResult?.confidence || 0.9
+          }
+        },
+        organizedImageUrls,
+        propertyRoomInfo,
+        costIncurred: aiResult.costIncurred,
+        processingMetadata: {
+          processingTime: aiResult.processingTime,
+          method: 'enhanced_ai_processor',
+          modelUsed: aiResult.modelUsed,
+          multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis
+        }
+      };
 
-    console.log('🚀 [GEMINI API] Calling Gemini 2.0 Flash exclusively');
-    
-    const result = await model.generateContent([
-      unifiedPrompt,
-      ...base64Images
-    ]);
+      console.log('💰 [RESPONSE FORMATTER] Enhanced metadata added: processing time:', `${aiResult.processingTime}ms`, ', method: enhanced_ai_processor');
+      console.log('✅ [RESPONSE FORMATTER] Advanced Defect Detection processing complete');
 
-    const response = result.response;
-    const textContent = response.text();
-    
-    const processingTime = Date.now() - startTime;
-    
-    console.log(`✅ [GEMINI API] Gemini 2.0 Flash returned ${textContent.length} characters`);
-    console.log(`⚡ [UNIFIED AI] Gemini 2.0 Flash completed in ${processingTime}ms`);
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
-    // Parse response using enhanced parser
-    const parsedResult = responseParser.parseUnifiedResponse(textContent, processingTime);
+    // Format response for component processing
+    console.log('📋 [RESPONSE FORMATTER] Creating enhanced component response');
     
-    console.log('✅ [UNIFIED AI] Unified processing complete:', {
-      parsingMethod: parsedResult.processingMetadata.parsingMethod,
-      confidence: parsedResult.processingMetadata.confidence,
-      imageCount: parsedResult.analysisMetadata.imageCount,
-      isConsistent: parsedResult.analysisMetadata.multiImageAnalysis.isConsistent
-    });
-
-    console.log('✅ [UNIFIED SYSTEM] Processing complete:', {
-      modelUsed: parsedResult.processingMetadata.modelUsed,
-      processingTime: parsedResult.processingMetadata.processingTime,
-      parsingMethod: parsedResult.processingMetadata.parsingMethod,
-      confidence: parsedResult.processingMetadata.confidence
-    });
-
-    // Format final response
-    console.log('📋 [RESPONSE FORMATTER] Creating unified component response');
-    
-    const finalResponse = {
-      description: parsedResult.description,
-      condition: parsedResult.condition,
-      cleanliness: parsedResult.cleanliness,
-      analysisMetadata: parsedResult.analysisMetadata,
+    const componentResponse = {
+      ...aiResult.parsedData,
+      organizedImageUrls,
+      propertyRoomInfo,
+      costIncurred: aiResult.costIncurred,
       processingMetadata: {
-        ...parsedResult.processingMetadata,
-        unifiedSystem: true,
-        enhancedProcessing: true
-      },
-      components: parsedResult.components || []
+        processingTime: aiResult.processingTime,
+        method: 'enhanced_ai_processor',
+        modelUsed: aiResult.modelUsed,
+        multiImageAnalysis: aiResult.shouldUseAdvancedAnalysis
+      }
     };
 
-    console.log('✅ [RESPONSE FORMATTER] Unified component processing complete');
+    console.log('✅ [RESPONSE FORMATTER] Enhanced component processing complete');
 
-    return new Response(JSON.stringify(finalResponse), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify(componentResponse), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('❌ [UNIFIED SYSTEM] Error in unified processing:', error);
-    console.error('❌ [ERROR DETAILS] Stack trace:', error.stack);
-    console.error('❌ [ERROR TYPE]:', error.name);
-    console.error('❌ [ERROR MESSAGE]:', error.message);
-    
-    // Log additional context for debugging
-    console.log('🔍 [DEBUG] Request data during error:', {
-      hasImageUrls: !!(req.body),
-      timestamp: new Date().toISOString(),
-      errorOccurredAt: Date.now()
-    });
+    console.error('❌ [MAIN] Processing failed:', error);
     
     return new Response(
       JSON.stringify({
-        error: 'Analysis failed',
-        details: error.message,
-        errorType: error.name,
-        timestamp: new Date().toISOString(),
-        fallback: {
-          description: 'Analysis could not be completed due to technical issue',
-          condition: { 
-            summary: 'Manual assessment required - Technical analysis failed', 
-            points: ['Unable to process images automatically', 'Manual inspection recommended'], 
-            rating: 'fair' 
-          },
-          cleanliness: 'domestic_clean',
-          analysisMetadata: {
-            processingComplete: false,
-            errorOccurred: true,
-            errorMessage: error.message
-          }
-        }
+        error: error.message || 'Processing failed',
+        details: error.stack,
+        timestamp: new Date().toISOString()
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

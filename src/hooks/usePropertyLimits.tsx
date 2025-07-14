@@ -25,14 +25,18 @@ export const usePropertyLimits = () => {
   };
 
   const canCreateNewProperty = () => {
-    return true; // Everyone can create unlimited properties
+    if (!canCreateProperties()) return false;
+    if (!profile) return false;
+    return propertyCount < profile.property_limit;
   };
 
   const getPropertyLimitStatus = () => {
+    if (!profile) return { current: 0, limit: 0, percentage: 0 };
+    
     return {
       current: propertyCount,
-      limit: 999999, // Unlimited
-      percentage: 0 // Never reaches limit
+      limit: profile.property_limit,
+      percentage: (propertyCount / profile.property_limit) * 100
     };
   };
 

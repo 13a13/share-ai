@@ -55,89 +55,83 @@ const ReportEditPage = () => {
   const hasRooms = report.rooms && report.rooms.length > 0;
   
   return (
-    <div className={`min-h-screen bg-gray-50 ${isMobile ? 'px-4 py-4' : 'px-8 py-8'}`}>
-      <div className={`max-w-7xl mx-auto ${isMobile ? '' : 'px-4'}`}>
-        <div className={`pb-24 sm:pb-8 ${isMobile ? '' : 'space-y-8'}`} data-report-id={report.id}>
-          <ReportHeader 
-            title={report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) + " Report"}
-            address={`${property.address}, ${property.city}, ${property.state} ${property.zipCode}`}
-            status={report.status}
-            isSaving={isSaving}
-            onSave={handleSaveReport}
-            onComplete={handleCompleteReport}
-          />
-          
-          {/* Add save progress indicator */}
-          {saveProgress && (
-            <div className="mb-4">
-              <SaveProgressIndicator progress={saveProgress} />
-            </div>
-          )}
-          
-          <div className={`bg-white rounded-lg shadow-sm ${isMobile ? 'p-4' : 'p-6'}`}>
-            <ReportInfoForm 
-              defaultValues={reportInfoDefaults}
-              onSave={handleSaveReportInfo}
-              isSaving={isSaving}
-            />
-          </div>
-          
-          <div className={`bg-white rounded-lg shadow-sm ${isMobile ? 'p-4' : 'p-6'}`}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Rooms</h2>
-            </div>
-            
-            {!hasRooms ? (
-              <EmptyRoomsState />
-            ) : (
-              <div className="space-y-4 mb-6">
-                {report.rooms.map((room, index) => (
-                  <UnifiedRoomView
-                    key={room.id}
-                    reportId={report.id}
-                    room={room}
-                    roomIndex={index}
-                    totalRooms={report.rooms.length}
-                    propertyName={property.name}
-                    onNavigateRoom={handleNavigateRoom}
-                    onUpdateGeneralCondition={handleUpdateGeneralCondition}
-                    onUpdateComponents={handleUpdateComponents}
-                    onDeleteRoom={handleDeleteRoom}
-                    isComplete={room.components?.filter(c => !c.isOptional).every(c => 
-                      c.description && c.condition && (c.images.length > 0 || c.notes)
-                    )}
-                  />
-                ))}
-              </div>
-            )}
-            
-            <ReportRoomForm 
-              onAddRoom={handleAddRoom}
-              isSubmittingRoom={isSubmittingRoom}
-            />
-          </div>
-          
-          {/* Add sticky bottom bar for mobile navigation if needed */}
-          {isMobile && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-around z-40 shadow-lg">
-              <Button
-                variant="outline"
-                onClick={() => window.scrollTo(0, 0)}
-                className="text-xs flex-1 mx-1"
-              >
-                Top
-              </Button>
-              <Button
-                onClick={handleSaveReport}
-                disabled={isSaving}
-                className="bg-shareai-teal hover:bg-shareai-teal/90 text-xs flex-1 mx-1"
-              >
-                {isSaving ? "Saving..." : "Save Report"}
-              </Button>
-            </div>
-          )}
+    <div className="shareai-container pb-24 sm:pb-8" data-report-id={report.id}>
+      <ReportHeader 
+        title={report.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) + " Report"}
+        address={`${property.address}, ${property.city}, ${property.state} ${property.zipCode}`}
+        status={report.status}
+        isSaving={isSaving}
+        onSave={handleSaveReport}
+        onComplete={handleCompleteReport}
+      />
+      
+      {/* Add save progress indicator */}
+      {saveProgress && (
+        <div className="mb-4">
+          <SaveProgressIndicator progress={saveProgress} />
         </div>
+      )}
+      
+      <ReportInfoForm 
+        defaultValues={reportInfoDefaults}
+        onSave={handleSaveReportInfo}
+        isSaving={isSaving}
+      />
+      
+      <div className="my-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Rooms</h2>
+        </div>
+        
+        {!hasRooms ? (
+          <EmptyRoomsState />
+        ) : (
+          <div className="space-y-4 mb-6">
+            {report.rooms.map((room, index) => (
+              <UnifiedRoomView
+                key={room.id}
+                reportId={report.id}
+                room={room}
+                roomIndex={index}
+                totalRooms={report.rooms.length}
+                propertyName={property.name}
+                onNavigateRoom={handleNavigateRoom}
+                onUpdateGeneralCondition={handleUpdateGeneralCondition}
+                onUpdateComponents={handleUpdateComponents}
+                onDeleteRoom={handleDeleteRoom}
+                isComplete={room.components?.filter(c => !c.isOptional).every(c => 
+                  c.description && c.condition && (c.images.length > 0 || c.notes)
+                )}
+              />
+            ))}
+          </div>
+        )}
+        
+        <ReportRoomForm 
+          onAddRoom={handleAddRoom}
+          isSubmittingRoom={isSubmittingRoom}
+        />
       </div>
+      
+      {/* Add sticky bottom bar for mobile navigation if needed */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-around z-40 shadow-lg">
+          <Button
+            variant="outline"
+            onClick={() => window.scrollTo(0, 0)}
+            className="text-xs flex-1 mx-1"
+          >
+            Top
+          </Button>
+          <Button
+            onClick={handleSaveReport}
+            disabled={isSaving}
+            className="bg-shareai-teal hover:bg-shareai-teal/90 text-xs flex-1 mx-1"
+          >
+            {isSaving ? "Saving..." : "Save Report"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

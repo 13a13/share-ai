@@ -61,23 +61,20 @@ export const useSubscription = () => {
   };
 
   const isTrialExpired = () => {
-    return false; // No trials, unlimited access
+    if (!profile?.trial_end) return false;
+    return new Date() > new Date(profile.trial_end);
   };
 
   const isTrialActive = () => {
-    return false; // No trials, unlimited access
+    return profile?.subscription_status === 'trial' && !isTrialExpired();
   };
 
   const hasActiveSubscription = () => {
-    return true; // Everyone has unlimited access
-  };
-
-  const isUnlimitedAccount = () => {
-    return true; // Everyone has unlimited access
+    return profile?.subscription_status === 'active';
   };
 
   const canCreateProperties = () => {
-    return true; // Everyone can create properties
+    return isTrialActive() || hasActiveSubscription();
   };
 
   return {
@@ -88,7 +85,6 @@ export const useSubscription = () => {
     isTrialExpired,
     isTrialActive,
     hasActiveSubscription,
-    isUnlimitedAccount,
     canCreateProperties,
     refetch: fetchProfile
   };

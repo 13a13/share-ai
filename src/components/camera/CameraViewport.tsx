@@ -14,7 +14,7 @@ const CameraViewport: React.FC<CameraViewportProps> = ({
   isProcessing
 }) => {
   return (
-    <div className="relative flex-1 bg-black overflow-hidden w-full h-full min-h-0">
+    <div className="relative flex-1 bg-black overflow-hidden w-full h-full">
       {/* Video element */}
       <LoadingOverlay
         isLoading={isProcessing}
@@ -22,9 +22,7 @@ const CameraViewport: React.FC<CameraViewportProps> = ({
         background="dark"
       >
         <div 
-          className={`absolute inset-0 w-full h-full ${
-            facingMode === 'user' ? 'scale-x-[-1]' : ''
-          }`}
+          className={`absolute inset-0 w-full h-full ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
           style={{ 
             transform: facingMode === 'user' ? 'scaleX(-1)' : 'none'
           }}

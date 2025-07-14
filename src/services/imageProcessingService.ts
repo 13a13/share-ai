@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ConditionRating } from '@/types';
 
-// Enhanced interface with unified system support
+// Enhanced interface with cross-analysis support and Gemini 2.0 Flash features
 export interface ProcessedImageResult {
   description: string;
   condition: {
@@ -17,21 +17,13 @@ export interface ProcessedImageResult {
   cleanliness: string;
   rating?: string; // The original rating from Gemini
   notes?: string;
-  // Analysis metadata from unified system
-  analysisMetadata?: {
-    imageCount: number;
-    multiImageAnalysis: {
-      isConsistent: boolean;
-      consistencyScore: number;
-      conflictingFindings: string[];
-    };
-    estimatedAge: string;
-    // New fields for multi-component support
-    itemCount?: number;
-    sceneSummary?: string;
-    multipleItems?: boolean;
+  // Advanced analysis fields
+  crossAnalysis?: {
+    materialConsistency: boolean | null;
+    defectConfidence: 'low' | 'medium' | 'high';
+    multiAngleValidation: Array<[string, number]>;
   };
-  analysisMode?: 'unified' | 'standard' | 'inventory' | 'advanced';
+  analysisMode?: 'standard' | 'inventory' | 'advanced';
   // Enhanced processing metadata
   processingMetadata?: {
     modelUsed: string;
@@ -40,23 +32,7 @@ export interface ProcessedImageResult {
     validationResult?: any;
     geminiModel?: string;
     enhancedProcessing?: boolean;
-    unifiedSystem?: boolean;
-    parsingMethod?: string;
-    confidence?: number;
   };
-  // New field for storing multiple component data
-  components?: Array<{
-    componentId: string;
-    inferredType: string;
-    description: string;
-    condition: {
-      rating: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
-      summary: string;
-      points: string[];
-    };
-    cleanliness: string;
-    estimatedAge: string;
-  }>;
 }
 
 export const cleanlinessOptions = [
@@ -67,17 +43,17 @@ export const cleanlinessOptions = [
   { value: 'not_clean', label: 'Not Clean' }
 ];
 
-// Updated condition rating options to match the enhanced prompt standards
 export const conditionRatingOptions = [
   { value: 'excellent', label: 'Good Order', color: 'bg-green-500' },
   { value: 'good', label: 'Used Order', color: 'bg-blue-500' },
   { value: 'fair', label: 'Fair Order', color: 'bg-yellow-500' },
-  { value: 'poor', label: 'Damaged', color: 'bg-red-500' },
-  { value: 'critical', label: 'Critical', color: 'bg-red-700' }
+  { value: 'poor', label: 'Damaged', color: 'bg-red-500' }
 ];
 
 /**
  * Convert condition rating to human-readable text
+ * @param condition Condition rating from the enum
+ * @returns Formatted text representation
  */
 export const conditionRatingToText = (condition: string): string => {
   const option = conditionRatingOptions.find(opt => opt.value === condition);
@@ -85,8 +61,13 @@ export const conditionRatingToText = (condition: string): string => {
 };
 
 /**
- * Processes an image using the Unified Gemini System
- * Single prompt system that handles all scenarios with equal image weighting
+ * Processes an image using the enhanced Gemini API to analyze a component
+ * Now uses Gemini 2.0 Flash for complex analysis
+ * @param imageUrls URL or array of URLs of the image(s) to analyze
+ * @param roomType Type of room the component is in
+ * @param componentName Name of the component being analyzed
+ * @param options Additional options for processing
+ * @returns Processed image result with description, condition, cleanliness and enhanced metadata
  */
 export const processComponentImage = async (
   imageUrls: string | string[],
@@ -95,52 +76,59 @@ export const processComponentImage = async (
   options: {
     multipleImages?: boolean;
     useAdvancedAnalysis?: boolean;
-    propertyName?: string;
-    roomName?: string;
   } = {}
 ): Promise<ProcessedImageResult> => {
   try {
+    const { multipleImages = false, useAdvancedAnalysis = false } = options;
     const imageArray = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
     
-    console.log(`🚀 [IMAGE PROCESSING v9] Processing ${imageArray.length} images with Unified Gemini System`);
-    console.log(`📍 [IMAGE PROCESSING v9] Context: property="${options.propertyName}", room="${options.roomName}", component="${componentName}"`);
+    console.log(`🚀 [IMAGE PROCESSING v7] Processing ${imageArray.length} images for component: ${componentName} with Gemini 2.0 Flash`);
+    
+    // Enable advanced analysis for multiple images automatically
+    const shouldUseAdvancedAnalysis = useAdvancedAnalysis || (Array.isArray(imageUrls) && imageUrls.length > 1);
+    
+    console.log(`🤖 [IMAGE PROCESSING v7] Analysis configuration:`, {
+      imageCount: imageArray.length,
+      shouldUseAdvancedAnalysis,
+      inventoryMode: !shouldUseAdvancedAnalysis,
+      expectedModel: 'gemini-2.0-flash-exp'
+    });
     
     const response = await supabase.functions.invoke('process-room-image', {
       body: {
         imageUrls: imageArray,
         componentName,
         roomType,
-        // Enhanced context for better analysis
-        propertyName: options.propertyName,
-        roomName: options.roomName,
-        // Unified system - no longer need mode flags
-        unifiedSystem: true,
-        imageCount: imageArray.length,
-        enhancedFormatting: true
+        inventoryMode: !shouldUseAdvancedAnalysis, // Use inventory mode when not using advanced
+        useAdvancedAnalysis: shouldUseAdvancedAnalysis,
+        multipleImages
       },
     });
 
     if (response.error) {
-      console.error('❌ [IMAGE PROCESSING v9] Error calling Unified Gemini System:', response.error);
-      throw new Error('Failed to analyze image with Unified Gemini System');
+      console.error('❌ [IMAGE PROCESSING v7] Error calling Gemini 2.0 Flash API:', response.error);
+      throw new Error('Failed to analyze image with Gemini 2.0 Flash');
     }
 
     const result = response.data as ProcessedImageResult;
     
-    console.log(`✅ [IMAGE PROCESSING v9] Unified processing complete:`, {
+    console.log(`✅ [IMAGE PROCESSING v7] Processing complete:`, {
       modelUsed: result.processingMetadata?.modelUsed,
+      geminiModel: result.processingMetadata?.geminiModel,
+      costIncurred: result.processingMetadata?.costIncurred,
       processingTime: result.processingMetadata?.processingTime,
-      unifiedSystem: result.processingMetadata?.unifiedSystem,
-      enhancedFormatting: result.processingMetadata?.enhancedProcessing,
-      parsingMethod: result.processingMetadata?.parsingMethod
+      enhancedProcessing: result.processingMetadata?.enhancedProcessing,
+      validationApplied: !!result.processingMetadata?.validationResult
     });
     
-    // Add unified system metadata
-    result.analysisMode = 'unified';
+    // Add analysis mode for frontend rendering decisions if not already set
+    if (!result.analysisMode) {
+      result.analysisMode = shouldUseAdvancedAnalysis ? 'advanced' : 'inventory';
+    }
     
     return result;
   } catch (error) {
-    console.error('❌ [IMAGE PROCESSING v9] Error in unified system:', error);
+    console.error('❌ [IMAGE PROCESSING v7] Error in processComponentImage:', error);
     throw error;
   }
 };
@@ -164,15 +152,8 @@ export const normalizeConditionPoints = (points: any[]): string[] => {
 };
 
 /**
- * Check if analysis result uses the unified format
- */
-export const isUnifiedAnalysis = (result: ProcessedImageResult): boolean => {
-  return Boolean(result.analysisMode === 'unified' || result.processingMetadata?.unifiedSystem);
-};
-
-/**
- * Check if analysis result uses the advanced format (legacy)
+ * Check if analysis result uses the advanced format
  */
 export const isAdvancedAnalysis = (result: ProcessedImageResult): boolean => {
-  return Boolean(result.analysisMode === 'advanced');
+  return Boolean(result.analysisMode === 'advanced' || result.crossAnalysis);
 };

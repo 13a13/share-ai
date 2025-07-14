@@ -10,7 +10,6 @@ import ComponentImages from "../component/ComponentImages";
 import ComponentActions from "../component/ComponentActions";
 import MultiImageComponentCapture from "../image-upload/MultiImageComponentCapture";
 import ComponentStagingArea from "../component/ComponentStagingArea";
-import { cleanlinessOptions, conditionRatingOptions } from "@/services/imageProcessingService";
 
 interface ComponentItemProps {
   component: RoomComponent;
@@ -64,21 +63,9 @@ const ComponentItem = ({
   const hasDescription = Boolean(component.description);
   const hasCondition = Boolean(component.condition && component.condition !== "fair");
 
-  // Helper function to handle component field updates with immediate persistence
+  // Helper function to handle component field updates
   const handleUpdateField = (field: string, value: string | string[]) => {
-    console.log("🔄 Field update:", { componentId: component.id, field, value });
     onUpdate({ [field]: value });
-  };
-
-  // Handle save and cancel for edit form
-  const handleSave = () => {
-    console.log("💾 Saving component:", component.id);
-    onToggleEditMode();
-  };
-
-  const handleCancel = () => {
-    console.log("❌ Canceling edit:", component.id);
-    onToggleEditMode();
   };
 
   return (
@@ -118,12 +105,22 @@ const ComponentItem = ({
                   conditionPoints={component.conditionPoints || []}
                   condition={component.condition}
                   cleanliness={component.cleanliness}
-                  cleanlinessOptions={cleanlinessOptions}
-                  conditionRatingOptions={conditionRatingOptions}
+                  cleanlinessOptions={[
+                    { value: "poor", label: "Poor" },
+                    { value: "fair", label: "Fair" },
+                    { value: "good", label: "Good" },
+                    { value: "excellent", label: "Excellent" }
+                  ]}
+                  conditionRatingOptions={[
+                    { value: "excellent", label: "Excellent", color: "bg-green-500" },
+                    { value: "good", label: "Good", color: "bg-blue-500" },
+                    { value: "fair", label: "Fair", color: "bg-yellow-500" },
+                    { value: "poor", label: "Poor", color: "bg-orange-500" },
+                    { value: "needs_replacement", label: "Needs Replacement", color: "bg-red-500" }
+                  ]}
                   notes={component.notes}
-                  onUpdateField={handleUpdateField}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
+                  onUpdateComponent={handleUpdateField}
+                  onToggleEditMode={onToggleEditMode}
                 />
               )}
               

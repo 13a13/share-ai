@@ -40,7 +40,7 @@ const CameraContent: React.FC<CameraContentProps> = ({
 
   // Show camera view with loading state
   return (
-    <div className="relative flex flex-col h-full flex-1 min-h-0 w-full">
+    <div className="relative flex flex-col h-full">
       <CameraViewport 
         videoRef={videoRef}
         facingMode={facingMode}
