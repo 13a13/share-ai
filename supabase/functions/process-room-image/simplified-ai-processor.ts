@@ -51,7 +51,7 @@ export class SimplifiedAIProcessor {
     // Generate optimized prompt for Gemini 2.0 Flash
     const promptType = inventoryMode ? 'inventory' : (shouldUseAdvancedAnalysis ? 'advanced' : 'dust');
     const prompt = this.promptManager.getPrompt(
-      'gemini-2.0-flash-exp' as any,
+      'gemini-2.0-flash' as any,
       promptType,
       componentName || 'component',
       roomType,
@@ -117,7 +117,7 @@ export class SimplifiedAIProcessor {
     return {
       parsedData,
       validationResult,
-      modelUsed: 'gemini-2.0-flash-exp',
+      modelUsed: 'gemini-2.0-flash',
       processingTime
     };
   }

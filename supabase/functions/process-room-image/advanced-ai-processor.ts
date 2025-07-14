@@ -45,7 +45,7 @@ export class AdvancedAIProcessor {
 
     // Generate optimized prompt
     const promptText = this.promptManager.getPrompt(
-      'gemini-2.0-flash-exp',
+      'gemini-2.0-flash',
       analysisType,
       options.componentName || 'component',
       options.roomType,
@@ -79,7 +79,7 @@ export class AdvancedAIProcessor {
 
       return {
         parsedData: validatedData,
-        modelUsed: 'gemini-2.0-flash-exp',
+        modelUsed: 'gemini-2.0-flash',
         processingTime,
         parsingMethod: parseResult.method,
         confidence: parseResult.confidence,
@@ -127,7 +127,7 @@ export class AdvancedAIProcessor {
       multiPerspectiveValidation: options.imageCount > 1,
       falsePositiveScreening: true,
       componentSpecificAnalysis: true,
-      geminiModel: 'gemini-2.0-flash-exp'
+      geminiModel: 'gemini-2.0-flash'
     };
 
     // Validate defects structure if present

@@ -28,9 +28,9 @@ export class AIProcessor {
       dailyBudget: 10.0, // $10 per day
       monthlyBudget: 200.0, // $200 per month
       costPerModelCall: {
-        'gemini-2.0-flash-exp': 0.02, // Use the actual endpoint name
+        'gemini-2.0-flash': 0.02, // Use the correct endpoint name
         // Legacy mappings for backwards compatibility
-        'gemini-2.0-flash': 0.02,
+        'gemini-2.0-flash-exp': 0.02,
         'gemini-2.5-pro-preview-0506': 0.02,
         'gemini-1.5-flash': 0.02
       },
@@ -66,15 +66,15 @@ export class AIProcessor {
     
     // Budget check
     const estimatedCost = this.estimateProcessingCost(options);
-    const budgetCheck = await this.costController.checkBudgetBeforeCall('gemini-2.0-flash-exp', estimatedCost);
+    const budgetCheck = await this.costController.checkBudgetBeforeCall('gemini-2.0-flash', estimatedCost);
     
     if (!budgetCheck.allowed) {
       console.warn(`💸 [AI PROCESSOR] Budget constraint: ${budgetCheck.reason}`);
       throw new Error(`Budget limit reached: ${budgetCheck.reason}`);
     }
     
-    // Always use Gemini 2.0 Flash (the actual available model)
-    const selectedModel = 'gemini-2.0-flash-exp';
+    // Always use Gemini 2.0 Flash (the correct available model)
+    const selectedModel = 'gemini-2.0-flash';
     
     console.log(`🤖 [AI PROCESSOR] Using standardized model: ${selectedModel}`);
     

@@ -56,7 +56,7 @@ ENHANCED OUTPUT FORMAT:
   },
   "analysisMetadata": {
     "processingMode": "multi",
-    "aiModel": "gemini-2.0-flash-exp",
+    "aiModel": "gemini-2.0-flash",
     "processingTime": 0
   }
 }

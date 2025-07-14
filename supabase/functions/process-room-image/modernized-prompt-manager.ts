@@ -7,7 +7,7 @@
 import { EnhancedDefectAnalyzer } from "./enhanced-defect-analyzer.ts";
 
 export type PromptType = 'inventory' | 'advanced' | 'defect_analysis';
-export type ModelName = 'gemini-2.0-flash-exp';
+export type ModelName = 'gemini-2.0-flash';
 
 export class ModernizedPromptManager {
   private defectAnalyzer = new EnhancedDefectAnalyzer();
@@ -164,7 +164,7 @@ Conduct your analysis with scientific rigor, using all available perspectives to
   }
 
   getSupportedModels(): ModelName[] {
-    return ['gemini-2.0-flash-exp'];
+    return ['gemini-2.0-flash'];
   }
 
   getSupportedPromptTypes(): PromptType[] {
