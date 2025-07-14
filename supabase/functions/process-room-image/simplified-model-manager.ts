@@ -12,7 +12,7 @@ export interface ModelCallOptions {
 }
 
 export class SimplifiedModelManager {
-  private readonly MODEL_NAME = 'gemini-2.0-flash-exp'; // Alias for gemini-2.0-flash
+  private readonly MODEL_NAME = 'gemini-2.0-flash-exp'; // The actual available endpoint
   private readonly MAX_IMAGES = 20;
   private readonly MAX_TOKENS = 4096; // Aligned with gemini-api.ts
   private readonly RATE_LIMIT = 15; // Reasonable limit for 2.0 Flash
@@ -68,7 +68,7 @@ export class SimplifiedModelManager {
         // Check if it's a permanent error (don't retry)
         if (error.message.includes('Invalid API key') || 
             error.message.includes('API access forbidden') ||
-            error.message.includes('Bad request')) {
+            error.message.includes('Invalid request format')) {
           console.error(`❌ [SIMPLIFIED MODEL] Permanent error detected, stopping retries`);
           break;
         }
@@ -93,7 +93,7 @@ export class SimplifiedModelManager {
     request: GeminiRequest,
     options: ModelCallOptions = {}
   ): Promise<any> {
-    console.log(`⚠️ [SIMPLIFIED MODEL] callGemini25Pro is deprecated, using callGemini2Flash`);
+    console.log(`⚠️ [SIMPLIFIED MODEL] callGemini25Pro is deprecated, redirecting to Gemini 2.0 Flash`);
     return this.callGemini2Flash(apiKey, request, options);
   }
 
@@ -146,12 +146,6 @@ export class SimplifiedModelManager {
     
     return adjustedRequest;
   }
-
-  // Legacy method for backwards compatibility
-  private adjustRequestForGemini25Pro(request: GeminiRequest): GeminiRequest {
-    return this.adjustRequestForGemini2Flash(request);
-  }
-
 
   getModelInfo() {
     return {

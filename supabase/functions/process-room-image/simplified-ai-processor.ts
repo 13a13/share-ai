@@ -1,14 +1,13 @@
-
 /**
  * Simplified AI Processor - Exclusively uses Gemini 2.0 Flash
- * Updated to use the currently available model
+ * Updated to use the standardized Gemini API
  */
 
-import { processImagesWithAI } from "./process-images-with-ai.ts";
 import { SimplifiedModelManager } from "./simplified-model-manager.ts";
 import { PromptManager } from "./prompt-manager.ts";
 import { CrossImageValidator } from "./cross-validation.ts";
 import { validateDustDetection } from "./dust-detection.ts";
+import { createGeminiRequest } from "./gemini-api.ts";
 import type { AIProcessingOptions } from './ai-processing-options.ts';
 
 export interface SimplifiedAIResult {
@@ -62,15 +61,12 @@ export class SimplifiedAIProcessor {
     let parsedData: any;
     
     try {
-      // Process with Gemini 2.0 Flash exclusively
-      const result = await this.modelManager.callGemini25Pro(
-        apiKey,
-        this.createGeminiRequest(prompt, processedImages, shouldUseAdvancedAnalysis),
-        {
-          maxRetries: 3,
-          timeout: 60000
-        }
-      );
+      // Process with Gemini 2.0 Flash exclusively using standardized request
+      const request = createGeminiRequest(prompt, processedImages);
+      const result = await this.modelManager.callGemini2Flash(apiKey, request, {
+        maxRetries: 3,
+        timeout: 60000
+      });
       
       // Parse result
       parsedData = this.parseResult(result, shouldUseAdvancedAnalysis, inventoryMode, componentName);
@@ -123,28 +119,6 @@ export class SimplifiedAIProcessor {
       validationResult,
       modelUsed: 'gemini-2.0-flash-exp',
       processingTime
-    };
-  }
-
-  private createGeminiRequest(prompt: string, images: string[], advanced: boolean): any {
-    const parts = [
-      { text: prompt },
-      ...images.map(imageData => ({
-        inline_data: {
-          mime_type: "image/jpeg",
-          data: imageData.startsWith('data:') ? imageData.split(',')[1] : imageData
-        }
-      }))
-    ];
-
-    return {
-      contents: [{ parts }],
-      generationConfig: {
-        temperature: 0.2, // Optimal for Gemini 2.0 Flash
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: advanced ? 4096 : 2048,
-      }
     };
   }
 

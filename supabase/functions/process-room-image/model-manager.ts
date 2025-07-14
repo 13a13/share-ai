@@ -1,5 +1,4 @@
-
-import { GeminiRequest } from "./gemini-api.ts";
+import { GeminiRequest, callGeminiApi } from "./gemini-api.ts";
 
 export interface ModelConfig {
   primary: string;
@@ -23,7 +22,7 @@ export interface ModelCallOptions {
 
 export class GeminiModelManager {
   private models: Record<string, ModelConfig> = {
-    'gemini-2.0-flash': {
+    'gemini-2.0-flash-exp': {
       primary: 'gemini-2.0-flash-exp', // Use the actual API endpoint name
       fallback: 'gemini-2.0-flash-exp', // No fallback needed
       costOptimized: 'gemini-2.0-flash-exp',
@@ -36,6 +35,18 @@ export class GeminiModelManager {
       }
     },
     // Keep legacy entries for backwards compatibility but map to 2.0 Flash
+    'gemini-2.0-flash': {
+      primary: 'gemini-2.0-flash-exp',
+      fallback: 'gemini-2.0-flash-exp',
+      costOptimized: 'gemini-2.0-flash-exp',
+      features: {
+        supportsBatch: true,
+        maxImages: 20,
+        maxTokens: 4096,
+        costPerRequest: 0.02,
+        rateLimit: 15
+      }
+    },
     'gemini-2.5-pro-preview-0506': {
       primary: 'gemini-2.0-flash-exp',
       fallback: 'gemini-2.0-flash-exp',
@@ -77,31 +88,35 @@ export class GeminiModelManager {
       budgetLimit
     } = options;
     
-    console.log(`🤖 [MODEL MANAGER] Starting call with fallback capability`);
+    console.log(`🤖 [MODEL MANAGER] Starting call with Gemini 2.0 Flash`);
     
-    // Determine model priority based on request characteristics and preferences
-    const modelPriority = this.getModelPriority(request, preferCostOptimized, budgetLimit);
-    console.log(`📋 [MODEL MANAGER] Model priority order:`, modelPriority);
+    // Always use Gemini 2.0 Flash now (all models map to it)
+    const modelName = 'gemini-2.0-flash-exp';
+    
+    console.log(`📋 [MODEL MANAGER] Using standardized model: ${modelName}`);
     
     let lastError: Error | null = null;
     
-    for (let i = 0; i < modelPriority.length && i < maxRetries; i++) {
-      const modelName = modelPriority[i];
-      
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // Check rate limits
         if (!this.checkRateLimit(modelName)) {
-          console.warn(`⚠️ [MODEL MANAGER] Rate limit exceeded for ${modelName}, trying next model`);
-          continue;
+          console.warn(`⚠️ [MODEL MANAGER] Rate limit exceeded for ${modelName}`);
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
+            continue;
+          } else {
+            throw new Error(`Rate limit exceeded for ${modelName}`);
+          }
         }
         
-        console.log(`🚀 [MODEL MANAGER] Attempting request with model: ${modelName}`);
+        console.log(`🚀 [MODEL MANAGER] Attempt ${attempt}/${maxRetries} with model: ${modelName}`);
         
         // Adjust request based on model capabilities
         const adjustedRequest = this.adjustRequestForModel(request, modelName);
         
         const result = await Promise.race([
-          this.callSpecificModel(apiKey, adjustedRequest, modelName),
+          callGeminiApi(apiKey, adjustedRequest),
           new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error(`Request timeout after ${timeout}ms`)), timeout)
           )
@@ -118,66 +133,25 @@ export class GeminiModelManager {
         console.error(`❌ [MODEL MANAGER] Model ${modelName} failed:`, error);
         
         // If this is the last attempt, we'll throw the error after the loop
-        if (i < modelPriority.length - 1 && i < maxRetries - 1) {
-          // Exponential backoff before trying next model
-          const delay = Math.min(1000 * Math.pow(2, i), 5000);
-          console.log(`⏳ [MODEL MANAGER] Waiting ${delay}ms before trying next model`);
+        if (attempt < maxRetries) {
+          // Check if it's a permanent error (don't retry)
+          if (error.message.includes('Invalid API key') || 
+              error.message.includes('API access forbidden') ||
+              error.message.includes('Invalid request format')) {
+            console.error(`❌ [MODEL MANAGER] Permanent error detected, stopping retries`);
+            break;
+          }
+          
+          // Exponential backoff before retrying
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`⏳ [MODEL MANAGER] Waiting ${delay}ms before retry`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
     
-    // If all models failed, throw the last error
-    throw new Error(`All models failed. Last error: ${lastError?.message || 'Unknown error'}`);
-  }
-
-  private getModelPriority(
-    request: GeminiRequest, 
-    preferCostOptimized: boolean, 
-    budgetLimit?: number
-  ): string[] {
-    const imageCount = request.contents[0].parts.filter(p => p.inline_data).length;
-    const requestComplexity = this.assessRequestComplexity(request);
-    
-    console.log(`📊 [MODEL MANAGER] Request analysis:`, {
-      imageCount,
-      complexity: requestComplexity,
-      preferCostOptimized,
-      budgetLimit
-    });
-    
-    // Always use Gemini 2.0 Flash now (all models map to it)
-    console.log(`🎯 [MODEL MANAGER] Using Gemini 2.0 Flash for all requests`);
-    return ['gemini-2.0-flash-exp'];
-  }
-
-  private assessRequestComplexity(request: GeminiRequest): 'low' | 'medium' | 'high' {
-    const promptText = request.contents[0].parts.find(p => p.text)?.text || '';
-    const imageCount = request.contents[0].parts.filter(p => p.inline_data).length;
-    const maxTokens = request.generationConfig.maxOutputTokens;
-    
-    // High complexity indicators
-    if (
-      imageCount > 10 ||
-      maxTokens > 2000 ||
-      promptText.includes('ADVANCED') ||
-      promptText.includes('CROSS-VALIDATION') ||
-      promptText.includes('ENHANCED')
-    ) {
-      return 'high';
-    }
-    
-    // Medium complexity indicators
-    if (
-      imageCount > 5 ||
-      maxTokens > 1000 ||
-      promptText.includes('BATCH') ||
-      promptText.includes('MULTI')
-    ) {
-      return 'medium';
-    }
-    
-    return 'low';
+    // If all attempts failed, throw the last error
+    throw new Error(`Gemini 2.0 Flash failed after ${maxRetries} attempts. Last error: ${lastError?.message || 'Unknown error'}`);
   }
 
   private checkRateLimit(modelName: string): boolean {
@@ -233,61 +207,12 @@ export class GeminiModelManager {
       console.log(`🎚️ [MODEL MANAGER] Adjusted max tokens from ${originalMaxTokens} to ${adjustedRequest.generationConfig.maxOutputTokens}`);
     }
     
-    // Adjust generation config for pro model
-    if (modelName.includes('2.5-pro')) {
-      adjustedRequest.generationConfig.temperature = Math.min(
-        adjustedRequest.generationConfig.temperature,
-        0.3
-      );
-      adjustedRequest.generationConfig.topP = Math.min(
-        adjustedRequest.generationConfig.topP,
-        0.95
-      );
-    }
+    // Optimize generation config for Gemini 2.0 Flash
+    adjustedRequest.generationConfig.temperature = 0.2;
+    adjustedRequest.generationConfig.topP = 0.95;
+    adjustedRequest.generationConfig.topK = 40;
     
     return adjustedRequest;
-  }
-
-  private async callSpecificModel(apiKey: string, request: GeminiRequest, modelName: string): Promise<any> {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-    
-    console.log(`📡 [MODEL MANAGER] Calling ${modelName} API`);
-    
-    const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ [MODEL MANAGER] ${modelName} API error:`, {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      });
-      throw new Error(`${modelName} API error (${response.status}): ${errorText}`);
-    }
-
-    const data = await response.json();
-    
-    // Enhanced response validation
-    if (!data.candidates || data.candidates.length === 0) {
-      throw new Error(`No candidates returned from ${modelName}`);
-    }
-    
-    const candidate = data.candidates[0];
-    if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-      throw new Error(`No content parts returned from ${modelName}`);
-    }
-    
-    const textContent = candidate.content.parts[0].text;
-    if (!textContent) {
-      throw new Error(`No text content returned from ${modelName}`);
-    }
-    
-    console.log(`✅ [MODEL MANAGER] ${modelName} returned ${textContent.length} characters`);
-    return textContent;
   }
 
   getModelInfo(modelName: string): ModelConfig | null {

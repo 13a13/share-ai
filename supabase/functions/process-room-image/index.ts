@@ -8,18 +8,21 @@ import { createErrorResponse, createValidationErrorResponse } from './response-f
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 Deno.serve(async (req) => {
-  console.log('🚀 Advanced Defect Detection System - Gemini 2.0 Flash');
+  console.log('🚀 Advanced Defect Detection System - Gemini 2.0 Flash (Fixed Version)');
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (!GEMINI_API_KEY) {
-    console.error('❌ GEMINI_API_KEY not found');
-    return new Response(
-      JSON.stringify({ error: 'GEMINI_API_KEY not configured' }),
-      { status: 500, headers: corsHeaders }
-    );
+    console.error('❌ GEMINI_API_KEY not found in environment variables');
+    return createErrorResponse(new Error('GEMINI_API_KEY not configured in Supabase secrets'), 500);
+  }
+
+  // Validate API key format
+  if (!GEMINI_API_KEY.startsWith('AIza')) {
+    console.error('❌ GEMINI_API_KEY has invalid format');
+    return createErrorResponse(new Error('GEMINI_API_KEY has invalid format. Expected format: AIza...'), 500);
   }
 
   try {
@@ -39,7 +42,7 @@ Deno.serve(async (req) => {
       useAdvancedAnalysis: requestData.useAdvancedAnalysis
     });
 
-    console.log('🔄 [MAIN] Starting Advanced Defect Detection pipeline');
+    console.log('🔄 [MAIN] Starting Advanced Defect Detection pipeline with fixes');
 
     let imageUrls: string[] = [];
 
@@ -61,7 +64,7 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error('❌ Failed to fetch images from database:', error);
-        throw new Error(`Failed to fetch images: ${error.message}`);
+        return createErrorResponse(new Error(`Failed to fetch images: ${error.message}`), 500);
       }
 
       imageUrls = images?.map(img => img.url) || [];
@@ -117,7 +120,7 @@ Deno.serve(async (req) => {
 
     console.log('🚀 [ADVANCED AI] Starting Gemini 2.0 Flash processing for', processedImages.length, 'images');
 
-    // Process with enhanced AI with error handling
+    // Process with enhanced AI with proper error handling
     let aiResult;
     try {
       aiResult = await aiProcessor.processImagesWithEnhancedAI(
@@ -125,25 +128,22 @@ Deno.serve(async (req) => {
         aiOptions,
         GEMINI_API_KEY
       );
+      
+      console.log('✅ [ADVANCED AI] Processing successful:', {
+        modelUsed: aiResult.modelUsed,
+        processingTime: aiResult.processingTime,
+        costIncurred: aiResult.costIncurred
+      });
+      
     } catch (aiError) {
       console.error('❌ AI processing failed:', aiError);
-      // Return fallback response instead of throwing
-      aiResult = {
-        parsedData: {
-          description: `${requestData.componentName || 'Component'} analysis completed`,
-          condition: {
-            summary: "Analysis completed with available data",
-            points: ["Assessment completed"],
-            rating: "fair"
-          },
-          cleanliness: "domestic_clean"
-        },
-        modelUsed: 'fallback',
-        costIncurred: 0,
-        processingTime: 0,
-        shouldUseAdvancedAnalysis: false,
-        validationResult: null
-      };
+      
+      // Return proper error response instead of fallback
+      if (aiError instanceof Error) {
+        return createErrorResponse(aiError, 500);
+      } else {
+        return createErrorResponse(new Error('AI analysis failed with unknown error'), 500);
+      }
     }
 
     console.log('✅ [MAIN] Advanced processing complete:', {
@@ -183,7 +183,6 @@ Deno.serve(async (req) => {
         }
       };
 
-      console.log('💰 [RESPONSE FORMATTER] Enhanced metadata added: processing time:', `${aiResult.processingTime}ms`, ', method: enhanced_ai_processor');
       console.log('✅ [RESPONSE FORMATTER] Advanced Defect Detection processing complete');
 
       return new Response(JSON.stringify(response), {

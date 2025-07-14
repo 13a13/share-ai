@@ -1,10 +1,10 @@
-
 import { processImagesWithAI } from "./process-images-with-ai.ts";
 import { GeminiModelManager } from "./model-manager.ts";
 import { CostController } from "./cost-controller.ts";
 import { PromptManager } from "./prompt-manager.ts";
 import { CrossImageValidator } from "./cross-validation.ts";
 import { validateDustDetection } from "./dust-detection.ts";
+import { createGeminiRequest, callGeminiApi } from "./gemini-api.ts";
 import type { AIProcessingOptions } from './ai-processing-options.ts';
 
 export interface EnhancedAIResult {
@@ -28,9 +28,9 @@ export class AIProcessor {
       dailyBudget: 10.0, // $10 per day
       monthlyBudget: 200.0, // $200 per month
       costPerModelCall: {
+        'gemini-2.0-flash-exp': 0.02, // Use the actual endpoint name
+        // Legacy mappings for backwards compatibility
         'gemini-2.0-flash': 0.02,
-        'gemini-2.0-flash-exp': 0.02, // Same model, different endpoint name
-        // Legacy mappings
         'gemini-2.5-pro-preview-0506': 0.02,
         'gemini-1.5-flash': 0.02
       },
@@ -66,14 +66,14 @@ export class AIProcessor {
     
     // Budget check
     const estimatedCost = this.estimateProcessingCost(options);
-    const budgetCheck = await this.costController.checkBudgetBeforeCall('gemini-2.0-flash', estimatedCost);
+    const budgetCheck = await this.costController.checkBudgetBeforeCall('gemini-2.0-flash-exp', estimatedCost);
     
     if (!budgetCheck.allowed) {
       console.warn(`💸 [AI PROCESSOR] Budget constraint: ${budgetCheck.reason}`);
       throw new Error(`Budget limit reached: ${budgetCheck.reason}`);
     }
     
-    // Always use Gemini 2.0 Flash (standardized)
+    // Always use Gemini 2.0 Flash (the actual available model)
     const selectedModel = 'gemini-2.0-flash-exp';
     
     console.log(`🤖 [AI PROCESSOR] Using standardized model: ${selectedModel}`);
@@ -92,16 +92,9 @@ export class AIProcessor {
     let actualCost = 0;
     
     try {
-      // Use simplified model manager with standardized Gemini 2.0 Flash
-      const simplifiedManager = new (await import("./simplified-model-manager.ts")).SimplifiedModelManager();
-      const result = await simplifiedManager.callGemini2Flash(
-        apiKey,
-        this.createGeminiRequest(prompt, processedImages, shouldUseAdvancedAnalysis),
-        {
-          maxRetries: 3,
-          timeout: 60000
-        }
-      );
+      // Use the standardized Gemini API directly
+      const request = createGeminiRequest(prompt, processedImages);
+      const result = await callGeminiApi(apiKey, request);
       
       // Parse result
       parsedData = this.parseResult(result, shouldUseAdvancedAnalysis, inventoryMode, componentName);
@@ -187,12 +180,6 @@ export class AIProcessor {
     const imageCostMultiplier = Math.min(imageCount * 0.05, 1.0);
     
     return baseCost * (1 + imageCostMultiplier);
-  }
-
-  private createGeminiRequest(prompt: string, images: string[], advanced: boolean): any {
-    // Use the standardized request creation from gemini-api.ts
-    const { createGeminiRequest } = await import("./gemini-api.ts");
-    return createGeminiRequest(prompt, images);
   }
 
   private parseResult(textContent: string, advanced: boolean, inventoryMode: boolean, componentName?: string): any {

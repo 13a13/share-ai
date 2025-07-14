@@ -1,7 +1,7 @@
 
 /**
  * Standardized Gemini 2.0 Flash API - Single Source of Truth
- * Uses only gemini-2.0-flash (aliased as gemini-2.0-flash-exp)
+ * Uses only gemini-2.0-flash-exp (the available model endpoint)
  */
 
 export interface GeminiRequest {
@@ -24,7 +24,7 @@ export interface GeminiRequest {
 
 /**
  * Creates a request optimized for Gemini 2.0 Flash
- * Note: gemini-2.0-flash is aliased as gemini-2.0-flash-exp in the API
+ * Note: gemini-2.0-flash-exp is the actual API endpoint name
  */
 export function createGeminiRequest(
   promptText: string, 
@@ -91,20 +91,20 @@ export function createGeminiRequest(
 
 /**
  * Calls Gemini 2.0 Flash API with enhanced error handling
- * Uses the gemini-2.0-flash-exp endpoint (alias for gemini-2.0-flash)
+ * Uses the gemini-2.0-flash-exp endpoint (the actual available model)
  */
 export async function callGeminiApi(
   apiKey: string, 
   request: GeminiRequest
 ): Promise<any> {
-  // Use the experimental endpoint which is the alias for gemini-2.0-flash
+  // Use the correct model endpoint that's actually available
   const MODEL_NAME = 'gemini-2.0-flash-exp';
   
   console.log(`🚀 [GEMINI API] Calling Gemini 2.0 Flash (${MODEL_NAME})`);
   
   // Validate API key format
   if (!apiKey || !apiKey.startsWith('AIza')) {
-    throw new Error('Invalid or missing GEMINI_API_KEY. Expected format: AIza...');
+    throw new Error('Invalid or missing GEMINI_API_KEY. Expected format: AIza... Please check your API key in Supabase secrets.');
   }
   
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`;
@@ -129,15 +129,15 @@ export async function callGeminiApi(
       
       // Provide specific error messages based on status code
       if (response.status === 400) {
-        throw new Error(`Bad request to Gemini API. Check image format and prompt. Details: ${errorText}`);
+        throw new Error(`Gemini API request error: Invalid request format or parameters. Details: ${errorText}`);
       } else if (response.status === 401) {
-        throw new Error(`Invalid API key. Please check your GEMINI_API_KEY. Details: ${errorText}`);
+        throw new Error(`Gemini API authentication failed: Invalid API key. Please check your GEMINI_API_KEY in Supabase secrets. Details: ${errorText}`);
       } else if (response.status === 403) {
-        throw new Error(`API access forbidden. Check API key permissions and billing. Details: ${errorText}`);
+        throw new Error(`Gemini API access forbidden: Check API key permissions and billing status. Details: ${errorText}`);
       } else if (response.status === 429) {
-        throw new Error(`Rate limit exceeded. Please try again later. Details: ${errorText}`);
+        throw new Error(`Gemini API rate limit exceeded: Too many requests. Please try again later. Details: ${errorText}`);
       } else if (response.status >= 500) {
-        throw new Error(`Gemini API server error (${response.status}). Please try again later. Details: ${errorText}`);
+        throw new Error(`Gemini API server error (${response.status}): Google's servers are experiencing issues. Please try again later. Details: ${errorText}`);
       } else {
         throw new Error(`Gemini API error (${response.status}): ${errorText}`);
       }
@@ -148,7 +148,7 @@ export async function callGeminiApi(
     // Enhanced response validation
     if (!data.candidates || data.candidates.length === 0) {
       console.error(`❌ [GEMINI API] No candidates in response:`, data);
-      throw new Error(`No analysis candidates returned from Gemini 2.0 Flash`);
+      throw new Error(`Gemini 2.0 Flash returned no analysis results. This may be due to content filtering or model limitations.`);
     }
     
     const candidate = data.candidates[0];
@@ -156,17 +156,17 @@ export async function callGeminiApi(
     // Check for content filtering
     if (candidate.finishReason === 'SAFETY') {
       console.warn(`⚠️ [GEMINI API] Content filtered by safety settings`);
-      throw new Error('Analysis was blocked by content safety filters');
+      throw new Error('Image analysis was blocked by content safety filters. Please try with different images.');
     }
     
     if (candidate.finishReason === 'RECITATION') {
       console.warn(`⚠️ [GEMINI API] Content flagged for recitation`);
-      throw new Error('Analysis was blocked due to recitation concerns');
+      throw new Error('Image analysis was blocked due to potential copyright concerns.');
     }
     
     if (!candidate.content?.parts?.[0]?.text) {
       console.error(`❌ [GEMINI API] Invalid response structure:`, candidate);
-      throw new Error(`No text content returned from Gemini 2.0 Flash analysis`);
+      throw new Error(`Gemini 2.0 Flash returned empty content. Please try again or contact support.`);
     }
     
     const textContent = candidate.content.parts[0].text;
@@ -178,10 +178,10 @@ export async function callGeminiApi(
     // Re-throw with enhanced context
     if (error instanceof Error) {
       console.error(`❌ [GEMINI API] Analysis failed:`, error.message);
-      throw new Error(`Failed to analyze image with Gemini 2.0 Flash: ${error.message}`);
+      throw new Error(`Gemini 2.0 Flash analysis failed: ${error.message}`);
     } else {
       console.error(`❌ [GEMINI API] Unknown error:`, error);
-      throw new Error(`Failed to analyze image with Gemini 2.0 Flash: Unknown error occurred`);
+      throw new Error(`Gemini 2.0 Flash analysis failed: An unexpected error occurred. Please try again.`);
     }
   }
 }
