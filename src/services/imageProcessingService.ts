@@ -96,7 +96,7 @@ export const processComponentImage = async (
     
     const response = await supabase.functions.invoke('process-room-image', {
       body: {
-        imageUrls: imageArray,
+        images: imageArray,
         componentName,
         roomType,
         inventoryMode: !shouldUseAdvancedAnalysis, // Use inventory mode when not using advanced
