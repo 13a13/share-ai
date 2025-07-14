@@ -1,4 +1,3 @@
-
 /**
  * Utilities for parsing and formatting inventory clerk responses
  */

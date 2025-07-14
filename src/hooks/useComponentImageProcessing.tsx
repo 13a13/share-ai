@@ -78,6 +78,15 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
                    result.parsedData?.condition?.summary || 
                    'Analysis completed';
 
+      // Extract condition summary and points for proper UI display
+      const conditionSummary = result.condition?.summary || 
+                              result.parsedData?.condition?.summary || 
+                              '';
+      
+      const conditionPoints = result.condition?.points || 
+                             result.parsedData?.condition?.points || 
+                             [];
+
       // Update the component with AI analysis data
       const updatedComponents = components.map(comp => {
         if (comp.id === componentId) {
@@ -94,7 +103,9 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
             description: description,
             condition: condition,
             cleanliness: cleanliness,
-            notes: notes
+            notes: notes,
+            conditionSummary: conditionSummary,
+            conditionPoints: conditionPoints
           };
         }
         return comp;
