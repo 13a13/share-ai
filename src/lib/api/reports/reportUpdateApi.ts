@@ -204,15 +204,17 @@ export const ReportUpdateAPI = {
           
         const updatedComponents = components.map((comp: any) => {
           if (comp.id === componentId) {
+            // Create a clean copy to prevent circular references
+            const cleanAnalysis = JSON.parse(JSON.stringify(analysis));
             return {
               ...comp,
-              analysis,
+              analysis: cleanAnalysis,
               images: [...(comp.images || []), ...imageUrls.map((url: string) => ({
                 id: crypto.randomUUID(),
                 url,
                 timestamp: new Date(),
                 aiProcessed: true,
-                aiData: analysis
+                aiData: cleanAnalysis
               }))]
             };
           }
@@ -248,15 +250,17 @@ export const ReportUpdateAPI = {
         
         const updatedComponents = components.map((comp: any) => {
           if (comp.id === componentId) {
+            // Create a clean copy to prevent circular references
+            const cleanAnalysis = JSON.parse(JSON.stringify(analysis));
             return {
               ...comp,
-              analysis,
+              analysis: cleanAnalysis,
               images: [...(comp.images || []), ...imageUrls.map((url: string) => ({
                 id: crypto.randomUUID(),
                 url,
                 timestamp: new Date(),
                 aiProcessed: true,
-                aiData: analysis
+                aiData: cleanAnalysis
               }))]
             };
           }

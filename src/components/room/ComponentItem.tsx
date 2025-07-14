@@ -61,7 +61,7 @@ const ComponentItem = ({
 
   const hasImages = component.images && component.images.length > 0;
   const hasDescription = Boolean(component.description);
-  const hasCondition = Boolean(component.condition && component.condition !== "fair");
+  const hasCondition = Boolean(component.condition);
 
   // Helper function to handle component field updates
   const handleUpdateField = (field: string, value: string | string[]) => {

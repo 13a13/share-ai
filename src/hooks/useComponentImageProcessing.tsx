@@ -57,14 +57,15 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
         throw new Error('Invalid analysis result received from server');
       }
 
-      // Save analysis to database with retry logic
-      let analysisData = result;
+      // Create a clean copy of the analysis data to prevent circular references
+      const cleanAnalysisData = JSON.parse(JSON.stringify(result));
+      
       try {
         await ReportsAPI.updateComponentAnalysis(
           reportId,
           roomId, 
           componentId,
-          result,
+          cleanAnalysisData,
           imageIds
         );
         console.log('✅ Analysis saved to database successfully');
@@ -137,9 +138,9 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
               id: imageIds[index] || `temp-${Date.now()}-${index}`,
               url,
               timestamp: new Date(),
-              analysis: analysisData,
+              analysis: cleanAnalysisData,
               aiProcessed: true,
-              aiData: analysisData
+              aiData: cleanAnalysisData
             })),
             description: description,
             condition: conditionRating,
