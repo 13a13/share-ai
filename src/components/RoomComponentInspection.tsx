@@ -71,6 +71,8 @@ const RoomComponentInspection = ({
   return (
     <ComponentList
       roomType={roomType}
+      propertyName={propertyName}
+      roomName={roomName}
       components={roomComponents}
       isProcessing={isProcessing}
       expandedComponents={expandedComponents}

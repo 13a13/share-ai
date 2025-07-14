@@ -81,6 +81,8 @@ const RoomContent = ({
       
       <ComponentList
         roomType={room.type}
+        propertyName={propertyName}
+        roomName={room.name}
         components={components}
         isProcessing={isProcessing}
         expandedComponents={expandedComponents}

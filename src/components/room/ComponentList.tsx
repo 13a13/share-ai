@@ -9,6 +9,8 @@ import { BatchAnalysisProgress, ComponentStagingData } from "@/types";
 
 interface ComponentListProps {
   roomType: string;
+  propertyName?: string;
+  roomName?: string;
   components: RoomComponent[];
   isProcessing: { [key: string]: boolean };
   expandedComponents: string[];
@@ -39,6 +41,8 @@ interface ComponentListProps {
 
 const ComponentList = ({
   roomType,
+  propertyName,
+  roomName,
   components,
   isProcessing,
   expandedComponents,
@@ -64,12 +68,6 @@ const ComponentList = ({
   onProcessStagedComponent,
   onClearComponentStaging
 }: ComponentListProps) => {
-  
-  // Get property name and room name from the DOM
-  const reportElement = document.querySelector('[data-report-id]');
-  const roomElement = document.querySelector('[data-room-id]');
-  const propertyName = reportElement?.getAttribute('data-property-name') || undefined;
-  const roomName = roomElement?.getAttribute('data-room-name') || undefined;
 
   // Get room components that are already added
   const addedComponentNames = components.map(c => c.name);
