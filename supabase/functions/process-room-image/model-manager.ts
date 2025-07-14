@@ -22,10 +22,10 @@ export interface ModelCallOptions {
 
 export class GeminiModelManager {
   private models: Record<string, ModelConfig> = {
-    'gemini-2.0-flash-exp': {
-      primary: 'gemini-2.0-flash-exp', // Use the actual API endpoint name
-      fallback: 'gemini-2.0-flash-exp', // No fallback needed
-      costOptimized: 'gemini-2.0-flash-exp',
+    'gemini-2.0-flash': {
+      primary: 'gemini-2.0-flash', // Use the correct API endpoint name
+      fallback: 'gemini-2.0-flash', // No fallback needed
+      costOptimized: 'gemini-2.0-flash',
       features: {
         supportsBatch: true,
         maxImages: 20,
@@ -34,11 +34,11 @@ export class GeminiModelManager {
         rateLimit: 15
       }
     },
-    // Keep legacy entries for backwards compatibility but map to 2.0 Flash
-    'gemini-2.0-flash': {
-      primary: 'gemini-2.0-flash-exp',
-      fallback: 'gemini-2.0-flash-exp',
-      costOptimized: 'gemini-2.0-flash-exp',
+    // Legacy entry for exp model - map to correct endpoint
+    'gemini-2.0-flash-exp': {
+      primary: 'gemini-2.0-flash',
+      fallback: 'gemini-2.0-flash',
+      costOptimized: 'gemini-2.0-flash',
       features: {
         supportsBatch: true,
         maxImages: 20,
@@ -48,9 +48,9 @@ export class GeminiModelManager {
       }
     },
     'gemini-2.5-pro-preview-0506': {
-      primary: 'gemini-2.0-flash-exp',
-      fallback: 'gemini-2.0-flash-exp',
-      costOptimized: 'gemini-2.0-flash-exp',
+      primary: 'gemini-2.0-flash',
+      fallback: 'gemini-2.0-flash',
+      costOptimized: 'gemini-2.0-flash',
       features: {
         supportsBatch: true,
         maxImages: 20,
@@ -60,9 +60,9 @@ export class GeminiModelManager {
       }
     },
     'gemini-1.5-flash': {
-      primary: 'gemini-2.0-flash-exp',
-      fallback: 'gemini-2.0-flash-exp',
-      costOptimized: 'gemini-2.0-flash-exp',
+      primary: 'gemini-2.0-flash',
+      fallback: 'gemini-2.0-flash',
+      costOptimized: 'gemini-2.0-flash',
       features: {
         supportsBatch: true,
         maxImages: 20,
@@ -91,7 +91,7 @@ export class GeminiModelManager {
     console.log(`🤖 [MODEL MANAGER] Starting call with Gemini 2.0 Flash`);
     
     // Always use Gemini 2.0 Flash now (all models map to it)
-    const modelName = 'gemini-2.0-flash-exp';
+    const modelName = 'gemini-2.0-flash';
     
     console.log(`📋 [MODEL MANAGER] Using standardized model: ${modelName}`);
     

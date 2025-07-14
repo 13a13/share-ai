@@ -1,7 +1,7 @@
 
 /**
  * Standardized Gemini 2.0 Flash API - Single Source of Truth
- * Uses only gemini-2.0-flash-exp (the available model endpoint)
+ * Uses gemini-2.0-flash (the correct API endpoint)
  */
 
 export interface GeminiRequest {
@@ -24,7 +24,7 @@ export interface GeminiRequest {
 
 /**
  * Creates a request optimized for Gemini 2.0 Flash
- * Note: gemini-2.0-flash-exp is the actual API endpoint name
+ * Note: gemini-2.0-flash is the correct API endpoint name
  */
 export function createGeminiRequest(
   promptText: string, 
@@ -91,14 +91,14 @@ export function createGeminiRequest(
 
 /**
  * Calls Gemini 2.0 Flash API with enhanced error handling
- * Uses the gemini-2.0-flash-exp endpoint (the actual available model)
+ * Uses the gemini-2.0-flash endpoint (the correct available model)
  */
 export async function callGeminiApi(
   apiKey: string, 
   request: GeminiRequest
 ): Promise<any> {
-  // Use the correct model endpoint that's actually available
-  const MODEL_NAME = 'gemini-2.0-flash-exp';
+  // Use the correct model endpoint
+  const MODEL_NAME = 'gemini-2.0-flash';
   
   console.log(`🚀 [GEMINI API] Calling Gemini 2.0 Flash (${MODEL_NAME})`);
   

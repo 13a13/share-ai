@@ -12,7 +12,7 @@ export interface ModelCallOptions {
 }
 
 export class SimplifiedModelManager {
-  private readonly MODEL_NAME = 'gemini-2.0-flash-exp'; // The actual available endpoint
+  private readonly MODEL_NAME = 'gemini-2.0-flash'; // The correct available endpoint
   private readonly MAX_IMAGES = 20;
   private readonly MAX_TOKENS = 4096; // Aligned with gemini-api.ts
   private readonly RATE_LIMIT = 15; // Reasonable limit for 2.0 Flash
