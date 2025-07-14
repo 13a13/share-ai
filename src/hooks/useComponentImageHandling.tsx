@@ -1,7 +1,7 @@
 
 import { RoomComponent } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
-import { useComponentImageProcessing } from "./useComponentImageProcessing";
+import useComponentImageProcessing from "./useComponentImageProcessing";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,8 +13,8 @@ interface UseComponentImageHandlingProps {
   onChange: (updatedComponents: RoomComponent[]) => void;
   propertyName?: string;
   roomName?: string;
-  // Pass roomId to allow resolving missing names:
-  roomId?: string;
+  roomId: string;
+  reportId: string;
 }
 
 interface UseComponentImageHandlingReturn {
@@ -30,7 +30,8 @@ export function useComponentImageHandling({
   onChange,
   propertyName: propName,
   roomName: rmName,
-  roomId
+  roomId,
+  reportId
 }: UseComponentImageHandlingProps): UseComponentImageHandlingReturn {
   const { toast } = useToast();
 
@@ -60,7 +61,9 @@ export function useComponentImageHandling({
     expandedComponents,
     setComponents: updateComponents,
     setExpandedComponents,
-    onChange
+    onChange,
+    reportId,
+    roomId
   });
 
   const handleRemoveImage = (componentId: string, imageId: string) => {

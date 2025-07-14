@@ -53,7 +53,8 @@ const RoomContent = ({
     propertyName: propertyName,
     roomName: room.name,
     initialComponents: room.components || [],
-    onChange: (updatedComponents) => onUpdateComponents(room.id, updatedComponents)
+    onChange: (updatedComponents) => onUpdateComponents(room.id, updatedComponents),
+    reportId
   });
 
   // Wrapper function to match expected signature

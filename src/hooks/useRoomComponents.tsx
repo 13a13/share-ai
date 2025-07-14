@@ -16,6 +16,7 @@ interface UseRoomComponentsProps {
   roomName?: string;
   initialComponents: RoomComponent[];
   onChange: (updatedComponents: RoomComponent[]) => void;
+  reportId: string;
 }
 
 interface ComponentConfig {
@@ -63,7 +64,8 @@ export function useRoomComponents({
   propertyName: initialPropertyName,
   roomName: initialRoomName,
   initialComponents,
-  onChange
+  onChange,
+  reportId
 }: UseRoomComponentsProps): UseRoomComponentsReturn {
   const [propertyName, setPropertyName] = useState(initialPropertyName ?? "");
   const [roomName, setRoomName] = useState(initialRoomName ?? "");
@@ -134,7 +136,8 @@ export function useRoomComponents({
     onChange,
     propertyName,
     roomName,
-    roomId
+    roomId,
+    reportId
   });
 
   // Add staging manager

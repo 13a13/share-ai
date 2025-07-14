@@ -58,7 +58,8 @@ const RoomComponentInspection = ({
     propertyName,
     roomName,
     initialComponents: components,
-    onChange
+    onChange,
+    reportId
   });
 
   // Wrapper function to match expected signature
