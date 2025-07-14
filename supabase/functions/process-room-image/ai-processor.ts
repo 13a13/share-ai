@@ -28,8 +28,11 @@ export class AIProcessor {
       dailyBudget: 10.0, // $10 per day
       monthlyBudget: 200.0, // $200 per month
       costPerModelCall: {
-        'gemini-2.5-pro-preview-0506': 0.05,
-        'gemini-1.5-flash': 0.01
+        'gemini-2.0-flash': 0.02,
+        'gemini-2.0-flash-exp': 0.02, // Same model, different endpoint name
+        // Legacy mappings
+        'gemini-2.5-pro-preview-0506': 0.02,
+        'gemini-1.5-flash': 0.02
       },
       alertThresholds: {
         warning: 0.8, // 80%
@@ -63,21 +66,17 @@ export class AIProcessor {
     
     // Budget check
     const estimatedCost = this.estimateProcessingCost(options);
-    const budgetCheck = await this.costController.checkBudgetBeforeCall('gemini-2.5-pro-preview-0506', estimatedCost);
+    const budgetCheck = await this.costController.checkBudgetBeforeCall('gemini-2.0-flash', estimatedCost);
     
     if (!budgetCheck.allowed) {
       console.warn(`💸 [AI PROCESSOR] Budget constraint: ${budgetCheck.reason}`);
       throw new Error(`Budget limit reached: ${budgetCheck.reason}`);
     }
     
-    // Select optimal model
-    const selectedModel = this.costController.shouldUseCostOptimizedModel(
-      imageCount,
-      complexity,
-      budgetCheck.remainingBudget
-    );
+    // Always use Gemini 2.0 Flash (standardized)
+    const selectedModel = 'gemini-2.0-flash-exp';
     
-    console.log(`🤖 [AI PROCESSOR] Selected model: ${selectedModel}`);
+    console.log(`🤖 [AI PROCESSOR] Using standardized model: ${selectedModel}`);
     
     // Generate optimized prompt
     const promptType = inventoryMode ? 'inventory' : (shouldUseAdvancedAnalysis ? 'advanced' : 'dust');
@@ -93,12 +92,12 @@ export class AIProcessor {
     let actualCost = 0;
     
     try {
-      // Process with model manager for automatic fallback
-      const result = await this.modelManager.callWithFallback(
+      // Use simplified model manager with standardized Gemini 2.0 Flash
+      const simplifiedManager = new (await import("./simplified-model-manager.ts")).SimplifiedModelManager();
+      const result = await simplifiedManager.callGemini2Flash(
         apiKey,
         this.createGeminiRequest(prompt, processedImages, shouldUseAdvancedAnalysis),
         {
-          preferCostOptimized: budgetCheck.remainingBudget < 0.05,
           maxRetries: 3,
           timeout: 60000
         }
@@ -106,7 +105,7 @@ export class AIProcessor {
       
       // Parse result
       parsedData = this.parseResult(result, shouldUseAdvancedAnalysis, inventoryMode, componentName);
-      actualCost = this.costController.config.costPerModelCall[selectedModel] || 0.01;
+      actualCost = this.costController.config.costPerModelCall[selectedModel] || 0.02;
       
       // Record usage
       this.costController.recordUsage(selectedModel, actualCost);
@@ -114,7 +113,7 @@ export class AIProcessor {
     } catch (error) {
       console.error(`❌ [AI PROCESSOR] Processing failed:`, error);
       // Record failed attempt cost
-      actualCost = this.costController.config.costPerModelCall[selectedModel] || 0.01;
+      actualCost = this.costController.config.costPerModelCall[selectedModel] || 0.02;
       this.costController.recordUsage(selectedModel, actualCost * 0.5); // Half cost for failed attempts
       throw error;
     }
@@ -179,41 +178,21 @@ export class AIProcessor {
   }
 
   private estimateProcessingCost(options: AIProcessingOptions): number {
-    const { imageCount, useAdvancedAnalysis } = options;
+    const { imageCount } = options;
     
-    // Base cost estimation
-    let baseCost = 0.01; // Flash model base cost
+    // Base cost for Gemini 2.0 Flash
+    const baseCost = 0.02;
     
-    if (useAdvancedAnalysis || imageCount > 5) {
-      baseCost = 0.05; // Pro model cost
-    }
-    
-    // Adjust for image count
-    const imageCostMultiplier = Math.min(imageCount * 0.1, 2.0);
+    // Adjust for image count (linear scaling)
+    const imageCostMultiplier = Math.min(imageCount * 0.05, 1.0);
     
     return baseCost * (1 + imageCostMultiplier);
   }
 
   private createGeminiRequest(prompt: string, images: string[], advanced: boolean): any {
-    const parts = [
-      { text: prompt },
-      ...images.map(imageData => ({
-        inline_data: {
-          mime_type: "image/jpeg",
-          data: imageData.startsWith('data:') ? imageData.split(',')[1] : imageData
-        }
-      }))
-    ];
-
-    return {
-      contents: [{ parts }],
-      generationConfig: {
-        temperature: advanced ? 0.2 : 0.4,
-        topK: advanced ? 40 : 32,
-        topP: advanced ? 0.95 : 1.0,
-        maxOutputTokens: advanced ? 2048 : 1024,
-      }
-    };
+    // Use the standardized request creation from gemini-api.ts
+    const { createGeminiRequest } = await import("./gemini-api.ts");
+    return createGeminiRequest(prompt, images);
   }
 
   private parseResult(textContent: string, advanced: boolean, inventoryMode: boolean, componentName?: string): any {

@@ -23,28 +23,41 @@ export interface ModelCallOptions {
 
 export class GeminiModelManager {
   private models: Record<string, ModelConfig> = {
-    'gemini-2.5-pro-preview-0506': {
-      primary: 'gemini-2.5-pro-preview-0506',
-      fallback: 'gemini-1.5-flash',
-      costOptimized: 'gemini-1.5-flash',
+    'gemini-2.0-flash': {
+      primary: 'gemini-2.0-flash-exp', // Use the actual API endpoint name
+      fallback: 'gemini-2.0-flash-exp', // No fallback needed
+      costOptimized: 'gemini-2.0-flash-exp',
       features: {
         supportsBatch: true,
         maxImages: 20,
-        maxTokens: 8192,
-        costPerRequest: 0.05,
-        rateLimit: 10
+        maxTokens: 4096,
+        costPerRequest: 0.02, // Estimated cost for 2.0 Flash
+        rateLimit: 15
+      }
+    },
+    // Keep legacy entries for backwards compatibility but map to 2.0 Flash
+    'gemini-2.5-pro-preview-0506': {
+      primary: 'gemini-2.0-flash-exp',
+      fallback: 'gemini-2.0-flash-exp',
+      costOptimized: 'gemini-2.0-flash-exp',
+      features: {
+        supportsBatch: true,
+        maxImages: 20,
+        maxTokens: 4096,
+        costPerRequest: 0.02,
+        rateLimit: 15
       }
     },
     'gemini-1.5-flash': {
-      primary: 'gemini-1.5-flash',
-      fallback: 'gemini-1.5-flash',
-      costOptimized: 'gemini-1.5-flash',
+      primary: 'gemini-2.0-flash-exp',
+      fallback: 'gemini-2.0-flash-exp',
+      costOptimized: 'gemini-2.0-flash-exp',
       features: {
         supportsBatch: true,
-        maxImages: 15,
-        maxTokens: 8192,
-        costPerRequest: 0.01,
-        rateLimit: 30
+        maxImages: 20,
+        maxTokens: 4096,
+        costPerRequest: 0.02,
+        rateLimit: 15
       }
     }
   };
@@ -133,29 +146,9 @@ export class GeminiModelManager {
       budgetLimit
     });
     
-    // Budget considerations
-    if (budgetLimit && budgetLimit < 0.03) {
-      console.log(`💰 [MODEL MANAGER] Budget constraint detected, preferring cost-optimized model`);
-      return ['gemini-1.5-flash'];
-    }
-    
-    // Cost optimization preference
-    if (preferCostOptimized) {
-      return ['gemini-1.5-flash', 'gemini-2.5-pro-preview-0506'];
-    }
-    
-    // High complexity or many images favor the pro model
-    if (requestComplexity === 'high' || imageCount > 8) {
-      return ['gemini-2.5-pro-preview-0506', 'gemini-1.5-flash'];
-    }
-    
-    // Medium complexity can use either, but start with cost-effective
-    if (requestComplexity === 'medium' || imageCount > 3) {
-      return ['gemini-1.5-flash', 'gemini-2.5-pro-preview-0506'];
-    }
-    
-    // Simple requests use flash model
-    return ['gemini-1.5-flash'];
+    // Always use Gemini 2.0 Flash now (all models map to it)
+    console.log(`🎯 [MODEL MANAGER] Using Gemini 2.0 Flash for all requests`);
+    return ['gemini-2.0-flash-exp'];
   }
 
   private assessRequestComplexity(request: GeminiRequest): 'low' | 'medium' | 'high' {

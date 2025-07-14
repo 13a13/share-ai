@@ -1,10 +1,10 @@
 
 /**
- * Simplified Model Manager - Exclusively uses Gemini 2.0 Flash
- * Updated to use the currently available model
+ * Standardized Model Manager - Uses Gemini 2.0 Flash exclusively
+ * Consistent with gemini-api.ts implementation
  */
 
-import { GeminiRequest } from "./gemini-api.ts";
+import { GeminiRequest, callGeminiApi } from "./gemini-api.ts";
 
 export interface ModelCallOptions {
   maxRetries?: number;
@@ -12,33 +12,34 @@ export interface ModelCallOptions {
 }
 
 export class SimplifiedModelManager {
-  private readonly MODEL_NAME = 'gemini-2.0-flash-exp';
+  private readonly MODEL_NAME = 'gemini-2.0-flash-exp'; // Alias for gemini-2.0-flash
   private readonly MAX_IMAGES = 20;
-  private readonly MAX_TOKENS = 8192;
-  private readonly RATE_LIMIT = 10; // requests per minute
+  private readonly MAX_TOKENS = 4096; // Aligned with gemini-api.ts
+  private readonly RATE_LIMIT = 15; // Reasonable limit for 2.0 Flash
   
   private requestCount = 0;
   private lastResetTime = Date.now();
 
   /**
-   * Call Gemini 2.0 Flash with retry logic (no fallbacks)
+   * Call Gemini 2.0 Flash with enhanced retry logic
+   * Uses the standardized callGeminiApi function
    */
-  async callGemini25Pro(
+  async callGemini2Flash(
     apiKey: string,
     request: GeminiRequest,
     options: ModelCallOptions = {}
   ): Promise<any> {
     const { maxRetries = 3, timeout = 60000 } = options;
     
-    console.log(`🤖 [SIMPLIFIED MODEL] Calling Gemini 2.0 Flash exclusively`);
+    console.log(`🤖 [SIMPLIFIED MODEL] Calling Gemini 2.0 Flash (${this.MODEL_NAME})`);
     
     // Check rate limits
     if (!this.checkRateLimit()) {
-      throw new Error('Rate limit exceeded for Gemini 2.0 Flash');
+      throw new Error(`Rate limit exceeded for Gemini 2.0 Flash (${this.requestCount}/${this.RATE_LIMIT} requests in last minute)`);
     }
     
     // Adjust request for Gemini 2.0 Flash capabilities
-    const adjustedRequest = this.adjustRequestForGemini25Pro(request);
+    const adjustedRequest = this.adjustRequestForGemini2Flash(request);
     
     let lastError: Error | null = null;
     
@@ -46,8 +47,9 @@ export class SimplifiedModelManager {
       try {
         console.log(`🚀 [SIMPLIFIED MODEL] Attempt ${attempt}/${maxRetries} with Gemini 2.0 Flash`);
         
+        // Use the standardized API call from gemini-api.ts
         const result = await Promise.race([
-          this.callGeminiAPI(apiKey, adjustedRequest),
+          callGeminiApi(apiKey, adjustedRequest),
           new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error(`Request timeout after ${timeout}ms`)), timeout)
           )
@@ -61,18 +63,38 @@ export class SimplifiedModelManager {
         
       } catch (error) {
         lastError = error as Error;
-        console.error(`❌ [SIMPLIFIED MODEL] Attempt ${attempt} failed:`, error);
+        console.error(`❌ [SIMPLIFIED MODEL] Attempt ${attempt} failed:`, error.message);
+        
+        // Check if it's a permanent error (don't retry)
+        if (error.message.includes('Invalid API key') || 
+            error.message.includes('API access forbidden') ||
+            error.message.includes('Bad request')) {
+          console.error(`❌ [SIMPLIFIED MODEL] Permanent error detected, stopping retries`);
+          break;
+        }
         
         if (attempt < maxRetries) {
-          // Exponential backoff
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          console.log(`⏳ [SIMPLIFIED MODEL] Waiting ${delay}ms before retry`);
+          // Exponential backoff with jitter
+          const baseDelay = 1000 * Math.pow(2, attempt - 1);
+          const jitter = Math.random() * 1000;
+          const delay = Math.min(baseDelay + jitter, 10000);
+          console.log(`⏳ [SIMPLIFIED MODEL] Waiting ${Math.round(delay)}ms before retry`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
     
     throw new Error(`Gemini 2.0 Flash failed after ${maxRetries} attempts. Last error: ${lastError?.message}`);
+  }
+
+  // Legacy method name for backwards compatibility
+  async callGemini25Pro(
+    apiKey: string,
+    request: GeminiRequest,
+    options: ModelCallOptions = {}
+  ): Promise<any> {
+    console.log(`⚠️ [SIMPLIFIED MODEL] callGemini25Pro is deprecated, using callGemini2Flash`);
+    return this.callGemini2Flash(apiKey, request, options);
   }
 
   private checkRateLimit(): boolean {
@@ -92,10 +114,10 @@ export class SimplifiedModelManager {
     this.requestCount++;
   }
 
-  private adjustRequestForGemini25Pro(request: GeminiRequest): GeminiRequest {
+  private adjustRequestForGemini2Flash(request: GeminiRequest): GeminiRequest {
     console.log(`🔧 [SIMPLIFIED MODEL] Optimizing request for Gemini 2.0 Flash`);
     
-    // Clone the request
+    // Clone the request to avoid mutation
     const adjustedRequest = JSON.parse(JSON.stringify(request));
     
     // Limit images to Gemini 2.0 Flash capability
@@ -107,59 +129,29 @@ export class SimplifiedModelManager {
       adjustedRequest.contents[0].parts = [...textParts, ...limitedImageParts];
     }
     
-    // Optimize for Gemini 2.0 Flash
+    // Optimize generation config for Gemini 2.0 Flash
     adjustedRequest.generationConfig = {
       ...adjustedRequest.generationConfig,
       maxOutputTokens: Math.min(adjustedRequest.generationConfig.maxOutputTokens, this.MAX_TOKENS),
-      temperature: 0.2, // Optimal for Gemini 2.0 Flash
+      temperature: 0.2, // Consistent with gemini-api.ts
       topP: 0.95,
       topK: 40
     };
     
+    console.log(`⚙️ [SIMPLIFIED MODEL] Request adjusted:`, {
+      imageCount: adjustedRequest.contents[0].parts.filter((p: any) => p.inline_data).length,
+      maxTokens: adjustedRequest.generationConfig.maxOutputTokens,
+      temperature: adjustedRequest.generationConfig.temperature
+    });
+    
     return adjustedRequest;
   }
 
-  private async callGeminiAPI(apiKey: string, request: GeminiRequest): Promise<any> {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.MODEL_NAME}:generateContent`;
-    
-    console.log(`📡 [SIMPLIFIED MODEL] Calling Gemini 2.0 Flash API`);
-    
-    const response = await fetch(`${apiUrl}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ [SIMPLIFIED MODEL] Gemini 2.0 Flash API error:`, {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      });
-      throw new Error(`Gemini 2.0 Flash API error (${response.status}): ${errorText}`);
-    }
-
-    const data = await response.json();
-    
-    // Enhanced response validation
-    if (!data.candidates || data.candidates.length === 0) {
-      throw new Error(`No candidates returned from Gemini 2.0 Flash`);
-    }
-    
-    const candidate = data.candidates[0];
-    if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-      throw new Error(`No content parts returned from Gemini 2.0 Flash`);
-    }
-    
-    const textContent = candidate.content.parts[0].text;
-    if (!textContent) {
-      throw new Error(`No text content returned from Gemini 2.0 Flash`);
-    }
-    
-    console.log(`✅ [SIMPLIFIED MODEL] Gemini 2.0 Flash returned ${textContent.length} characters`);
-    return textContent;
+  // Legacy method for backwards compatibility
+  private adjustRequestForGemini25Pro(request: GeminiRequest): GeminiRequest {
+    return this.adjustRequestForGemini2Flash(request);
   }
+
 
   getModelInfo() {
     return {
