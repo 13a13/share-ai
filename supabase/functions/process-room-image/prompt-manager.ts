@@ -4,7 +4,7 @@ import { createAdvancedMultiImagePrompt } from "./advanced-analysis.ts";
 import { createDustAwarePrompt } from "./dust-detection.ts";
 
 export type PromptType = 'inventory' | 'advanced' | 'dust';
-export type ModelName = 'gemini-2.5-pro-preview-0506' | 'gemini-1.5-flash';
+export type ModelName = 'gemini-2.0-flash' | 'gemini-2.5-pro-preview-0506' | 'gemini-1.5-flash';
 
 export class PromptManager {
   private modelPrompts: Record<ModelName, {
@@ -12,6 +12,13 @@ export class PromptManager {
     advanced: (componentName: string, roomType: string, imageCount: number) => string;
     dust: (componentName: string, roomType: string) => string;
   }> = {
+    'gemini-2.0-flash': {
+      inventory: (componentName: string) => createInventoryPrompt(componentName),
+      advanced: (componentName: string, roomType: string, imageCount: number) => 
+        createAdvancedMultiImagePrompt(componentName, roomType, imageCount),
+      dust: (componentName: string, roomType: string) => 
+        createDustAwarePrompt(componentName, roomType)
+    },
     'gemini-2.5-pro-preview-0506': {
       inventory: (componentName: string) => this.createProInventoryPrompt(componentName),
       advanced: (componentName: string, roomType: string, imageCount: number) => 
@@ -37,7 +44,7 @@ export class PromptManager {
   ): string {
     console.log(`📝 [PROMPT MANAGER] Getting ${promptType} prompt for ${modelName}`);
     
-    const modelPrompts = this.modelPrompts[modelName] || this.modelPrompts['gemini-1.5-flash'];
+    const modelPrompts = this.modelPrompts[modelName] || this.modelPrompts['gemini-2.0-flash'];
     
     switch (promptType) {
       case 'inventory':

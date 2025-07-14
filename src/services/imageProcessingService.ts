@@ -91,7 +91,7 @@ export const processComponentImage = async (
       imageCount: imageArray.length,
       shouldUseAdvancedAnalysis,
       inventoryMode: !shouldUseAdvancedAnalysis,
-      expectedModel: 'gemini-2.0-flash-exp'
+      expectedModel: 'gemini-2.0-flash'
     });
     
     const response = await supabase.functions.invoke('process-room-image', {
