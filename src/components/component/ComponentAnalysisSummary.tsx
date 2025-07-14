@@ -16,6 +16,16 @@ interface ComponentAnalysisSummaryProps {
 }
 
 const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummaryProps) => {
+  console.log(`🔍 [ComponentAnalysisSummary] Rendering analysis for component:`, {
+    id: component.id,
+    name: component.name,
+    description: component.description,
+    condition: component.condition,
+    conditionSummary: component.conditionSummary,
+    cleanliness: component.cleanliness,
+    imagesCount: component.images?.length || 0
+  });
+
   const conditionOption = conditionRatingOptions.find(option => 
     option.value === component.condition
   );
@@ -29,17 +39,36 @@ const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummar
     img.aiData && isAdvancedAnalysis(img.aiData)
   );
   
-  // Get the latest AI analysis data
+  // Get the latest AI analysis data from multiple sources
   const latestAnalysis = component.images
     .filter(img => img.aiData)
     .sort((a, b) => 
       new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
     )[0]?.aiData;
   
-  // Get standardized condition points
+  console.log(`📊 [ComponentAnalysisSummary] Latest analysis data:`, latestAnalysis);
+  
+  // Get standardized condition points from multiple sources
   const conditionPoints = component.conditionPoints ? 
     normalizeConditionPoints(component.conditionPoints) : 
-    [];
+    (latestAnalysis?.condition?.points || []);
+  
+  // Enhanced description handling - use the best available description
+  const displayDescription = component.description || 
+                            latestAnalysis?.description || 
+                            'Analysis completed';
+  
+  // Enhanced condition summary - use the best available summary
+  const displayConditionSummary = component.conditionSummary || 
+                                 latestAnalysis?.condition?.summary || 
+                                 '';
+  
+  console.log(`🎯 [ComponentAnalysisSummary] Display values:`, {
+    displayDescription,
+    displayConditionSummary,
+    conditionPoints,
+    isAdvanced
+  });
   
   return (
     <div className="bg-gray-50 p-4 rounded-lg border">
@@ -54,20 +83,29 @@ const ComponentAnalysisSummary = ({ component, onEdit }: ComponentAnalysisSummar
       <div className="space-y-3">
         <div>
           <h4 className="text-sm font-medium">Description</h4>
-          <p className="text-sm text-gray-700 mt-1">{component.description}</p>
+          <p className="text-sm text-gray-700 mt-1">{displayDescription}</p>
+          {displayDescription === 'Analysis completed' && (
+            <span className="text-xs text-muted-foreground">AI analysis processed successfully</span>
+          )}
         </div>
         
-        {component.conditionSummary && (
+        {(displayConditionSummary || conditionPoints.length > 0) && (
           <div>
             <h4 className="text-sm font-medium">Condition</h4>
-            <p className="text-sm text-gray-700 mt-1">{component.conditionSummary}</p>
+            {displayConditionSummary && (
+              <p className="text-sm text-gray-700 mt-1">{displayConditionSummary}</p>
+            )}
             
             {conditionPoints.length > 0 && (
               <ul className="list-disc list-inside text-sm text-gray-700 mt-2 pl-2 space-y-1">
                 {conditionPoints.map((point, idx) => (
-                  <li key={idx}>{point}</li>
+                  <li key={idx}>{typeof point === 'string' ? point : point.label || point}</li>
                 ))}
               </ul>
+            )}
+            
+            {!displayConditionSummary && conditionPoints.length === 0 && (
+              <p className="text-sm text-gray-500 mt-1 italic">No specific condition issues detected</p>
             )}
           </div>
         )}

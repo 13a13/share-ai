@@ -79,8 +79,12 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
         });
       }
 
-      // Enhanced data extraction with comprehensive fallback mapping
-      console.log(`🔍 [COMPONENT PROCESSING] Processing result structure:`, result);
+      // Enhanced data extraction with comprehensive fallback mapping and debugging
+      console.log(`🔍 [COMPONENT PROCESSING] Processing result structure:`, {
+        type: typeof result,
+        keys: Object.keys(result || {}),
+        stringified: JSON.stringify(result, null, 2).substring(0, 500)
+      });
       
       const description = extractValue(result, [
         'description',
@@ -121,13 +125,29 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
         'condition_points'
       ], []);
 
-      console.log(`✅ [COMPONENT PROCESSING] Extracted data:`, {
-        description,
-        conditionRating,
-        cleanliness,
-        conditionSummary,
-        conditionPoints
+      console.log(`✅ [COMPONENT PROCESSING] Extracted data with validation:`, {
+        description: `"${description}" (length: ${description?.length || 0})`,
+        conditionRating: `"${conditionRating}"`,
+        cleanliness: `"${cleanliness}"`,
+        conditionSummary: `"${conditionSummary}" (length: ${conditionSummary?.length || 0})`,
+        conditionPoints: `Array with ${conditionPoints?.length || 0} items`,
+        hasValidDescription: description && description !== 'Analysis completed' && description.trim().length > 0,
+        hasValidConditionSummary: conditionSummary && conditionSummary.trim().length > 0,
+        hasValidConditionPoints: Array.isArray(conditionPoints) && conditionPoints.length > 0
       });
+      
+      // Enhanced validation and fallback for empty fields
+      if (!description || description === 'Analysis completed') {
+        console.warn('⚠️ [COMPONENT PROCESSING] Empty or default description detected');
+      }
+      
+      if (!conditionSummary || conditionSummary.trim().length === 0) {
+        console.warn('⚠️ [COMPONENT PROCESSING] Empty condition summary detected');
+      }
+      
+      if (!Array.isArray(conditionPoints) || conditionPoints.length === 0) {
+        console.warn('⚠️ [COMPONENT PROCESSING] No condition points detected');
+      }
 
       // Update the component with AI analysis data
       const updatedComponents = components.map(comp => {
