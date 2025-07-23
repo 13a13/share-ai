@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Provider, Session } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { securityService } from "@/lib/security/securityService";
+import { sessionManager } from "@/lib/security/sessionManager";
 
 // Define types
 interface User {
@@ -87,10 +88,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Handle specific auth events
         if (event === 'SIGNED_OUT') {
           console.log("User signed out, clearing state");
+          sessionManager.stopSessionMonitoring();
         } else if (event === 'SIGNED_IN') {
           console.log("User signed in:", userData?.email);
           // Record successful login for rate limiting
           securityService.recordAttempt('login', userData?.email, true);
+          // Initialize session management
+          setTimeout(() => {
+            sessionManager.initializeSession();
+          }, 0);
         } else if (event === 'TOKEN_REFRESHED') {
           console.log("Token refreshed for user:", userData?.email);
         }
@@ -385,7 +391,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const userEmail = user?.email;
       
-      await supabase.auth.signOut();
+      // Invalidate session first
+      await sessionManager.invalidateSession();
       
       // Clear state immediately (onAuthStateChange will also handle this)
       setUser(null);

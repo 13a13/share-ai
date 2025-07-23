@@ -105,19 +105,55 @@ class SecurityService {
     return failureRate > 0.8;
   }
 
-  public logSecurityEvent(event: {
+  public async logSecurityEvent(event: {
     action: string;
     success: boolean;
     identifier?: string;
     userAgent?: string;
     ip?: string;
+    resource?: string;
     additionalData?: Record<string, any>;
-  }): void {
-    // In production, this would send to a security monitoring service
+  }): Promise<void> {
+    // Log to console for debugging
     console.log('[SECURITY]', {
       timestamp: new Date().toISOString(),
       ...event
     });
+
+    // Also log to database for audit trail
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        await supabase.rpc('log_security_event', {
+          p_action: event.action,
+          p_resource: event.resource || null,
+          p_success: event.success,
+          p_error_message: event.success ? null : (event.additionalData?.error || 'Unknown error'),
+          p_metadata: event.additionalData || {}
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to log security event to database:', error);
+    }
+  }
+
+  public async getSecurityLogs(limit: number = 50): Promise<any[]> {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase
+        .from('security_audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch security logs:', error);
+      return [];
+    }
   }
 }
 
