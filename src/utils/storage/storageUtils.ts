@@ -3,13 +3,30 @@ import { supabase } from '@/integrations/supabase/client';
 import { withRetry, STORAGE_RETRY_CONFIG, RetryContext } from './retryUtils';
 
 /**
- * Convert data URL to blob
+ * Convert data URL to blob using browser-native conversion
  */
 export const dataUrlToBlob = async (dataUrl: string): Promise<Blob> => {
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
-  console.log("📦 Image converted to blob, size:", blob.size, "type:", blob.type);
-  return blob;
+  try {
+    // Extract the base64 data and mime type
+    const [header, base64Data] = dataUrl.split(',');
+    const mimeMatch = header.match(/data:([^;]+)/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    
+    // Convert base64 to binary
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    const blob = new Blob([bytes], { type: mimeType });
+    console.log("📦 Image converted to blob, size:", blob.size, "type:", blob.type);
+    return blob;
+  } catch (error) {
+    console.error("❌ Failed to convert data URL to blob:", error);
+    throw new Error(`Blob conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 };
 
 /**
