@@ -6,9 +6,8 @@
 import { SimplifiedModelManager } from "./simplified-model-manager.ts";
 import { PromptManager } from "./prompt-manager.ts";
 import { CrossImageValidator } from "./cross-validation.ts";
-import { validateDustDetection } from "./dust-detection.ts";
 import { createGeminiRequest } from "./gemini-api.ts";
-import { parseInventoryResponse } from "./inventory-parser.ts";
+import { parseUniversalResponse } from "./universal-prompt.ts";
 import type { AIProcessingOptions } from './ai-processing-options.ts';
 
 export interface SimplifiedAIResult {
@@ -49,11 +48,8 @@ export class SimplifiedAIProcessor {
       componentName
     });
     
-    // Generate optimized prompt for Gemini 2.0 Flash
-    const promptType = inventoryMode ? 'inventory' : (shouldUseAdvancedAnalysis ? 'advanced' : 'dust');
+    // Generate universal prompt for Gemini 2.0 Flash
     const prompt = this.promptManager.getPrompt(
-      'gemini-2.0-flash' as any,
-      promptType,
       componentName || 'component',
       roomType,
       imageCount
@@ -69,8 +65,8 @@ export class SimplifiedAIProcessor {
         timeout: 60000
       });
       
-      // Parse result
-      parsedData = this.parseResult(result, shouldUseAdvancedAnalysis, inventoryMode, componentName);
+      // Parse result using universal parser
+      parsedData = parseUniversalResponse(result);
       
     } catch (error) {
       console.error(`❌ [SIMPLIFIED AI] Gemini 2.0 Flash processing failed:`, error);
@@ -102,11 +98,7 @@ export class SimplifiedAIProcessor {
       }
     }
     
-    // Apply dust detection validation
-    if (promptType === 'dust' || inventoryMode) {
-      console.log(`🧹 [SIMPLIFIED AI] Applying dust detection validation`);
-      parsedData = validateDustDetection(parsedData);
-    }
+    // Universal response already includes contamination analysis
     
     const processingTime = Date.now() - startTime;
     
@@ -123,151 +115,7 @@ export class SimplifiedAIProcessor {
     };
   }
 
-  private parseResult(textContent: string, advanced: boolean, inventoryMode: boolean, componentName?: string): any {
-    console.log(`🔍 [SIMPLIFIED AI] Parsing result for ${componentName || 'unknown component'}`);
-    console.log(`📝 [SIMPLIFIED AI] Raw response:`, textContent.substring(0, 500) + '...');
-    
-    try {
-      // Try JSON parsing first
-      const jsonResult = JSON.parse(textContent);
-      console.log(`✅ [SIMPLIFIED AI] JSON parsed successfully:`, jsonResult);
-      return jsonResult;
-    } catch {
-      console.log(`📝 [SIMPLIFIED AI] JSON parsing failed, using inventory parser and text extraction`);
-      
-      // Use inventory parser for structured responses
-      if (inventoryMode || componentName) {
-        try {
-          const inventoryResult = parseInventoryResponse(textContent);
-          console.log(`✅ [SIMPLIFIED AI] Inventory parser result:`, inventoryResult);
-          if (inventoryResult && (inventoryResult.description || inventoryResult.condition)) {
-            return inventoryResult;
-          }
-        } catch (parseError) {
-          console.warn(`⚠️ [SIMPLIFIED AI] Inventory parser failed:`, parseError);
-        }
-      }
-      
-      // Fallback to enhanced text extraction
-      const extractedResult = this.extractFromText(textContent);
-      console.log(`✅ [SIMPLIFIED AI] Text extraction result:`, extractedResult);
-      return extractedResult;
-    }
-  }
-
-  private extractFromText(text: string): any {
-    console.log(`🔍 [SIMPLIFIED AI] Enhanced text extraction from: ${text.substring(0, 200)}...`);
-    
-    const description = this.extractField(text, 'DESCRIPTION') || 
-                       this.extractField(text, 'description') || 
-                       this.extractField(text, 'Description') ||
-                       'Analysis completed';
-    
-    const conditionSummary = this.extractField(text, 'CONDITION') || 
-                            this.extractField(text, 'condition') ||
-                            this.extractField(text, 'Condition') ||
-                            this.extractField(text, 'SUMMARY') ||
-                            this.extractField(text, 'summary') || '';
-    
-    const rating = this.extractField(text, 'RATING') || 
-                   this.extractField(text, 'rating') ||
-                   this.extractField(text, 'Rating') ||
-                   this.extractField(text, 'ORDER') ||
-                   'fair';
-    
-    const cleanliness = this.extractField(text, 'CLEANLINESS') || 
-                       this.extractField(text, 'cleanliness') ||
-                       this.extractField(text, 'Cleanliness') ||
-                       this.extractField(text, 'CLEANING') ||
-                       'domestic_clean';
-    
-    const points = this.extractListItems(text);
-    
-    const result = {
-      description: description.trim(),
-      condition: {
-        summary: conditionSummary.trim(),
-        points: points || [],
-        rating: this.normalizeRating(rating)
-      },
-      cleanliness: this.normalizeCleanliness(cleanliness)
-    };
-    
-    console.log(`✅ [SIMPLIFIED AI] Enhanced extraction result:`, result);
-    return result;
-  }
-
-  private extractField(text: string, fieldName: string): string | null {
-    const patterns = [
-      // Match "FIELD: content" or "FIELD:content"
-      new RegExp(`${fieldName}\\s*:?\\s*([^\\n\\r]+)`, 'i'),
-      // Match JSON-like "field": "content"
-      new RegExp(`"${fieldName}"\\s*:\\s*"([^"]+)"`, 'i'),
-      // Match "field = content"
-      new RegExp(`${fieldName}\\s*=\\s*([^\\n\\r]+)`, 'i'),
-      // Match markdown-style **FIELD**: content
-      new RegExp(`\\*\\*${fieldName}\\*\\*\\s*:?\\s*([^\\n\\r]+)`, 'i'),
-      // Match section headers ### FIELD
-      new RegExp(`#{1,3}\\s*${fieldName}\\s*\\n([^#\\n]+)`, 'i'),
-      // Match bracket notation [FIELD]: content
-      new RegExp(`\\[${fieldName}\\]\\s*:?\\s*([^\\n\\r]+)`, 'i')
-    ];
-    
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        const extracted = match[1].trim();
-        // Filter out obvious false matches
-        if (extracted.length > 0 && !extracted.match(/^[\{\[\:]+$/)) {
-          console.log(`🎯 [SIMPLIFIED AI] Extracted ${fieldName}: ${extracted}`);
-          return extracted;
-        }
-      }
-    }
-    
-    console.log(`❌ [SIMPLIFIED AI] Could not extract ${fieldName} from text`);
-    return null;
-  }
-
-  private extractListItems(text: string): string[] {
-    const listPatterns = [
-      /[-•]\s*([^\n]+)/g,
-      /\d+\.\s*([^\n]+)/g,
-      /\*\s*([^\n]+)/g
-    ];
-    
-    for (const pattern of listPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      if (matches.length > 0) {
-        return matches.map(match => match[1].trim()).filter(item => item.length > 0);
-      }
-    }
-    
-    return [];
-  }
-
-  private normalizeRating(rating: string): string {
-    const normalizedRating = rating.toLowerCase().trim();
-    
-    // Map various rating formats to standard values
-    if (normalizedRating.includes('good') || normalizedRating.includes('excellent')) return 'good';
-    if (normalizedRating.includes('fair') || normalizedRating.includes('acceptable')) return 'fair';
-    if (normalizedRating.includes('poor') || normalizedRating.includes('bad') || normalizedRating.includes('damaged')) return 'poor';
-    if (normalizedRating.includes('used')) return 'used';
-    
-    return 'fair'; // Default fallback
-  }
-
-  private normalizeCleanliness(cleanliness: string): string {
-    const normalizedCleanliness = cleanliness.toLowerCase().trim();
-    
-    // Map various cleanliness formats to standard values
-    if (normalizedCleanliness.includes('domestic') || normalizedCleanliness.includes('clean')) return 'domestic_clean';
-    if (normalizedCleanliness.includes('professional') || normalizedCleanliness.includes('deep')) return 'professional_clean';
-    if (normalizedCleanliness.includes('dirty') || normalizedCleanliness.includes('requires')) return 'requires_cleaning';
-    
-    return 'domestic_clean'; // Default fallback
-  }
+  // Parsing is now handled by universal parser
 
   getModelInfo() {
     return this.modelManager.getModelInfo();

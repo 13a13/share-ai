@@ -1,22 +1,19 @@
 
 /**
- * Simplified AI Processing Options for Gemini 2.5 Pro exclusive use
+ * Simplified AI Processing Options for universal prompt
  */
 
 export interface AIProcessingOptions {
   componentName?: string;
   roomType: string;
-  inventoryMode?: boolean;
-  useAdvancedAnalysis?: boolean;
   imageCount: number;
 }
 
 /**
- * Default processing options optimized for Gemini 2.5 Pro
+ * Default processing options
  */
 export const DEFAULT_PROCESSING_OPTIONS: Partial<AIProcessingOptions> = {
-  inventoryMode: true,
-  useAdvancedAnalysis: true, // Always leverage Gemini 2.5 Pro's capabilities
+  componentName: 'component',
 };
 
 /**
