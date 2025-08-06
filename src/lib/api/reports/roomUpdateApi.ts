@@ -75,11 +75,19 @@ async function updateMainRoom(inspection: any, roomId: string, reportId: string,
   };
   
   console.log("💾 Saving MAIN room components:", updatedReportInfo.components.length);
+  console.log("💾 Updated report info structure:", JSON.stringify(updatedReportInfo, null, 2));
   
-  await supabase
+  const { error: updateError } = await supabase
     .from('inspections')
     .update({ report_info: updatedReportInfo })
     .eq('id', reportId);
+    
+  if (updateError) {
+    console.error("❌ Error updating main room report_info:", updateError);
+    throw updateError;
+  }
+  
+  console.log("✅ Successfully updated main room report_info");
     
   // Get the room data
   const { data: room } = await supabase
@@ -180,6 +188,7 @@ async function updateAdditionalRoom(inspection: any, roomId: string, reportId: s
   }
   
   console.log("💾 Saving ADDITIONAL room components:", additionalRooms[roomIndex].components.length);
+  console.log("💾 Additional room structure:", JSON.stringify(additionalRooms[roomIndex], null, 2));
   
   // Update the room type in the rooms table if needed
   if (updates.type) {
@@ -203,12 +212,21 @@ async function updateAdditionalRoom(inspection: any, roomId: string, reportId: s
     additionalRooms: additionalRooms
   };
   
-  await supabase
+  console.log("💾 Full updated report info:", JSON.stringify(updatedReportInfo, null, 2));
+  
+  const { error: updateError } = await supabase
     .from('inspections')
     .update({
       report_info: updatedReportInfo
     })
     .eq('id', reportId);
+    
+  if (updateError) {
+    console.error("❌ Error updating additional room report_info:", updateError);
+    throw updateError;
+  }
+  
+  console.log("✅ Successfully updated additional room report_info");
   
   // Get images for the room
   const { data: imageData } = await supabase

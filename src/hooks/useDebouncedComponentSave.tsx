@@ -32,22 +32,26 @@ export const useDebouncedComponentSave = ({
   }, []);
 
   const debouncedSave = useCallback((roomId: string, components: RoomComponent[]) => {
+    console.log(`⏰ useDebouncedComponentSave: Scheduling save for room ${roomId} with ${components.length} components`);
+    
     // Store the latest data
     latestDataRef.current = { roomId, components };
 
     // Clear existing timeout
     if (timeoutRef.current) {
+      console.log(`⏰ useDebouncedComponentSave: Clearing existing timeout`);
       clearTimeout(timeoutRef.current);
     }
 
     // Set new timeout
     timeoutRef.current = setTimeout(async () => {
       if (latestDataRef.current) {
+        console.log(`💾 useDebouncedComponentSave: Executing auto-save for room ${latestDataRef.current.roomId}`);
         try {
           await onSave(latestDataRef.current.roomId, latestDataRef.current.components);
-          console.log("✅ Auto-saved component changes");
+          console.log("✅ useDebouncedComponentSave: Auto-saved component changes successfully");
         } catch (error) {
-          console.error("❌ Auto-save failed:", error);
+          console.error("❌ useDebouncedComponentSave: Auto-save failed:", error);
         }
         latestDataRef.current = null;
       }
@@ -55,8 +59,11 @@ export const useDebouncedComponentSave = ({
   }, [onSave, delay]);
 
   const saveImmediately = useCallback(async (roomId: string, components: RoomComponent[]) => {
+    console.log(`⚡ useDebouncedComponentSave: Executing immediate save for room ${roomId} with ${components.length} components`);
+    
     // Clear any pending debounced save
     if (timeoutRef.current) {
+      console.log(`⚡ useDebouncedComponentSave: Clearing pending debounced save`);
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
@@ -67,9 +74,9 @@ export const useDebouncedComponentSave = ({
     // Save immediately
     try {
       await onSave(roomId, components);
-      console.log("✅ Immediately saved component changes");
+      console.log("✅ useDebouncedComponentSave: Immediately saved component changes successfully");
     } catch (error) {
-      console.error("❌ Immediate save failed:", error);
+      console.error("❌ useDebouncedComponentSave: Immediate save failed:", error);
       throw error;
     }
   }, [onSave]);

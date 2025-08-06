@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Save, X } from "lucide-react";
 import { normalizeConditionPoints } from "@/services/imageProcessingService";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface ComponentEditFormProps {
   componentId: string;
@@ -54,15 +54,28 @@ const ComponentEditForm = ({
   }, [conditionPoints]);
   
   const handleSave = async () => {
+    console.log(`🔧 ComponentEditForm: Starting save for component ${componentId}`);
+    console.log(`🔧 ComponentEditForm: Current values:`, {
+      description,
+      conditionSummary,
+      condition,
+      cleanliness,
+      notes,
+      conditionPoints: normalizedPoints
+    });
+    
     try {
       // If we have an explicit save handler, use it
       if (onSaveComponent) {
+        console.log(`🔧 ComponentEditForm: Using explicit save handler`);
         await onSaveComponent(componentId);
+        console.log(`🔧 ComponentEditForm: Explicit save completed successfully`);
         toast({
           title: "Component Saved",
           description: "Component changes have been saved successfully.",
         });
       } else {
+        console.log(`🔧 ComponentEditForm: Using fallback update method`);
         // Fallback to the old method for compatibility
         const updates = {
           description,
@@ -73,15 +86,18 @@ const ComponentEditForm = ({
           conditionPoints: normalizedPoints
         };
 
+        console.log(`🔧 ComponentEditForm: Applying updates:`, updates);
         Object.entries(updates).forEach(([field, value]) => {
           onUpdateComponent(componentId, field, value);
         });
+        console.log(`🔧 ComponentEditForm: Fallback updates applied`);
       }
 
       // Close edit mode after successful save
       onToggleEditMode(componentId);
+      console.log(`🔧 ComponentEditForm: Edit mode closed for component ${componentId}`);
     } catch (error) {
-      console.error("Failed to save component:", error);
+      console.error(`🔧 ComponentEditForm: Failed to save component ${componentId}:`, error);
       toast({
         title: "Save Failed",
         description: "Failed to save component changes. Please try again.",
