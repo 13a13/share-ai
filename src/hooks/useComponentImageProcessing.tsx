@@ -165,8 +165,8 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
             description: description,
             condition: conditionRating,
             cleanliness: cleanliness,
-            notes: conditionSummary,
-            conditionSummary: conditionSummary,
+            notes: '', // Keep empty for manual input only
+            conditionSummary: conditionSummary, // AI-generated analysis only
             conditionPoints: Array.isArray(conditionPoints) ? conditionPoints : []
           };
         }

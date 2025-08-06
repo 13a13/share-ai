@@ -291,12 +291,10 @@ async function generateComponentSection(
     yPosition += 7;
   }
   
-  // Additional condition details
-  if (component.conditionSummary) {
-    const splitSummary = doc.splitTextToSize(component.conditionSummary, pageWidth - (margins * 2) - 10);
-    
-    // Check if condition summary would overflow into footer
-    if (checkPageOverflow(doc, yPosition, splitSummary.length * 6 + 3)) {
+  // AI Analysis Summary
+  if (component.conditionSummary && component.conditionSummary.trim() !== '') {
+    // Check if AI analysis header would overflow into footer
+    if (checkPageOverflow(doc, yPosition, 10)) {
       doc.addPage();
       yPosition = margins;
       
@@ -307,12 +305,31 @@ async function generateComponentSection(
       yPosition += 10;
     }
     
-    doc.text(splitSummary, margins, yPosition);
-    yPosition += splitSummary.length * 6 + 3;
+    doc.setFont(pdfStyles.fonts.body, "bold");
+    doc.text("AI Analysis:", margins, yPosition);
+    yPosition += 6;
+    
+    doc.setFont(pdfStyles.fonts.body, "normal");
+    const splitSummary = doc.splitTextToSize(component.conditionSummary, pageWidth - (margins * 2) - 10);
+    
+    // Check if condition summary content would overflow into footer
+    if (checkPageOverflow(doc, yPosition, splitSummary.length * 6 + 3)) {
+      doc.addPage();
+      yPosition = margins;
+      
+      // Add component continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} - AI Analysis (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+    
+    doc.text(splitSummary, margins + 5, yPosition);
+    yPosition += splitSummary.length * 6 + 5;
   }
   
-  // Component notes
-  if (component.notes) {
+  // Inspector Notes - only show if there are manual notes
+  if (component.notes && component.notes.trim() !== '') {
     // Check if notes header would overflow into footer
     if (checkPageOverflow(doc, yPosition, 10)) {
       doc.addPage();
@@ -327,7 +344,7 @@ async function generateComponentSection(
     
     yPosition += 2;
     doc.setFont(pdfStyles.fonts.body, "bold");
-    doc.text("Notes:", margins, yPosition);
+    doc.text("Inspector Notes:", margins, yPosition);
     yPosition += 6;
     
     doc.setFont(pdfStyles.fonts.body, "normal");
@@ -341,7 +358,7 @@ async function generateComponentSection(
       // Add component continuation header
       doc.setFont(pdfStyles.fonts.header, "normal");
       doc.setFontSize(pdfStyles.fontSizes.normal);
-      doc.text(`${roomIndex}.${componentIndex} ${component.name} - Notes (continued)`, margins, yPosition);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} - Inspector Notes (continued)`, margins, yPosition);
       yPosition += 10;
     }
     
