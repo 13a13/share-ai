@@ -117,6 +117,11 @@ const ComponentAnalysisSummary = ({
         title: "Saved",
         description: "Component changes have been saved successfully.",
       });
+      
+      // Exit edit mode after successful save
+      if (onCancelEdit) {
+        onCancelEdit();
+      }
     } catch (error) {
       console.error(`❌ ComponentAnalysisSummary: Failed to save component ${component.id}:`, error);
       toast({
