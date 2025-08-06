@@ -291,7 +291,7 @@ async function generateComponentSection(
     yPosition += 7;
   }
   
-  // AI Analysis Summary
+  // AI Analysis Summary - Enhanced with better text handling
   if (component.conditionSummary && component.conditionSummary.trim() !== '') {
     // Check if AI analysis header would overflow into footer
     if (checkPageOverflow(doc, yPosition, 10)) {
@@ -310,22 +310,37 @@ async function generateComponentSection(
     yPosition += 6;
     
     doc.setFont(pdfStyles.fonts.body, "normal");
-    const splitSummary = doc.splitTextToSize(component.conditionSummary, pageWidth - (margins * 2) - 10);
     
-    // Check if condition summary content would overflow into footer
-    if (checkPageOverflow(doc, yPosition, splitSummary.length * 6 + 3)) {
-      doc.addPage();
-      yPosition = margins;
+    // Enhanced text processing: ensure full content is preserved
+    const fullText = component.conditionSummary.toString().trim();
+    const maxWidth = pageWidth - (margins * 2) - 10;
+    const splitSummary = doc.splitTextToSize(fullText, maxWidth);
+    
+    // Process text in chunks to prevent truncation
+    const chunkSize = 20; // Lines per chunk
+    for (let i = 0; i < splitSummary.length; i += chunkSize) {
+      const chunk = splitSummary.slice(i, i + chunkSize);
       
-      // Add component continuation header
-      doc.setFont(pdfStyles.fonts.header, "normal");
-      doc.setFontSize(pdfStyles.fontSizes.normal);
-      doc.text(`${roomIndex}.${componentIndex} ${component.name} - AI Analysis (continued)`, margins, yPosition);
-      yPosition += 10;
+      // Check if this chunk would overflow into footer
+      if (checkPageOverflow(doc, yPosition, chunk.length * 6 + 3)) {
+        doc.addPage();
+        yPosition = margins;
+        
+        // Add component continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} - AI Analysis (continued)`, margins, yPosition);
+        yPosition += 10;
+        
+        // Reset font for content
+        doc.setFont(pdfStyles.fonts.body, "normal");
+      }
+      
+      doc.text(chunk, margins + 5, yPosition);
+      yPosition += chunk.length * 6 + 3;
     }
     
-    doc.text(splitSummary, margins + 5, yPosition);
-    yPosition += splitSummary.length * 6 + 5;
+    yPosition += 2; // Extra spacing after AI analysis
   }
   
   // Inspector Notes - only show if there are manual notes

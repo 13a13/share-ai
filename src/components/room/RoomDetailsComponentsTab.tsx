@@ -1,6 +1,6 @@
 import { Room, RoomComponent } from "@/types";
 import RoomComponentInspection from "@/components/RoomComponentInspection";
-import { useDirectComponentSaving } from "@/hooks/report/useDirectComponentSaving";
+import { useUnifiedComponentManagement } from "@/hooks/report/useUnifiedComponentManagement";
 
 interface RoomDetailsComponentsTabProps {
   reportId: string;
@@ -17,8 +17,8 @@ const RoomDetailsComponentsTab = ({
 }: RoomDetailsComponentsTabProps) => {
   console.log(`🏗️ RoomDetailsComponentsTab: propertyName="${propertyName}", roomName="${room.name}"`);
   
-  // Use direct component saving hook
-  const { saveComponentDirectly } = useDirectComponentSaving();
+  // Use unified component management hook
+  const { saveComponentWithPersistence } = useUnifiedComponentManagement(null, () => {});
 
   const handleComponentUpdate = (updatedComponents: RoomComponent[]) => {
     console.log(`🔄 RoomDetailsComponentsTab: Components updated for room ${room.id}:`, updatedComponents);
@@ -36,8 +36,7 @@ const RoomDetailsComponentsTab = ({
     }
 
     // Save the component directly to database
-    await saveComponentDirectly(
-      reportId,
+    await saveComponentWithPersistence(
       room.id,
       componentId,
       {

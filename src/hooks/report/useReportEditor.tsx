@@ -6,6 +6,7 @@ import { ReportsAPI, PropertiesAPI } from "@/lib/api";
 import { useReportInfo, ReportInfoFormValues } from "./useReportInfo";
 import { useRoomCreation } from "./useRoomCreation";
 import { useUnifiedRoomManagement } from "./useUnifiedRoomManagement";
+import { useUnifiedComponentManagement } from "./useUnifiedComponentManagement";
 import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
 import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
 
@@ -44,6 +45,13 @@ export const useReportEditor = (reportId: string | undefined) => {
     handleSaveComponent,
     handleToggleEditMode,
   } = useUnifiedRoomManagement(report, setReport);
+
+  // New unified component management
+  const {
+    saveComponentWithPersistence,
+    updateComponentField,
+    toggleComponentEditMode,
+  } = useUnifiedComponentManagement(report, setReport);
 
   // Combined progress from all saving operations
   const saveProgress = completionProgress || batchProgress || reportInfoProgress;
@@ -137,5 +145,9 @@ export const useReportEditor = (reportId: string | undefined) => {
     handleSaveReport,
     handleCompleteReport,
     handleNavigateRoom,
+    // New unified component management functions
+    saveComponentWithPersistence,
+    updateComponentField,
+    toggleComponentEditMode,
   };
 };

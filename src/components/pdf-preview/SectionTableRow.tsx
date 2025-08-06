@@ -9,9 +9,10 @@ import ConditionIndicator from "./ConditionIndicator";
 interface SectionTableRowProps {
   section: SectionItem;
   onEdit: (section: SectionItem) => void;
+  onSave?: (section: SectionItem) => Promise<void>;
 }
 
-const SectionTableRow = ({ section, onEdit }: SectionTableRowProps) => {
+const SectionTableRow = ({ section, onEdit, onSave }: SectionTableRowProps) => {
   return (
     <TableRow 
       key={section.id}

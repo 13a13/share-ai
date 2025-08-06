@@ -4,6 +4,7 @@ import { Report, Property } from "@/types";
 import { SectionItem } from "./types";
 import SectionTable from "./SectionTable";
 import EditSectionDialog from "../EditSectionDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EditablePDFPreviewProps {
   report: Report;
@@ -54,12 +55,138 @@ const EditablePDFPreview = ({ report, property, onUpdate }: EditablePDFPreviewPr
   });
   
   const [editingSection, setEditingSection] = useState<SectionItem | null>(null);
+
+  // Helper function to persist component changes to database
+  const persistComponentToDatabase = async (
+    reportId: string,
+    roomId: string,
+    componentId: string,
+    updates: any
+  ) => {
+    const { data: inspection } = await supabase
+      .from('inspections')
+      .select('room_id, report_info')
+      .eq('id', reportId)
+      .single();
+
+    if (!inspection) return;
+
+    const reportInfo = parseReportInfo(inspection.report_info);
+    const isMainRoom = inspection.room_id === roomId;
+
+    if (isMainRoom) {
+      const components = Array.isArray(reportInfo.components) ? reportInfo.components : [];
+      const updatedComponents = components.map((comp: any) => {
+        if (comp.id === componentId) {
+          return { ...comp, ...updates };
+        }
+        return comp;
+      });
+
+      await supabase
+        .from('inspections')
+        .update({
+          report_info: {
+            ...reportInfo,
+            components: updatedComponents
+          }
+        })
+        .eq('id', reportId);
+    } else {
+      const additionalRooms = Array.isArray(reportInfo.additionalRooms) ? reportInfo.additionalRooms : [];
+      const roomIndex = additionalRooms.findIndex((room: any) => room.id === roomId);
+      
+      if (roomIndex !== -1) {
+        const room = additionalRooms[roomIndex];
+        const components = Array.isArray(room.components) ? room.components : [];
+        
+        const updatedComponents = components.map((comp: any) => {
+          if (comp.id === componentId) {
+            return { ...comp, ...updates };
+          }
+          return comp;
+        });
+        
+        additionalRooms[roomIndex] = { ...room, components: updatedComponents };
+        
+        await supabase
+          .from('inspections')
+          .update({
+            report_info: {
+              ...reportInfo,
+              additionalRooms
+            }
+          })
+          .eq('id', reportId);
+      }
+    }
+  };
+
+  // Helper function to persist room changes to database
+  const persistRoomToDatabase = async (
+    reportId: string,
+    roomId: string,
+    updates: any
+  ) => {
+    const { data: inspection } = await supabase
+      .from('inspections')
+      .select('room_id, report_info')
+      .eq('id', reportId)
+      .single();
+
+    if (!inspection) return;
+
+    const reportInfo = parseReportInfo(inspection.report_info);
+    const isMainRoom = inspection.room_id === roomId;
+
+    if (isMainRoom) {
+      await supabase
+        .from('inspections')
+        .update({
+          report_info: {
+            ...reportInfo,
+            ...updates
+          }
+        })
+        .eq('id', reportId);
+    } else {
+      const additionalRooms = Array.isArray(reportInfo.additionalRooms) ? reportInfo.additionalRooms : [];
+      const roomIndex = additionalRooms.findIndex((room: any) => room.id === roomId);
+      
+      if (roomIndex !== -1) {
+        additionalRooms[roomIndex] = { ...additionalRooms[roomIndex], ...updates };
+        
+        await supabase
+          .from('inspections')
+          .update({
+            report_info: {
+              ...reportInfo,
+              additionalRooms
+            }
+          })
+          .eq('id', reportId);
+      }
+    }
+  };
+
+  // Helper function to parse report info
+  const parseReportInfo = (reportInfo: any): any => {
+    if (!reportInfo) return {};
+    if (typeof reportInfo === 'string') {
+      try {
+        return JSON.parse(reportInfo);
+      } catch {
+        return {};
+      }
+    }
+    return reportInfo;
+  };
   
   const handleEdit = (section: SectionItem) => {
     setEditingSection(section);
   };
   
-  const handleSave = (updatedSection: SectionItem) => {
+  const handleSave = async (updatedSection: SectionItem) => {
     // Update the local sections state
     setSections(prevSections => 
       prevSections.map(section => 
@@ -81,16 +208,45 @@ const EditablePDFPreview = ({ report, property, onUpdate }: EditablePDFPreviewPr
         ) ?? -1;
         
         if (componentIndex !== -1 && updatedReport.rooms[roomIndex].components) {
-          updatedReport.rooms[roomIndex].components![componentIndex] = {
+          const updatedComponent = {
             ...updatedReport.rooms[roomIndex].components![componentIndex],
             description: updatedSection.description,
             condition: updatedSection.condition as any,
             cleanliness: updatedSection.cleanliness,
           };
+          
+          updatedReport.rooms[roomIndex].components![componentIndex] = updatedComponent;
+          
+          // Persist changes to database
+          try {
+            await persistComponentToDatabase(
+              report.id,
+              updatedSection.roomId,
+              updatedSection.componentId,
+              {
+                description: updatedSection.description,
+                condition: updatedSection.condition as any,
+                cleanliness: updatedSection.cleanliness,
+              }
+            );
+          } catch (error) {
+            console.error("Failed to persist component changes:", error);
+          }
         }
       } else {
         // It's a room - update its general condition
         updatedReport.rooms[roomIndex].generalCondition = updatedSection.description;
+        
+        // Persist room changes to database
+        try {
+          await persistRoomToDatabase(
+            report.id,
+            updatedSection.roomId,
+            { generalCondition: updatedSection.description }
+          );
+        } catch (error) {
+          console.error("Failed to persist room changes:", error);
+        }
       }
     }
     

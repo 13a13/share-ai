@@ -6,3 +6,5 @@ export * from './useRoomNavigation';
 export * from './useReportSections';
 export * from './useReportInfo';
 export * from './useReportEditor';
+export * from './useComponentPersistence';
+export * from './useUnifiedComponentManagement';

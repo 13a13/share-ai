@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { Report, RoomComponent } from "@/types";
-import { useDirectComponentSaving } from "./useDirectComponentSaving";
+import { useComponentPersistence } from "./useComponentPersistence";
 import { useRoomCreation, RoomFormValues } from "./useRoomCreation";
 import { useRoomNavigation } from "./useRoomNavigation";
 
@@ -12,7 +12,7 @@ export const useUnifiedRoomManagement = (
   report: Report | null,
   setReport: React.Dispatch<React.SetStateAction<Report | null>>
 ) => {
-  const { saveComponentDirectly } = useDirectComponentSaving();
+  const { updateComponentInDatabase } = useComponentPersistence();
   
   const { 
     isSubmittingRoom, 
@@ -84,7 +84,7 @@ export const useUnifiedRoomManagement = (
     }
 
     // Save directly to database
-    const success = await saveComponentDirectly(
+    const success = await updateComponentInDatabase(
       report.id,
       roomId,
       componentId,
@@ -124,7 +124,7 @@ export const useUnifiedRoomManagement = (
         };
       });
     }
-  }, [report, setReport, saveComponentDirectly]);
+  }, [report, setReport, updateComponentInDatabase]);
 
   // Toggle edit mode
   const handleToggleEditMode = useCallback((roomId: string, componentId: string) => {
