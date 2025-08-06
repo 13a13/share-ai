@@ -34,7 +34,7 @@ function validateAnalysisResult(result: any, componentName?: string): any {
       rating: result.condition?.rating || 'fair'
     },
     cleanliness: result.cleanliness || 'domestic_clean',
-    notes: result.notes || ''
+    notes: '' // Always empty - reserved for manual inspector input only
   };
   
   // Add crossAnalysis if it exists (for advanced mode)
@@ -68,7 +68,7 @@ function createFallbackResult(componentName?: string): any {
       rating: 'fair'
     },
     cleanliness: 'domestic_clean',
-    notes: 'Analysis completed with automated processing'
+    notes: '' // Reserved for manual inspector input only
   };
 }
 
