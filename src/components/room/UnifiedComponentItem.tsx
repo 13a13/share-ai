@@ -91,11 +91,15 @@ const UnifiedComponentItem = ({
         
         <CollapsibleContent>
           <CardContent className="space-y-4">
-            {/* Component Analysis Summary */}
-            {(hasDescription || hasCondition) && (
+            {/* Component Analysis Summary - now handles inline editing */}
+            {(hasDescription || hasCondition || component.isEditing) && (
               <ComponentAnalysisSummary
                 component={component}
+                isEditing={component.isEditing}
                 onEdit={() => onToggleEditMode(component.id)}
+                onUpdateComponent={handleFieldUpdate}
+                onSaveComponent={onSaveComponent}
+                onCancelEdit={() => onToggleEditMode(component.id)}
               />
             )}
 
@@ -132,32 +136,16 @@ const UnifiedComponentItem = ({
               />
             )}
 
-            {/* Edit Form */}
-            {component.isEditing && (
-              <ComponentEditForm
+            {/* Component Actions - only show when not editing since edit controls are now inline */}
+            {!component.isEditing && (
+              <ComponentActions
                 componentId={component.id}
-                description={component.description || ''}
-                conditionSummary={component.conditionSummary || ''}
-                conditionPoints={component.conditionPoints || []}
-                condition={component.condition || 'fair'}
-                cleanliness={component.cleanliness || ''}
-                cleanlinessOptions={cleanlinessOptions}
-                conditionRatingOptions={conditionRatingOptions}
-                notes={component.notes || ''}
-                onUpdateComponent={handleFieldUpdate}
+                isEditing={!!component.isEditing}
+                isOptional={component.isOptional}
                 onToggleEditMode={onToggleEditMode}
-                onSaveComponent={onSaveComponent}
+                onRemoveComponent={onRemoveComponent}
               />
             )}
-
-            {/* Component Actions */}
-            <ComponentActions
-              componentId={component.id}
-              isEditing={!!component.isEditing}
-              isOptional={component.isOptional}
-              onToggleEditMode={onToggleEditMode}
-              onRemoveComponent={onRemoveComponent}
-            />
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
