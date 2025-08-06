@@ -90,8 +90,9 @@ const ComponentList = ({
       {componentsWithStaging.length > 0 && (
         <GlobalAnalysisControls
           totalStagedImages={totalStagedImages}
-          componentsWithStaging={componentsWithStaging.length}
-          analysisProgress={analysisProgress}
+          componentsWithStaging={componentsWithStaging}
+          analysisProgress={new Map([['global', analysisProgress]])}
+          globalProcessing={false}
           onAnalyzeAll={onAnalyzeAll}
           onClearAll={onClearAllStaging}
         />

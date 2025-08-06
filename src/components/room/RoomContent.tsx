@@ -88,8 +88,8 @@ const RoomContent = ({
         isProcessing={isProcessing}
         expandedComponents={expandedComponents}
         selectedComponentType={selectedComponentType}
-        availableComponents={availableComponents}
-        onSelectComponent={setSelectedComponentType}
+        // Remove availableComponents prop - calculated internally
+        onSelectedComponentTypeChange={setSelectedComponentType}
         onAddComponent={handleAddComponent}
         onAddCustomComponent={addCustomComponent}
         onToggleExpand={toggleExpandComponent}
@@ -97,17 +97,18 @@ const RoomContent = ({
         onToggleEditMode={toggleEditMode}
         onUpdateComponent={handleUpdateComponent}
         onRemoveImage={handleRemoveImage}
-        onImageProcessed={handleImagesProcessed}
+        onImagesProcessed={handleImagesProcessed}
         onProcessingStateChange={handleComponentProcessingState}
         componentStaging={Array.from(componentStaging.values())}
         analysisProgress={analysisProgress.get('global') || { status: 'pending', progress: 0 }}
-        globalProcessing={globalProcessing}
+        stagingProcessing={{}} // Convert boolean to object
         onAnalyzeAll={handleAnalyzeAll}
         onClearAllStaging={handleClearAllStaging}
         onAddStagedImages={handleAddStagedImages}
         onRemoveStagedImage={removeStagedImage}
         onProcessStagedComponent={handleProcessStagedComponent}
         onClearComponentStaging={clearComponentStaging}
+        onSaveComponent={async (componentId) => console.log('Save component', componentId)}
       />
     </div>
   );
