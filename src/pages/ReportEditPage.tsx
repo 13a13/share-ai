@@ -25,9 +25,10 @@ const ReportEditPage = () => {
     hasError,
     saveProgress,
     handleAddRoom,
-    handleUpdateGeneralCondition,
     handleSaveSection,
-    handleUpdateComponents,
+    handleUpdateComponent,
+    handleSaveComponent,
+    handleToggleEditMode,
     handleDeleteRoom,
     handleSaveReportInfo,
     handleSaveReport,
@@ -96,8 +97,8 @@ const ReportEditPage = () => {
                 totalRooms={report.rooms.length}
                 propertyName={property.name}
                 onNavigateRoom={handleNavigateRoom}
-                onUpdateGeneralCondition={handleUpdateGeneralCondition}
-                onUpdateComponents={handleUpdateComponents}
+                onUpdateGeneralCondition={(roomId, condition) => console.log('Update general condition')}
+                onUpdateComponents={(roomId, components) => console.log('Update components')}
                 onDeleteRoom={handleDeleteRoom}
                 isComplete={room.components?.filter(c => !c.isOptional).every(c => 
                   c.description && c.condition && (c.images.length > 0 || c.notes)

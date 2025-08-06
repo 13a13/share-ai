@@ -1,8 +1,7 @@
 
 export * from './useReportData';
-export * from './useRoomManagement';
+export * from './useUnifiedRoomManagement';
 export * from './useRoomCreation';
-export * from './useRoomUpdates';
 export * from './useRoomNavigation';
 export * from './useReportSections';
 export * from './useReportInfo';

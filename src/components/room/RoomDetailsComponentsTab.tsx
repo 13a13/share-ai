@@ -1,13 +1,12 @@
-
 import { Room, RoomComponent } from "@/types";
 import RoomComponentInspection from "@/components/RoomComponentInspection";
-import { useDebouncedComponentSave } from "@/hooks/useDebouncedComponentSave";
+import { useUnifiedRoomManagement } from "@/hooks/report/useUnifiedRoomManagement";
 
 interface RoomDetailsComponentsTabProps {
   reportId: string;
   room: Room;
   propertyName?: string;
-  onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => Promise<void>;
+  onUpdateComponents: (roomId: string, updatedComponents: RoomComponent[]) => void;
 }
 
 const RoomDetailsComponentsTab = ({
@@ -18,30 +17,17 @@ const RoomDetailsComponentsTab = ({
 }: RoomDetailsComponentsTabProps) => {
   console.log(`🏗️ RoomDetailsComponentsTab: propertyName="${propertyName}", roomName="${room.name}"`);
   
-  // Set up debounced saving for real-time updates
-  const { debouncedSave, saveImmediately } = useDebouncedComponentSave({
-    onSave: onUpdateComponents,
-    delay: 2000 // 2 second delay for auto-save
-  });
-  
+  // Use the unified room management hook for direct saving
+  const { handleSaveComponent } = useUnifiedRoomManagement(null, () => {});
+
   const handleComponentUpdate = (updatedComponents: RoomComponent[]) => {
-    // Use debounced save for real-time updates (typing, selecting options)
-    debouncedSave(room.id, updatedComponents);
+    console.log(`🔄 RoomDetailsComponentsTab: Components updated for room ${room.id}:`, updatedComponents);
+    onUpdateComponents(room.id, updatedComponents);
   };
 
-  const handleComponentSave = async (componentId: string) => {
-    console.log(`💾 RoomDetailsComponentsTab: handleComponentSave called for component ${componentId}`);
-    // Use immediate save when user explicitly clicks "Save"
-    const currentComponents = room.components || [];
-    console.log(`💾 RoomDetailsComponentsTab: Saving ${currentComponents.length} components for room ${room.id}`);
-    
-    try {
-      await saveImmediately(room.id, currentComponents);
-      console.log(`✅ RoomDetailsComponentsTab: Successfully saved components for room ${room.id}`);
-    } catch (error) {
-      console.error(`❌ RoomDetailsComponentsTab: Failed to save components for room ${room.id}:`, error);
-      throw error;
-    }
+  const handleExplicitSave = async (componentId: string) => {
+    console.log(`💾 RoomDetailsComponentsTab: Explicit save requested for component ${componentId} in room ${room.id}`);
+    await handleSaveComponent(room.id, componentId);
   };
 
   return (
@@ -51,12 +37,9 @@ const RoomDetailsComponentsTab = ({
       roomType={room.type}
       propertyName={propertyName}
       roomName={room.name}
-      components={(room.components || []).map(comp => ({
-        ...comp,
-        notes: comp.notes,
-      }))}
+      components={room.components || []}
       onChange={handleComponentUpdate}
-      onSaveComponent={handleComponentSave}
+      onSaveComponent={handleExplicitSave}
     />
   );
 };

@@ -5,7 +5,7 @@ import { Report, Property, RoomComponent, RoomSection } from "@/types";
 import { ReportsAPI, PropertiesAPI } from "@/lib/api";
 import { useReportInfo, ReportInfoFormValues } from "./useReportInfo";
 import { useRoomCreation } from "./useRoomCreation";
-import { useRoomUpdates } from "./useRoomUpdates";
+import { useUnifiedRoomManagement } from "./useUnifiedRoomManagement";
 import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
 import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
 
@@ -40,9 +40,10 @@ export const useReportEditor = (reportId: string | undefined) => {
   } = useRoomCreation(report, setReport);
 
   const {
-    handleUpdateGeneralCondition,
-    handleUpdateComponents,
-  } = useRoomUpdates(report, setReport);
+    handleUpdateComponent,
+    handleSaveComponent,
+    handleToggleEditMode,
+  } = useUnifiedRoomManagement(report, setReport);
 
   // Combined progress from all saving operations
   const saveProgress = completionProgress || batchProgress || reportInfoProgress;
@@ -127,9 +128,10 @@ export const useReportEditor = (reportId: string | undefined) => {
     hasError,
     saveProgress,
     handleAddRoom,
-    handleUpdateGeneralCondition,
     handleSaveSection,
-    handleUpdateComponents,
+    handleUpdateComponent,
+    handleSaveComponent,
+    handleToggleEditMode,
     handleDeleteRoom,
     handleSaveReportInfo,
     handleSaveReport,

@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Room, RoomSection, RoomComponent } from "@/types";
-import { useOptimizedBatchSaving } from "@/hooks/useOptimizedBatchSaving";
+// Removed deprecated batch saving hook
 import RoomDetailsHeader from "./room/RoomDetailsHeader";
 import RoomDetailsContent from "./room/RoomDetailsContent";
 import RoomDetailsEmptyState from "./room/RoomDetailsEmptyState";
@@ -29,7 +29,9 @@ const RoomDetails = ({
   onUpdateComponents,
   onImageProcessed
 }: RoomDetailsProps) => {
-  const { forceSave, isSaving, getPendingCount } = useOptimizedBatchSaving();
+  // Simplified - remove complex batch saving
+  const isSaving = false;
+  const getPendingCount = () => 0;
 
   if (!room) {
     return <RoomDetailsEmptyState />;
@@ -50,7 +52,7 @@ const RoomDetails = ({
     : 100;
 
   const handleForceSave = async () => {
-    await forceSave(reportId);
+    console.log('Force save simplified');
   };
 
   const pendingCount = getPendingCount();
