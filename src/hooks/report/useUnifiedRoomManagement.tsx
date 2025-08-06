@@ -4,15 +4,30 @@ import { useComponentPersistence } from "./useComponentPersistence";
 import { useRoomCreation, RoomFormValues } from "./useRoomCreation";
 import { useRoomNavigation } from "./useRoomNavigation";
 
+// Force cache refresh - timestamp: 2025-01-06-16:55
+console.log("🚀 useUnifiedRoomManagement module RELOADED - timestamp:", Date.now());
+
 /**
  * Unified room management hook that provides direct, reliable component saving
  * This replaces the complex debounced/immediate save duality with a single, direct path
+ * CACHE REFRESH VERSION - NO MORE useDirectComponentSaving
  */
 export const useUnifiedRoomManagement = (
   report: Report | null,
   setReport: React.Dispatch<React.SetStateAction<Report | null>>
 ) => {
-  const { updateComponentInDatabase } = useComponentPersistence();
+  console.log("🔍 useUnifiedRoomManagement: Starting hook initialization v2");
+  
+  // IMPORTANT: This hook uses useComponentPersistence, NOT useDirectComponentSaving
+  const componentPersistenceHook = useComponentPersistence();
+  console.log("🔍 useUnifiedRoomManagement: componentPersistenceHook:", componentPersistenceHook);
+  
+  if (!componentPersistenceHook || !componentPersistenceHook.updateComponentInDatabase) {
+    console.error("❌ useUnifiedRoomManagement: Failed to get updateComponentInDatabase from useComponentPersistence");
+    throw new Error("useComponentPersistence hook failed to provide updateComponentInDatabase function");
+  }
+  
+  const { updateComponentInDatabase } = componentPersistenceHook;
   
   const { 
     isSubmittingRoom, 
@@ -83,7 +98,7 @@ export const useUnifiedRoomManagement = (
       return;
     }
 
-    // Save directly to database
+    // Save directly to database using the correct function
     const success = await updateComponentInDatabase(
       report.id,
       roomId,

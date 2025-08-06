@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
  * This ensures manual edits are saved and reflected in PDF generation
  */
 export const useComponentPersistence = () => {
+  console.log("🔧 useComponentPersistence hook initialized - timestamp:", Date.now());
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState<{ [key: string]: boolean }>({});
 
