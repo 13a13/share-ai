@@ -94,7 +94,15 @@ const ComponentAnalysisSummary = ({
 
   const handleSave = async () => {
     if (onSaveComponent) {
-      await onSaveComponent(component.id);
+      try {
+        console.log(`💾 ComponentAnalysisSummary: Saving component ${component.id}`);
+        await onSaveComponent(component.id);
+        console.log(`✅ ComponentAnalysisSummary: Component ${component.id} saved successfully`);
+      } catch (error) {
+        console.error(`❌ ComponentAnalysisSummary: Failed to save component ${component.id}:`, error);
+      }
+    } else {
+      console.warn(`⚠️ ComponentAnalysisSummary: No save handler provided for component ${component.id}`);
     }
   };
 
@@ -212,6 +220,7 @@ const ComponentAnalysisSummary = ({
             </Button>
             <Button 
               onClick={handleSave}
+              disabled={!onSaveComponent}
               className="gap-1"
             >
               <Save className="h-4 w-4" />
