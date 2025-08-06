@@ -1,6 +1,6 @@
 import { Room, RoomComponent } from "@/types";
 import RoomComponentInspection from "@/components/RoomComponentInspection";
-import { useUnifiedRoomManagement } from "@/hooks/report/useUnifiedRoomManagement";
+import { useDirectComponentSaving } from "@/hooks/report/useDirectComponentSaving";
 
 interface RoomDetailsComponentsTabProps {
   reportId: string;
@@ -17,8 +17,8 @@ const RoomDetailsComponentsTab = ({
 }: RoomDetailsComponentsTabProps) => {
   console.log(`🏗️ RoomDetailsComponentsTab: propertyName="${propertyName}", roomName="${room.name}"`);
   
-  // Use the unified room management hook for direct saving
-  const { handleSaveComponent } = useUnifiedRoomManagement(null, () => {});
+  // Use direct component saving hook
+  const { saveComponentDirectly } = useDirectComponentSaving();
 
   const handleComponentUpdate = (updatedComponents: RoomComponent[]) => {
     console.log(`🔄 RoomDetailsComponentsTab: Components updated for room ${room.id}:`, updatedComponents);
@@ -27,7 +27,28 @@ const RoomDetailsComponentsTab = ({
 
   const handleExplicitSave = async (componentId: string) => {
     console.log(`💾 RoomDetailsComponentsTab: Explicit save requested for component ${componentId} in room ${room.id}`);
-    await handleSaveComponent(room.id, componentId);
+    
+    // Find the component to get its current data
+    const component = room.components?.find(c => c.id === componentId);
+    if (!component) {
+      console.error(`❌ Component ${componentId} not found in room ${room.id}`);
+      return;
+    }
+
+    // Save the component directly to database
+    await saveComponentDirectly(
+      reportId,
+      room.id,
+      componentId,
+      {
+        description: component.description,
+        conditionSummary: component.conditionSummary,
+        condition: component.condition,
+        cleanliness: component.cleanliness,
+        notes: component.notes,
+        conditionPoints: component.conditionPoints
+      }
+    );
   };
 
   return (
