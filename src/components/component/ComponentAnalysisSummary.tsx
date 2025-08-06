@@ -19,6 +19,8 @@ import {
   normalizeConditionPoints
 } from "@/services/imageProcessingService";
 import MultiPhotoAnalysisDisplay from "../analysis/MultiPhotoAnalysisDisplay";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface ComponentAnalysisSummaryProps {
   component: RoomComponent;
@@ -37,6 +39,9 @@ const ComponentAnalysisSummary = ({
   onSaveComponent,
   onCancelEdit 
 }: ComponentAnalysisSummaryProps) => {
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  
   console.log(`🔍 [ComponentAnalysisSummary] Rendering analysis for component:`, {
     id: component.id,
     name: component.name,
@@ -93,16 +98,34 @@ const ComponentAnalysisSummary = ({
   });
 
   const handleSave = async () => {
-    if (onSaveComponent) {
-      try {
-        console.log(`💾 ComponentAnalysisSummary: Saving component ${component.id}`);
-        await onSaveComponent(component.id);
-        console.log(`✅ ComponentAnalysisSummary: Component ${component.id} saved successfully`);
-      } catch (error) {
-        console.error(`❌ ComponentAnalysisSummary: Failed to save component ${component.id}:`, error);
-      }
-    } else {
+    if (!onSaveComponent) {
       console.warn(`⚠️ ComponentAnalysisSummary: No save handler provided for component ${component.id}`);
+      toast({
+        title: "Save Failed",
+        description: "No save handler available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      console.log(`💾 ComponentAnalysisSummary: Starting save for component ${component.id}`);
+      await onSaveComponent(component.id);
+      console.log(`✅ ComponentAnalysisSummary: Component ${component.id} saved successfully`);
+      toast({
+        title: "Saved",
+        description: "Component changes have been saved successfully.",
+      });
+    } catch (error) {
+      console.error(`❌ ComponentAnalysisSummary: Failed to save component ${component.id}:`, error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save component changes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -220,11 +243,11 @@ const ComponentAnalysisSummary = ({
             </Button>
             <Button 
               onClick={handleSave}
-              disabled={!onSaveComponent}
+              disabled={!onSaveComponent || isSaving}
               className="gap-1"
             >
               <Save className="h-4 w-4" />
-              Save
+              {isSaving ? "Saving..." : "Save"}
             </Button>
           </div>
         </div>
