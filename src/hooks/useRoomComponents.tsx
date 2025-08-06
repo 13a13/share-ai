@@ -16,6 +16,7 @@ interface UseRoomComponentsProps {
   roomName?: string;
   initialComponents: RoomComponent[];
   onChange: (updatedComponents: RoomComponent[]) => void;
+  onSaveComponent?: (componentId: string) => Promise<void>;
   reportId: string;
 }
 
@@ -38,6 +39,7 @@ interface UseRoomComponentsReturn {
   addCustomComponent: (name: string) => void;
   handleRemoveComponent: (componentId: string) => void;
   handleUpdateComponent: (componentId: string, updates: Partial<RoomComponent>) => void;
+  handleSaveComponent: (componentId: string) => Promise<void>;
   toggleEditMode: (componentId: string) => void;
   handleRemoveImage: (componentId: string, imageId: string) => void;
   handleImagesProcessed: (componentId: string, imageUrls: string[], result: any) => void;
@@ -65,6 +67,7 @@ export function useRoomComponents({
   roomName: initialRoomName,
   initialComponents,
   onChange,
+  onSaveComponent,
   reportId
 }: UseRoomComponentsProps): UseRoomComponentsReturn {
   const [propertyName, setPropertyName] = useState(initialPropertyName ?? "");
@@ -210,6 +213,24 @@ export function useRoomComponents({
     resetProgress();
   }, [componentStaging, clearComponentStaging, resetProgress]);
 
+  // Handle explicit component save
+  const handleSaveComponent = useCallback(async (componentId: string) => {
+    console.log(`💾 useRoomComponents: handleSaveComponent called for component ${componentId}`);
+    
+    if (onSaveComponent) {
+      console.log(`💾 useRoomComponents: Calling explicit onSaveComponent for ${componentId}`);
+      try {
+        await onSaveComponent(componentId);
+        console.log(`✅ useRoomComponents: Explicit save completed for component ${componentId}`);
+      } catch (error) {
+        console.error(`❌ useRoomComponents: Explicit save failed for component ${componentId}:`, error);
+        throw error;
+      }
+    } else {
+      console.log(`⚠️ useRoomComponents: No onSaveComponent handler available for ${componentId}`);
+    }
+  }, [onSaveComponent]);
+
   return {
     components,
     isProcessing,
@@ -223,6 +244,7 @@ export function useRoomComponents({
     addCustomComponent,
     handleRemoveComponent,
     handleUpdateComponent,
+    handleSaveComponent,
     toggleEditMode,
     handleRemoveImage,
     handleImagesProcessed,

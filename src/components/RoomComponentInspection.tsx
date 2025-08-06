@@ -38,6 +38,7 @@ const RoomComponentInspection = ({
     addCustomComponent,
     handleRemoveComponent,
     handleUpdateComponent,
+    handleSaveComponent,
     toggleEditMode,
     handleRemoveImage,
     handleImagesProcessed,
@@ -61,6 +62,7 @@ const RoomComponentInspection = ({
     roomName,
     initialComponents: components,
     onChange,
+    onSaveComponent,
     reportId
   });
 
@@ -100,7 +102,7 @@ const RoomComponentInspection = ({
       onRemoveStagedImage={removeStagedImage}
       onProcessStagedComponent={handleProcessStagedComponent}
       onClearComponentStaging={clearComponentStaging}
-      onSaveComponent={onSaveComponent}
+      onSaveComponent={handleSaveComponent}
     />
   );
 };

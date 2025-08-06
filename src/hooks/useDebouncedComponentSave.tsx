@@ -60,6 +60,7 @@ export const useDebouncedComponentSave = ({
 
   const saveImmediately = useCallback(async (roomId: string, components: RoomComponent[]) => {
     console.log(`⚡ useDebouncedComponentSave: Executing immediate save for room ${roomId} with ${components.length} components`);
+    console.log(`⚡ useDebouncedComponentSave: Components being saved:`, components.map(c => ({ id: c.id, name: c.name, hasChanges: !!c.description || !!c.condition })));
     
     // Clear any pending debounced save
     if (timeoutRef.current) {

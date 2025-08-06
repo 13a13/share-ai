@@ -30,9 +30,18 @@ const RoomDetailsComponentsTab = ({
   };
 
   const handleComponentSave = async (componentId: string) => {
+    console.log(`💾 RoomDetailsComponentsTab: handleComponentSave called for component ${componentId}`);
     // Use immediate save when user explicitly clicks "Save"
     const currentComponents = room.components || [];
-    await saveImmediately(room.id, currentComponents);
+    console.log(`💾 RoomDetailsComponentsTab: Saving ${currentComponents.length} components for room ${room.id}`);
+    
+    try {
+      await saveImmediately(room.id, currentComponents);
+      console.log(`✅ RoomDetailsComponentsTab: Successfully saved components for room ${room.id}`);
+    } catch (error) {
+      console.error(`❌ RoomDetailsComponentsTab: Failed to save components for room ${room.id}:`, error);
+      throw error;
+    }
   };
 
   return (
