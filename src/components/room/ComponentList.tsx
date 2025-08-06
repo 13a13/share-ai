@@ -37,6 +37,7 @@ interface ComponentListProps {
   onRemoveStagedImage: (componentId: string, imageIndex: number) => void;
   onProcessStagedComponent: (componentId: string) => Promise<void>;
   onClearComponentStaging: (componentId: string) => void;
+  onSaveComponent?: (componentId: string) => Promise<void>;
 }
 
 const ComponentList = ({
@@ -66,7 +67,8 @@ const ComponentList = ({
   onAddStagedImages,
   onRemoveStagedImage,
   onProcessStagedComponent,
-  onClearComponentStaging
+  onClearComponentStaging,
+  onSaveComponent
 }: ComponentListProps) => {
 
   // Get room components that are already added
@@ -122,6 +124,7 @@ const ComponentList = ({
               onProcessStagedComponent={onProcessStagedComponent}
               onClearComponentStaging={onClearComponentStaging}
               stagingProcessing={componentStaging.get(component.id)?.isProcessing || false}
+              onSaveComponent={onSaveComponent}
             />
           ))}
         </div>

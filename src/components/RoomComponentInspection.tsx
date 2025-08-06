@@ -11,6 +11,7 @@ interface RoomComponentInspectionProps {
   roomName?: string;
   components: RoomComponent[];
   onChange: (updatedComponents: RoomComponent[]) => void;
+  onSaveComponent?: (componentId: string) => Promise<void>;
 }
 
 const RoomComponentInspection = ({ 
@@ -20,7 +21,8 @@ const RoomComponentInspection = ({
   propertyName,
   roomName,
   components, 
-  onChange 
+  onChange,
+  onSaveComponent
 }: RoomComponentInspectionProps) => {
   console.log(`🔧 RoomComponentInspection: propertyName="${propertyName}", roomName="${roomName}"`);
   
@@ -98,6 +100,7 @@ const RoomComponentInspection = ({
       onRemoveStagedImage={removeStagedImage}
       onProcessStagedComponent={handleProcessStagedComponent}
       onClearComponentStaging={clearComponentStaging}
+      onSaveComponent={onSaveComponent}
     />
   );
 };

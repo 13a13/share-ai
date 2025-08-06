@@ -33,6 +33,7 @@ interface ComponentItemProps {
   onProcessStagedComponent?: (componentId: string) => Promise<void>;
   onClearComponentStaging?: (componentId: string) => void;
   stagingProcessing?: boolean;
+  onSaveComponent?: (componentId: string) => Promise<void>;
 }
 
 const ComponentItem = ({
@@ -54,7 +55,8 @@ const ComponentItem = ({
   onRemoveStagedImage,
   onProcessStagedComponent,
   onClearComponentStaging,
-  stagingProcessing
+  stagingProcessing,
+  onSaveComponent
 }: ComponentItemProps) => {
   // If component is being edited, automatically expand it
   const shouldBeExpanded = isExpanded || component.isEditing;
@@ -121,6 +123,7 @@ const ComponentItem = ({
                   notes={component.notes}
                   onUpdateComponent={handleUpdateField}
                   onToggleEditMode={onToggleEditMode}
+                  onSaveComponent={onSaveComponent}
                 />
               )}
               

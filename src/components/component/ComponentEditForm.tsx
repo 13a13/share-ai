@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Save, X } from "lucide-react";
 import { normalizeConditionPoints } from "@/services/imageProcessingService";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ComponentEditFormProps {
   componentId: string;
@@ -25,6 +26,7 @@ interface ComponentEditFormProps {
   notes?: string;
   onUpdateComponent: (componentId: string, field: string, value: string | string[]) => void;
   onToggleEditMode: (componentId: string) => void;
+  onSaveComponent?: (componentId: string) => void; // New prop for explicit save
 }
 
 const ComponentEditForm = ({
@@ -38,8 +40,10 @@ const ComponentEditForm = ({
   conditionRatingOptions,
   notes = "",
   onUpdateComponent,
-  onToggleEditMode
+  onToggleEditMode,
+  onSaveComponent
 }: ComponentEditFormProps) => {
+  const { toast } = useToast();
   // Convert points for editing - handle both string[] and object[]
   const normalizedPoints = normalizeConditionPoints(conditionPoints);
   
@@ -49,10 +53,41 @@ const ComponentEditForm = ({
     // but we won't display the editor for them anymore
   }, [conditionPoints]);
   
-  const handleSave = () => {
-    // Keep conditionPoints as they were, but don't expose them in the UI
-    // This ensures backward compatibility while removing the field from the form
-    onToggleEditMode(componentId);
+  const handleSave = async () => {
+    try {
+      // If we have an explicit save handler, use it
+      if (onSaveComponent) {
+        await onSaveComponent(componentId);
+        toast({
+          title: "Component Saved",
+          description: "Component changes have been saved successfully.",
+        });
+      } else {
+        // Fallback to the old method for compatibility
+        const updates = {
+          description,
+          conditionSummary,
+          condition,
+          cleanliness,
+          notes,
+          conditionPoints: normalizedPoints
+        };
+
+        Object.entries(updates).forEach(([field, value]) => {
+          onUpdateComponent(componentId, field, value);
+        });
+      }
+
+      // Close edit mode after successful save
+      onToggleEditMode(componentId);
+    } catch (error) {
+      console.error("Failed to save component:", error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save component changes. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
