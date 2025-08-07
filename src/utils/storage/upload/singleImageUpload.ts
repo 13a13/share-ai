@@ -6,7 +6,7 @@
 import { generateFolderPath } from '../folderUtils';
 import { dataUrlToBlob, getFileExtensionFromDataUrl, uploadBlobToStorage } from '../storageUtils';
 import { resolvePropertyAndRoomNames } from '../resolveNames';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 /**
  * Upload a base64 image to Supabase Storage with robust name resolution and retry logic

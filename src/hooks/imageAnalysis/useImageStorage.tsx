@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { uploadMultipleReportImages, checkStorageBucket } from "@/utils/supabaseStorage";
 import { RoomImageAPI } from "@/lib/api/reports/roomImageApi";
 import { resolvePropertyAndRoomNames } from "@/utils/storage/resolveNames";
@@ -27,10 +27,10 @@ export function useImageStorage({
       const roomId = roomElement?.getAttribute('data-room-id') || "";
       
       if (roomId) {
-        console.log("🔄 useImageStorage: Resolving names for roomId:", roomId);
+        console.debug("🔄 useImageStorage: Resolving names for roomId:", roomId);
         const result = await resolvePropertyAndRoomNames(roomId, initialPropName, initialRmName);
         setResolvedNames(result);
-        console.log("✅ useImageStorage: Names resolved:", result);
+        console.debug("✅ useImageStorage: Names resolved:", result);
       }
     }
     resolveNames();
@@ -54,7 +54,7 @@ export function useImageStorage({
     }
 
     // Step 1: Check storage availability 
-    console.log("🔍 Step 1: Checking storage availability...");
+    console.debug("🔍 Step 1: Checking storage availability...");
     const storageAvailable = await checkStorageBucket();
     
     if (!storageAvailable) {
@@ -67,10 +67,10 @@ export function useImageStorage({
       return stagingImages;
     }
 
-    console.log("✅ Storage bucket confirmed available");
+    console.debug("✅ Storage bucket confirmed available");
 
     // Step 2: Upload images to storage with organized folder structure
-    console.log(`📤 Step 2: Uploading images to organized folders: ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}...`);
+    console.debug(`📤 Step 2: Uploading images to organized folders: ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}...`);
     
     try {
       const storedImageUrls = await uploadMultipleReportImages(
@@ -85,14 +85,14 @@ export function useImageStorage({
       const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
       const failedUploads = storedImageUrls.filter(url => url.startsWith('data:')).length;
       
-      console.log(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}`);
+      console.debug(`📊 Upload verification: ${successfulUploads}/${stagingImages.length} images uploaded to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}`);
       
       if (failedUploads > 0) {
         console.warn(`⚠️ ${failedUploads} images failed to upload, proceeding with local storage`);
       }
 
       // Step 3: Save image records to database (only for successfully uploaded images)
-      console.log("💾 Step 3: Saving image records to database...");
+      console.debug("💾 Step 3: Saving image records to database...");
       const savedImages = [];
       const storageUrls = storedImageUrls.filter(url => !url.startsWith('data:'));
       
@@ -101,14 +101,14 @@ export function useImageStorage({
           const savedImage = await RoomImageAPI.addImageToRoom(reportId, roomId, imageUrl);
           if (savedImage) {
             savedImages.push(savedImage);
-            console.log(`✅ Image saved to database with ID: ${savedImage.id}`);
+            console.debug(`✅ Image saved to database with ID: ${savedImage.id}`);
           }
         } catch (dbError) {
           console.error("❌ Failed to save image to database:", dbError);
         }
       }
       
-      console.log(`📊 Database save results: ${savedImages.length}/${storageUrls.length} images saved`);
+      console.debug(`📊 Database save results: ${savedImages.length}/${storageUrls.length} images saved`);
       
       return storedImageUrls;
     } catch (uploadError) {

@@ -3,7 +3,7 @@
  * Main image analysis hook - refactored into smaller focused modules
  */
 
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { ProcessedImageResult } from "@/services/imageProcessingService";
 import { useImageProcessing } from "./imageAnalysis/useImageProcessing";
 import { useImageStorage } from "./imageAnalysis/useImageStorage";
@@ -62,7 +62,7 @@ export function useImageAnalysis({
     const reportElement = document.querySelector('[data-report-id]');
     const reportId = reportElement?.getAttribute('data-report-id');
 
-    console.log(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${resolvedNames.propertyName}, room: ${resolvedNames.roomName}`);
+    console.debug(`🚀 Starting image analysis for ${stagingImages.length} images in component ${componentName} for property: ${resolvedNames.propertyName}, room: ${resolvedNames.roomName}`);
     
     onProcessingStateChange(componentId, true);
     updateAnalysisState(componentId, true);
@@ -72,7 +72,7 @@ export function useImageAnalysis({
         throw new Error("Report ID not found");
       }
       
-      console.log(`📍 Processing images for report: ${reportId}, component: ${componentId}, property: ${resolvedNames.propertyName}, roomName: ${resolvedNames.roomName}, componentName: ${componentName}`);
+      console.debug(`📍 Processing images for report: ${reportId}, component: ${componentId}, property: ${resolvedNames.propertyName}, roomName: ${resolvedNames.roomName}, componentName: ${componentName}`);
       
       // Upload and store images
       const storedImageUrls = await uploadAndStoreImages(stagingImages, componentName);
@@ -85,7 +85,7 @@ export function useImageAnalysis({
       }
       
       // Queue the update for ultra-fast batch saving
-      console.log("⚡ Step 5: Queueing component update...");
+      console.debug("⚡ Step 5: Queueing component update...");
       queueUpdate(
         reportId,
         componentId,
@@ -101,7 +101,7 @@ export function useImageAnalysis({
       const pendingCount = getPendingCount();
       const successfulUploads = storedImageUrls.filter(url => !url.startsWith('data:')).length;
       
-      console.log(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}, ${pendingCount} updates queued`);
+      console.debug(`🎉 Processing complete: ${stagingImages.length} images analyzed, ${successfulUploads} uploaded to ${resolvedNames.propertyName}/${resolvedNames.roomName}/${componentName}, ${pendingCount} updates queued`);
       
       // Show success message
       toast({

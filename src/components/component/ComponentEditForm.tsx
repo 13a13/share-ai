@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Save, X } from "lucide-react";
 import { normalizeConditionPoints } from "@/services/imageProcessingService";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ComponentEditFormProps {
   componentId: string;

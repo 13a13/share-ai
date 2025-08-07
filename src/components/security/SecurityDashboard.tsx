@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, AlertTriangle, Eye, Settings, Activity } from "lucide-react";
 import { securityService } from "@/lib/security/securityService";
 import { sessionManager, SessionInfo } from "@/lib/security/sessionManager";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 const SecurityDashboard = () => {
   const [securityLogs, setSecurityLogs] = useState<any[]>([]);

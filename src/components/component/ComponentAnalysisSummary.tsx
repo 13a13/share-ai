@@ -19,7 +19,7 @@ import {
   normalizeConditionPoints
 } from "@/services/imageProcessingService";
 import MultiPhotoAnalysisDisplay from "../analysis/MultiPhotoAnalysisDisplay";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
 
 interface ComponentAnalysisSummaryProps {

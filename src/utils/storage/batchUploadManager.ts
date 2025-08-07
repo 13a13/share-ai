@@ -2,7 +2,7 @@
 import { withRetry, BATCH_RETRY_CONFIG, RetryContext } from './retryUtils';
 import { uploadReportImage } from './imageUploadUtils';
 import { resolvePropertyAndRoomNames } from './resolveNames';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 export interface BatchUploadOptions {
   maxConcurrent?: number;

@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Report } from "@/types";
 
@@ -25,7 +25,7 @@ export const useBatchRoomSaving = () => {
     setSaveProgress({ total: 100, completed: 0, currentOperation: "Preparing batch save..." });
 
     try {
-      console.log("🚀 Batch saving rooms for report:", report.id);
+      console.debug("🚀 Batch saving rooms for report:", report.id);
       const startTime = performance.now();
 
       // Step 1: Prepare all room data in parallel (30%)
@@ -92,7 +92,7 @@ export const useBatchRoomSaving = () => {
       if (updateError) throw updateError;
 
       const endTime = performance.now();
-      console.log(`✅ Batch save completed in ${Math.round(endTime - startTime)}ms`);
+      console.debug(`✅ Batch save completed in ${Math.round(endTime - startTime)}ms`);
 
       setSaveProgress({ total: 100, completed: 100, currentOperation: "Save completed!" });
 

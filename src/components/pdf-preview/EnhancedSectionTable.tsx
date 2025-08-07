@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { SectionItem } from "./types";
 import SectionTableRow from "./SectionTableRow";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface EnhancedSectionTableProps {
   sections: SectionItem[];
