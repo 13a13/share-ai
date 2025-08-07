@@ -121,15 +121,15 @@ const RoomHeader = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={roomIndex === 0} onClick={(e) => {
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => {
                 e.stopPropagation();
                 onDeleteRoom();
               }}>
-                <Trash2 className={`h-4 w-4 ${roomIndex === 0 ? 'text-gray-300' : 'text-red-500'}`} />
+                <Trash2 className="h-4 w-4 text-red-500" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {roomIndex === 0 ? <p>Primary room cannot be deleted</p> : <p>Delete room</p>}
+              <p>Delete room</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
