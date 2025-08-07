@@ -9,6 +9,7 @@ import { useUnifiedRoomManagement } from "./useUnifiedRoomManagement";
 import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
 import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
 import { useReportData } from "./useReportData";
+import { useReportSections } from "./useReportSections";
 
 // Re-export ReportInfoFormValues for convenience
 export type { ReportInfoFormValues };
@@ -43,6 +44,8 @@ export const useReportEditor = (reportId: string | undefined) => {
     handleDeleteRoom,
   } = useUnifiedRoomManagement(report, setReport);
 
+  const { handleSaveSection } = useReportSections(report, setReport);
+
   // Removed duplicate unified component management in favor of useUnifiedRoomManagement
 
   // Combined progress from all saving operations
@@ -50,9 +53,6 @@ export const useReportEditor = (reportId: string | undefined) => {
 
   // Data fetching is now centralized in useReportData
 
-  const handleSaveSection = async (updatedSection: RoomSection) => {
-    console.log("Saving section:", updatedSection);
-  };
   const handleNavigateRoom = useCallback((index: number) => {
     setActiveRoomIndex(index);
   }, []);

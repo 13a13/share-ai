@@ -1,7 +1,6 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { Report } from "@/types";
-import { ReportsAPI } from "@/lib/api";
+import { parallelRoomSaver } from "./parallelRoomSaver";
 
 export interface RoomBatchData {
   roomId: string;
@@ -41,7 +40,7 @@ export class OptimizedSaveOperations {
       for (const batch of roomBatches) {
         const batchPromises = batch.map(async ({ roomId, roomData }) => {
           try {
-            const result = await ReportsAPI.updateRoom(reportId, roomId, roomData);
+            const result = await parallelRoomSaver.saveRoom(reportId, roomId, roomData);
             completedRooms++;
             
             if (onProgress) {

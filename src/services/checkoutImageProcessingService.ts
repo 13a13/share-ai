@@ -15,7 +15,7 @@ export const processCheckoutImages = async (
   checkinData?: any
 ): Promise<CheckoutImageAnalysisResult> => {
   try {
-    console.log('Processing checkout images:', { imageUrls, componentName, checkinData });
+    if (import.meta.env?.DEV) { console.log('Processing checkout images:', { imageUrls, componentName, checkinData }); }
 
     const response = await supabase.functions.invoke('process-checkout-images', {
       body: { 
