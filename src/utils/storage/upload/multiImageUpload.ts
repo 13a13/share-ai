@@ -4,7 +4,7 @@
  */
 
 import { BatchUploadManager, type BatchUploadOptions } from '../batchUploadManager';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 /**
  * Enhanced upload multiple images using the new BatchUploadManager

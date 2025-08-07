@@ -5,86 +5,43 @@
  */
 import { Room } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { ReportsAPI } from './index'; // Updated import path to point to the index file
-import { LOCAL_STORAGE_KEYS } from './utils';
 
 // Gemini API implementation
 export const GeminiAPI = {
-  analyzeImage: async (imageUrl: string, roomType?: string): Promise<any> => {
+  async processRoomImage(reportId: string, roomId: string, imageId: string): Promise<Room | null> {
     try {
-      // Request simplified responses from the Gemini API (max 2 sentences)
-      const response = await supabase.functions.invoke('process-room-image', {
-        body: { 
-          imageUrl, 
-          roomType,
-          maxSentences: 2 // Limit responses to maximum 2 sentences
+      const { data, error } = await supabase.functions.invoke('process-room-image', {
+        body: {
+          reportId,
+          roomId,
+          imageIds: [imageId],
+          inventoryMode: true,
+          useAdvancedAnalysis: false,
         },
       });
-
-      if (response.error) {
-        console.error('Error calling Gemini API:', response.error);
-        throw new Error('Failed to analyze image');
-      }
-
-      return response.data;
+      if (error) throw error;
+      return data?.room ?? null;
     } catch (error) {
-      console.error('Error in analyzeImage:', error);
+      console.error('Failed to process room image:', error);
       throw error;
     }
   },
-  
-  processRoomImage: async (reportId: string, roomId: string, imageId: string): Promise<Room | null> => {
-    const reports = await ReportsAPI.getAll();
-    const reportIndex = reports.findIndex(r => r.id === reportId);
-    
-    if (reportIndex === -1) return null;
-    
-    const report = reports[reportIndex];
-    const roomIndex = report.rooms.findIndex(r => r.id === roomId);
-    
-    if (roomIndex === -1) return null;
-    
-    const room = report.rooms[roomIndex];
-    const imageIndex = room.images.findIndex(img => img.id === imageId);
-    
-    if (imageIndex === -1) return null;
-    
-    const imageUrl = room.images[imageIndex].url;
-    
+  async processMultipleRoomImages(reportId: string, roomId: string, imageIds: string[]): Promise<Room | null> {
     try {
-      const aiResult = await GeminiAPI.analyzeImage(imageUrl, room.type);
-      
-      room.images[imageIndex] = {
-        ...room.images[imageIndex],
-        aiProcessed: true,
-        aiData: aiResult,
-      };
-      
-      const updatedRoom: Room = {
-        ...room,
-        generalCondition: aiResult.roomAssessment.generalCondition,
-        sections: room.sections.map(section => {
-          const aiAssessment = aiResult.roomAssessment[section.type as keyof typeof aiResult.roomAssessment];
-          
-          if (aiAssessment) {
-            return {
-              ...section,
-              description: aiAssessment,
-            };
-          }
-          
-          return section;
-        }),
-      };
-      
-      report.rooms[roomIndex] = updatedRoom;
-      report.updatedAt = new Date();
-      
-      localStorage.setItem(LOCAL_STORAGE_KEYS.REPORTS, JSON.stringify(reports));
-      return updatedRoom;
+      const { data, error } = await supabase.functions.invoke('process-room-image', {
+        body: {
+          reportId,
+          roomId,
+          imageIds,
+          inventoryMode: true,
+          useAdvancedAnalysis: true,
+        },
+      });
+      if (error) throw error;
+      return data?.room ?? null;
     } catch (error) {
-      console.error('Error processing room image:', error);
-      return null;
+      console.error('Failed to process multiple room images:', error);
+      throw error;
     }
   },
 };

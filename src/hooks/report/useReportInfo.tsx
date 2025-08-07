@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { ReportsAPI } from "@/lib/api";
 import { Report } from "@/types";
 import { useNavigate } from "react-router-dom";
