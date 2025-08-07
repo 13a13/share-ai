@@ -21,6 +21,7 @@ class SessionManager {
   private sessionTimeout = 30 * 60 * 1000; // 30 minutes
   private checkInterval = 60 * 1000; // Check every minute
   private intervalId: NodeJS.Timeout | null = null;
+  private initializing = false;
 
   public generateFingerprint(): SessionFingerprint {
     return {
@@ -45,21 +46,26 @@ class SessionManager {
   }
 
   public async initializeSession(): Promise<void> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (this.initializing) return;
+    this.initializing = true;
 
-    const fingerprint = this.generateFingerprint();
-    const fingerprintHash = this.hashFingerprint(fingerprint);
-    
     try {
-      // Store session in database
-      await supabase.from('user_sessions').insert({
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { this.initializing = false; return; }
+
+      const fingerprint = this.generateFingerprint();
+      const fingerprintHash = this.hashFingerprint(fingerprint);
+
+      // Upsert session to avoid duplicate key errors on session_token
+      await supabase.from('user_sessions').upsert({
         user_id: session.user.id,
         session_token: session.access_token,
         fingerprint: fingerprintHash,
+        user_agent: navigator.userAgent,
+        is_active: true,
         expires_at: new Date(Date.now() + this.sessionTimeout).toISOString(),
         last_activity: new Date().toISOString()
-      });
+      }, { onConflict: 'session_token' });
 
       // Store fingerprint locally for validation
       localStorage.setItem('session_fingerprint', fingerprintHash);
@@ -69,6 +75,8 @@ class SessionManager {
       this.startSessionMonitoring();
     } catch (error) {
       console.error('Failed to initialize session:', error);
+    } finally {
+      this.initializing = false;
     }
   }
 
