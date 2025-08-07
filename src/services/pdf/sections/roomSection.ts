@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { Room, RoomComponent } from "@/types";
 import { pdfStyles } from "../styles";
-import { conditionRatingToText } from "../../imageProcessingService";
+import { conditionRatingToText, normalizeConditionPoints } from "../../imageProcessingService";
 import { addCompressedImage, checkPageOverflow } from "../utils/helpers";
 
 /**
@@ -332,6 +332,59 @@ async function generateComponentSection(
     }
     
     yPosition += 2; // Extra spacing after AI analysis
+  }
+
+  // Condition Points / AI Findings
+  const rawPoints = (component as any).conditionPoints as any[] | undefined;
+  const conditionPoints = Array.isArray(rawPoints) ? normalizeConditionPoints(rawPoints) : [];
+
+  if (conditionPoints.length > 0) {
+    // Check if header would overflow into footer
+    if (checkPageOverflow(doc, yPosition, 10)) {
+      doc.addPage();
+      yPosition = margins;
+      // Add component continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+
+    doc.setFont(pdfStyles.fonts.body, "bold");
+    const findingsHeader = (component.conditionSummary && component.conditionSummary.trim() !== '') ? "AI Findings:" : "Additional Findings:";
+    doc.text(findingsHeader, margins, yPosition);
+    yPosition += 6;
+
+    doc.setFont(pdfStyles.fonts.body, "normal");
+    const maxWidth = pageWidth - (margins * 2) - 20;
+
+    for (let i = 0; i < conditionPoints.length; i++) {
+      const pointText = String(conditionPoints[i]);
+      const lines = doc.splitTextToSize(pointText, maxWidth);
+
+      // Check overflow for this bullet
+      if (checkPageOverflow(doc, yPosition, lines.length * 6 + 2)) {
+        doc.addPage();
+        yPosition = margins;
+        // Continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} - ${findingsHeader.replace(':','')} (continued)`, margins, yPosition);
+        yPosition += 10;
+        doc.setFont(pdfStyles.fonts.body, "normal");
+      }
+
+      // First line with bullet
+      doc.text(`• ${lines[0]}`, margins + 5, yPosition);
+      // Subsequent lines indented
+      for (let li = 1; li < lines.length; li++) {
+        yPosition += 6;
+        doc.text(lines[li], margins + 12, yPosition);
+      }
+      yPosition += 6; // space between bullets
+    }
+
+    yPosition += 2;
   }
   
   // Inspector Notes - only show if there are manual notes
