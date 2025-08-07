@@ -1,1 +1,13 @@
 project_id = "blrzoqsszyuvskbuidzk"
+
+[functions.organize-storage-image]
+verify_jwt = true
+
+[functions.process-checkout-images]
+verify_jwt = true
+
+[functions.process-room-image]
+verify_jwt = true
+
+[functions.security-enhanced-process-room-image]
+verify_jwt = true

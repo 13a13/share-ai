@@ -2,15 +2,16 @@
 export const SECURITY_HEADERS = {
   'Content-Security-Policy': `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com;
+    script-src 'self' https://apis.google.com https://www.gstatic.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: blob: https: http:;
-    connect-src 'self' https://*.supabase.co https://blrzoqsszyuvskbuidzk.supabase.co https://generativelanguage.googleapis.com;
+    img-src 'self' data: blob: https:;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.pwnedpasswords.com;
     frame-src 'self' https://accounts.google.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
+    frame-ancestors 'none';
     upgrade-insecure-requests;
   `.replace(/\s+/g, ' ').trim(),
   
@@ -18,7 +19,7 @@ export const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Permissions-Policy': 'camera=(self), microphone=(), geolocation=()',
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
 };
 

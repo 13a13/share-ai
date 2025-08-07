@@ -1,4 +1,3 @@
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 // CORS headers
@@ -7,124 +6,163 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; reset: number }>();
+const WINDOW_MS = 60_000; // 1 minute
+const MAX_REQ = 30; // max 30 requests/min per client
+
+function getClientKey(req: Request) {
+  const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+  const ua = req.headers.get("user-agent") || "unknown";
+  return `${ip}:${ua}`;
+}
+
+function checkRateLimit(req: Request) {
+  const key = getClientKey(req);
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.reset) {
+    rateLimitMap.set(key, { count: 1, reset: now + WINDOW_MS });
+    return { allowed: true, remaining: MAX_REQ - 1 };
+  }
+  if (entry.count >= MAX_REQ) {
+    return { allowed: false, remaining: 0, retryAfter: Math.ceil((entry.reset - now) / 1000) };
+  }
+  entry.count += 1;
+  return { allowed: true, remaining: MAX_REQ - entry.count };
+}
+
+function cleanNameForFolder(name: string): string {
+  return (name || "")
+    .toString()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9\s-_]/g, "")
+    .replace(/\s+/g, "_")
+    .toLowerCase()
+    .slice(0, 64);
+}
+
+function extractPathAfterBucket(imageUrl: string, bucket: string): string | null {
+  try {
+    // Find the first occurrence of `${bucket}/` and take everything after
+    const marker = `${bucket}/`;
+    const idx = imageUrl.indexOf(marker);
+    if (idx === -1) return null;
+    return imageUrl.substring(idx + marker.length);
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Rate limiting
+  const rl = checkRateLimit(req);
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: "Too many requests", retryAfter: rl.retryAfter }), {
+      status: 429,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Missing Authorization header" }), { status: 401, headers: corsHeaders });
+  }
+
   try {
     const { imageUrl, reportId, roomId, componentName } = await req.json();
-    if (!imageUrl || !reportId || !roomId) {
+
+    if (!imageUrl || !roomId) {
       return new Response(JSON.stringify({ error: "Missing parameters" }), { status: 400, headers: corsHeaders });
     }
 
-    // Supabase client config
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    // Fetch canonical details
-    function cleanNameForFolder(name: string): string {
-      return name.replace(/[^a-zA-Z0-9\s-_]/g, "").replace(/\s+/g, "_").toLowerCase();
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Verify user session
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
+    const userId = userData.user.id;
 
-    const { data: roomData, error: roomError } = await supabase
+    // Validate and fetch room (RLS ensures only owner can view)
+    const { data: room, error: roomError } = await supabase
       .from("rooms")
-      .select("id, name, type, property_id, properties(name)")
+      .select("id, name, type, property_id")
       .eq("id", roomId)
       .maybeSingle();
 
-    if (roomError || !roomData) {
-      return new Response(JSON.stringify({ error: "Could not resolve room details" }), { status: 500, headers: corsHeaders });
+    if (roomError || !room) {
+      return new Response(JSON.stringify({ error: "Room not found or access denied" }), { status: 403, headers: corsHeaders });
     }
 
-    const roomName = roomData.name && roomData.name.trim() !== "" ? roomData.name : (roomData.type || "room");
-    const propertyName =
-      (roomData.properties && roomData.properties.name && roomData.properties.name.trim() !== "")
-        ? roomData.properties.name
-        : "unknown_property";
-
-    // Get user account name (fetch via properties)
-    let userId: string | null = null;
-    if (roomData.properties && roomData.properties.id) {
-      // Fetch property for user id
-      const { data: property, error: propErr } = await supabase
-        .from("properties")
-        .select("user_id")
-        .eq("id", roomData.properties.id)
-        .maybeSingle();
-      userId = property?.user_id || null;
-    }
-
-    // Fallback if not found
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Could not resolve user account" }), { status: 500, headers: corsHeaders });
-    }
-
-    // Fetch user email or first_name/last_name from profiles
-    let userAccountName = "unknown_user";
-    const { data: profile, error: profileErr } = await supabase
-      .from("profiles")
-      .select("first_name, last_name")
-      .eq("id", userId)
+    // Fetch property name
+    const { data: property, error: propErr } = await supabase
+      .from("properties")
+      .select("name")
+      .eq("id", room.property_id)
       .maybeSingle();
 
-    if (profile && (profile.first_name || profile.last_name)) {
-      userAccountName = `${(profile.first_name || "")} ${(profile.last_name || "")}`.trim();
-      userAccountName = cleanNameForFolder(userAccountName);
-    } else {
-      // Fallback: use a portion of the user id
-      userAccountName = cleanNameForFolder(userId.toString().substring(0, 8));
+    if (propErr || !property) {
+      return new Response(JSON.stringify({ error: "Property not found or access denied" }), { status: 403, headers: corsHeaders });
     }
 
-    // Clean names for folders
-    const folderUser = userAccountName;
-    const folderProperty = cleanNameForFolder(propertyName);
-    const folderRoom = cleanNameForFolder(roomName);
-    const folderComponent = componentName ? cleanNameForFolder(componentName) : "general";
-
-    // Extract unique filename from imageUrl
-    const urlParts = imageUrl.split("/");
-    const filename = urlParts[urlParts.length - 1];
-
-    // Compose new path
-    const targetPath = `${folderUser}/${folderProperty}/${folderRoom}/${folderComponent}/${filename}`;
     const BUCKET = "inspection-images";
 
-    // Parse the existing storage path
-    const bucketPattern = `/storage/v1/object/public/${BUCKET}/`;
-    const originalPath = imageUrl.split(bucketPattern)[1];
-
+    // Extract original path relative to the bucket
+    const originalPath = extractPathAfterBucket(imageUrl, BUCKET);
     if (!originalPath) {
       return new Response(JSON.stringify({ error: "Unexpected Supabase URL pattern" }), { status: 400, headers: corsHeaders });
     }
 
-    // If already in canonical path, no move needed!
+    const roomName = (room.name && room.name.trim() !== "") ? room.name : (room.type || "room");
+    const folderUser = userId; // critical: first segment is the authenticated user's UUID
+    const folderProperty = cleanNameForFolder(property.name || "unknown_property");
+    const folderRoom = cleanNameForFolder(roomName);
+    const folderComponent = cleanNameForFolder(componentName || "general");
+
+    // Extract filename
+    const filename = originalPath.split("/").pop() || "file";
+
+    // Compose new canonical path
+    const targetPath = `${folderUser}/${folderProperty}/${folderRoom}/${folderComponent}/${filename}`;
+
     if (originalPath === targetPath) {
       return new Response(JSON.stringify({ url: imageUrl, organized: false }), { status: 200, headers: corsHeaders });
     }
 
-    // Move/copy
-    const { data: copyData, error: copyError } = await supabase.storage
+    // Move the object within the bucket (atomic server-side)
+    const { error: moveError } = await supabase.storage
       .from(BUCKET)
-      .copy(originalPath, targetPath);
+      .move(originalPath, targetPath);
 
-    if (copyError) {
-      return new Response(JSON.stringify({ error: "Error copying file", details: copyError }), { status: 500, headers: corsHeaders });
+    if (moveError) {
+      return new Response(JSON.stringify({ error: "Error moving file", details: moveError.message }), { status: 500, headers: corsHeaders });
     }
 
-    // Delete the original file
-    await supabase.storage.from(BUCKET).remove([originalPath]);
+    // Build a (potentially public) URL like the input one
+    const baseUrl = SUPABASE_URL.replace(/\/$/, "");
+    const newUrl = `${baseUrl}/storage/v1/object/public/${BUCKET}/${targetPath}`;
 
-    // Build the new public URL
-    const baseUrl = imageUrl.split(bucketPattern)[0];
-    const newUrl = `${baseUrl}${bucketPattern}${targetPath}`;
-
-    // Return the new URL
-    return new Response(JSON.stringify({ url: newUrl, organized: true }), { status: 200, headers: corsHeaders });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "Unknown error", details: err?.message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ url: newUrl, organized: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: "Unknown error", details: err?.message || "" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
