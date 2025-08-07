@@ -148,7 +148,7 @@ export const RoomCrudAPI = {
             await supabase.from('rooms').insert({
               id: newRoomId,
               property_id: currentRoom.property_id,
-              type: 'room',
+              type: 'other',
             });
           }
 
