@@ -9,5 +9,3 @@ verify_jwt = true
 [functions.process-room-image]
 verify_jwt = true
 
-[functions.security-enhanced-process-room-image]
-verify_jwt = true
