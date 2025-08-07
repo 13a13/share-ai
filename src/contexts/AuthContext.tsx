@@ -46,6 +46,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const debugAuth = () => typeof window !== 'undefined' && localStorage.getItem('debugAuth') === '1';
+  const log = (...args: any[]) => { if (debugAuth()) console.log(...args); };
+
   // Helper function to extract user data from session
   const extractUserData = (session: Session | null): User | null => {
     if (!session?.user) return null;
@@ -63,12 +66,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    console.log("Initializing auth state...");
+    log("Initializing auth state...");
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state change:", event, session?.user?.id);
+        log("Auth state change:", event, session?.user?.id);
         
         if (!mounted) return;
 
@@ -98,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             sessionManager.initializeSession();
           }, 0);
         } else if (event === 'TOKEN_REFRESHED') {
-          console.log("Token refreshed for user:", userData?.email);
+          log("Token refreshed for user:", userData?.email);
         }
       }
     );
@@ -106,13 +109,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // THEN check for existing session
     const getInitialSession = async () => {
       try {
-        console.log("Checking for existing session...");
+        log("Checking for existing session...");
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           const msg = String((error as any)?.message || (error as any)?.error_description || "").toLowerCase();
           if (msg.includes("refresh token not found") || msg.includes("refresh_token_not_found")) {
-            console.log("No active session on init (expected). Silencing refresh token warning.");
+            log("No active session on init (expected). Silencing refresh token warning.");
           } else {
             console.error("Error getting session:", error);
           }
@@ -123,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (mounted) {
-          console.log("Initial session found:", !!session);
+          log("Initial session found:", !!session);
           setSession(session);
           const userData = extractUserData(session);
           setUser(userData);
@@ -140,7 +143,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     getInitialSession();
 
     return () => {
-      console.log("Cleaning up auth state listener");
+      log("Cleaning up auth state listener");
       mounted = false;
       subscription.unsubscribe();
     };
@@ -149,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Register function with enhanced security
   const register = async (email: string, password: string, name?: string) => {
     try {
-      console.log("Starting registration for:", email);
+      log("Starting registration for:", email);
       
       // Sanitize inputs
       const sanitizedEmail = securityService.sanitizeInput(email);
@@ -195,13 +198,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      console.log("Registration response:", data);
+      log("Registration response:", data);
       
       if (!data.user) {
         throw new Error("Failed to create user account");
       }
 
-      console.log("User registered successfully:", data.user.id);
+      log("User registered successfully:", data.user.id);
       
       securityService.logSecurityEvent({
         action: 'register_success',
@@ -212,13 +215,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // If there's a session, user is logged in immediately
       if (data.session) {
-        console.log("User automatically logged in");
+        log("User automatically logged in");
         toast({
           title: "Account created successfully",
           description: "Welcome! You're now logged in.",
         });
       } else {
-        console.log("Registration complete, please check email for verification");
+        log("Registration complete, please check email for verification");
         toast({
           title: "Account created",
           description: "Please check your email for verification.",
@@ -252,7 +255,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Login function with enhanced security
   const login = async (email: string, password: string) => {
     try {
-      console.log("Starting login for:", email);
+      log("Starting login for:", email);
       
       // Sanitize inputs
       const sanitizedEmail = securityService.sanitizeInput(email);
@@ -291,7 +294,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      console.log("Login successful:", data.user?.id);
+      log("Login successful:", data.user?.id);
       
       securityService.logSecurityEvent({
         action: 'login_success',
@@ -331,7 +334,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const socialLogin = async (provider: Provider) => {
     try {
-      console.log(`Initiating ${provider} OAuth login flow`);
+      log(`Initiating ${provider} OAuth login flow`);
       
       // Check rate limiting for social login
       const rateLimitCheck = securityService.checkRateLimit('socialLogin');
@@ -342,7 +345,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       
       const redirectTo = `${window.location.origin}/auth/callback`;
-      console.log(`Using redirect URL: ${redirectTo}`);
+      log(`Using redirect URL: ${redirectTo}`);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -367,7 +370,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      console.log(`${provider} OAuth initiated, redirecting:`, data);
+      log(`${provider} OAuth initiated, redirecting:`, data);
       
       securityService.logSecurityEvent({
         action: 'social_login_initiated',
@@ -391,7 +394,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Logout function
   const logout = async () => {
     try {
-      console.log("Starting logout...");
+      log("Starting logout...");
       setIsLoading(true);
       
       const userEmail = user?.email;
@@ -403,7 +406,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       
-      console.log("Logout successful");
+      log("Logout successful");
       
       securityService.logSecurityEvent({
         action: 'logout',

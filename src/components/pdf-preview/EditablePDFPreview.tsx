@@ -4,8 +4,8 @@ import { Report, Property } from "@/types";
 import { SectionItem } from "./types";
 import SectionTable from "./SectionTable";
 import EditSectionDialog from "../EditSectionDialog";
-import { supabase } from "@/integrations/supabase/client";
 import { ComponentUpdateAPI } from "@/lib/api/reports/componentUpdateApi";
+import { ReportsAPI } from "@/lib/api";
 interface EditablePDFPreviewProps {
   report: Report;
   property: Property;
@@ -56,67 +56,7 @@ const EditablePDFPreview = ({ report, property, onUpdate }: EditablePDFPreviewPr
   
   const [editingSection, setEditingSection] = useState<SectionItem | null>(null);
 
-// Removed local persistComponentToDatabase in favor of centralized API
-
-  // Helper function to persist room changes to database
-  const persistRoomToDatabase = async (
-    reportId: string,
-    roomId: string,
-    updates: any
-  ) => {
-    const { data: inspection } = await supabase
-      .from('inspections')
-      .select('room_id, report_info')
-      .eq('id', reportId)
-      .single();
-
-    if (!inspection) return;
-
-    const reportInfo = parseReportInfo(inspection.report_info);
-    const isMainRoom = inspection.room_id === roomId;
-
-    if (isMainRoom) {
-      await supabase
-        .from('inspections')
-        .update({
-          report_info: {
-            ...reportInfo,
-            ...updates
-          }
-        })
-        .eq('id', reportId);
-    } else {
-      const additionalRooms = Array.isArray(reportInfo.additionalRooms) ? reportInfo.additionalRooms : [];
-      const roomIndex = additionalRooms.findIndex((room: any) => room.id === roomId);
-      
-      if (roomIndex !== -1) {
-        additionalRooms[roomIndex] = { ...additionalRooms[roomIndex], ...updates };
-        
-        await supabase
-          .from('inspections')
-          .update({
-            report_info: {
-              ...reportInfo,
-              additionalRooms
-            }
-          })
-          .eq('id', reportId);
-      }
-    }
-  };
-
-  // Helper function to parse report info
-  const parseReportInfo = (reportInfo: any): any => {
-    if (!reportInfo) return {};
-    if (typeof reportInfo === 'string') {
-      try {
-        return JSON.parse(reportInfo);
-      } catch {
-        return {};
-      }
-    }
-    return reportInfo;
-  };
+  // Room persistence now uses ReportsAPI.updateRoom for consistency
   
   const handleEdit = (section: SectionItem) => {
     setEditingSection(section);
@@ -173,9 +113,9 @@ const EditablePDFPreview = ({ report, property, onUpdate }: EditablePDFPreviewPr
         // It's a room - update its general condition
         updatedReport.rooms[roomIndex].generalCondition = updatedSection.description;
         
-        // Persist room changes to database
+        // Persist room changes to database via centralized API
         try {
-          await persistRoomToDatabase(
+          await ReportsAPI.updateRoom(
             report.id,
             updatedSection.roomId,
             { generalCondition: updatedSection.description }

@@ -34,6 +34,8 @@ const ReportEditPage = () => {
     handleSaveReport,
     handleCompleteReport,
     handleNavigateRoom,
+    handleUpdateGeneralCondition,
+    handleUpdateComponentsList,
   } = useReportEditor(reportId);
   
   // Show loading or error states
@@ -96,9 +98,9 @@ const ReportEditPage = () => {
                 roomIndex={index}
                 totalRooms={report.rooms.length}
                 propertyName={property.name}
-                onNavigateRoom={handleNavigateRoom}
-                onUpdateGeneralCondition={async (roomId, condition) => console.log('Update general condition')}
-                onUpdateComponents={async (roomId, components) => console.log('Update components')}
+                  onNavigateRoom={handleNavigateRoom}
+                  onUpdateGeneralCondition={handleUpdateGeneralCondition}
+                  onUpdateComponents={handleUpdateComponentsList}
                 onDeleteRoom={handleDeleteRoom}
                 isComplete={room.components?.filter(c => !c.isOptional).every(c => 
                   c.description && c.condition && (c.images.length > 0 || c.notes)

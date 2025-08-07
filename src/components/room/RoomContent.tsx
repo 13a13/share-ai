@@ -1,8 +1,8 @@
-
 import { Textarea } from "@/components/ui/textarea";
 import { Room, RoomComponent } from "@/types";
 import { useRoomComponents } from "@/hooks/useRoomComponents";
 import ComponentList from "./ComponentList";
+import { useComponentPersistence } from "@/hooks/report/useComponentPersistence";
 
 interface RoomContentProps {
   reportId: string;
@@ -57,6 +57,8 @@ const RoomContent = ({
     reportId
   });
 
+  const { updateComponentInDatabase } = useComponentPersistence();
+
   // Wrapper function to match expected signature
   const handleAddStagedImages = (componentId: string, images: string[]) => {
     const component = components.find(c => c.id === componentId);
@@ -108,7 +110,18 @@ const RoomContent = ({
         onRemoveStagedImage={removeStagedImage}
         onProcessStagedComponent={handleProcessStagedComponent}
         onClearComponentStaging={clearComponentStaging}
-        onSaveComponent={async (componentId) => console.log('Save component', componentId)}
+        onSaveComponent={async (componentId) => {
+          const component = components.find(c => c.id === componentId);
+          if (!component) return;
+          const updates: Partial<RoomComponent> = {
+            description: component.description,
+            condition: component.condition,
+            cleanliness: component.cleanliness,
+            notes: (component as any).notes,
+          };
+          const ok = await updateComponentInDatabase(reportId, room.id, componentId, updates);
+          if (ok) toggleEditMode(componentId);
+        }}
       />
     </div>
   );

@@ -1,14 +1,14 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Report, Property, RoomComponent, RoomSection } from "@/types";
-import { ReportsAPI, PropertiesAPI } from "@/lib/api";
+import { ReportsAPI } from "@/lib/api";
 import { useReportInfo, ReportInfoFormValues } from "./useReportInfo";
 import { useRoomCreation } from "./useRoomCreation";
 import { useUnifiedRoomManagement } from "./useUnifiedRoomManagement";
-import { useUnifiedComponentManagement } from "./useUnifiedComponentManagement";
 import { useBatchRoomSaving } from "@/hooks/useBatchRoomSaving";
 import { useUltraFastCompletion } from "@/hooks/useUltraFastCompletion";
+import { useReportData } from "./useReportData";
 
 // Re-export ReportInfoFormValues for convenience
 export type { ReportInfoFormValues };
@@ -16,11 +16,7 @@ export type { ReportInfoFormValues };
 export const useReportEditor = (reportId: string | undefined) => {
   const { toast } = useToast();
   
-  // State
-  const [report, setReport] = useState<Report | null>(null);
-  const [property, setProperty] = useState<Property | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const { report, setReport, property, isLoading, hasError } = useReportData(reportId);
   const [activeRoomIndex, setActiveRoomIndex] = useState(0);
 
   // Use focused hooks for specific functionality
@@ -46,54 +42,12 @@ export const useReportEditor = (reportId: string | undefined) => {
     handleToggleEditMode,
   } = useUnifiedRoomManagement(report, setReport);
 
-  // New unified component management
-  const {
-    saveComponentWithPersistence,
-    updateComponentField,
-    toggleComponentEditMode,
-  } = useUnifiedComponentManagement(report, setReport);
+  // Removed duplicate unified component management in favor of useUnifiedRoomManagement
 
   // Combined progress from all saving operations
   const saveProgress = completionProgress || batchProgress || reportInfoProgress;
 
-  // Load report data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!reportId) {
-        setHasError(true);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const reportData = await ReportsAPI.getById(reportId);
-        
-        if (reportData) {
-          setReport(reportData);
-          // Get property data separately using the propertyId from the report
-          const propertyData = await PropertiesAPI.getById(reportData.propertyId);
-          if (propertyData) {
-            setProperty(propertyData);
-          }
-        } else {
-          setHasError(true);
-        }
-      } catch (error) {
-        console.error("Error fetching report data:", error);
-        setHasError(true);
-        toast({
-          title: "Error",
-          description: "Failed to load report data. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [reportId, toast]);
+  // Data fetching is now centralized in useReportData
 
   const handleSaveSection = async (updatedSection: RoomSection) => {
     console.log("Saving section:", updatedSection);
@@ -126,6 +80,28 @@ export const useReportEditor = (reportId: string | undefined) => {
     setActiveRoomIndex(index);
   }, []);
 
+  const handleUpdateGeneralCondition = async (roomId: string, condition: string) => {
+    if (!report) return;
+    const updatedRooms = report.rooms.map(r => r.id === roomId ? { ...r, generalCondition: condition } : r);
+    const updatedReport = { ...report, rooms: updatedRooms };
+    setReport(updatedReport);
+    try {
+      await ReportsAPI.updateRoom(report.id, roomId, { generalCondition: condition });
+    } catch (error) {
+      console.error("Error updating room condition:", error);
+      toast({ title: "Error", description: "Failed to save room condition.", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateComponentsList = async (roomId: string, updatedComponents: RoomComponent[]) => {
+    if (!report) return;
+    setReport(prev => {
+      if (!prev) return prev;
+      const rooms = prev.rooms.map(r => r.id === roomId ? { ...r, components: updatedComponents } : r);
+      return { ...prev, rooms };
+    });
+  };
+
   return {
     report,
     property,
@@ -145,9 +121,7 @@ export const useReportEditor = (reportId: string | undefined) => {
     handleSaveReport,
     handleCompleteReport,
     handleNavigateRoom,
-    // New unified component management functions
-    saveComponentWithPersistence,
-    updateComponentField,
-    toggleComponentEditMode,
+    handleUpdateGeneralCondition,
+    handleUpdateComponentsList,
   };
 };

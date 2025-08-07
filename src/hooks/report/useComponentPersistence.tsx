@@ -56,18 +56,3 @@ export const useComponentPersistence = () => {
     isUpdating,
   };
 };
-
-// Helper function to parse report info (moved from reportTransformers)
-function parseReportInfo(reportInfo: any): any {
-  if (!reportInfo) return {};
-  
-  if (typeof reportInfo === 'string') {
-    try {
-      return JSON.parse(reportInfo);
-    } catch {
-      return {};
-    }
-  }
-  
-  return reportInfo;
-}

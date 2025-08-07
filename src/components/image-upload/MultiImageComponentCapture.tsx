@@ -33,8 +33,10 @@ const MultiImageComponentCapture = ({
   onRemoveImage,
   disabled
 }: MultiImageComponentCaptureProps) => {
-  
-  console.log(`🔍 MultiImageComponentCapture props: propertyName="${propertyName}", roomName="${roomName}", componentName="${componentName}"`);
+  const debug = typeof window !== 'undefined' && localStorage.getItem('debugImageFlow') === '1';
+  if (debug) {
+    console.log(`🔍 MultiImageComponentCapture props: propertyName="${propertyName}", roomName="${roomName}", componentName="${componentName}"`);
+  }
   
   const {
     stagingImages,
