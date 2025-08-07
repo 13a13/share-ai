@@ -110,30 +110,71 @@ export const RoomCrudAPI = {
       }
       
       // Check if this is the main room
+      const reportInfo = parseReportInfo(inspection.report_info);
+      let additionalRooms = Array.isArray(reportInfo.additionalRooms)
+        ? reportInfo.additionalRooms
+        : [];
+
       if (inspection.room_id === roomId) {
-        // Can't delete the main room, just clear its data
-        const reportInfo = parseReportInfo(inspection.report_info);
-        
+        // Deleting the main room: promote another room or create a placeholder
+        if (additionalRooms.length > 0) {
+          const newMain = additionalRooms[0];
+
+          await supabase
+            .from('inspections')
+            .update({
+              room_id: newMain.id,
+              report_info: {
+                ...reportInfo,
+                name: newMain.name,
+                type: newMain.type,
+                generalCondition: newMain.generalCondition || '',
+                components: newMain.components || [],
+                additionalRooms: additionalRooms.filter((r: any) => r.id !== newMain.id)
+              }
+            })
+            .eq('id', reportId);
+        } else {
+          // No additional rooms: create a placeholder room and reset report info
+          const { data: currentRoom } = await supabase
+            .from('rooms')
+            .select('property_id')
+            .eq('id', roomId)
+            .single();
+
+          const newRoomId = crypto.randomUUID();
+
+          if (currentRoom?.property_id) {
+            await supabase.from('rooms').insert({
+              id: newRoomId,
+              property_id: currentRoom.property_id,
+              type: 'room',
+            });
+          }
+
+          await supabase
+            .from('inspections')
+            .update({
+              room_id: newRoomId,
+              report_info: {
+                ...reportInfo,
+                generalCondition: '',
+                components: [],
+                additionalRooms: []
+              }
+            })
+            .eq('id', reportId);
+        }
+
+        // Delete the old main room record
         await supabase
-          .from('inspections')
-          .update({
-            report_info: {
-              ...reportInfo,
-              generalCondition: '',
-              components: []
-            }
-          })
-          .eq('id', reportId);
+          .from('rooms')
+          .delete()
+          .eq('id', roomId);
       } else {
-        // Remove the room from additionalRooms
-        const reportInfo = parseReportInfo(inspection.report_info);
-          
-        let additionalRooms = Array.isArray(reportInfo.additionalRooms) 
-          ? reportInfo.additionalRooms 
-          : [];
-        
+        // Remove the room from additionalRooms and delete the record
         additionalRooms = additionalRooms.filter((room: any) => room.id !== roomId);
-        
+
         await supabase
           .from('inspections')
           .update({
@@ -143,8 +184,7 @@ export const RoomCrudAPI = {
             }
           })
           .eq('id', reportId);
-          
-        // Delete the actual room record
+
         await supabase
           .from('rooms')
           .delete()

@@ -21,9 +21,12 @@ export const useRoomNavigation = (
       
       setReport(prev => {
         if (!prev) return prev;
+        const newRooms = prev.rooms.filter(room => room.id !== roomId);
+        const nextIndex = Math.min(activeRoomIndex, Math.max(0, newRooms.length - 1));
+        if (nextIndex !== activeRoomIndex) setActiveRoomIndex(nextIndex);
         return {
           ...prev,
-          rooms: prev.rooms.filter(room => room.id !== roomId),
+          rooms: newRooms,
         };
       });
     } catch (error) {

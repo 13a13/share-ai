@@ -25,9 +25,7 @@ export const usePropertyLimits = () => {
   };
 
   const canCreateNewProperty = () => {
-    if (!canCreateProperties()) return false;
-    if (!profile) return false;
-    return propertyCount < profile.property_limit;
+    return true;
   };
 
   const getPropertyLimitStatus = () => {

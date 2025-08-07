@@ -51,32 +51,15 @@ export const useSubscription = () => {
     }
   };
 
-  const getDaysLeft = () => {
-    if (!profile?.trial_end) return 0;
-    const trialEnd = new Date(profile.trial_end);
-    const now = new Date();
-    const diffTime = trialEnd.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
-  };
-
-  const isTrialExpired = () => {
-    if (!profile?.trial_end) return false;
-    return new Date() > new Date(profile.trial_end);
-  };
-
-  const isTrialActive = () => {
-    return profile?.subscription_status === 'trial' && !isTrialExpired();
-  };
-
-  const hasActiveSubscription = () => {
-    return profile?.subscription_status === 'active';
-  };
-
-  const canCreateProperties = () => {
-    return isTrialActive() || hasActiveSubscription();
-  };
-
+  const getDaysLeft = () => 0;
+  
+  const isTrialExpired = () => false;
+  
+  const isTrialActive = () => false;
+  
+  const hasActiveSubscription = () => true;
+  
+  const canCreateProperties = () => true;
   return {
     profile,
     isLoading,
