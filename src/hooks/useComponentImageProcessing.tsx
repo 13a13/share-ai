@@ -1,5 +1,5 @@
 import { RoomComponent } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { ReportsAPI } from '@/lib/api';
 
 interface UseComponentImageProcessingProps {
