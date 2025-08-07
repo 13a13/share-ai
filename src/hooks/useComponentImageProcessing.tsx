@@ -1,7 +1,7 @@
 import { RoomComponent } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { ReportsAPI } from '@/lib/api';
-
+import { ComponentUpdateAPI } from '@/lib/api/reports/componentUpdateApi';
 interface UseComponentImageProcessingProps {
   components: RoomComponent[];
   expandedComponents: string[];
@@ -175,6 +175,25 @@ function useComponentImageProcessing(props: UseComponentImageProcessingProps) {
     
       setComponents(updatedComponents);
       onChange(updatedComponents);
+
+      // Persist extracted AI fields to the database so PDF generation sees them
+      try {
+        await ComponentUpdateAPI.updateComponent(
+          reportId,
+          roomId,
+          componentId,
+          {
+            description,
+            condition: conditionRating,
+            cleanliness,
+            conditionSummary,
+            conditionPoints: Array.isArray(conditionPoints) ? conditionPoints : []
+          }
+        );
+        console.log('✅ Component fields persisted to database');
+      } catch (persistError) {
+        console.error('❌ Failed to persist component fields:', persistError);
+      }
       
       // Ensure the component is expanded to show analysis results
       if (!expandedComponents.includes(componentId)) {

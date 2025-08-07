@@ -30,6 +30,12 @@ export const generatePDFDocument = async (
   console.log("Report ID:", effectiveReport.id);
   console.log("Property:", property.address);
   console.log("Room count:", effectiveReport.rooms.length);
+
+  // Observability: component counts and field presence
+  const totalComponents = effectiveReport.rooms.reduce((acc, r) => acc + (r.components?.length || 0), 0);
+  const componentsWithImages = effectiveReport.rooms.reduce((acc, r) => acc + (r.components || []).filter(c => c.images && c.images.length > 0).length, 0);
+  const componentsWithDetails = effectiveReport.rooms.reduce((acc, r) => acc + (r.components || []).filter(c => (c.description || c.conditionSummary || c.notes || c.condition || c.cleanliness)).length, 0);
+  console.log("Components - total:", totalComponents, "| with images:", componentsWithImages, "| with details:", componentsWithDetails);
   
   // Create and setup PDF document
   const doc = setupPDFDocument(effectiveReport, property);

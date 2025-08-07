@@ -3,7 +3,7 @@ import { Room, RoomComponent } from "@/types";
 import { useRoomComponents } from "@/hooks/useRoomComponents";
 import ComponentList from "./ComponentList";
 import { useComponentPersistence } from "@/hooks/report/useComponentPersistence";
-
+import { useRef } from "react";
 interface RoomContentProps {
   reportId: string;
   room: Room;
@@ -58,6 +58,20 @@ const RoomContent = ({
   });
 
   const { updateComponentInDatabase } = useComponentPersistence();
+  const saveTimers = useRef<Record<string, number>>({});
+
+  const handleUpdateComponentWithAutosave = (componentId: string, updates: Partial<RoomComponent>) => {
+    // Update local state immediately for responsiveness
+    handleUpdateComponent(componentId, updates);
+
+    // Debounce DB persistence for this component
+    const prevTimer = saveTimers.current[componentId];
+    if (prevTimer) window.clearTimeout(prevTimer);
+
+    saveTimers.current[componentId] = window.setTimeout(() => {
+      updateComponentInDatabase(reportId, room.id, componentId, updates);
+    }, 1000);
+  };
 
   // Wrapper function to match expected signature
   const handleAddStagedImages = (componentId: string, images: string[]) => {
@@ -97,7 +111,7 @@ const RoomContent = ({
         onToggleExpand={toggleExpandComponent}
         onRemoveComponent={handleRemoveComponent}
         onToggleEditMode={toggleEditMode}
-        onUpdateComponent={handleUpdateComponent}
+        onUpdateComponent={handleUpdateComponentWithAutosave}
         onRemoveImage={handleRemoveImage}
         onImagesProcessed={handleImagesProcessed}
         onProcessingStateChange={handleComponentProcessingState}

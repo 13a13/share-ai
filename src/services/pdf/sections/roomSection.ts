@@ -142,10 +142,10 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
   if (room.components && room.components.length > 0) {
     // Filter components to only include those with analyzed images
     const analyzedComponents = room.components.filter(component => {
-      // Only include components with images and some details (description, condition, etc.)
-      return component.images && 
-             component.images.length > 0 && 
-             (component.description || component.conditionSummary || component.notes);
+      // Include components with images and any meaningful detail (description, AI summary, notes, condition, cleanliness)
+      return component.images &&
+             component.images.length > 0 &&
+             (component.description || component.conditionSummary || component.notes || component.condition || component.cleanliness);
     });
     
     // Sort components - standard ones first, then custom ones
@@ -257,31 +257,22 @@ async function generateComponentSection(
       yPosition += 10;
     }
     
-    // Fix: Check if condition is a string before calling replace
+    // Robust condition formatting: support string, object { rating }, or number
     let formattedCondition = "Not specified";
     try {
-      if (component.condition) {
-        formattedCondition = conditionRatingToText(typeof component.condition === 'string' ? component.condition : '');
-      }
-    } catch (error) {
-      console.error(`Error formatting condition for component ${component.name}:`, error);
-      // Fallback formatting based on condition type
-      if (typeof component.condition === 'number') {
-        // If it's a number, use a simple rating scale
+      if (typeof component.condition === 'object' && component.condition !== null) {
+        const rating = (component.condition as { rating?: string }).rating || '';
+        formattedCondition = rating ? conditionRatingToText(rating) : "Not specified";
+      } else if (typeof component.condition === 'string') {
+        formattedCondition = conditionRatingToText(component.condition || '');
+      } else if (typeof component.condition === 'number') {
         const ratings = ["Poor", "Fair", "Average", "Good", "Excellent"];
         const index = Math.min(Math.max(Math.floor(component.condition) - 1, 0), 4);
         formattedCondition = ratings[index];
-      } else if (typeof component.condition === 'string') {
-        // If it's already a string, use it directly
-        formattedCondition = component.condition;
-      } else if (typeof component.condition === 'object' && component.condition !== null) {
-        // If it's an object with a rating property, use that
-        // Type-safe way to access the rating property
-        const conditionObj = component.condition as { rating?: string };
-        if (conditionObj.rating) {
-          formattedCondition = conditionRatingToText(conditionObj.rating);
-        }
       }
+    } catch (error) {
+      console.error(`Error formatting condition for component ${component.name}:`, error);
+      // Fallbacks already set above
     }
     
     doc.setFont(pdfStyles.fonts.body, "bold");
