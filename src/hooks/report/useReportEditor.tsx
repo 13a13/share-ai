@@ -40,6 +40,7 @@ export const useReportEditor = (reportId: string | undefined) => {
     handleUpdateComponent,
     handleSaveComponent,
     handleToggleEditMode,
+    handleDeleteRoom,
   } = useUnifiedRoomManagement(report, setReport);
 
   // Removed duplicate unified component management in favor of useUnifiedRoomManagement
@@ -52,30 +53,6 @@ export const useReportEditor = (reportId: string | undefined) => {
   const handleSaveSection = async (updatedSection: RoomSection) => {
     console.log("Saving section:", updatedSection);
   };
-
-  const handleDeleteRoom = async (roomId: string) => {
-    if (!report) return;
-    
-    try {
-      // Remove room from local state
-      const updatedRooms = report.rooms.filter(room => room.id !== roomId);
-      const updatedReport = { ...report, rooms: updatedRooms };
-      setReport(updatedReport);
-      
-      toast({
-        title: "Room Deleted",
-        description: "Room has been removed from the report.",
-      });
-    } catch (error) {
-      console.error("Error deleting room:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete room. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleNavigateRoom = useCallback((index: number) => {
     setActiveRoomIndex(index);
   }, []);
