@@ -58,6 +58,14 @@ const UnifiedRoomView = ({
   }, [showLed]);
   
   const handleDeleteRoom = async () => {
+    if (roomIndex === 0) {
+      toast({
+        title: "Cannot Delete Main Room",
+        description: "The primary room of a report cannot be deleted.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (window.confirm(`Are you sure you want to delete ${room.name}?`)) {
       try {
         await onDeleteRoom(room.id);
