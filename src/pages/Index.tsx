@@ -16,7 +16,7 @@ const Index = () => {
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-shareai-teal mx-auto mb-4" />
+          <Loader2 className="h-8 w-8 animate-spin text-verifyvision-teal mx-auto mb-4" />
           <h2 className="text-xl font-medium">Loading your account...</h2>
         </div>
       </div>
