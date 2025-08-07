@@ -95,11 +95,9 @@ export const useReportEditor = (reportId: string | undefined) => {
 
   const handleUpdateComponentsList = async (roomId: string, updatedComponents: RoomComponent[]) => {
     if (!report) return;
-    setReport(prev => {
-      if (!prev) return prev;
-      const rooms = prev.rooms.map(r => r.id === roomId ? { ...r, components: updatedComponents } : r);
-      return { ...prev, rooms };
-    });
+    const updatedRooms = report.rooms.map(r => r.id === roomId ? { ...r, components: updatedComponents } : r);
+    const updatedReport = { ...report, rooms: updatedRooms };
+    setReport(updatedReport);
   };
 
   return {
