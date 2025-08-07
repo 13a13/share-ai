@@ -5,7 +5,7 @@ import { SectionItem } from "./types";
 import SectionTable from "./SectionTable";
 import EditSectionDialog from "../EditSectionDialog";
 import { supabase } from "@/integrations/supabase/client";
-
+import { ComponentUpdateAPI } from "@/lib/api/reports/componentUpdateApi";
 interface EditablePDFPreviewProps {
   report: Report;
   property: Property;
@@ -56,71 +56,7 @@ const EditablePDFPreview = ({ report, property, onUpdate }: EditablePDFPreviewPr
   
   const [editingSection, setEditingSection] = useState<SectionItem | null>(null);
 
-  // Helper function to persist component changes to database
-  const persistComponentToDatabase = async (
-    reportId: string,
-    roomId: string,
-    componentId: string,
-    updates: any
-  ) => {
-    const { data: inspection } = await supabase
-      .from('inspections')
-      .select('room_id, report_info')
-      .eq('id', reportId)
-      .single();
-
-    if (!inspection) return;
-
-    const reportInfo = parseReportInfo(inspection.report_info);
-    const isMainRoom = inspection.room_id === roomId;
-
-    if (isMainRoom) {
-      const components = Array.isArray(reportInfo.components) ? reportInfo.components : [];
-      const updatedComponents = components.map((comp: any) => {
-        if (comp.id === componentId) {
-          return { ...comp, ...updates };
-        }
-        return comp;
-      });
-
-      await supabase
-        .from('inspections')
-        .update({
-          report_info: {
-            ...reportInfo,
-            components: updatedComponents
-          }
-        })
-        .eq('id', reportId);
-    } else {
-      const additionalRooms = Array.isArray(reportInfo.additionalRooms) ? reportInfo.additionalRooms : [];
-      const roomIndex = additionalRooms.findIndex((room: any) => room.id === roomId);
-      
-      if (roomIndex !== -1) {
-        const room = additionalRooms[roomIndex];
-        const components = Array.isArray(room.components) ? room.components : [];
-        
-        const updatedComponents = components.map((comp: any) => {
-          if (comp.id === componentId) {
-            return { ...comp, ...updates };
-          }
-          return comp;
-        });
-        
-        additionalRooms[roomIndex] = { ...room, components: updatedComponents };
-        
-        await supabase
-          .from('inspections')
-          .update({
-            report_info: {
-              ...reportInfo,
-              additionalRooms
-            }
-          })
-          .eq('id', reportId);
-      }
-    }
-  };
+// Removed local persistComponentToDatabase in favor of centralized API
 
   // Helper function to persist room changes to database
   const persistRoomToDatabase = async (
@@ -217,9 +153,9 @@ const EditablePDFPreview = ({ report, property, onUpdate }: EditablePDFPreviewPr
           
           updatedReport.rooms[roomIndex].components![componentIndex] = updatedComponent;
           
-          // Persist changes to database
+          // Persist changes to database via centralized API
           try {
-            await persistComponentToDatabase(
+            await ComponentUpdateAPI.updateComponent(
               report.id,
               updatedSection.roomId,
               updatedSection.componentId,

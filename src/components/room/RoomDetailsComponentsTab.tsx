@@ -1,6 +1,6 @@
 import { Room, RoomComponent } from "@/types";
 import RoomComponentInspection from "@/components/RoomComponentInspection";
-import { useUnifiedComponentManagement } from "@/hooks/report/useUnifiedComponentManagement";
+import { useComponentPersistence } from "@/hooks/report/useComponentPersistence";
 
 interface RoomDetailsComponentsTabProps {
   reportId: string;
@@ -17,9 +17,7 @@ const RoomDetailsComponentsTab = ({
 }: RoomDetailsComponentsTabProps) => {
   console.log(`🏗️ RoomDetailsComponentsTab: propertyName="${propertyName}", roomName="${room.name}"`);
   
-  // Use unified component management hook
-  const { saveComponentWithPersistence } = useUnifiedComponentManagement(null, () => {});
-
+  const { updateComponentInDatabase } = useComponentPersistence();
   const handleComponentUpdate = (updatedComponents: RoomComponent[]) => {
     console.log(`🔄 RoomDetailsComponentsTab: Components updated for room ${room.id}:`, updatedComponents);
     onUpdateComponents(room.id, updatedComponents);
@@ -36,7 +34,8 @@ const RoomDetailsComponentsTab = ({
     }
 
     // Save the component directly to database
-    await saveComponentWithPersistence(
+    await updateComponentInDatabase(
+      reportId,
       room.id,
       componentId,
       {

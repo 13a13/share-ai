@@ -110,7 +110,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Error getting session:", error);
+          const msg = String((error as any)?.message || (error as any)?.error_description || "").toLowerCase();
+          if (msg.includes("refresh token not found") || msg.includes("refresh_token_not_found")) {
+            console.log("No active session on init (expected). Silencing refresh token warning.");
+          } else {
+            console.error("Error getting session:", error);
+          }
           if (mounted) {
             setIsLoading(false);
           }
