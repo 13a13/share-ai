@@ -142,10 +142,16 @@ export async function generateRoomSection(doc: jsPDF, room: Room, roomIndex: num
   if (room.components && room.components.length > 0) {
     // Filter components to only include those with analyzed images
     const analyzedComponents = room.components.filter(component => {
-      // Include components with images and any meaningful detail (description, AI summary, notes, condition, cleanliness)
-      return component.images &&
-             component.images.length > 0 &&
-             (component.description || component.conditionSummary || component.notes || component.condition || component.cleanliness);
+      // Include components with images and any meaningful detail (description, AI summary, notes, condition, cleanliness, or condition points)
+      const hasImages = component.images && component.images.length > 0;
+      const hasDetail = !!(
+        component.description ||
+        component.conditionSummary ||
+        component.notes ||
+        component.condition ||
+        component.cleanliness
+      ) || (Array.isArray((component as any).conditionPoints) && (component as any).conditionPoints.length > 0);
+      return hasImages && hasDetail;
     });
     
     // Sort components - standard ones first, then custom ones
