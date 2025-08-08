@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FileText } from "lucide-react";
-import { isIosDevice } from "@/utils/pdfUtils";
 
 // pdf.js imports
-import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from "pdfjs-dist";
-// Use Vite's ?url to load worker as a URL string
-// @ts-ignore - Vite will provide a string URL
-import workerSrc from "pdfjs-dist/build/pdf.worker.min.js?url";
+import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 
-GlobalWorkerOptions.workerSrc = workerSrc as unknown as string;
+// Configure worker from node_modules using Vite asset URL resolution
+GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 interface PdfJsViewerProps {
   src: string; // data:, blob:, or http(s) URL
@@ -21,7 +21,7 @@ const PdfJsViewer: React.FC<PdfJsViewerProps> = ({ src }) => {
 
   useEffect(() => {
     let cancelled = false;
-    let pdfDoc: PDFDocumentProxy | null = null;
+    let pdfDoc: any = null;
 
     const loadArrayBuffer = async (url: string): Promise<ArrayBuffer> => {
       // For data: URIs we can fetch directly as arrayBuffer in modern browsers

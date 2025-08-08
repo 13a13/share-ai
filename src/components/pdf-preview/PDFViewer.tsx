@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, FileText } from "lucide-react";
-import { createBlobUrl, revokeBlobUrl, isIosDevice } from "@/utils/pdfUtils";
+import { createBlobUrl, revokeBlobUrl } from "@/utils/pdfUtils";
 import PdfJsViewer from "./PdfJsViewer";
 
 interface PDFViewerProps {
@@ -87,12 +87,6 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <FileText className="h-16 w-16 text-gray-400 mb-4" />
-        <p className="text-gray-500">{viewerError ? "Error displaying PDF preview" : "No preview available"}</p>
-        {viewerError && isIosDevice() && (
-          <p className="text-sm text-gray-400 mt-2">
-            iOS may have limitations displaying large PDFs. Try downloading the file instead.
-          </p>
-        )}
       </div>
     );
   }
