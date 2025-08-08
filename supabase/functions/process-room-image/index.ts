@@ -1,4 +1,5 @@
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { corsHeaders } from './cors.ts';
 import { processAndOrganizeImages } from './image-processor.ts';
 import { AIProcessor } from './ai-processor.ts';
@@ -74,8 +75,40 @@ function createFallbackResult(componentName?: string): any {
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
+// Helper function to create authenticated Supabase clients
+const createSupabaseClients = async (authHeader: string | null) => {
+  if (!authHeader) {
+    throw new Error('Missing Authorization header');
+  }
+
+  // Create anon client for user validation and RLS-protected operations
+  const anonClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    }
+  );
+
+  // Create service role client for privileged operations (use sparingly)
+  const serviceClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+
+  return { anonClient, serviceClient };
+};
+
 Deno.serve(async (req) => {
-  console.log('🚀 Advanced Defect Detection System - Gemini 2.0 Flash (Fixed Version)');
+  console.log('🚀 Advanced Defect Detection System - Gemini 2.0 Flash (Secured Version)');
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -92,13 +125,27 @@ Deno.serve(async (req) => {
     return createErrorResponse(new Error('GEMINI_API_KEY has invalid format. Expected format: AIza...'), 500);
   }
 
+  // CRITICAL SECURITY: Validate user authentication
+  const authHeader = req.headers.get('Authorization');
   try {
+    const { anonClient, serviceClient } = await createSupabaseClients(authHeader);
+    
+    // Get authenticated user
+    const { data: { user }, error: userError } = await anonClient.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ Authentication failed:', userError);
+      return createErrorResponse(new Error('Unauthorized'), 401);
+    }
+
+    console.log(`🔐 Authenticated user: ${user.id}`);
+
+    // Parse and validate request
     let requestData;
     try {
       requestData = await req.json();
     } catch (parseError) {
       console.error('❌ Failed to parse request JSON:', parseError);
-      return createValidationErrorResponse('Invalid JSON in request body');
+      return createErrorResponse(new Error('Invalid JSON in request body'), 400);
     }
 
     console.log('📥 Request data received:', {
@@ -106,25 +153,79 @@ Deno.serve(async (req) => {
       componentName: requestData.componentName,
       roomType: requestData.roomType,
       inventoryMode: requestData.inventoryMode,
-      useAdvancedAnalysis: requestData.useAdvancedAnalysis
+      useAdvancedAnalysis: requestData.useAdvancedAnalysis,
+      reportId: requestData.reportId,
+      roomId: requestData.roomId
     });
 
-    console.log('🔄 [MAIN] Starting Advanced Defect Detection pipeline with fixes');
+    // CRITICAL SECURITY: Validate ownership before proceeding
+    if (requestData.imageIds && requestData.imageIds.length > 0) {
+      console.log('🔒 Validating ownership of image IDs...');
+      
+      // Use RLS-protected query to validate ownership
+      const { data: userImages, error: ownershipError } = await anonClient
+        .from('room_images')
+        .select(`
+          id,
+          url,
+          room_id,
+          rooms!inner(
+            id,
+            property_id,
+            properties!inner(
+              id,
+              user_id
+            )
+          )
+        `)
+        .in('id', requestData.imageIds);
+
+      if (ownershipError) {
+        console.error('❌ Ownership validation failed:', ownershipError);
+        return createErrorResponse(new Error('Access denied'), 403);
+      }
+
+      if (!userImages || userImages.length !== requestData.imageIds.length) {
+        console.error(`❌ Access denied: User can only access ${userImages?.length || 0} of ${requestData.imageIds.length} requested images`);
+        return createErrorResponse(new Error('Access denied to one or more images'), 403);
+      }
+
+      // Validate report ownership if provided
+      if (requestData.reportId) {
+        const { data: reportData, error: reportError } = await anonClient
+          .from('inspections')
+          .select(`
+            id,
+            room_id,
+            rooms!inner(
+              property_id,
+              properties!inner(
+                user_id
+              )
+            )
+          `)
+          .eq('id', requestData.reportId)
+          .single();
+
+        if (reportError || !reportData) {
+          console.error('❌ Report access denied:', reportError);
+          return createErrorResponse(new Error('Access denied to report'), 403);
+        }
+      }
+
+      console.log('✅ Ownership validation passed');
+    }
+
+    console.log('🔄 [MAIN] Starting Advanced Defect Detection pipeline (secured)');
 
     let imageUrls: string[] = [];
 
     if (requestData.imageIds && requestData.imageIds.length > 0) {
-      // Handle room image processing with database lookup
+      // Handle room image processing with database lookup using RLS-protected query
       console.log(`📸 Processing room images from database: ${requestData.imageIds.length} image IDs`);
       
-      // Import Supabase client
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      // Fetch image URLs from database
-      const { data: images, error } = await supabase
+      // Use anon client for RLS-protected access
+      const { data: images, error } = await anonClient
         .from('room_images')
         .select('url')
         .in('id', requestData.imageIds);

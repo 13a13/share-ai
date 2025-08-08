@@ -172,19 +172,43 @@ class SessionManager {
     if (!session) return;
 
     try {
-      // Mark all user sessions as inactive
-      await supabase
+      console.log('Invalidating all user sessions via secure edge function...');
+      
+      // Call the secure edge function to properly invalidate all sessions
+      const { error } = await supabase.functions.invoke('invalidate-all-sessions');
+      
+      if (error) {
+        console.error('Failed to invalidate sessions via edge function:', error);
+        throw error;
+      }
+
+      // Also mark sessions as inactive in our tracking table for audit purposes
+      const { error: dbError } = await supabase
         .from('user_sessions')
         .update({ is_active: false })
         .eq('user_id', session.user.id);
+      
+      if (dbError) {
+        console.warn('Failed to update session tracking table:', dbError);
+        // Don't throw since the main invalidation succeeded
+      }
 
       securityService.logSecurityEvent({
         action: 'all_sessions_invalidated',
         success: true,
         userAgent: navigator.userAgent
       });
+      
+      console.log('All sessions invalidated successfully');
     } catch (error) {
-      console.error('Failed to invalidate all sessions:', error);
+      console.error('Error invalidating all sessions:', error);
+      securityService.logSecurityEvent({
+        action: 'all_sessions_invalidated',
+        success: false,
+        userAgent: navigator.userAgent,
+        additionalData: { error: error instanceof Error ? error.message : 'Unknown error' }
+      });
+      throw error;
     }
 
     await this.invalidateSession();

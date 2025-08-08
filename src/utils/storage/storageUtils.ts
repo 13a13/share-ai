@@ -69,14 +69,11 @@ export const uploadBlobToStorage = async (
       
       console.log("✅ File uploaded successfully to user-organized folder:", data.path);
       
-      // Get the public URL
-      const { data: publicUrlData } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(data.path);
+      // For private buckets, return the file path (not public URL)
+      // The frontend will generate signed URLs when needed
+      console.log("✅ File uploaded to private storage:", data.path);
       
-      console.log("🔗 Public URL generated:", publicUrlData.publicUrl);
-      
-      return publicUrlData.publicUrl;
+      return data.path;
     },
     STORAGE_RETRY_CONFIG,
     (context: RetryContext) => {

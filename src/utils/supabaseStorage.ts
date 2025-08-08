@@ -12,3 +12,12 @@ export {
   STORAGE_RETRY_CONFIG,
   BATCH_RETRY_CONFIG
 } from './storage';
+
+// Export new signed URL utilities for secure private storage access
+export {
+  createSignedUrl,
+  createSignedUrls,
+  isStoragePath,
+  resolveImageUrl,
+  resolveImageUrls
+} from './storage/signedUrlUtils';
