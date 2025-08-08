@@ -4,11 +4,23 @@ import { FileText } from "lucide-react";
 // pdf.js imports
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 
-// Configure worker from node_modules using Vite asset URL resolution (ESM worker)
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+// Prefer module worker to avoid bundler/iframe issues
+try {
+  (GlobalWorkerOptions as any).workerPort = new Worker(
+    new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url),
+    { type: 'module' }
+  );
+  // eslint-disable-next-line no-console
+  console.log('[PdfJsViewer] Initialized PDF.js module worker');
+} catch (err) {
+  // Fallback to URL string if module worker is not supported
+  // eslint-disable-next-line no-console
+  console.warn('[PdfJsViewer] Module worker init failed, falling back to workerSrc', err);
+  (GlobalWorkerOptions as any).workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).toString();
+}
 
 interface PdfJsViewerProps {
   src: string; // data:, blob:, or http(s) URL
