@@ -50,8 +50,9 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
       setViewerError(false);
     } catch (error) {
       console.error("Error processing PDF URL:", error);
-      setViewerError(true);
-      setBlobUrl(null);
+      // Fallback: use original URL directly (may be data: or http(s):)
+      setViewerError(false);
+      setBlobUrl(currentPdfUrl);
     }
     
   }, [pdfUrl, regeneratedPdfUrl]);
@@ -122,13 +123,27 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
   
   // Regular preview for non-iOS devices
   return (
-    <iframe 
+    <object 
       key={iframeKey}
-      src={blobUrl || ""}
+      data={blobUrl || ""}
+      type="application/pdf"
       className="w-full h-full"
-      title="PDF Preview"
-      onError={() => setViewerError(true)}
-    />
+    >
+      <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+        <FileText className="h-16 w-16 text-gray-400 mb-4" />
+        <p className="text-gray-500 mb-2">Unable to display PDF preview in this viewer.</p>
+        {blobUrl && (
+          <a 
+            href={blobUrl}
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-sm text-shareai-blue hover:underline"
+          >
+            Open PDF in a new tab
+          </a>
+        )}
+      </div>
+    </object>
   );
 };
 
