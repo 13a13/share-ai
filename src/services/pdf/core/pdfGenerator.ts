@@ -1,5 +1,5 @@
 
-import { jsPDF } from "jspdf";
+
 import { Report, Property } from "@/types";
 import { setupPDFDocument } from "./documentSetup";
 import { generatePDFSections } from "./sectionOrchestrator";

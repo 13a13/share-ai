@@ -1,5 +1,5 @@
 
-import { Report } from '@/types';
+
 import { getAllReports, getReportsByPropertyId, getReportById } from './reportQueries';
 import { createReport } from './reportCreation';
 

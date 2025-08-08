@@ -1,5 +1,5 @@
 
-import { conditionRatingToText } from "../../imageProcessingService";
+
 
 /**
  * Helper function to derive cleanliness rating from general condition text
