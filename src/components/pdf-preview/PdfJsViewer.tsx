@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FileText } from "lucide-react";
 
+import { createBlobUrl } from "@/utils/pdfUtils";
 // pdf.js imports
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 
@@ -30,6 +31,33 @@ const PdfJsViewer: React.FC<PdfJsViewerProps> = ({ src }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fallbackActive, setFallbackActive] = useState(false);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+
+  // Trigger fallback if still loading after a short delay
+  useEffect(() => {
+    setFallbackActive(false);
+    if (!src) return;
+    const timer = setTimeout(() => {
+      setFallbackActive(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [src]);
+
+  // Compute fallback URL when needed
+  useEffect(() => {
+    if (!fallbackActive) return;
+    let url = src;
+    if (src?.startsWith('data:')) {
+      try { url = createBlobUrl(src); } catch {}
+    }
+    setFallbackUrl(url);
+    return () => {
+      if (url && url.startsWith('blob:') && url !== src) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [fallbackActive, src]);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,6 +171,27 @@ const PdfJsViewer: React.FC<PdfJsViewerProps> = ({ src }) => {
   }, [src]);
 
   if (!src) return null;
+
+  // Timed fallback to native PDF rendering if PDF.js appears stuck
+  if (fallbackActive && !error) {
+    const url = fallbackUrl || src;
+    return (
+      <object data={url} type="application/pdf" className="w-full h-full">
+        <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+          <FileText className="h-16 w-16 text-gray-400 mb-4" />
+          <p className="text-gray-500 mb-2">Unable to display PDF preview in this viewer.</p>
+          <a 
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-shareai-blue hover:underline"
+          >
+            Open PDF in a new tab
+          </a>
+        </div>
+      </object>
+    );
+  }
 
   if (loading) {
     return (
