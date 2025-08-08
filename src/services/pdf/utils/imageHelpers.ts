@@ -1,6 +1,7 @@
 
 import { compressDataURLImage } from "@/utils/imageCompression";
 import { pdfStyles } from "../styles";
+import { resolveImageUrl } from "@/utils/storage/signedUrlUtils";
 
 /**
  * Compresses and adds an image to the PDF document
@@ -24,6 +25,9 @@ export async function addCompressedImage(
       return;
     }
 
+    // Resolve storage paths to signed URLs when needed
+    const effectiveUrl = await resolveImageUrl(imageUrl, 'inspection-images', 3600);
+
     // Check if adding the image would overflow into footer area
     // Get the footer start position (usually around 15mm from bottom)
     const pageHeight = doc.internal.pageSize.height;
@@ -36,7 +40,7 @@ export async function addCompressedImage(
     }
 
     // Handle different image formats
-    const imageFormat = getImageFormat(imageUrl);
+    const imageFormat = getImageFormat(effectiveUrl);
     
     // Attempt to compress the image before adding to PDF
     try {

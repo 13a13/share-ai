@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import SignedImage from "@/components/common/SignedImage";
 
 interface CollapsibleRoomSectionProps {
   room: Room;
@@ -95,9 +96,9 @@ const CollapsibleRoomSection = ({
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {room.images.map((image) => (
                     <div key={image.id} className="relative rounded overflow-hidden border">
-                      <img 
-                        src={image.url} 
-                        alt={`${room.name}`} 
+                      <SignedImage 
+                        src={image.url}
+                        alt={`${room.name}`}
                         className="w-full h-32 object-cover"
                       />
                     </div>

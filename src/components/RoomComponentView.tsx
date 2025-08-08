@@ -10,6 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import SignedImage from "@/components/common/SignedImage";
 
 interface RoomComponentViewProps {
   component: RoomComponent;
@@ -64,7 +65,7 @@ const RoomComponentView = ({ component }: RoomComponentViewProps) => {
               <div className="grid grid-cols-3 gap-2">
                 {component.images.map((image) => (
                   <div key={image.id} className="relative rounded overflow-hidden border">
-                    <img
+                    <SignedImage
                       src={image.url}
                       alt={`${component.name}`}
                       className="w-full h-20 object-cover"
