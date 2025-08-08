@@ -42,8 +42,8 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
       if (normalizedUrl.startsWith('blob:')) {
         setBlobUrl(normalizedUrl);
       } else if (normalizedUrl.startsWith('data:')) {
-        const newBlobUrl = createBlobUrl(normalizedUrl);
-        setBlobUrl(newBlobUrl);
+        // Pass data URI directly to PDF.js to avoid blob fetch stalls in some environments
+        setBlobUrl(normalizedUrl);
       } else {
         // http(s) or other schemes
         setBlobUrl(normalizedUrl);
