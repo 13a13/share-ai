@@ -336,6 +336,44 @@ async function generateComponentSection(
       yPosition += 2;
     }
 
+    // Inspector Notes - only show if there are manual notes (moved above images)
+    if (component.notes && component.notes.trim() !== '') {
+      // Check if notes header would overflow into footer
+      if (checkPageOverflow(doc, yPosition, 10)) {
+        doc.addPage();
+        yPosition = margins;
+        
+        // Add component continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+        yPosition += 10;
+      }
+      
+      yPosition += 2;
+      doc.setFont(pdfStyles.fonts.body, "bold");
+      doc.text("Notes:", margins, yPosition);
+      yPosition += 6;
+      
+      doc.setFont(pdfStyles.fonts.body, "normal");
+      const splitNotes = doc.splitTextToSize(component.notes, pageWidth - (margins * 2) - 10);
+      
+      // Check if notes content would overflow into footer
+      if (checkPageOverflow(doc, yPosition, splitNotes.length * 6 + 5)) {
+        doc.addPage();
+        yPosition = margins;
+        
+        // Add component continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} - Notes (continued)`, margins, yPosition);
+        yPosition += 10;
+      }
+      
+      doc.text(splitNotes, margins + 5, yPosition);
+      yPosition += splitNotes.length * 6 + 5;
+    }
+
     // Analysed images grid (no additional title)
     const allImages = Array.isArray(component.images) ? component.images : [];
     const analysedImages = allImages.filter((img: any) => img && img.url && img.url.trim() !== '' && (img.aiProcessed || !!img.aiData));
@@ -397,43 +435,6 @@ async function generateComponentSection(
   
 
   
-  // Inspector Notes - only show if there are manual notes
-  if (component.notes && component.notes.trim() !== '') {
-    // Check if notes header would overflow into footer
-    if (checkPageOverflow(doc, yPosition, 10)) {
-      doc.addPage();
-      yPosition = margins;
-      
-      // Add component continuation header
-      doc.setFont(pdfStyles.fonts.header, "normal");
-      doc.setFontSize(pdfStyles.fontSizes.normal);
-      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
-      yPosition += 10;
-    }
-    
-    yPosition += 2;
-    doc.setFont(pdfStyles.fonts.body, "bold");
-    doc.text("Notes:", margins, yPosition);
-    yPosition += 6;
-    
-    doc.setFont(pdfStyles.fonts.body, "normal");
-    const splitNotes = doc.splitTextToSize(component.notes, pageWidth - (margins * 2) - 10);
-    
-    // Check if notes content would overflow into footer
-    if (checkPageOverflow(doc, yPosition, splitNotes.length * 6 + 5)) {
-      doc.addPage();
-      yPosition = margins;
-      
-      // Add component continuation header
-      doc.setFont(pdfStyles.fonts.header, "normal");
-      doc.setFontSize(pdfStyles.fontSizes.normal);
-      doc.text(`${roomIndex}.${componentIndex} ${component.name} - Notes (continued)`, margins, yPosition);
-      yPosition += 10;
-    }
-    
-    doc.text(splitNotes, margins + 5, yPosition);
-    yPosition += splitNotes.length * 6 + 5;
-  }
   
   
   return yPosition;
