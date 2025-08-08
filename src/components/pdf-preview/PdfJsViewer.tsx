@@ -4,7 +4,11 @@ import { FileText } from "lucide-react";
 // pdf.js imports
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 
-// We will disable the worker per-document via getDocument({ disableWorker: true })
+// Configure worker from node_modules using Vite asset URL resolution (ESM worker)
+GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 interface PdfJsViewerProps {
   src: string; // data:, blob:, or http(s) URL
@@ -59,13 +63,16 @@ const PdfJsViewer: React.FC<PdfJsViewerProps> = ({ src }) => {
       container.innerHTML = "";
 
       try {
-        let loadingTask;
-        if (src.startsWith("data:") || src.startsWith("blob:")) {
+        let loadingTask: any;
+        if (src.startsWith("data:")) {
           const data = await loadArrayBuffer(src);
-          loadingTask = getDocument({ data, disableWorker: true } as any);
+          loadingTask = getDocument({ data });
+        } else if (src.startsWith("blob:")) {
+          const data = await loadArrayBuffer(src);
+          loadingTask = getDocument({ data });
         } else {
           // http(s)
-          loadingTask = getDocument({ url: src, withCredentials: false, disableWorker: true } as any);
+          loadingTask = getDocument({ url: src, withCredentials: false });
         }
 
         pdfDoc = await loadingTask.promise;
