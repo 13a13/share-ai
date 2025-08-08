@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RoomSection } from "@/types";
-
+import SignedImage from "@/components/common/SignedImage";
 interface RoomSectionViewProps {
   section: RoomSection;
 }
@@ -58,7 +58,7 @@ const RoomSectionView = ({ section }: RoomSectionViewProps) => {
           <div className="mt-3 grid grid-cols-2 gap-2">
             {section.images.map((image) => (
               <div key={image.id} className="rounded overflow-hidden border">
-                <img 
+                <SignedImage 
                   src={image.url} 
                   alt="Section" 
                   className="w-full h-32 object-cover"

@@ -45,7 +45,7 @@ export async function addCompressedImage(
     // Attempt to compress the image before adding to PDF
     try {
       const compressedImage = await compressDataURLImage(
-        imageUrl,
+        effectiveUrl,
         id,
         800, // Increased max dimension
         800,
@@ -69,11 +69,7 @@ export async function addCompressedImage(
       
       // Fall back to using the original image if compression fails
       try {
-        doc.addImage(imageUrl, imageFormat, xPos, yPos, width, height);
-      } catch (addImageError) {
-        console.error(`Could not add image ${id} to PDF:`, addImageError);
-        drawPlaceholder(doc, xPos, yPos, width, height);
-      }
+        doc.addImage(effectiveUrl, imageFormat, xPos, yPos, width, height);
     }
     
     return;

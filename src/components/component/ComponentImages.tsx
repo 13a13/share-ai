@@ -4,7 +4,7 @@ import { Trash2, Clock } from "lucide-react";
 import { RoomComponentImage } from "@/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-
+import SignedImage from "@/components/common/SignedImage";
 interface ComponentImagesProps {
   images: RoomComponentImage[];
   onRemoveImage: (imageId: string) => void;
@@ -25,7 +25,7 @@ const ComponentImages = ({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-2">
         {images.map((image) => (
           <div key={image.id} className="relative group border rounded overflow-hidden aspect-square">
-            <img 
+            <SignedImage 
               src={image.url} 
               alt="Component" 
               className="w-full h-full object-cover"

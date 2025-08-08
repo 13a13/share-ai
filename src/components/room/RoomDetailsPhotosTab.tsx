@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Room } from "@/types";
 import RoomImageUploader from "@/components/RoomImageUploader";
-
+import SignedImage from "@/components/common/SignedImage";
 interface RoomDetailsPhotosTabProps {
   reportId: string;
   room: Room;
@@ -26,7 +26,7 @@ const RoomDetailsPhotosTab = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {room.images.map((image) => (
             <div key={image.id} className="relative rounded-lg overflow-hidden border">
-              <img 
+              <SignedImage 
                 src={image.url} 
                 alt={`${room.name}`} 
                 className="w-full h-64 object-cover"
