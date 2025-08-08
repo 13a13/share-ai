@@ -296,23 +296,26 @@ async function generateComponentSection(
     // Section: Findings (AI Findings)
     const rawPoints = (component as any).conditionPoints as any[] | undefined;
     const conditionPoints = Array.isArray(rawPoints) ? normalizeConditionPoints(rawPoints) : [];
+
+    // Always show Findings section header (even if no points)
+    if (checkPageOverflow(doc, yPosition, 10)) {
+      doc.addPage();
+      yPosition = margins;
+      // Continuation header
+      doc.setFont(pdfStyles.fonts.header, "normal");
+      doc.setFontSize(pdfStyles.fontSizes.normal);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+      yPosition += 10;
+    }
+
+    doc.setFont(pdfStyles.fonts.body, "bold");
+    doc.text("Findings:", margins, yPosition);
+    yPosition += 6;
+
+    doc.setFont(pdfStyles.fonts.body, "normal");
+    const maxWidth = pageWidth - (margins * 2) - 20;
+
     if (conditionPoints.length > 0) {
-      if (checkPageOverflow(doc, yPosition, 10)) {
-        doc.addPage();
-        yPosition = margins;
-        // Continuation header
-        doc.setFont(pdfStyles.fonts.header, "normal");
-        doc.setFontSize(pdfStyles.fontSizes.normal);
-        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
-        yPosition += 10;
-      }
-
-      doc.setFont(pdfStyles.fonts.body, "bold");
-      doc.text("Findings:", margins, yPosition);
-      yPosition += 6;
-
-      doc.setFont(pdfStyles.fonts.body, "normal");
-      const maxWidth = pageWidth - (margins * 2) - 20;
       for (let i = 0; i < conditionPoints.length; i++) {
         const pointText = String(conditionPoints[i]);
         const lines = doc.splitTextToSize(pointText, maxWidth);
@@ -333,8 +336,8 @@ async function generateComponentSection(
         }
         yPosition += 6;
       }
-      yPosition += 2;
     }
+    yPosition += 2;
 
     // Inspector Notes - only show if there are manual notes (moved above images)
     if (component.notes && component.notes.trim() !== '') {
