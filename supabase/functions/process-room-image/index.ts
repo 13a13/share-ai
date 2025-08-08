@@ -107,6 +107,39 @@ const createSupabaseClients = async (authHeader: string | null) => {
   return { anonClient, serviceClient };
 };
 
+// Convert storage paths to signed URLs so they can be fetched by this function
+async function resolveToSignedUrls(
+  urls: string[],
+  serviceClient: ReturnType<typeof createClient>,
+  bucketName = 'inspection-images',
+  expiresIn = 3600
+): Promise<string[]> {
+  const resolved: string[] = [];
+  for (const url of urls) {
+    if (!url) continue;
+    const isHttp = url.startsWith('http://') || url.startsWith('https://');
+    const isData = url.startsWith('data:');
+    if (isHttp || isData) {
+      resolved.push(url);
+      continue;
+    }
+    // Treat as storage path
+    try {
+      const { data, error } = await serviceClient.storage
+        .from(bucketName)
+        .createSignedUrl(url, expiresIn);
+      if (error || !data?.signedUrl) {
+        console.error('❌ Failed to create signed URL for path:', url, error);
+      } else {
+        resolved.push(data.signedUrl);
+      }
+    } catch (e) {
+      console.error('❌ Exception creating signed URL for path:', url, e);
+    }
+  }
+  return resolved;
+}
+
 Deno.serve(async (req) => {
   console.log('🚀 Advanced Defect Detection System - Gemini 2.0 Flash (Secured Version)');
 
@@ -241,6 +274,10 @@ Deno.serve(async (req) => {
       // Handle direct image processing
       imageUrls = requestData.images;
       console.log(`📸 Processing direct images: ${imageUrls.length} URLs`);
+    } else if (requestData.imageUrls && Array.isArray(requestData.imageUrls)) {
+      // Accept 'imageUrls' field for compatibility
+      imageUrls = requestData.imageUrls;
+      console.log(`📸 Processing provided imageUrls: ${imageUrls.length} URLs`);
     } else {
       console.error('❌ Invalid request format:', { 
         hasImages: !!requestData.images, 
@@ -254,6 +291,20 @@ Deno.serve(async (req) => {
     if (imageUrls.length === 0) {
       console.error('❌ No image URLs found to process');
       return createValidationErrorResponse('No valid image URLs found to process');
+    }
+
+    // Resolve any storage paths to signed URLs for fetching
+    try {
+      const signed = await resolveToSignedUrls(imageUrls, serviceClient, 'inspection-images', 3600);
+      if (signed.length === 0) {
+        console.error('❌ Failed to resolve any image URLs to signed URLs');
+        return createErrorResponse(new Error('Failed to resolve image URLs'), 400);
+      }
+      imageUrls = signed;
+      console.log(`🔐 Resolved ${imageUrls.length} image URLs to signed URLs`);
+    } catch (resolveErr) {
+      console.error('❌ Error resolving signed URLs:', resolveErr);
+      return createErrorResponse(new Error('Failed to prepare images for analysis'), 500);
     }
 
     // Process and organize images with error handling
