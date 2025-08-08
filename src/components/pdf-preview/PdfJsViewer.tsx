@@ -51,8 +51,10 @@ const PdfJsViewer: React.FC<PdfJsViewerProps> = ({ src }) => {
       setError(null);
       const container = containerRef.current;
       if (!container) {
-        setLoading(false);
-        setError("Viewer is not ready");
+        // Container not ready yet (e.g., dialog just opened). Retry shortly.
+        setTimeout(() => {
+          if (!cancelled) render();
+        }, 50);
         return;
       }
       if (!src) {
