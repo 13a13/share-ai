@@ -252,67 +252,8 @@ async function generateComponentSection(
     yPosition += splitDescription.length * 6 + 5;
   }
   
-  // Component details sections per requirements
+  // Component details sections (Condition analysis, Findings, and images)
   {
-    // Prepare values for condition rating and cleanliness
-    let formattedCondition: string | null = null;
-    try {
-      if (typeof component.condition === 'object' && component.condition !== null) {
-        const rating = (component.condition as { rating?: string }).rating || '';
-        formattedCondition = rating ? conditionRatingToText(rating) : null;
-      } else if (typeof component.condition === 'string') {
-        formattedCondition = component.condition ? conditionRatingToText(component.condition) : null;
-      } else if (typeof component.condition === 'number') {
-        const ratings = ["Poor", "Fair", "Average", "Good", "Excellent"];
-        const index = Math.min(Math.max(Math.floor(component.condition) - 1, 0), 4);
-        formattedCondition = ratings[index];
-      }
-    } catch (error) {
-      console.error(`Error formatting condition for component ${component.name}:`, error);
-      formattedCondition = null;
-    }
-
-    const cleanlinessLabel = component.cleanliness
-      ? (cleanlinessOptions.find(o => o.value === component.cleanliness)?.label 
-          || component.cleanliness.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
-      : null;
-
-    // Section: condition rating
-    if (formattedCondition && formattedCondition.trim() !== '') {
-      if (checkPageOverflow(doc, yPosition, 10)) {
-        doc.addPage();
-        yPosition = margins;
-        // Continuation header
-        doc.setFont(pdfStyles.fonts.header, "normal");
-        doc.setFontSize(pdfStyles.fontSizes.normal);
-        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
-        yPosition += 10;
-      }
-      doc.setFont(pdfStyles.fonts.body, "bold");
-      doc.text("condition rating:", margins, yPosition);
-      doc.setFont(pdfStyles.fonts.body, "normal");
-      doc.text(String(formattedCondition), margins + 5, yPosition);
-      yPosition += 7;
-    }
-
-    // Section: cleanliness
-    if (cleanlinessLabel) {
-      if (checkPageOverflow(doc, yPosition, 10)) {
-        doc.addPage();
-        yPosition = margins;
-        // Continuation header
-        doc.setFont(pdfStyles.fonts.header, "normal");
-        doc.setFontSize(pdfStyles.fontSizes.normal);
-        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
-        yPosition += 10;
-      }
-      doc.setFont(pdfStyles.fonts.body, "bold");
-      doc.text("cleanliness:", margins, yPosition);
-      doc.setFont(pdfStyles.fonts.body, "normal");
-      doc.text(cleanlinessLabel, margins + 5, yPosition);
-      yPosition += 7;
-    }
-
     // Section: Condition (AI Analysis)
     if (component.conditionSummary && String(component.conditionSummary).trim() !== '') {
       if (checkPageOverflow(doc, yPosition, 10)) {
@@ -394,6 +335,64 @@ async function generateComponentSection(
       }
       yPosition += 2;
     }
+
+    // Analysed images grid (no additional title)
+    const allImages = Array.isArray(component.images) ? component.images : [];
+    const analysedImages = allImages.filter((img: any) => img && img.url && img.url.trim() !== '' && (img.aiProcessed || !!img.aiData));
+    if (analysedImages.length > 0) {
+      if (checkPageOverflow(doc, yPosition, 8)) {
+        doc.addPage();
+        yPosition = margins;
+        // Continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+        yPosition += 8;
+      }
+
+      const imagesPerRow = 4;
+      const spacing = 2;
+      const imageWidth = (pageWidth - (margins * 2) - (spacing * (imagesPerRow - 1))) / imagesPerRow;
+      const imageHeight = 35;
+
+      let imageYPosition = yPosition;
+
+      for (let i = 0; i < analysedImages.length; i++) {
+        const col = i % imagesPerRow;
+        const row = Math.floor(i / imagesPerRow);
+
+        if (row > 0 && checkPageOverflow(doc, imageYPosition + (row * (imageHeight + 5)), imageHeight)) {
+          doc.addPage();
+          imageYPosition = margins + 5;
+          // Continuation header
+          doc.setFont(pdfStyles.fonts.header, "normal");
+          doc.setFontSize(pdfStyles.fontSizes.normal);
+          doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, imageYPosition - 3);
+        }
+
+        const xPos = margins + (col * (imageWidth + spacing));
+        const yPos = imageYPosition + (row * (imageHeight + 5));
+
+        try {
+          await addCompressedImage(
+            doc,
+            analysedImages[i].url,
+            `component_${component.id}_image_${i}`,
+            xPos,
+            yPos,
+            imageWidth,
+            imageHeight,
+            analysedImages[i].timestamp,
+            true
+          );
+        } catch (error) {
+          console.error(`Error adding component image ${i}:`, error);
+        }
+      }
+
+      const rowsUsed = Math.ceil(analysedImages.length / imagesPerRow);
+      yPosition = imageYPosition + (rowsUsed * (imageHeight + 5)) + 3;
+    }
   }
   
 
@@ -414,7 +413,7 @@ async function generateComponentSection(
     
     yPosition += 2;
     doc.setFont(pdfStyles.fonts.body, "bold");
-    doc.text("Inspector Notes:", margins, yPosition);
+    doc.text("Notes:", margins, yPosition);
     yPosition += 6;
     
     doc.setFont(pdfStyles.fonts.body, "normal");
@@ -428,7 +427,7 @@ async function generateComponentSection(
       // Add component continuation header
       doc.setFont(pdfStyles.fonts.header, "normal");
       doc.setFontSize(pdfStyles.fontSizes.normal);
-      doc.text(`${roomIndex}.${componentIndex} ${component.name} - Inspector Notes (continued)`, margins, yPosition);
+      doc.text(`${roomIndex}.${componentIndex} ${component.name} - Notes (continued)`, margins, yPosition);
       yPosition += 10;
     }
     
