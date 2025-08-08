@@ -4,9 +4,7 @@ import { FileText } from "lucide-react";
 // pdf.js imports
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 
-// Disable worker to avoid bundler/worker issues in some environments
-// Rendering happens on the main thread (acceptable for small PDFs)
-(GlobalWorkerOptions as any).workerSrc = undefined;
+// We will disable the worker per-document via getDocument({ disableWorker: true })
 
 interface PdfJsViewerProps {
   src: string; // data:, blob:, or http(s) URL
