@@ -33,18 +33,20 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
     
     // Convert to blob URL for better browser compatibility
     try {
-      // If it's already a blob URL, use it directly
-      if (currentPdfUrl.startsWith('blob:')) {
-        setBlobUrl(currentPdfUrl);
-      } 
-      // If it's a data URI, convert to blob URL
-      else if (currentPdfUrl.startsWith('data:')) {
-        const newBlobUrl = createBlobUrl(currentPdfUrl);
+      // Normalize raw base64 (no scheme) to a proper data URI
+      const isProbablyBase64 = (s: string) => !s.includes(":") && /^(?:[A-Za-z0-9+/=\n\r])+$/m.test(s) && s.length > 500;
+      const normalizedUrl = isProbablyBase64(currentPdfUrl)
+        ? `data:application/pdf;base64,${currentPdfUrl}`
+        : currentPdfUrl;
+
+      if (normalizedUrl.startsWith('blob:')) {
+        setBlobUrl(normalizedUrl);
+      } else if (normalizedUrl.startsWith('data:')) {
+        const newBlobUrl = createBlobUrl(normalizedUrl);
         setBlobUrl(newBlobUrl);
-      }
-      // Otherwise, use as is
-      else {
-        setBlobUrl(currentPdfUrl);
+      } else {
+        // http(s) or other schemes
+        setBlobUrl(normalizedUrl);
       }
       
       // Reset error state

@@ -4,11 +4,15 @@ import { FileText } from "lucide-react";
 // pdf.js imports
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 
-// Configure worker from node_modules using Vite asset URL resolution
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+// Prefer module worker to avoid CORS/loader issues
+try {
+  (GlobalWorkerOptions as any).workerPort = new Worker(
+    new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url),
+    { type: 'module' }
+  );
+} catch (err) {
+  console.warn('PDF.js worker initialization failed, falling back to default worker', err);
+}
 
 interface PdfJsViewerProps {
   src: string; // data:, blob:, or http(s) URL
@@ -46,7 +50,11 @@ const PdfJsViewer: React.FC<PdfJsViewerProps> = ({ src }) => {
       setLoading(true);
       setError(null);
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) {
+        setLoading(false);
+        setError("Viewer is not ready");
+        return;
+      }
       if (!src) {
         setLoading(false);
         setError("No PDF to display");
