@@ -4,11 +4,9 @@ import { FileText } from "lucide-react";
 // pdf.js imports
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 
-// Configure worker from node_modules using Vite asset URL resolution
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+// Disable worker to avoid bundler/worker issues in some environments
+// Rendering happens on the main thread (acceptable for small PDFs)
+(GlobalWorkerOptions as any).workerSrc = undefined;
 
 interface PdfJsViewerProps {
   src: string; // data:, blob:, or http(s) URL
@@ -66,10 +64,10 @@ const PdfJsViewer: React.FC<PdfJsViewerProps> = ({ src }) => {
         let loadingTask;
         if (src.startsWith("data:") || src.startsWith("blob:")) {
           const data = await loadArrayBuffer(src);
-          loadingTask = getDocument({ data });
+          loadingTask = getDocument({ data, disableWorker: true } as any);
         } else {
           // http(s)
-          loadingTask = getDocument({ url: src, withCredentials: false });
+          loadingTask = getDocument({ url: src, withCredentials: false, disableWorker: true } as any);
         }
 
         pdfDoc = await loadingTask.promise;
