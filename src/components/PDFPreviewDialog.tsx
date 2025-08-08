@@ -30,7 +30,7 @@ const PDFPreviewDialog = ({
   property
 }: PDFPreviewDialogProps) => {
   // Manage the view mode - editable table or raw PDF
-  const [viewMode, setViewMode] = useState<"table" | "pdf">("table");
+  const [viewMode, setViewMode] = useState<"table" | "pdf">("pdf");
   
   // State for the report data that can be edited
   const [editedReport, setEditedReport] = useState<Report>(report);

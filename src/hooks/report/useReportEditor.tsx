@@ -75,6 +75,12 @@ export const useReportEditor = (reportId: string | undefined) => {
     const updatedRooms = report.rooms.map(r => r.id === roomId ? { ...r, components: updatedComponents } : r);
     const updatedReport = { ...report, rooms: updatedRooms };
     setReport(updatedReport);
+    try {
+      await ReportsAPI.updateRoom(report.id, roomId, { components: updatedComponents });
+    } catch (error) {
+      console.error("Error updating room components:", error);
+      toast({ title: "Error", description: "Failed to save component changes.", variant: "destructive" });
+    }
   };
 
   return {
