@@ -452,6 +452,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      slugify: {
+        Args: { input: string }
+        Returns: string
+      }
+      user_account_slug: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
