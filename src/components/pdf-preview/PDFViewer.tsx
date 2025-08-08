@@ -93,9 +93,9 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
   
   // Render using PDF.js for cross-browser compatibility (works inside iframes)
   return (
-    <div className="w-full h-full">
-      <PdfJsViewer src={blobUrl || ""} />
-    </div>
+      <div className="w-full h-full">
+        <PdfJsViewer src={blobUrl || regeneratedPdfUrl || ""} />
+      </div>
   );
 };
 

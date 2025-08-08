@@ -46,7 +46,12 @@ const PdfJsViewer: React.FC<PdfJsViewerProps> = ({ src }) => {
       setLoading(true);
       setError(null);
       const container = containerRef.current;
-      if (!container || !src) return;
+      if (!container) return;
+      if (!src) {
+        setLoading(false);
+        setError("No PDF to display");
+        return;
+      }
 
       // Cleanup previous
       container.innerHTML = "";
