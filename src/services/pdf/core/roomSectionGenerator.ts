@@ -14,9 +14,18 @@ export const generateRoomSections = async (
 ): Promise<void> => {
   console.log("=== Generating room sections ===");
   
-  for (let i = 0; i < report.rooms.length; i++) {
-    const room = report.rooms[i];
-    console.log(`=== Processing room ${i+1}/${report.rooms.length}: ${room.name} ===`);
+  // Filter out placeholder/empty rooms (no components, sections, images, or general condition)
+  const roomsToInclude = report.rooms.filter((room) => {
+    const hasComponents = Array.isArray(room.components) && room.components.length > 0;
+    const hasSections = Array.isArray(room.sections) && room.sections.length > 0;
+    const hasImages = Array.isArray(room.images) && room.images.length > 0;
+    const hasGeneral = typeof room.generalCondition === 'string' && room.generalCondition.trim() !== '';
+    return hasComponents || hasSections || hasImages || hasGeneral;
+  });
+  
+  for (let i = 0; i < roomsToInclude.length; i++) {
+    const room = roomsToInclude[i];
+    console.log(`=== Processing room ${i+1}/${roomsToInclude.length}: ${room.name} ===`);
     
     try {
       // Record page number for this room
@@ -26,7 +35,7 @@ export const generateRoomSections = async (
       await generateRoomSection(doc, room, i + 1);
       
       // Add new page for next room (except for last room)
-      if (i < report.rooms.length - 1) {
+      if (i < roomsToInclude.length - 1) {
         doc.addPage();
       }
       
@@ -37,7 +46,7 @@ export const generateRoomSections = async (
       
       // Add a placeholder page for this room
       doc.text(`Error processing room: ${room.name}`, 20, 50);
-      if (i < report.rooms.length - 1) {
+      if (i < roomsToInclude.length - 1) {
         doc.addPage();
       }
     }
