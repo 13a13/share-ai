@@ -18,60 +18,53 @@ export async function addCompressedImage(
   maintainAspectRatio: boolean = true
 ): Promise<void> {
   try {
-    // Check if we have a valid image URL before proceeding
     if (!imageUrl || imageUrl.trim() === '') {
       console.error(`Invalid image URL for ${id}`);
       drawPlaceholder(doc, xPos, yPos, width, height);
       return;
     }
 
-    // Resolve storage paths to signed URLs when needed
     const effectiveUrl = await resolveImageUrl(imageUrl, 'inspection-images', 3600);
 
-    // Check if adding the image would overflow into footer area
-    // Get the footer start position (usually around 15mm from bottom)
     const pageHeight = doc.internal.pageSize.height;
-    const footerMargin = 25; // Keep 25mm from bottom of page clear for footer
-    
-    // If image would extend into footer, add a new page
+    const footerMargin = 25;
     if (yPos + height > pageHeight - footerMargin) {
       doc.addPage();
-      yPos = 20; // Reset Y position at top of new page with some margin
+      yPos = 20;
     }
 
-    // Handle different image formats
     const imageFormat = getImageFormat(effectiveUrl);
-    
-    // Attempt to compress the image before adding to PDF
+
     try {
       const compressedImage = await compressDataURLImage(
         effectiveUrl,
         id,
-        800, // Increased max dimension
         800,
-        0.75 // Slightly higher quality
+        800,
+        0.75
       );
-      
-      // If maintaining aspect ratio is enabled, calculate dimensions that preserve the original ratio
+
       if (maintainAspectRatio) {
         await addImageWithAspectRatio(doc, compressedImage, imageFormat, xPos, yPos, width, height, timestamp);
       } else {
-        // Add the compressed image to the document with the specified dimensions
         doc.addImage(compressedImage, imageFormat, xPos, yPos, width, height);
-        
-        // Add timestamp below image if available
         if (timestamp) {
           addTimestampToImage(doc, timestampStr(timestamp), xPos + width / 2, yPos + height + 5);
         }
       }
     } catch (compressionError) {
       console.error(`Compression error for image ${id}:`, compressionError);
-      
-      // Fall back to using the original image if compression fails
       try {
         doc.addImage(effectiveUrl, imageFormat, xPos, yPos, width, height);
+        if (timestamp) {
+          addTimestampToImage(doc, timestampStr(timestamp), xPos + width / 2, yPos + height + 5);
+        }
+      } catch (addImageError) {
+        console.error(`Could not add image ${id} to PDF:`, addImageError);
+        drawPlaceholder(doc, xPos, yPos, width, height);
+      }
     }
-    
+
     return;
   } catch (error) {
     console.error(`Error adding image ${id}:`, error);
