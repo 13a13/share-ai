@@ -136,8 +136,12 @@ export const deleteFileFromStorage = async (
  */
 export const extractFilePathFromUrl = (imageUrl: string, bucketName: string = 'inspection-images'): string | null => {
   try {
-    // Check if this is a Supabase storage URL
-    if (!imageUrl.includes('/storage/v1/object/public/inspection-images/') && !imageUrl.includes('inspection-images/')) {
+    // If it's already a storage path, return as-is
+    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    // Check if this is a Supabase storage URL for the given bucket
+    if (!imageUrl.includes(`/${bucketName}/`)) {
       console.log("⏭️ Not a Supabase storage URL, skipping deletion");
       return null;
     }

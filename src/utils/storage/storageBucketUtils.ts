@@ -17,6 +17,9 @@ export const checkStorageBucket = async (bucketName: string = 'inspection-images
       const { data: listData, error: listError } = await supabase.storage
         .from(bucketName)
         .list('', { limit: 1 });
+      // Note: For private buckets without SELECT policy, this may fail as expected
+      // We'll treat access denied as a signal to rely on signed URLs
+      
       
       if (listError) {
         console.error("❌ Storage bucket exists but access denied:", listError);

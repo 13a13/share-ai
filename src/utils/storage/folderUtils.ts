@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { getUserFullName } from './userUtils';
+import { getUserFullName, getUserId } from './userUtils';
 import { resolvePropertyAndRoomNames } from './resolveNames';
 
 /**
@@ -37,6 +37,9 @@ export const generateFolderPath = async (
   const userFullName = await getUserFullName();
   console.log(`👤 [FOLDER v4] User full name: "${userFullName}"`);
 
+  // Get user id for secure path prefix
+  const userId = await getUserId();
+  console.log(`🆔 [FOLDER v4] User id: "${userId}"`);
   // CRITICAL: Always resolve names from database to ensure accuracy
   console.log(`🔍 [FOLDER v4] Resolving names from database...`);
   const resolved = await resolvePropertyAndRoomNames(roomId, propertyName, roomName);
@@ -64,8 +67,8 @@ export const generateFolderPath = async (
     ? cleanNameForFolder(componentName)
     : 'general';
 
-  // Create folder structure: user_full_name/property_name/room_name/component_name/filename
-  const fileName = `${userFullName}/${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/${uuidv4()}.${fileExtension || 'jpg'}`;
+  // Create folder structure: user_id/user_full_name/property_name/room_name/component_name/filename
+  const fileName = `${userId}/${userFullName}/${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/${uuidv4()}.${fileExtension || 'jpg'}`;
 
   console.log(`📂 [FOLDER v4] Generated upload path:`, fileName);
   

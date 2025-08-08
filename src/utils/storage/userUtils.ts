@@ -43,3 +43,16 @@ export const getUserFullName = async (): Promise<string> => {
     return 'unknown_user';
   }
 };
+
+/**
+ * Get current authenticated user's id for secure storage path prefixing
+ */
+export const getUserId = async (): Promise<string> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id || 'anonymous';
+  } catch (error) {
+    console.error("❌ Error getting user id:", error);
+    return 'anonymous';
+  }
+};

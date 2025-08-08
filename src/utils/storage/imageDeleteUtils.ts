@@ -8,8 +8,8 @@ export const deleteReportImage = async (imageUrl: string): Promise<void> => {
   try {
     console.log("🗑️ Attempting to delete image:", imageUrl);
     
-    // Extract file path from URL
-    const fileName = extractFilePathFromUrl(imageUrl);
+    // Extract file path from URL or accept direct storage path
+    const fileName = extractFilePathFromUrl(imageUrl) || imageUrl;
     
     if (!fileName) {
       return; // Error already logged in extractFilePathFromUrl

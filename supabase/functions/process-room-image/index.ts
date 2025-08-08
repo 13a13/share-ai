@@ -293,6 +293,16 @@ Deno.serve(async (req) => {
       return createValidationErrorResponse('No valid image URLs found to process');
     }
 
+    // Sanitize and enforce limits
+    const MAX_IMAGES = 10;
+    if (imageUrls.length > MAX_IMAGES) {
+      console.warn(`⚠️ Too many images provided (${imageUrls.length}), truncating to ${MAX_IMAGES}`);
+      imageUrls = imageUrls.slice(0, MAX_IMAGES);
+    }
+    if (requestData.componentName && typeof requestData.componentName === 'string') {
+      requestData.componentName = requestData.componentName.slice(0, 100);
+    }
+
     // Resolve any storage paths to signed URLs for fetching
     try {
       const signed = await resolveToSignedUrls(imageUrls, serviceClient, 'inspection-images', 3600);
