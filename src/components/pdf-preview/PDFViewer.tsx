@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, FileText } from "lucide-react";
 import { createBlobUrl, revokeBlobUrl, isIosDevice } from "@/utils/pdfUtils";
+import PdfJsViewer from "./PdfJsViewer";
 
 interface PDFViewerProps {
   pdfUrl: string | null;
@@ -96,54 +97,11 @@ const PDFViewer = ({ pdfUrl, regeneratedPdfUrl, isLoading }: PDFViewerProps) => 
     );
   }
   
-  // For iOS devices, offer an option to open in a new tab
-  if (isIosDevice()) {
-    return (
-      <div className="flex flex-col h-full">
-        <iframe 
-          key={iframeKey}
-          src={blobUrl || ""}
-          className="w-full h-full"
-          title="PDF Preview"
-          onError={() => setViewerError(true)}
-        />
-        {blobUrl && (
-          <div className="text-center p-2 bg-gray-100 border-t">
-            <button 
-              onClick={() => window.open(blobUrl, '_blank')}
-              className="text-sm text-shareai-blue hover:underline"
-            >
-              Open PDF in new tab for better viewing on iOS
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-  
-  // Regular preview for non-iOS devices
+  // Render using PDF.js for cross-browser compatibility (works inside iframes)
   return (
-    <object 
-      key={iframeKey}
-      data={blobUrl || ""}
-      type="application/pdf"
-      className="w-full h-full"
-    >
-      <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-        <FileText className="h-16 w-16 text-gray-400 mb-4" />
-        <p className="text-gray-500 mb-2">Unable to display PDF preview in this viewer.</p>
-        {blobUrl && (
-          <a 
-            href={blobUrl}
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-sm text-shareai-blue hover:underline"
-          >
-            Open PDF in a new tab
-          </a>
-        )}
-      </div>
-    </object>
+    <div className="w-full h-full">
+      <PdfJsViewer src={blobUrl || ""} />
+    </div>
   );
 };
 
