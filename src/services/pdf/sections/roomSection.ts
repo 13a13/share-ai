@@ -336,6 +336,20 @@ async function generateComponentSection(
         }
         yPosition += 6;
       }
+    } else {
+      // Show default message when there are no findings
+      if (checkPageOverflow(doc, yPosition, 8)) {
+        doc.addPage();
+        yPosition = margins;
+        // Continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} - Findings (continued)`, margins, yPosition);
+        yPosition += 10;
+        doc.setFont(pdfStyles.fonts.body, "normal");
+      }
+      doc.text("No defect found", margins + 5, yPosition);
+      yPosition += 6;
     }
     yPosition += 2;
 
