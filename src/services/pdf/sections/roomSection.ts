@@ -252,28 +252,16 @@ async function generateComponentSection(
     yPosition += splitDescription.length * 6 + 5;
   }
   
-  // Component condition
-  if (component.condition) {
-    // Check if adding condition would overflow into footer
-    if (checkPageOverflow(doc, yPosition, 10)) {
-      doc.addPage();
-      yPosition = margins;
-      
-      // Add component continuation header
-      doc.setFont(pdfStyles.fonts.header, "normal");
-      doc.setFontSize(pdfStyles.fontSizes.normal);
-      doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
-      yPosition += 10;
-    }
-    
-    // Robust condition formatting: support string, object { rating }, or number
-    let formattedCondition = "Not specified";
+  // Component details sections per requirements
+  {
+    // Prepare values for condition rating and cleanliness
+    let formattedCondition: string | null = null;
     try {
       if (typeof component.condition === 'object' && component.condition !== null) {
         const rating = (component.condition as { rating?: string }).rating || '';
-        formattedCondition = rating ? conditionRatingToText(rating) : "Not specified";
+        formattedCondition = rating ? conditionRatingToText(rating) : null;
       } else if (typeof component.condition === 'string') {
-        formattedCondition = conditionRatingToText(component.condition || '');
+        formattedCondition = component.condition ? conditionRatingToText(component.condition) : null;
       } else if (typeof component.condition === 'number') {
         const ratings = ["Poor", "Fair", "Average", "Good", "Excellent"];
         const index = Math.min(Math.max(Math.floor(component.condition) - 1, 0), 4);
@@ -281,37 +269,63 @@ async function generateComponentSection(
       }
     } catch (error) {
       console.error(`Error formatting condition for component ${component.name}:`, error);
-      // Fallbacks already set above
+      formattedCondition = null;
     }
-    
-    // Header
-    doc.setFont(pdfStyles.fonts.body, "bold");
-    doc.text("Condition:", margins, yPosition);
-    doc.setFont(pdfStyles.fonts.body, "normal");
 
     const cleanlinessLabel = component.cleanliness
       ? (cleanlinessOptions.find(o => o.value === component.cleanliness)?.label 
           || component.cleanliness.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
       : null;
 
-    const conditionLine = `Rating: ${formattedCondition}` + (cleanlinessLabel ? `  |  Cleanliness: ${cleanlinessLabel}` : "");
-    doc.text(conditionLine, margins + 25, yPosition);
-    yPosition += 7;
-
-    // Analysis (under Condition)
-    if (component.conditionSummary && component.conditionSummary.trim() !== '') {
+    // Section: condition rating
+    if (formattedCondition && formattedCondition.trim() !== '') {
       if (checkPageOverflow(doc, yPosition, 10)) {
         doc.addPage();
         yPosition = margins;
-        // Add component continuation header
+        // Continuation header
         doc.setFont(pdfStyles.fonts.header, "normal");
         doc.setFontSize(pdfStyles.fontSizes.normal);
         doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
         yPosition += 10;
       }
-
       doc.setFont(pdfStyles.fonts.body, "bold");
-      doc.text("Analysis:", margins, yPosition);
+      doc.text("condition rating:", margins, yPosition);
+      doc.setFont(pdfStyles.fonts.body, "normal");
+      doc.text(String(formattedCondition), margins + 5, yPosition);
+      yPosition += 7;
+    }
+
+    // Section: cleanliness
+    if (cleanlinessLabel) {
+      if (checkPageOverflow(doc, yPosition, 10)) {
+        doc.addPage();
+        yPosition = margins;
+        // Continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+        yPosition += 10;
+      }
+      doc.setFont(pdfStyles.fonts.body, "bold");
+      doc.text("cleanliness:", margins, yPosition);
+      doc.setFont(pdfStyles.fonts.body, "normal");
+      doc.text(cleanlinessLabel, margins + 5, yPosition);
+      yPosition += 7;
+    }
+
+    // Section: Condition (AI Analysis)
+    if (component.conditionSummary && String(component.conditionSummary).trim() !== '') {
+      if (checkPageOverflow(doc, yPosition, 10)) {
+        doc.addPage();
+        yPosition = margins;
+        // Continuation header
+        doc.setFont(pdfStyles.fonts.header, "normal");
+        doc.setFontSize(pdfStyles.fontSizes.normal);
+        doc.text(`${roomIndex}.${componentIndex} ${component.name} (continued)`, margins, yPosition);
+        yPosition += 10;
+      }
+      doc.setFont(pdfStyles.fonts.body, "bold");
+      doc.text("Condition:", margins, yPosition);
       yPosition += 6;
 
       doc.setFont(pdfStyles.fonts.body, "normal");
@@ -328,7 +342,7 @@ async function generateComponentSection(
           // Continuation header
           doc.setFont(pdfStyles.fonts.header, "normal");
           doc.setFontSize(pdfStyles.fontSizes.normal);
-          doc.text(`${roomIndex}.${componentIndex} ${component.name} - Analysis (continued)`, margins, yPosition);
+          doc.text(`${roomIndex}.${componentIndex} ${component.name} - Condition (continued)`, margins, yPosition);
           yPosition += 10;
           doc.setFont(pdfStyles.fonts.body, "normal");
         }
@@ -338,7 +352,7 @@ async function generateComponentSection(
       yPosition += 2;
     }
 
-    // Findings (under Condition)
+    // Section: Findings (AI Findings)
     const rawPoints = (component as any).conditionPoints as any[] | undefined;
     const conditionPoints = Array.isArray(rawPoints) ? normalizeConditionPoints(rawPoints) : [];
     if (conditionPoints.length > 0) {
