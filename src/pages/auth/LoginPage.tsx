@@ -188,48 +188,6 @@ const LoginPage = () => {
                 disabled={isSubmitting}
               />
             </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => handleSocialLogin('google')} 
-                className="w-full"
-                disabled={googleLoading || isSubmitting}
-              >
-                {googleLoading ? (
-                  <ProgressIndicator variant="inline" size="sm" className="mr-2" />
-                ) : (
-                  <Mail className="h-4 w-4 mr-2" />
-                )}
-                Google
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => handleSocialLogin('apple')} 
-                className="w-full"
-                disabled={appleLoading || isSubmitting}
-              >
-                {appleLoading ? (
-                  <ProgressIndicator variant="inline" size="sm" className="mr-2" />
-                ) : (
-                  <Apple className="h-4 w-4 mr-2" />
-                )}
-                Apple
-              </Button>
-            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button
