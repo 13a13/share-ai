@@ -20,12 +20,13 @@ export class PropertiesRepository extends BaseRepository<Property> {
    * Find all properties for the authenticated user
    */
   async findAll(): Promise<Property[]> {
-    const query = supabase
-      .from('properties')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    const data = await this.executeQuery<any[]>(query, 'PropertiesRepository.findAll');
+    const data = await this.executeQuery<any[]>(
+      async () => await supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      'PropertiesRepository.findAll'
+    );
     return data.map(PropertyMapper.toClientModel);
   }
 
@@ -33,13 +34,14 @@ export class PropertiesRepository extends BaseRepository<Property> {
    * Find a property by ID
    */
   async findById(id: string): Promise<Property | null> {
-    const query = supabase
-      .from('properties')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    const data = await this.executeQuery<any>(query, 'PropertiesRepository.findById');
+    const data = await this.executeQuery<any>(
+      async () => await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle(),
+      'PropertiesRepository.findById'
+    );
     
     if (!data) {
       return null;
@@ -66,14 +68,14 @@ export class PropertiesRepository extends BaseRepository<Property> {
     const dbProperty = PropertyMapper.toDatabaseInsert(property, user.id);
 
     // Execute with retry
-    const mutationFn = () =>
-      supabase
+    const data = await this.executeMutation<any>(
+      async () => await supabase
         .from('properties')
         .insert(dbProperty)
         .select()
-        .single();
-
-    const data = await this.executeMutation<any>(mutationFn, 'PropertiesRepository.create');
+        .single(),
+      'PropertiesRepository.create'
+    );
     return PropertyMapper.toClientModel(data);
   }
 
@@ -88,15 +90,15 @@ export class PropertiesRepository extends BaseRepository<Property> {
     const dbUpdates = PropertyMapper.toDatabaseUpdate(updates);
 
     // Execute with retry
-    const mutationFn = () =>
-      supabase
+    const data = await this.executeMutation<any>(
+      async () => await supabase
         .from('properties')
         .update(dbUpdates)
         .eq('id', id)
         .select()
-        .single();
-
-    const data = await this.executeMutation<any>(mutationFn, 'PropertiesRepository.update');
+        .single(),
+      'PropertiesRepository.update'
+    );
     
     if (!data) {
       throw new NotFoundError('Property', id);
@@ -109,15 +111,15 @@ export class PropertiesRepository extends BaseRepository<Property> {
    * Delete a property
    */
   async delete(id: string): Promise<void> {
-    const mutationFn = () =>
-      supabase
+    const data = await this.executeMutation<any>(
+      async () => await supabase
         .from('properties')
         .delete()
         .eq('id', id)
         .select()
-        .single();
-
-    const data = await this.executeMutation<any>(mutationFn, 'PropertiesRepository.delete');
+        .single(),
+      'PropertiesRepository.delete'
+    );
     
     if (!data) {
       throw new NotFoundError('Property', id);
