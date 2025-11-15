@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -357,7 +357,7 @@ export type Database = {
           created_at: string | null
           error_message: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           resource: string | null
           success: boolean
@@ -369,7 +369,7 @@ export type Database = {
           created_at?: string | null
           error_message?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           resource?: string | null
           success: boolean
@@ -381,7 +381,7 @@ export type Database = {
           created_at?: string | null
           error_message?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           resource?: string | null
           success?: boolean
@@ -396,7 +396,7 @@ export type Database = {
           expires_at: string
           fingerprint: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           is_active: boolean | null
           last_activity: string | null
           session_token: string
@@ -408,7 +408,7 @@ export type Database = {
           expires_at: string
           fingerprint?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean | null
           last_activity?: string | null
           session_token: string
@@ -420,7 +420,7 @@ export type Database = {
           expires_at?: string
           fingerprint?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean | null
           last_activity?: string | null
           session_token?: string
@@ -434,32 +434,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      cleanup_expired_sessions: { Args: never; Returns: undefined }
+      get_current_user_role: { Args: never; Returns: string }
       log_security_event: {
         Args: {
           p_action: string
-          p_resource?: string
-          p_success?: boolean
           p_error_message?: string
           p_metadata?: Json
+          p_resource?: string
+          p_success?: boolean
         }
         Returns: undefined
       }
-      slugify: {
-        Args: { input: string }
-        Returns: string
-      }
-      user_account_slug: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      slugify: { Args: { input: string }; Returns: string }
+      user_account_slug: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
