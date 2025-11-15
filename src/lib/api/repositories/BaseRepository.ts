@@ -37,15 +37,14 @@ export abstract class BaseRepository<T = unknown> {
    * Execute a query with automatic telemetry and error handling
    */
   protected async executeQuery<TResult>(
-    queryFn: () => Promise<QueryResult<TResult>> | { data: TResult | null; error: PostgrestError | null },
+    query: PromiseLike<{ data: TResult | null; error: PostgrestError | null }>,
     operation: string
   ): Promise<TResult> {
     const startTime = performance.now();
     const resourceName = this.constructor.name;
 
     try {
-      const result = await queryFn();
-      const { data, error } = result as QueryResult<TResult>;
+      const { data, error } = await query;
 
       if (error) {
         throw new DatabaseError(error.message, {
@@ -91,7 +90,7 @@ export abstract class BaseRepository<T = unknown> {
    * Execute a mutation (INSERT/UPDATE/DELETE) with retry logic
    */
   protected async executeMutation<TResult>(
-    mutationFn: () => Promise<QueryResult<TResult>> | { data: TResult | null; error: PostgrestError | null },
+    mutationFn: () => PromiseLike<{ data: TResult | null; error: PostgrestError | null }>,
     operation: string,
     retryConfig: Partial<RetryConfig> = {}
   ): Promise<TResult> {
@@ -101,7 +100,7 @@ export abstract class BaseRepository<T = unknown> {
 
     while (attempt < config.maxRetries) {
       try {
-        return await this.executeQuery(mutationFn, operation);
+        return await this.executeQuery(mutationFn(), operation);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         attempt++;
