@@ -5,6 +5,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { TelemetryService } from '../services/TelemetryService';
+import { logger } from '@/lib/logging/Logger';
 
 export interface EdgeFunctionOptions {
   retries?: number;
@@ -35,7 +36,16 @@ export class EdgeFunctionAdapter {
 
     while (attempt < retries) {
       try {
-        console.log(`[EdgeFunctionAdapter] Invoking ${functionName} (attempt ${attempt + 1}/${retries})`);
+        logger.debug(`Invoking ${functionName}`, {
+          operation: 'edge_function_invoke',
+          resource: 'EdgeFunctionAdapter',
+          metadata: { 
+            functionName, 
+            attempt: attempt + 1, 
+            retries,
+            payloadSize: JSON.stringify(payload).length
+          }
+        });
         
         const { data, error } = await supabase.functions.invoke(functionName, {
           body: payload
@@ -58,16 +68,29 @@ export class EdgeFunctionAdapter {
           }
         });
 
-        console.log(`[EdgeFunctionAdapter] ${functionName} succeeded in ${Math.round(performance.now() - startTime)}ms`);
+        logger.info(`${functionName} succeeded`, {
+          operation: 'edge_function_success',
+          resource: 'EdgeFunctionAdapter',
+          metadata: { 
+            functionName,
+            duration: Math.round(performance.now() - startTime)
+          }
+        });
         return data as T;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         attempt++;
 
-        console.warn(
-          `[EdgeFunctionAdapter] ${functionName} attempt ${attempt}/${retries} failed:`,
-          lastError.message
-        );
+        logger.warn(`${functionName} attempt failed`, {
+          operation: 'edge_function_retry',
+          resource: 'EdgeFunctionAdapter',
+          metadata: { 
+            functionName,
+            attempt,
+            retries,
+            error: lastError.message
+          }
+        });
 
         // If this was the last retry, record the failure
         if (attempt >= retries) {
@@ -90,7 +113,11 @@ export class EdgeFunctionAdapter {
 
         // Exponential backoff
         const delay = 1000 * Math.pow(2, attempt - 1);
-        console.log(`[EdgeFunctionAdapter] Retrying ${functionName} in ${delay}ms...`);
+        logger.debug(`Retrying ${functionName}`, {
+          operation: 'edge_function_backoff',
+          resource: 'EdgeFunctionAdapter',
+          metadata: { functionName, delay }
+        });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

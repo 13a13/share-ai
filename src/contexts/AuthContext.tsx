@@ -5,6 +5,7 @@ import { Provider, Session } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
 import { securityService } from "@/lib/security/securityService";
 import { sessionManager } from "@/lib/security/sessionManager";
+import { logger } from "@/lib/logging/Logger";
 
 // Define types
 interface User {
@@ -90,10 +91,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // Handle specific auth events
         if (event === 'SIGNED_OUT') {
-          console.log("User signed out, clearing state");
+          logger.info("User signed out", {
+            operation: 'auth_signout',
+            resource: 'AuthContext',
+            metadata: { userId: userData?.id }
+          });
           sessionManager.stopSessionMonitoring();
         } else if (event === 'SIGNED_IN') {
-          console.log("User signed in:", userData?.email);
+          logger.info("User authentication successful", {
+            operation: 'auth_signin',
+            resource: 'AuthContext',
+            metadata: { 
+              userId: userData?.id,
+              hasEmail: !!userData?.email 
+            }
+          });
           // Record successful login for rate limiting
           securityService.recordAttempt('login', userData?.email, true);
           // Initialize session management
@@ -117,7 +129,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (msg.includes("refresh token not found") || msg.includes("refresh_token_not_found")) {
             log("No active session on init (expected). Silencing refresh token warning.");
           } else {
-            console.error("Error getting session:", error);
+            logger.error("Error getting session", error, {
+              operation: 'session_init',
+              resource: 'AuthContext'
+            });
           }
           if (mounted) {
             setIsLoading(false);
@@ -133,7 +148,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsLoading(false);
         }
       } catch (error) {
-        console.error("Session initialization error:", error);
+        logger.error("Session initialization error", error, {
+          operation: 'session_init_error',
+          resource: 'AuthContext'
+        });
         if (mounted) {
           setIsLoading(false);
         }
@@ -187,7 +205,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       securityService.recordAttempt('register', sanitizedEmail, !error);
       
       if (error) {
-        console.error("Registration error:", error);
+        logger.error("Registration error", error, {
+          operation: 'auth_register',
+          resource: 'AuthContext',
+          metadata: { email: sanitizedEmail }
+        });
         securityService.logSecurityEvent({
           action: 'register_failed',
           success: false,
@@ -228,7 +250,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
       }
     } catch (error: any) {
-      console.error("Registration failed:", error);
+      logger.error("Registration failed", error, {
+        operation: 'auth_register_failed',
+        resource: 'AuthContext'
+      });
       
       let errorMessage = "Failed to create account. Please try again.";
       if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
@@ -283,7 +308,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       securityService.recordAttempt('login', sanitizedEmail, !error);
       
       if (error) {
-        console.error("Login error:", error);
+        logger.error("Login error", error, {
+          operation: 'auth_login',
+          resource: 'AuthContext',
+          metadata: { email: sanitizedEmail }
+        });
         securityService.logSecurityEvent({
           action: 'login_failed',
           success: false,
@@ -308,7 +337,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Welcome back!",
       });
     } catch (error: any) {
-      console.error("Login failed:", error);
+      logger.error("Login failed", error, {
+        operation: 'auth_login_failed',
+        resource: 'AuthContext'
+      });
       
       let errorMessage = "Login failed. Please check your credentials.";
       if (error.message?.includes("Invalid login credentials")) {
@@ -359,7 +391,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       securityService.recordAttempt('socialLogin', provider, !error);
       
       if (error) {
-        console.error(`${provider} OAuth error:`, error);
+        logger.error(`${provider} OAuth error`, error, {
+          operation: 'social_login',
+          resource: 'AuthContext',
+          metadata: { provider }
+        });
         securityService.logSecurityEvent({
           action: 'social_login_failed',
           success: false,
@@ -420,7 +456,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "You have been logged out.",
       });
     } catch (error: any) {
-      console.error("Logout error:", error);
+      logger.error("Logout error", error, {
+        operation: 'auth_logout',
+        resource: 'AuthContext'
+      });
       toast({
         title: "Logout failed",
         description: error.message || "An error occurred during logout.",
