@@ -144,9 +144,10 @@ export class PropertiesRepository extends BaseRepository<Property> {
       throw error;
     }
 
-    // Get user's property limit from profile
+    // ✅ SECURITY: Use backward-compatible view that isolates subscription data
+    // This view automatically joins profiles + subscription_metadata
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('profiles_with_subscription')
       .select('property_limit')
       .eq('id', userId)
       .single();
