@@ -1,73 +1,17 @@
-import { Property } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
-import { v4 as uuidv4 } from 'uuid';
+/**
+ * Properties API - Legacy Facade
+ * @deprecated Use ApiV1.properties or PropertiesRepository directly
+ * This API will be removed in v2.0
+ */
 
-// Properties API
+import { Property } from '@/types';
+import { propertiesRepository } from './repositories/PropertiesRepository';
+
+// Properties API - now powered by repository pattern
 export const PropertiesAPI = {
-  getAll: async (): Promise<Property[]> => {
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .order('created_at', { ascending: false });
-      
-    if (error) {
-      console.error('Error fetching properties:', error);
-      throw error;
-    }
-    
-    // Transform database structure to match our client model
-    const properties: Property[] = data?.map(item => ({
-      id: item.id,
-      name: item.name || '',
-      address: item.location ? item.location.split(',')[0]?.trim() : '',
-      city: item.location ? item.location.split(',')[1]?.trim() : '',
-      state: item.location ? item.location.split(',')[2]?.trim() : '',
-      zipCode: item.location ? item.location.split(',')[3]?.trim() : '',
-      propertyType: item.type as any,
-      bedrooms: Number(item.description?.match(/Bedrooms: (\d+)/)?.[1] || 0),
-      bathrooms: Number(item.description?.match(/Bathrooms: (\d+(?:\.\d+)?)/)?.[1] || 0),
-      squareFeet: 0, // Not in database schema, default value
-      imageUrl: item.image_url || '',
-      createdAt: new Date(item.created_at),
-      updatedAt: new Date(item.updated_at)
-    })) || [];
-    
-    return properties;
-  },
+  getAll: () => propertiesRepository.findAll(),
   
-  getById: async (id: string): Promise<Property | null> => {
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
-      console.error('Error fetching property:', error);
-      throw error;
-    }
-    
-    if (!data) return null;
-    
-    // Transform to match our client model
-    const property: Property = {
-      id: data.id,
-      name: data.name || '',
-      address: data.location ? data.location.split(',')[0]?.trim() : '',
-      city: data.location ? data.location.split(',')[1]?.trim() : '',
-      state: data.location ? data.location.split(',')[2]?.trim() : '',
-      zipCode: data.location ? data.location.split(',')[3]?.trim() : '',
-      propertyType: data.type as any,
-      bedrooms: Number(data.description?.match(/Bedrooms: (\d+)/)?.[1] || 0),
-      bathrooms: Number(data.description?.match(/Bathrooms: (\d+(?:\.\d+)?)/)?.[1] || 0),
-      squareFeet: 0, // Not in database schema, default value
-      imageUrl: data.image_url || '',
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
-    };
-    
-    return property;
-  },
+  getById: (id: string) => propertiesRepository.findById(id),
   
   create: async (property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>): Promise<Property> => {
     // Ensure user is authenticated

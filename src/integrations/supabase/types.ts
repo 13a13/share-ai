@@ -390,6 +390,45 @@ export type Database = {
         }
         Relationships: []
       }
+      telemetry_events: {
+        Row: {
+          created_at: string | null
+          duration_ms: number | null
+          error_class: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          operation: string
+          resource: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms?: number | null
+          error_class?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          operation: string
+          resource: string
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number | null
+          error_class?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          operation?: string
+          resource?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_sessions: {
         Row: {
           created_at: string | null
