@@ -390,6 +390,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_metadata: {
+        Row: {
+          created_at: string | null
+          id: string
+          property_limit: number | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          property_limit?: number | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          property_limit?: number | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       telemetry_events: {
         Row: {
           created_at: string | null
@@ -470,7 +506,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_with_subscription: {
+        Row: {
+          created_at: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          property_limit: number | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_sessions: { Args: never; Returns: undefined }
@@ -484,6 +534,12 @@ export type Database = {
           p_success?: boolean
         }
         Returns: undefined
+      }
+      purge_old_telemetry: {
+        Args: never
+        Returns: {
+          deleted_count: number
+        }[]
       }
       slugify: { Args: { input: string }; Returns: string }
       user_account_slug: { Args: never; Returns: string }
