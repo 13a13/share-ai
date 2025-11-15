@@ -6,6 +6,8 @@
 
 import { Property } from '@/types';
 import { propertiesRepository } from './repositories/PropertiesRepository';
+import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 // Properties API - now powered by repository pattern
 export const PropertiesAPI = {
