@@ -35,8 +35,11 @@ export const useSubscription = () => {
 
     try {
       setIsLoading(true);
+      // ✅ SECURITY: Use backward-compatible view that isolates subscription data
+      // This view automatically joins profiles + subscription_metadata
+      // Falls back to profiles columns if subscription_metadata doesn't exist yet
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles_with_subscription')
         .select('*')
         .eq('id', user.id)
         .single();
