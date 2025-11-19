@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { getAccountSlug } from './userUtils';
+import { getUserId } from './userUtils';
 import { resolvePropertyAndRoomNames } from './resolveNames';
 
 /**
@@ -33,9 +33,9 @@ export const generateFolderPath = async (
     fileExtension
   });
 
-  // Get account slug for top-level folder (old structure)
-  const accountSlug = await getAccountSlug();
-  console.log(`👤 [FOLDER v5] Account slug: "${accountSlug}"`);
+  // Get user UUID for top-level folder (required by RLS policy)
+  const userId = await getUserId();
+  console.log(`👤 [FOLDER v5] User ID: "${userId}"`);
   // CRITICAL: Always resolve names from database to ensure accuracy
   console.log(`🔍 [FOLDER v4] Resolving names from database...`);
   const resolved = await resolvePropertyAndRoomNames(roomId, propertyName, roomName);
@@ -63,20 +63,20 @@ export const generateFolderPath = async (
     ? cleanNameForFolder(componentName)
     : 'general';
 
-  // Create folder structure: account_slug/property_name/room_name/component_name/filename
-  const fileName = `${accountSlug}/${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/${uuidv4()}.${fileExtension || 'jpg'}`;
+  // Create folder structure: user_uuid/property_name/room_name/component_name/filename
+  const fileName = `${userId}/${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/${uuidv4()}.${fileExtension || 'jpg'}`;
 
   console.log(`📂 [FOLDER v5] Generated upload path:`, fileName);
   
   // Final validation log
   console.log(`📊 [FOLDER v5] Path analysis:`, {
-    accountPart: accountSlug,
+    userIdPart: userId,
     propertyPart: cleanPropertyName,
     roomPart: cleanRoomName,
     componentPart: cleanComponentName,
     isGeneric: cleanPropertyName.includes('unknown') || cleanRoomName.includes('unknown'),
     hasErrors: cleanPropertyName.includes('error') || cleanRoomName.includes('error'),
-    expectedStructure: `${accountSlug}/${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/[filename]`
+    expectedStructure: `${userId}/${cleanPropertyName}/${cleanRoomName}/${cleanComponentName}/[filename]`
   });
 
   return fileName;
