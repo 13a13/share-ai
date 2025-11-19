@@ -5,9 +5,10 @@
 When creating or modifying views:
 
 - [ ] View has `security_invoker = true` (uses caller permissions)
-- [ ] View has at least one RLS policy defined
-- [ ] Policy requires authentication (`TO authenticated`)
-- [ ] Policy filters to owner (`auth.uid() = user_id` or similar)
+- [ ] View is defined over tables that have RLS enabled
+- [ ] Underlying tables have RLS policies defined
+- [ ] Policies require authentication (or justify public access)
+- [ ] Policies filter to owner (`auth.uid() = user_id`)
 - [ ] Anonymous access blocked (test with curl)
 - [ ] Cross-user access blocked (test with SQL)
 - [ ] Application code still works (manual test)
