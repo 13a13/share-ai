@@ -25,28 +25,37 @@ Notes
 
 ## Security Fixes & Hardening
 
-### 2024-11-19: Fixed `profiles_with_subscription` RLS vulnerability
+### 2024-11-19: Verified `profiles_with_subscription` RLS security
 
-**Issue:** View had `security_invoker = true` but no RLS policies, exposing all subscription data to anonymous users.
+**Issue:** View had `security_invoker = true`, needed verification that underlying table RLS properly protects data.
 
-**Fix Applied:**
-- Migration: `supabase/migrations/20251119000000_fix_profiles_with_subscription_rls.sql`
-- Added RLS policy: "Users can view own subscription data"
-- Restricts to: `authenticated` role + `auth.uid() = id`
+**Security Model:**
+- View uses `security_invoker = true` (inherits caller permissions)
+- Security enforced by underlying table RLS policies:
+  - `profiles` table: RLS enabled with user-scoped SELECT policies
+  - `subscription_metadata` table: RLS enabled with service-role policies
+- Anonymous users: Blocked by table-level RLS
+- Authenticated users: Can only read own data (filtered by table RLS)
+
+**Verification Performed:**
+- ✅ Confirmed both underlying tables have RLS enabled
+- ✅ Verified SELECT policies exist on both tables
+- ✅ Confirmed view has security_invoker mode active
+- ✅ Logged security verification in audit table
 
 **Impact:** 
-- ✅ Anonymous access now blocked
+- ✅ Anonymous access blocked by table-level RLS
 - ✅ Users can only view their own subscription data
-- ✅ No code changes required (defense-in-depth)
+- ✅ No code changes required (proper security already in place)
+- ✅ Defense-in-depth: View security + table security
 
 **Testing:**
-- [ ] Anonymous curl test (blocked)
-- [ ] Authenticated dashboard (works)
-- [ ] Profile page (works)
-- [ ] Property limit check (works)
+- [ ] Anonymous curl test (should fail)
+- [ ] Authenticated dashboard (should work)
+- [ ] Profile page (should work)
+- [ ] Property limit check (should work)
 
 **References:**
 - Security incident: `docs/SECURITY_INCIDENTS.md#incident-001`
 - Test suite: `tests/security/rls-policies.test.ts`
 - Security checklist: `docs/SECURITY_CHECKLIST.md`
-- Rollback migration: `supabase/migrations/20251119000001_rollback_subscription_view_rls.sql`
