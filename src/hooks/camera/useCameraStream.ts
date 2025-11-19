@@ -21,6 +21,7 @@ export const useCameraStream = (options: UseCameraStreamOptions) => {
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const playAttemptedRef = useRef(false);
 
   /**
    * Stops all tracks in the current stream and cleans up resources
@@ -40,6 +41,7 @@ export const useCameraStream = (options: UseCameraStreamOptions) => {
       timeoutRef.current = null;
     }
     
+    playAttemptedRef.current = false;
     setIsReady(false);
   }, []);
 
@@ -121,12 +123,15 @@ export const useCameraStream = (options: UseCameraStreamOptions) => {
 
       videoRef.current.addEventListener('canplay', handleVideoReady);
       
-      // Automatically attempt to play the video
-      try {
-        await videoRef.current.play();
-      } catch (playError) {
-        console.warn("Auto-play failed:", playError);
-        // This is OK - user may need to interact first on some browsers
+      // Automatically attempt to play the video only once
+      if (!playAttemptedRef.current) {
+        playAttemptedRef.current = true;
+        try {
+          await videoRef.current.play();
+        } catch (playError) {
+          console.warn("Auto-play failed:", playError);
+          // This is OK - user may need to interact first on some browsers
+        }
       }
 
     } catch (error) {
