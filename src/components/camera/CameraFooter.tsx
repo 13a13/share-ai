@@ -25,9 +25,9 @@ const CameraFooter: React.FC<CameraFooterProps> = ({
   
   return (
     <footer className="
-      fixed bottom-0 left-0 w-full
-      bg-black flex items-center justify-between
-      px-6 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]
+      w-full bg-black flex items-center justify-between
+      px-6 py-4
+      shrink-0
     ">
       {/* Enhanced photo counter with status indicator */}
       <div className="flex flex-col items-start">
